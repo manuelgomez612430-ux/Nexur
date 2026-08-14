@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardBackgroundColor="?attr/colorSurface"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="?attr/colorOutlineVariant">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="24dp">
+
+            <TextView
+                android:id="@+id/tvLabelProdName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Nombre del Producto"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                android:gravity="center" />
+
+            <View
+                android:layout_width="40dp"
+                android:layout_height="4dp"
+                android:background="?attr/colorPrimary"
+                android:layout_marginTop="8dp"
+                android:layout_gravity="center" />
+
+            <!-- IMAGEN Y QR (LADO A LADO) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="28dp"
+                android:baselineAligned="false">
+
+                <!-- Imagen del Producto -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="140dp"
+                    android:layout_height="140dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="?attr/colorOutlineVariant">
+                    <ImageView
+                        android:id="@+id/ivLabelProdPhoto"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="@android:drawable/ic_menu_camera"
+                        android:scaleType="centerCrop"
+                        android:alpha="0.8" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <View
+                    android:layout_width="16dp"
+                    android:layout_height="1dp" />
+
+                <!-- QR del Producto -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="140dp"
+                    android:layout_height="140dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="?attr/colorOutlineVariant">
+                    <ImageView
+                        android:id="@+id/ivProductCode"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:padding="8dp"
+                        android:background="@android:color/white"
+                        android:scaleType="fitCenter" />
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Vista Previa e Identificador"
+                android:textSize="10sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:gravity="center"
+                android:layout_marginTop="4dp"
+                android:alpha="0.6" />
+
+            <!-- DESCRIPCIÓN -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DESCRIPCIÓN"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:textColor="?attr/colorPrimary"
+                android:layout_marginTop="24dp" />
+
+            <TextView
+                android:id="@+id/tvLabelProdDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sin descripción disponible."
+                android:textSize="14sp"
+                android:textColor="?attr/colorOnSurface"
+                android:layout_marginTop="4dp"
+                android:lineSpacingExtra="4dp" />
+
+            <!-- CONTROL DE CÓDIGOS VINCULADOS -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="28dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="CÓDIGOS VINCULADOS"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1"
+                    android:textColor="?attr/colorPrimary" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/cbShowLinkedCodes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ver lista"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardLinkedCodes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                android:visibility="gone">
+                <TextView
+                    android:id="@+id/tvLabelProdCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="---"
+                    android:textSize="13sp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:padding="12dp"
+                    android:gravity="start"
+                    android:lineSpacingExtra="4dp" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- BOTONES -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="32dp"
+                android:weightSum="2">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnShareLabel"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:minHeight="56dp"
+                    android:layout_height="wrap_content"
+                    android:text="Compartir"
+                    android:textColor="@android:color/white"
+                    app:icon="@android:drawable/ic_menu_share"
+                    app:iconTint="@android:color/white"
+                    app:iconGravity="textStart"
+                    app:cornerRadius="16dp"
+                    android:layout_marginEnd="6dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCloseLabel"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:minHeight="56dp"
+                    android:layout_height="wrap_content"
+                    android:text="Cerrar"
+                    app:cornerRadius="16dp"
+                    android:layout_marginStart="6dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</com.google.android.material.card.MaterialCardView>

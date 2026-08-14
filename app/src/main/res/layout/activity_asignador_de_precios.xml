@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="?attr/colorSurface">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="28dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/title_asignador_precios"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/subtitle_asignador_precios"
+                    android:textSize="13sp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Sección de Entrada -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_detalles_producto"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.05"
+            android:textColor="?attr/colorPrimary"
+            android:layout_marginBottom="16dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            style="?attr/textInputOutlinedStyle">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etNombreProducto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/hint_nombre_producto"
+                android:inputType="textCapSentences"
+                android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Campo de Categoría Corregido con Estilo de Menú Desplegable -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutCategoria"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:hint="@string/hint_categoria">
+
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                android:id="@+id/autoCompleteCategoria"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Mensaje de ayuda para el margen -->
+        <TextView
+            android:id="@+id/tvHelperMargen"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="El margen de ganancia se asigna según la categoría."
+            android:textSize="11sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_marginBottom="20dp"
+            android:layout_marginStart="4dp" />
+
+        <!-- Grid Inputs -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                style="?attr/textInputOutlinedStyle"
+                app:prefixText="S/ ">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCostoLote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_costo_lote"
+                    android:inputType="numberDecimal"
+                    android:textSize="16sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                style="?attr/textInputOutlinedStyle"
+                app:suffixText=" uds">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCantidadUnidades"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_unidades"
+                    android:inputType="number"
+                    android:textSize="16sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            style="?attr/textInputOutlinedStyle"
+            app:suffixText="%">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etMargenDeseado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/hint_margen"
+                android:inputType="number"
+                android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <CheckBox
+            android:id="@+id/cbIncluirTransporte"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/label_incluir_transporte"
+            android:textSize="14sp"
+            android:layout_marginBottom="12dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutCostoTransporte"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:visibility="gone"
+            style="?attr/textInputOutlinedStyle"
+            app:prefixText="S/ ">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etCostoTransporte"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/hint_costo_transporte"
+                android:inputType="numberDecimal"
+                android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Botón Principal: Con padding para evitar texto apretado -->
+        <Button
+            android:id="@+id/btnCalcularPrecio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="60dp"
+            android:paddingVertical="12dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/btn_generar_analisis"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="16dp"
+            app:cornerRadius="12dp" />
+
+        <!-- Tarjeta de Resultados (Movida arriba de los botones) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardResultados"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/title_resumen_analisis"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    android:layout_marginBottom="16dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="?attr/colorSurface"
+                    android:padding="12dp"
+                    android:layout_marginBottom="16dp">
+
+                    <include layout="@layout/row_dato_resumen" android:id="@+id/rowProducto" />
+                    <include layout="@layout/row_dato_resumen" android:id="@+id/rowCostoBase" />
+                    <include layout="@layout/row_dato_resumen" android:id="@+id/rowTransporte" />
+                    <include layout="@layout/row_dato_resumen" android:id="@+id/rowTotalInversion" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="ESCENARIO DE VENTA"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.05"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:gravity="center"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Selector de Escenario -->
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleGroupEscenario"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="20dp"
+                    app:singleSelection="true"
+                    app:checkedButton="@id/btnEscenarioSugerido">
+
+                    <Button
+                        android:id="@+id/btnEscenarioMinimo"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Mínimo"
+                        android:textSize="12sp" />
+
+                    <Button
+                        android:id="@+id/btnEscenarioSugerido"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sugerido"
+                        android:textSize="12sp" />
+
+                    <Button
+                        android:id="@+id/btnEscenarioMaximo"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Máximo"
+                        android:textSize="12sp" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <TextView
+                    android:id="@+id/tvResultadoPrecioSugerido"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="S/ 0.00"
+                    android:textSize="42sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorPrimary"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/tvPrecioExacto"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Exacto: S/ 0.00"
+                    android:textSize="12sp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:gravity="center"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tvMargenGanancia"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Margen objetivo: 0%"
+                    android:textSize="14sp"
+                    android:textColor="@color/emerald_600"
+                    android:gravity="center"
+                    android:layout_marginBottom="20dp" />
+
+                <!-- Detalles de Ganancia Dinámicos -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="?attr/colorSurface"
+                    android:padding="12dp">
+
+                    <include layout="@layout/row_dato_resumen" android:id="@+id/rowGananciaUnidad" />
+                    <include layout="@layout/row_dato_resumen" android:id="@+id/rowGananciaTotal" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:id="@+id/layoutBotonesPostCalculo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2">
+
+                <Button
+                    android:id="@+id/btnNuevoCalculo"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp"
+                    android:layout_weight="1"
+                    android:text="@string/btn_nuevo_calculo"
+                    android:layout_marginEnd="6dp"
+                    app:cornerRadius="8dp" />
+
+                <Button
+                    android:id="@+id/btnRecalcular"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp"
+                    android:layout_weight="1"
+                    android:text="@string/btn_recalculo"
+                    android:layout_marginStart="6dp"
+                    app:cornerRadius="8dp" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnGuardarInventario"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:minHeight="52dp"
+                android:text="Añadir al Inventario"
+                android:textColor="?attr/colorPrimary"
+                app:cornerRadius="8dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

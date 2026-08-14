@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/menu_export_excel"
+        android:icon="@android:drawable/ic_menu_save"
+        android:title="Exportar Inventario a Excel" />
+
+    <item
+        android:id="@+id/menu_import_excel"
+        android:icon="@android:drawable/ic_menu_upload"
+        android:title="Importar Inventario desde Excel (CSV)" />
+
+</menu>

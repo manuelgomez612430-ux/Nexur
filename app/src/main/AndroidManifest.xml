@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- Permisos de Bluetooth -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Naxor"
+        android:usesCleartextTraffic="true">
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!-- Pantalla de Login (Arranque) -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Pantalla Principal -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity android:name=".AsignadorDePreciosActivity" android:label="@string/title_asignador_precios" />
+        <activity android:name=".HistorialActivity" android:label="Historial" />
+        <activity android:name=".InventarioActivity" android:label="Inventario" />
+        <activity android:name=".VentasActivity" android:label="Registro de Ventas" />
+        <activity android:name=".ResumenActivity" android:label="Estadísticas" />
+        <activity android:name=".InstruccionesActivity" android:label="Instrucciones" />
+        <activity android:name=".DeudoresActivity" android:label="Control de Deudas" />
+        <activity android:name=".GastosActivity" android:label="Gastos del Local" />
+        <activity android:name=".ProveedoresActivity" android:label="Mis Proveedores" />
+        <activity android:name=".ListaComprasActivity" android:label="Mi Lista de Compras" />
+        <activity android:name=".CajaActivity" android:label="Arqueo de Caja" />
+        <activity android:name=".SettingsActivity" android:label="Ajustes de mi Negocio" />
+        <activity android:name=".CustomersActivity" android:label="Mis Clientes VIP" />
+    </application>
+
+</manifest>

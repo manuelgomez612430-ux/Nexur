@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawerLayoutVentas"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?attr/colorSurface">
+
+        <!-- HEADER -->
+        <LinearLayout
+            android:id="@+id/headerVentas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageButton
+                android:id="@+id/btnBackVentas"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_revert"
+                app:tint="?attr/colorOnSurface" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Punto de Venta"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                android:layout_marginStart="12dp" />
+
+            <ImageButton
+                android:id="@+id/btnViewHistory"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_recent_history"
+                app:tint="?attr/colorOnSurface" />
+
+            <ImageButton
+                android:id="@+id/btnOpenMenuVentas"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_more"
+                app:tint="?attr/colorOnSurface" />
+        </LinearLayout>
+
+        <!-- BÚSQUEDA Y ESCÁNER -->
+        <LinearLayout
+            android:id="@+id/layoutSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:layout_marginTop="4dp"
+            app:layout_constraintTop_toBottomOf="@id/headerVentas">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutVentaBusqueda"
+                style="?attr/textInputOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                app:startIconDrawable="@android:drawable/ic_menu_search"
+                app:endIconMode="custom"
+                app:endIconDrawable="@android:drawable/ic_menu_camera">
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/autoVentaBusqueda"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Código o Nombre..."
+                    android:inputType="text"
+                    android:textSize="15sp"
+                    android:completionThreshold="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuickAddManual"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginStart="8dp"
+                android:padding="0dp"
+                app:icon="@android:drawable/ic_input_add"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:cornerRadius="12dp" />
+        </LinearLayout>
+
+        <!-- CARRITO DE VENTA -->
+        <TextView
+            android:id="@+id/tvLabelCarrito"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CARRITO ACTUAL"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.1"
+            android:textColor="?attr/colorPrimary"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="20dp"
+            app:layout_constraintTop_toBottomOf="@id/layoutSearch"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvCartItems"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="8dp"
+            android:paddingHorizontal="16dp"
+            android:clipToPadding="false"
+            android:paddingBottom="100dp"
+            app:layout_constraintBottom_toTopOf="@id/cardPaymentFooter"
+            app:layout_constraintTop_toBottomOf="@id/tvLabelCarrito" />
+
+        <!-- FOOTER DE PAGO -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardPaymentFooter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="32dp"
+            app:cardElevation="12dp"
+            app:strokeWidth="0dp"
+            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.Card.TopRounded"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp"
+                android:background="?attr/colorSurfaceContainer">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="TOTAL A PAGAR"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <TextView
+                        android:id="@+id/tvVentaTotalDinamico"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="S/ 0.00"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorPrimary" />
+                </LinearLayout>
+
+                <!-- BOTONES DE PAGO RÁPIDO -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:weightSum="3">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPayCash"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="64dp"
+                        android:text="Efectivo"
+                        android:textSize="12sp"
+                        app:icon="@android:drawable/ic_menu_save"
+                        app:iconGravity="top"
+                        android:layout_marginEnd="4dp"
+                        app:cornerRadius="16dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPayDigital"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="64dp"
+                        android:text="Yape/Plin"
+                        android:textSize="12sp"
+                        app:icon="@android:drawable/ic_menu_send"
+                        app:iconGravity="top"
+                        android:layout_marginHorizontal="4dp"
+                        app:cornerRadius="16dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPayCard"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="64dp"
+                        android:text="Tarjeta"
+                        android:textSize="12sp"
+                        app:icon="@android:drawable/ic_menu_camera"
+                        app:iconGravity="top"
+                        android:layout_marginStart="4dp"
+                        app:cornerRadius="16dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- LAYOUT VACÍO -->
+        <LinearLayout
+            android:id="@+id/layoutEmptyCart"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:alpha="0.4"
+            app:layout_constraintBottom_toTopOf="@id/cardPaymentFooter"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutSearch">
+
+            <ImageView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@android:drawable/ic_menu_agenda" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Escanea o busca un producto"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Barra Lateral -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navigationViewVentas"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        app:menu="@menu/menu_ventas_drawer"
+        app:headerLayout="@layout/drawer_header_simple" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

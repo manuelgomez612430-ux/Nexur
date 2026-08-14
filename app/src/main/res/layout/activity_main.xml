@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawerLayoutMain"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?attr/colorSurface">
+
+        <ImageButton
+            android:id="@+id/btnOpenMenuMain"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/bg_circle_surface"
+            android:src="@android:drawable/ic_menu_more"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="?attr/colorPrimary"
+            android:contentDescription="Opciones" />
+
+        <LinearLayout
+            android:id="@+id/headerTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="20dp"
+            android:orientation="vertical"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hola,"
+                android:textSize="14sp"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+            <TextView
+                android:id="@+id/tvMainBusinessName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mi Negocio"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface" />
+        </LinearLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardDashboard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="24dp"
+            app:cardBackgroundColor="?attr/colorPrimaryContainer"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            app:layout_constraintTop_toBottomOf="@id/headerTitle">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="20dp"
+                android:baselineAligned="false">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ventas hoy" android:textSize="11sp" android:textStyle="bold" android:textColor="?attr/colorOnPrimaryContainer" />
+                    <TextView android:id="@+id/tvVentasHoyMain" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="S/ 0.00" android:textSize="20sp" android:textStyle="bold" android:textColor="?attr/colorOnPrimaryContainer" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="end"
+                    android:orientation="vertical">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Utilidad" android:textSize="11sp" android:textStyle="bold" android:textColor="?attr/colorOnPrimaryContainer" />
+                    <TextView android:id="@+id/tvUtilidadHoyMain" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="S/ 0.00" android:textSize="20sp" android:textStyle="bold" android:textColor="?attr/colorOnPrimaryContainer" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- BOTÓN INVENTARIO (Morado) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMainInventario"
+            android:layout_width="match_parent"
+            android:layout_height="70dp"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="32dp"
+            android:text="📦 INVENTARIO"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            app:backgroundTint="#8E44AD"
+            app:cornerRadius="20dp"
+            app:layout_constraintTop_toBottomOf="@id/cardDashboard" />
+
+        <!-- CONTENEDOR DE OPCIONES DESPLEGABLES (ANIMADO) -->
+        <LinearLayout
+            android:id="@+id/layoutMoreOptionsExpanded"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:gravity="center"
+            android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toTopOf="@id/btnMainMoreOptions"
+            app:layout_constraintStart_toStartOf="@id/btnMainMoreOptions"
+            app:layout_constraintEnd_toEndOf="@id/btnMainMoreOptions">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMainCatalogo"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="160dp"
+                android:layout_height="56dp"
+                android:layout_marginBottom="8dp"
+                android:text="📖 Catálogo"
+                android:textColor="@android:color/white"
+                app:backgroundTint="@color/sky_600"
+                app:cornerRadius="16dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMainAjustes"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="160dp"
+                android:layout_height="56dp"
+                android:text="⚙️ Mi Negocio"
+                android:textColor="@android:color/white"
+                app:backgroundTint="@color/slate_600"
+                app:cornerRadius="16dp" />
+        </LinearLayout>
+
+        <!-- BOTÓN MÁS OPCIONES (REDISEÑADO Y ELEGANTE) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnMainMoreOptions"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginBottom="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardBackgroundColor="#8E44AD"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="6dp"
+            app:strokeWidth="0dp"
+            app:layout_constraintBottom_toTopOf="@id/btnIrVentas"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/arrow_up_float"
+                app:tint="@android:color/white" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- BOTÓN REALIZAR VENTA (Verde - Full width) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnIrVentas"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:layout_margin="24dp"
+            android:text="REALIZAR VENTA"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            app:backgroundTint="@color/emerald_600"
+            app:icon="@android:drawable/ic_menu_add"
+            app:iconTint="@android:color/white"
+            app:iconSize="32dp"
+            app:cornerRadius="24dp"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navigationViewMain"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        app:menu="@menu/menu_main_drawer"
+        app:headerLayout="@layout/drawer_header_simple" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

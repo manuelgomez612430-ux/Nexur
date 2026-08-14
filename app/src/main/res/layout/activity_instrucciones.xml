@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <ImageButton
+            android:id="@+id/btnBackInstrucciones"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_revert"
+            app:tint="?attr/colorOnSurface"
+            android:contentDescription="Cerrar" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Manual de Operaciones Pro"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorPrimary" />
+
+        <!-- Sección 1 -->
+        <TextView style="@style/SubtituloMenu" android:text="📦 GESTIÓN DE ALMACÉN" android:layout_marginTop="32dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="• CÓDIGO DE BARRAS: Usa el escáner (icono cámara) para registrar productos de fábrica o el '+' para generar uno automático.\n• CATEGORÍAS: La app sugiere categorías según el nombre.\n• VENCIMIENTOS: Activa la fecha al registrar; verás alertas rojas en la lista si el producto caduca pronto.\n• EXCEL/FACTURAS: Importa desde CSV o escanea facturas de papel (OCR) desde el menú lateral."
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:lineSpacingExtra="4dp" />
+
+        <!-- Sección 2 -->
+        <TextView style="@style/SubtituloMenu" android:text="💰 CAJA Y VENTAS" android:layout_marginTop="24dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="• VENDER: Escanea el producto y se añadirá al carrito con su sonido de confirmación.\n• BOLETAS: Al finalizar, puedes enviar la boleta por WhatsApp o generar un PDF formal.\n• IMPRESIÓN: Conecta una mini-impresora Bluetooth para dar tickets físicos de papel.\n• FIADOS: Registra deudas y envía recordatorios de cobro por WhatsApp con un clic."
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:lineSpacingExtra="4dp" />
+
+        <!-- Sección 3 -->
+        <TextView style="@style/SubtituloMenu" android:text="🏦 FINANZAS Y CONTROL" android:layout_marginTop="24dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="• ARQUEO DE CAJA: Abre caja con tu base y ciérrala al final. La app te dirá cuánto dinero real debe haber en tu cajón.\n• GASTOS: Registra pagos de luz, alquiler o sueldos para ver tu UTILIDAD NETA (Ganancia Real).\n• GRÁFICOS: Mira qué productos y categorías te dan más dinero en el Resumen."
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:lineSpacingExtra="4dp" />
+
+        <!-- Sección 4 -->
+        <TextView style="@style/SubtituloMenu" android:text="🛡️ SEGURIDAD Y MARCA" android:layout_marginTop="24dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="• MODO EMPLEADO: Pon un PIN de 4 dígitos en Ajustes para bloquear el acceso a tus ganancias y gastos.\n• TU MARCA: Configura el nombre de tu negocio y tu moneda local para que aparezcan en todos los reportes y tickets."
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:lineSpacingExtra="4dp" />
+
+        <View android:layout_width="match_parent" android:layout_height="60dp" />
+
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawerLayoutHistorial"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Contenido Principal -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="?attr/colorSurface">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="24dp">
+
+            <ImageButton
+                android:id="@+id/btnBackHistorial"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_revert"
+                app:tint="?attr/colorOnSurface"
+                android:contentDescription="Regresar" />
+
+            <TextView
+                android:id="@+id/tvHistorialTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Historial de Análisis"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                android:layout_marginStart="16dp" />
+
+            <!-- Botón para abrir la barra lateral -->
+            <ImageButton
+                android:id="@+id/btnOpenMenuHistorial"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_more"
+                app:tint="?attr/colorOnSurface"
+                android:contentDescription="Opciones" />
+        </LinearLayout>
+
+        <!-- Barra de Búsqueda -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginBottom="16dp"
+            app:startIconDrawable="@android:drawable/ic_menu_search"
+            style="?attr/textInputOutlinedStyle">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSearchHistorial"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Buscar por nombre o categoría"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Filtros de Categoría (Chips) -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:paddingHorizontal="24dp"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupCategorias"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="false">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipTodos"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Todos"
+                    android:checked="true" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipAbarrotes"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Abarrotes" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipAlimentos"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Alimentos" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipBelleza"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Belleza" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipCalzado"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Calzado" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipElectronica"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Electrónica" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipFarmacia"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Farmacia" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipFerreteria"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ferretería" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipHogar"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hogar" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipJugueteria"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Juguetería" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipLibreria"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Librería" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipMascotas"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mascotas" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipRegalos"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Regalos" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipRepuestos"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Repuestos" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipRopa"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ropa" />
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
+
+        <!-- Lista de Registros -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvHistorial"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingBottom="24dp"
+                android:clipToPadding="false" />
+
+            <LinearLayout
+                android:id="@+id/layoutEmptyHistorial"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No se encontraron registros"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- Barra Lateral (Drawer) -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navigationViewHistorial"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        app:menu="@menu/menu_historial_drawer"
+        app:headerLayout="@layout/drawer_header_simple" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

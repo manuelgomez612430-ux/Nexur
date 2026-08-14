@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="none">
+        <item
+            android:id="@+id/menu_caja"
+            android:icon="@android:drawable/ic_menu_today"
+            android:title="Arqueo de Caja Diaria" />
+        <item
+            android:id="@+id/menu_fiados"
+            android:icon="@android:drawable/ic_menu_my_calendar"
+            android:title="Lista de Fiados" />
+        <item
+            android:id="@+id/menu_gastos"
+            android:icon="@android:drawable/ic_menu_edit"
+            android:title="Gastos del Local" />
+        <item
+            android:id="@+id/menu_ganancias"
+            android:icon="@android:drawable/ic_menu_view"
+            android:title="Ver Ganancias" />
+    </group>
+
+    <item android:title="Herramientas de Compra">
+        <menu>
+            <item
+                android:id="@+id/menu_lista_compras"
+                android:icon="@android:drawable/checkbox_on_background"
+                android:title="Lista de Compras" />
+            <item
+                android:id="@+id/menu_proveedores"
+                android:icon="@android:drawable/ic_menu_set_as"
+                android:title="Mis Proveedores" />
+            <item
+                android:id="@+id/menu_asignador"
+                android:icon="@android:drawable/ic_menu_compass"
+                android:title="Calculadora de Precios" />
+        </menu>
+    </item>
+
+    <item android:title="Configuración y Otros">
+        <menu>
+            <item
+                android:id="@+id/menu_customers"
+                android:icon="@android:drawable/ic_menu_my_calendar"
+                android:title="Directorio de Clientes" />
+            <item
+                android:id="@+id/menu_view_history"
+                android:icon="@android:drawable/ic_menu_recent_history"
+                android:title="Historial de Cálculos" />
+            <item
+                android:id="@+id/menu_instructions"
+                android:icon="@android:drawable/ic_menu_help"
+                android:title="Instrucciones de Uso" />
+            <item
+                android:id="@+id/menu_logout"
+                android:icon="@android:drawable/ic_menu_close_clear_cancel"
+                android:title="Cerrar Sesión" />
+        </menu>
+    </item>
+</menu>

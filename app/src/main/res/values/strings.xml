@@ -1,0 +1,59 @@
+<resources>
+    <string name="app_name">Naxor</string>
+
+    <!-- Main Activity -->
+    <string name="main_subtitle">Sistema de gestión y control de costos</string>
+    <string name="btn_historial_calculos">Historial de cálculos</string>
+    <string name="desc_ver_historial">Ver historial de cálculos</string>
+    <string name="btn_inventario">Inventario de productos</string>
+    <string name="btn_ventas">Registro de ventas</string>
+
+    <!-- Ventas -->
+    <string name="title_ventas">Registro de Ventas</string>
+    <string name="empty_ventas">No hay ventas registradas hoy</string>
+    <string name="desc_nueva_venta">Nueva venta</string>
+    <string name="btn_resumen">Resumen de Ventas</string>
+    <string name="title_resumen">Estadísticas</string>
+
+    <!-- Inventario -->
+    <string name="title_inventario">Inventario</string>
+    <string name="empty_inventario">No hay productos en el inventario</string>
+    <string name="desc_agregar_producto">Agregar producto</string>
+    <string name="desc_regresar">Regresar</string>
+
+    <!-- Asignador de Precios -->
+    <string name="title_asignador_precios">Asignador de Precios</string>
+    <string name="subtitle_asignador_precios">Configuración de parámetros comerciales</string>
+    <string name="label_detalles_producto">DETALLES DEL PRODUCTO</string>
+    <string name="hint_nombre_producto">Nombre del artículo</string>
+    <string name="hint_categoria">Categoría del producto</string>
+    <string name="hint_costo_lote">Costo</string>
+    <string name="hint_unidades">Unidades</string>
+    <string name="hint_margen">Margen (%)</string>
+    <string name="label_incluir_transporte">Incluir costo de transporte / flete</string>
+    <string name="hint_costo_transporte">Costo de transporte (S/)</string>
+    <string name="btn_generar_analisis">Generar análisis de precio</string>
+    <string name="btn_nuevo_calculo">Nuevo cálculo</string>
+    <string name="btn_recalculo">Recálculo</string>
+    <string name="title_resumen_analisis">Resumen del Análisis</string>
+    <string name="label_precio_sugerido">PRECIO SUGERIDO DE VENTA</string>
+    <string name="label_margen_estimado">Margen estimado: %s%%</string> <!-- Para usar con String.format -->
+
+    <string-array name="categorias_array">
+        <item>Abarrotes</item>
+        <item>Alimentos</item>
+        <item>Belleza y Cosméticos</item>
+        <item>Calzado</item>
+        <item>Electrónica</item>
+        <item>Farmacia y Salud</item>
+        <item>Ferretería</item>
+        <item>Hogar</item>
+        <item>Juguetería</item>
+        <item>Librería y Útiles</item>
+        <item>Mascotas</item>
+        <item>Regalos y Novedades</item>
+        <item>Repuestos Automotriz</item>
+        <item>Ropa</item>
+        <item>Otros</item>
+    </string-array>
+</resources>

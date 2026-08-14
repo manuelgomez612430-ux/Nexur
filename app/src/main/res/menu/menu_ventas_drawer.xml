@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_reset_day"
+        android:icon="@android:drawable/ic_menu_today"
+        android:title="Reiniciar Día" />
+    <item
+        android:id="@+id/menu_export_sales"
+        android:icon="@android:drawable/ic_menu_save"
+        android:title="Exportar Ventas (CSV)" />
+    <item
+        android:id="@+id/menu_undo_info"
+        android:icon="@android:drawable/ic_menu_revert"
+        android:title="¿Cómo anular una venta?" />
+</menu>

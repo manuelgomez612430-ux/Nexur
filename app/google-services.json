@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "147763245278",
+    "project_id": "naxor-9d571",
+    "storage_bucket": "naxor-9d571.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:147763245278:android:b66168ea686aac1471524f",
+        "android_client_info": {
+          "package_name": "com.naxor.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6qvgp_Z91iHJujJAqWREW4idGQ2t8IjY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

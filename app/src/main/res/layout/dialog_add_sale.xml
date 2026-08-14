@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardBackgroundColor="?attr/colorSurface"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:overScrollMode="never">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Registrar Venta"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                android:layout_marginBottom="24dp" />
+
+            <!-- BUSCADOR (Teclado Activo) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BÚSQUEDA RÁPIDA (CÓDIGO O NOMBRE)"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.05"
+                android:textColor="?attr/colorPrimary"
+                android:layout_marginBottom="4dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="?attr/textInputOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Escribe aquí para buscar..."
+                android:layout_marginBottom="12dp"
+                app:startIconDrawable="@android:drawable/ic_menu_search"
+                app:endIconMode="custom"
+                app:endIconDrawable="@android:drawable/ic_menu_camera"
+                app:endIconContentDescription="Escanear producto"
+                android:id="@+id/layoutVentaBusqueda">
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/autoVentaBusqueda"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:completionThreshold="1"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- SELECTOR (Lista Desplegable) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="O SELECCIONAR DE LA LISTA"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.05"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:layout_marginBottom="4dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Toca para ver lista completa"
+                android:layout_marginBottom="20dp">
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/autoVentaSeleccion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:completionThreshold="1"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2"
+                android:layout_marginBottom="12dp"
+                android:baselineAligned="false">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="?attr/textInputOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_weight="0.8"
+                    android:layout_height="wrap_content"
+                    android:hint="Cant."
+                    android:layout_marginEnd="6dp"
+                    app:suffixText="uds">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etVentaCantidad"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="?attr/textInputOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_weight="1.2"
+                    android:layout_height="wrap_content"
+                    android:hint="Precio Unit."
+                    android:layout_marginStart="6dp"
+                    app:prefixText="S/ ">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etVentaPrecio"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal"
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <!-- Mensaje de Alerta de Stock (Compacto) -->
+            <TextView
+                android:id="@+id/tvAlertStockSaleDialog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/red_600"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:layout_marginBottom="4dp" />
+
+            <!-- Confirmación de Producto Detectado -->
+            <TextView
+                android:id="@+id/tvConfirmProductDialog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/emerald_600"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:layout_marginBottom="16dp"
+                android:gravity="start" />
+
+            <!-- Botón para añadir al carrito -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddItemLista"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Añadir otro producto +"
+                android:textSize="13sp"
+                android:textAllCaps="false"
+                android:textColor="?attr/colorPrimary"
+                android:layout_marginBottom="16dp"
+                app:strokeColor="?attr/colorPrimary"
+                app:cornerRadius="12dp"/>
+
+            <!-- Sección de Carrito (Oculta por defecto) -->
+            <LinearLayout
+                android:id="@+id/layoutCarritoContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="PRODUCTOS EN ESTA VENTA"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.05"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:layout_marginBottom="4dp" />
+
+                <LinearLayout
+                    android:id="@+id/layoutCartItems"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="8dp"
+                    android:background="?attr/colorSurfaceContainerLow">
+                    <!-- Los items se añadirán aquí dinámicamente -->
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Total Dinámico -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="12dp"
+                android:background="?attr/colorSurfaceContainerHigh"
+                android:layout_marginBottom="24dp">
+
+                <TextView
+                    android:id="@+id/labelTotalVenta"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="TOTAL A COBRAR"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.05"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <TextView
+                    android:id="@+id/tvVentaTotalDinamico"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="S/ 0.00"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorPrimary" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="end">
+
+                <Button
+                    android:id="@+id/btnCancelVenta"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cancelar"
+                    android:layout_marginEnd="8dp" />
+
+                <Button
+                    android:id="@+id/btnConfirmVenta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Registrar Venta" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</com.google.android.material.card.MaterialCardView>
