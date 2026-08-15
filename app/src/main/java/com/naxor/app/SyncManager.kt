@@ -63,6 +63,39 @@ class SyncManager(private val context: Context) {
             .set(customer, SetOptions.merge())
     }
 
+    // --- ESCUCHA EN TIEMPO REAL (NUEVO) ---
+
+    /**
+     * Escucha cambios en la nube y los baja al celular al instante
+     */
+    fun startRealtimeInventorySync(onDataChanged: () -> Unit) {
+        val userId = auth.currentUser?.uid ?: return
+        
+        db.collection("users").document(userId)
+            .collection("inventory")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) return@addSnapshotListener
+                
+                if (snapshot != null) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        for (docChange in snapshot.documentChanges) {
+                            val cloudProduct = docChange.document.toObject(ProductEntity::class.java)
+                            when (docChange.type) {
+                                com.google.firebase.firestore.DocumentChange.Type.ADDED,
+                                com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
+                                    localDb.productDao().insert(cloudProduct)
+                                }
+                                com.google.firebase.firestore.DocumentChange.Type.REMOVED -> {
+                                    localDb.productDao().delete(cloudProduct)
+                                }
+                            }
+                        }
+                        withContext(Dispatchers.Main) { onDataChanged() }
+                    }
+                }
+            }
+    }
+
     // --- BORRADOS ---
 
     fun deleteProductFromCloud(productId: Int) {

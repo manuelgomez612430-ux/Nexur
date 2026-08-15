@@ -105,6 +105,11 @@ class InventarioActivity : AppCompatActivity() {
         setupListeners()
         setupSyncIndicator()
         loadProducts()
+        
+        // ACTIVAR SINCRONIZACIÓN EN TIEMPO REAL
+        SyncManager(this).startRealtimeInventorySync {
+            loadProducts() // Refrescar lista cuando Firebase avise de un cambio
+        }
     }
 
     private fun setupSyncIndicator() {
