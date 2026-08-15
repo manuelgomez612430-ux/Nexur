@@ -224,9 +224,19 @@ class InventarioActivity : AppCompatActivity() {
         binding.btnHelpInventario.setOnClickListener { showHelpDialog() }
         binding.fabAddProducto.setOnClickListener { showProductDialog() }
         
+        binding.btnExitEditorMode.setOnClickListener {
+            toggleEditorMode(false)
+        }
+
         binding.etSearchInventario.addTextChangedListener { text -> 
             currentSearchQuery = text.toString()
             loadProducts() 
+            // Expandir si hay texto o foco, contraer si estÃ¡ vacÃo
+            updateControlsLayout(currentSearchQuery.isNotEmpty() || binding.etSearchInventario.hasFocus())
+        }
+
+        binding.etSearchInventario.setOnFocusChangeListener { _, hasFocus ->
+            updateControlsLayout(currentSearchQuery.isNotEmpty() || hasFocus)
         }
         
         binding.btnFilterCategory.setOnClickListener { showCategorySelector() }
@@ -249,17 +259,98 @@ class InventarioActivity : AppCompatActivity() {
                     true
                 }
                 R.id.menu_edit_mode -> {
-                    isEditorMode = !menuItem.isChecked
+                    toggleEditorMode(!menuItem.isChecked)
                     menuItem.isChecked = isEditorMode
-                    adapter.setEditorMode(isEditorMode)
-                    updateFABState()
-                    binding.cardEditorBanner.visibility = if (isEditorMode) View.VISIBLE else View.GONE
                     binding.drawerLayoutInventario.closeDrawer(GravityCompat.END)
                     true
                 }
                 else -> false
             }
         }
+    }
+
+    private fun toggleEditorMode(enabled: Boolean) {
+        isEditorMode = enabled
+        adapter.setEditorMode(enabled)
+        updateFABState()
+        binding.cardEditorBanner.visibility = if (enabled) View.VISIBLE else View.GONE
+        
+        // Sincronizar estado con el menÃº lateral
+        val menu = binding.navigationViewInventario.menu
+        menu.findItem(R.id.menu_edit_mode)?.isChecked = enabled
+        
+        // Al entrar/salir del modo editor, forzar actualizaciÃ³n de layout
+        updateControlsLayout(currentSearchQuery.isNotEmpty() || binding.etSearchInventario.hasFocus())
+    }
+
+    private fun updateControlsLayout(isExpanded: Boolean) {
+        // Solo aplicamos la compactaciÃ³n si estamos en modo editor para "limpiar" la vista
+        // Si no estamos en modo editor, usamos el layout normal (expandido) para facilidad de uso
+        val actuallyExpanded = isExpanded || !isEditorMode
+        
+        val set = androidx.constraintlayout.widget.ConstraintSet()
+        set.clone(binding.layoutControlsContainer)
+
+        if (actuallyExpanded) {
+            // MODO EXPANDIDO: Barra de bÃºsqueda arriba (Full width), botones abajo
+            set.connect(binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.END, androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.END)
+            
+            // Botones pasan a la segunda lÃ­nea
+            set.connect(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.TOP, binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
+            set.connect(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.START, androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.START)
+            set.connect(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.END, binding.btnSortAttribute.id, androidx.constraintlayout.widget.ConstraintSet.START)
+            set.setMargin(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 8)
+            set.setMargin(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.START, 0)
+            set.setHorizontalBias(binding.btnFilterCategory.id, 0f)
+
+            set.connect(binding.btnSortAttribute.id, androidx.constraintlayout.widget.ConstraintSet.TOP, binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
+            set.setMargin(binding.btnSortAttribute.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 8)
+            
+            set.connect(binding.btnSortOrder.id, androidx.constraintlayout.widget.ConstraintSet.TOP, binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
+            set.setMargin(binding.btnSortOrder.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 8)
+
+            // Ajustar textos a modo normal
+            binding.btnFilterCategory.text = if (currentCategory == "Todos") "📂 Todos" else "📁 $currentCategory"
+            binding.btnSortAttribute.text = when(currentSortAttribute) {
+                "NOMBRE" -> "🔤 Nombre"
+                "STOCK" -> "📦 Stock"
+                "PRECIO" -> "💰 Precio"
+                "FECHA" -> "📅 Fecha"
+                else -> "🔤 Nombre"
+            }
+            
+        } else {
+            // MODO COMPACTO (Una sola lÃ­nea - Solo en Modo Editor y sin buscar)
+            set.connect(binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.END, binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.START)
+            set.setMargin(binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.END, 8)
+
+            set.connect(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.TOP, androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.TOP)
+            set.connect(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.START, binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.END)
+            set.connect(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.END, binding.btnSortAttribute.id, androidx.constraintlayout.widget.ConstraintSet.START)
+            set.setMargin(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 0)
+
+            set.connect(binding.btnSortAttribute.id, androidx.constraintlayout.widget.ConstraintSet.TOP, androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.TOP)
+            set.setMargin(binding.btnSortAttribute.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 0)
+            
+            set.connect(binding.btnSortOrder.id, androidx.constraintlayout.widget.ConstraintSet.TOP, androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.TOP)
+            set.setMargin(binding.btnSortOrder.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 0)
+
+            // Textos ultra-cortos para que quepan
+            binding.btnFilterCategory.text = if (currentCategory == "Todos") "Cat" else currentCategory.take(3)
+            binding.btnSortAttribute.text = when(currentSortAttribute) {
+                "NOMBRE" -> "Nom"
+                "STOCK" -> "Stk"
+                "PRECIO" -> "Pre"
+                "FECHA" -> "Fec"
+                else -> "Ord"
+            }
+        }
+
+        // Animar el cambio para que se vea "fluido"
+        val transition = androidx.transition.AutoTransition()
+        transition.duration = 200
+        androidx.transition.TransitionManager.beginDelayedTransition(binding.layoutControlsContainer, transition)
+        set.applyTo(binding.layoutControlsContainer)
     }
 
     private fun showMultiDeleteConfirmation() {
