@@ -11,5 +11,6 @@ data class CustomerEntity(
     val direccion: String? = null,
     val notas: String? = null,
     val esVip: Boolean = false,
-    val fechaRegistro: Long = System.currentTimeMillis()
+    val fechaRegistro: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = true
 )

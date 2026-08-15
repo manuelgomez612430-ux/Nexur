@@ -18,7 +18,8 @@ public class ProductEntity {
     public long expirationDate; // 0 si no tiene vencimiento
     public String photoPath;    // Ruta de la imagen en el cel
     public String location;     // Pasillo / Estante
-    public String descripcion;  // DescripciÃ³n opcional
+    public String descripcion;  // Descripción opcional
+    public boolean isSynced = true;
 
     public ProductEntity() {}
 

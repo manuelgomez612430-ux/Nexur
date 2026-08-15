@@ -144,6 +144,7 @@
                     android:layout_height="wrap_content"
                     android:inputType="textCapSentences"
                     android:textSize="15sp"
+                    android:paddingHorizontal="12dp"
                     android:completionThreshold="1"
                     android:dropDownAnchor="@id/layoutProdCategoria"
                     android:dropDownVerticalOffset="2dp" />

@@ -10,6 +10,16 @@
     android:background="?attr/selectableItemBackground"
     android:baselineAligned="false">
 
+    <!-- Selector para eliminación múltiple -->
+    <CheckBox
+        android:id="@+id/cbProdSelected"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:clickable="false"
+        android:focusable="false"
+        android:layout_marginEnd="8dp" />
+
     <!-- Bloque Producto (Foto + Textos) -->
     <LinearLayout
         android:layout_width="0dp"

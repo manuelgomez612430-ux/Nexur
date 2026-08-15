@@ -52,8 +52,16 @@ class LoginActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            if (isLoginMode) login(email, password)
-            else register(email, password)
+            if (isLoginMode) {
+                login(email, password)
+            } else {
+                val confirmPassword = binding.etConfirmPassword.text.toString().trim()
+                if (password != confirmPassword) {
+                    Toast.makeText(this, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                register(email, password)
+            }
         }
     }
 
@@ -62,10 +70,12 @@ class LoginActivity : AppCompatActivity() {
             binding.tvLoginTitle.text = "Bienvenido"
             binding.btnLoginAction.text = "Iniciar Sesión"
             binding.btnToggleLoginMode.text = "¿No tienes cuenta? Regístrate aquí"
+            binding.layoutConfirmPassword.visibility = View.GONE
         } else {
             binding.tvLoginTitle.text = "Crear Cuenta"
             binding.btnLoginAction.text = "Registrarme"
             binding.btnToggleLoginMode.text = "¿Ya tienes cuenta? Inicia sesión"
+            binding.layoutConfirmPassword.visibility = View.VISIBLE
         }
     }
 

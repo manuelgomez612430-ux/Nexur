@@ -2,6 +2,7 @@ package com.naxor.app
 
 import android.content.Context
 import android.util.Log
+import androidx.work.*
 import com.naxor.app.data.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -102,6 +103,24 @@ class SyncManager(private val context: Context) {
         db.collection("users").document(userId)
             .collection("inventory").document(productId.toString())
             .delete()
+    }
+
+    // --- WORKMANAGER SYNC ---
+
+    fun scheduleOfflineSync() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "offline_sync",
+            ExistingWorkPolicy.REPLACE,
+            syncRequest
+        )
     }
 
     // --- SINCRONIZACIÓN TOTAL ---

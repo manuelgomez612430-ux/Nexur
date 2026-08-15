@@ -29,12 +29,15 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            // Estos datos se leerán de un archivo seguro que configuraremos luego
-            storeFile = file(project.findProperty("MYAPP_RELEASE_STORE_FILE") ?: "asistente_comercial.jks")
-            storePassword = project.findProperty("MYAPP_RELEASE_STORE_PASSWORD")?.toString()
-            keyAlias = project.findProperty("MYAPP_RELEASE_KEY_ALIAS")?.toString()
-            keyPassword = project.findProperty("MYAPP_RELEASE_KEY_PASSWORD")?.toString()
+        val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "asistente_comercial.jks"
+        val keystoreFile = file(keystorePath)
+        if (keystoreFile.exists()) {
+            create("release") {
+                storeFile = keystoreFile
+                storePassword = project.findProperty("MYAPP_RELEASE_STORE_PASSWORD")?.toString()
+                keyAlias = project.findProperty("MYAPP_RELEASE_KEY_ALIAS")?.toString()
+                keyPassword = project.findProperty("MYAPP_RELEASE_KEY_PASSWORD")?.toString()
+            }
         }
     }
 
@@ -42,10 +45,15 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("release") // Aplicar la firma a la versión final
+            signingConfigs.findByName("release")?.let {
+                signingConfig = it
+            }
         }
         debug {
-            signingConfig = signingConfigs.getByName("release") // Usar la misma firma en debug para poder probar actualizaciones
+            // Usar la firma de release solo si está disponible, de lo contrario usará la de debug por defecto
+            signingConfigs.findByName("release")?.let {
+                signingConfig = it
+            }
         }
     }
     compileOptions {
@@ -92,6 +100,9 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     annotationProcessor(libs.room.compiler)
+    
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     // Firebase
     implementation(platform(libs.firebase.bom))

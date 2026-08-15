@@ -45,5 +45,11 @@ public interface ProductDao {
 
     @Query("SELECT * FROM products WHERE (',' || codigo || ',') LIKE ('%,' || :codigo || ',%') OR codigo = :codigo LIMIT 1")
     ProductEntity getProductByCode(String codigo);
+
+    @Query("SELECT * FROM products WHERE isSynced = 0")
+    List<ProductEntity> getAllUnsyncedProducts();
+
+    @Query("SELECT COUNT(*) FROM products WHERE isSynced = 0")
+    androidx.lifecycle.LiveData<Integer> getUnsyncedCount();
 }
 

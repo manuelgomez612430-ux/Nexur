@@ -7,7 +7,7 @@ interface ProviderDao {
     @Query("SELECT * FROM providers ORDER BY nombre ASC")
     suspend fun getAllProviders(): List<ProviderEntity>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(provider: ProviderEntity)
 
     @Update
@@ -18,4 +18,7 @@ interface ProviderDao {
 
     @Query("SELECT * FROM providers WHERE categoria = :categoria")
     suspend fun getProvidersByCategory(categoria: String): List<ProviderEntity>
+
+    @Query("SELECT * FROM providers WHERE isSynced = 0")
+    suspend fun getAllUnsyncedProviders(): List<ProviderEntity>
 }

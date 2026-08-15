@@ -44,8 +44,12 @@
                 android:icon="@android:drawable/ic_menu_my_calendar"
                 android:title="Directorio de Clientes" />
             <item
-                android:id="@+id/menu_view_history"
+                android:id="@+id/menu_sales_history"
                 android:icon="@android:drawable/ic_menu_recent_history"
+                android:title="Historial de Ventas" />
+            <item
+                android:id="@+id/menu_view_history"
+                android:icon="@android:drawable/ic_menu_agenda"
                 android:title="Historial de Cálculos" />
             <item
                 android:id="@+id/menu_instructions"

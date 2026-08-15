@@ -7,7 +7,7 @@ interface CustomerDao {
     @Query("SELECT * FROM customers ORDER BY nombre ASC")
     suspend fun getAllCustomers(): List<CustomerEntity>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(customer: CustomerEntity)
 
     @Update
@@ -15,4 +15,7 @@ interface CustomerDao {
 
     @Delete
     suspend fun delete(customer: CustomerEntity)
+
+    @Query("SELECT * FROM customers WHERE isSynced = 0")
+    suspend fun getAllUnsyncedCustomers(): List<CustomerEntity>
 }

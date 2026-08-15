@@ -32,20 +32,22 @@
             android:orientation="vertical"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Hola,"
-                android:textSize="14sp"
-                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/logo_naxor_icon"
+                android:scaleType="fitCenter" />
+
             <TextView
                 android:id="@+id/tvMainBusinessName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Mi Negocio"
-                android:textSize="22sp"
+                android:text="Comercial Gomez"
+                android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="?attr/colorOnSurface" />
+                android:textColor="?attr/colorOnSurface"
+                android:layout_marginTop="2dp" />
         </LinearLayout>
 
         <com.google.android.material.card.MaterialCardView

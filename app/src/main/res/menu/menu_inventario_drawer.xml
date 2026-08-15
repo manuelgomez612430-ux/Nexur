@@ -12,4 +12,10 @@
         android:icon="@android:drawable/ic_menu_upload"
         android:title="Importar Inventario desde Excel (CSV)" />
 
+    <item
+        android:id="@+id/menu_edit_mode"
+        android:icon="@android:drawable/ic_menu_edit"
+        android:title="Editar Inventario"
+        android:checkable="true" />
+
 </menu>
