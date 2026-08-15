@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
@@ -40,6 +41,14 @@ class VentasActivity : AppCompatActivity() {
         binding = ActivityVentasBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Solicitar permisos de cámara al inicio
+        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (!isGranted) {
+                Toast.makeText(this, "Se requiere permiso de cámara para el escáner", Toast.LENGTH_LONG).show()
+            }
+        }
+        requestPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+
         setupCartRecyclerView()
         setupListeners()
         loadProducts()
@@ -69,7 +78,7 @@ class VentasActivity : AppCompatActivity() {
         }
 
         binding.btnViewHistory.setOnClickListener {
-            startActivity(Intent(this, HistorialActivity::class.java))
+            startActivity(Intent(this, SalesHistoryActivity::class.java))
         }
 
         // Búsqueda de Productos
@@ -93,16 +102,21 @@ class VentasActivity : AppCompatActivity() {
         // Escáner
         binding.layoutVentaBusqueda.setEndIconOnClickListener {
             val scanner = GmsBarcodeScanning.getClient(this)
-            scanner.startScan().addOnSuccessListener { barcode ->
-                val code = barcode.rawValue ?: ""
-                val matched = allProducts.find { it.codigo?.split(",")?.contains(code) == true || it.codigo == code }
-                if (matched != null) {
-                    addToCart(matched)
-                    beep(ToneGenerator.TONE_PROP_BEEP)
-                } else {
-                    Toast.makeText(this, "Producto no encontrado: $code", Toast.LENGTH_SHORT).show()
+            scanner.startScan()
+                .addOnSuccessListener { barcode ->
+                    val code = barcode.rawValue ?: ""
+                    val matched = allProducts.find { it.codigo?.split(",")?.contains(code) == true || it.codigo == code }
+                    if (matched != null) {
+                        addToCart(matched)
+                        beep(ToneGenerator.TONE_PROP_BEEP)
+                    } else {
+                        Toast.makeText(this, "Producto no encontrado: $code", Toast.LENGTH_SHORT).show()
+                    }
                 }
-            }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error del escáner: ${e.message}", Toast.LENGTH_LONG).show()
+                    e.printStackTrace()
+                }
         }
 
         // Botones de Pago
@@ -189,11 +203,9 @@ class VentasActivity : AppCompatActivity() {
                     val sale = cartItems[i]
                     val product = cartProducts[i]
                     sale.paymentMethod = method
+                    sale.isSynced = false
                     database.saleDao().insert(sale)
                     
-                    // SINCRONIZAR VENTA A LA NUBE
-                    SyncManager(this@VentasActivity).syncSaleToCloud(sale)
-
                     if (product != null) {
                         // Lógica de Inversión Dinámica:
                         // Calculamos el costo unitario del producto antes de descontar stock
@@ -204,17 +216,66 @@ class VentasActivity : AppCompatActivity() {
                         
                         // Actualizamos la inversión remanente basándonos en el nuevo stock
                         product.precioCosto = product.stock * unitCost
+                        product.isSynced = false
                         
                         database.productDao().update(product)
                     }
                 }
+                SyncManager(this@VentasActivity).scheduleOfflineSync()
                 withContext(Dispatchers.Main) {
                     beep(ToneGenerator.TONE_PROP_BEEP2)
-                    Toast.makeText(this@VentasActivity, "Venta registrada con éxito", Toast.LENGTH_LONG).show()
+                    showPrintDialog(cartItems.toList())
                     resetSale()
                 }
             } catch (e: Exception) { e.printStackTrace() }
         }
+    }
+
+    @android.annotation.SuppressLint("MissingPermission")
+    private fun showPrintDialog(items: List<SaleEntity>) {
+        AlertDialog.Builder(this)
+            .setTitle("Venta Exitosa")
+            .setMessage("¿Deseas imprimir el ticket de venta?")
+            .setPositiveButton("Imprimir") { _, _ ->
+                val printerHelper = BluetoothPrinterHelper(this)
+                val devices = printerHelper.getPairedDevices()
+                if (devices.isEmpty()) {
+                    Toast.makeText(this, "No hay impresoras vinculadas", Toast.LENGTH_SHORT).show()
+                } else {
+                    val deviceNames = devices.map { it.name ?: "Desconocido" }.toTypedArray()
+                    AlertDialog.Builder(this)
+                        .setTitle("Seleccionar Impresora")
+                        .setItems(deviceNames) { _, which ->
+                            val selectedDevice = devices[which]
+                            val receiptContent = generateReceiptText(items)
+                            printerHelper.connectAndPrint(selectedDevice, receiptContent)
+                        }
+                        .show()
+                }
+            }
+            .setNegativeButton("Cerrar", null)
+            .show()
+    }
+
+    private fun generateReceiptText(items: List<SaleEntity>): String {
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val name = prefs.getString("business_name", "Mi Negocio")
+        val phone = prefs.getString("business_phone", "")
+        val currency = prefs.getString("currency_symbol", "S/")
+        
+        val sb = StringBuilder()
+        sb.append("$name\n")
+        if (phone?.isNotEmpty() == true) sb.append("Tel: $phone\n")
+        sb.append("--------------------------------\n")
+        items.forEach { 
+            sb.append("${it.nombreProducto}\n")
+            sb.append("${it.cantidad} x $currency${String.format("%.2f", it.precioVenta)} = $currency${String.format("%.2f", it.total)}\n")
+        }
+        sb.append("--------------------------------\n")
+        val total = items.sumOf { it.total }
+        sb.append("TOTAL: $currency${String.format("%.2f", total)}\n\n")
+        sb.append("¡Gracias por su compra!\n\n\n")
+        return sb.toString()
     }
 
     private fun resetSale() {
@@ -252,7 +313,7 @@ class VentasActivity : AppCompatActivity() {
                 val name = etName.text.toString()
                 val price = etPrice.text.toString().toDoubleOrNull() ?: 0.0
                 if (name.isNotEmpty() && price > 0) {
-                    val newItem = SaleEntity(currentTransactionId, null, name, "Varios", 1, price, 0.0, "EFECTIVO")
+                    val newItem = SaleEntity(currentTransactionId, null, name, "Varios", 1, price, 0.0, "EFECTIVO").apply { isSynced = false }
                     cartItems.add(0, newItem)
                     cartProducts.add(0, null)
                     cartAdapter.notifyItemInserted(0)

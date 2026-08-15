@@ -44,6 +44,8 @@ import com.naxor.app.databinding.DialogViewLabelBinding
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.google.mlkit.vision.common.InputImage
+import androidx.work.WorkManager
+import androidx.work.WorkInfo
 
 class InventarioActivity : AppCompatActivity() {
 
@@ -57,6 +59,10 @@ class InventarioActivity : AppCompatActivity() {
     private var isAscending = true
     private var currentCategory = "Todos"
     private var currentSearchQuery = ""
+    private var isEditorMode = false
+    private var isMultiSelectMode = false
+    private var syncStatusText = "Sincronizado"
+    private var lastUnsyncedCount = 0
 
     private val exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         uri?.let { exportInventoryToUri(it) }
@@ -69,10 +75,13 @@ class InventarioActivity : AppCompatActivity() {
     private val takeProductPhotoLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success && currentPhotoPath != null) {
             currentDialogBinding?.ivDialogProdPhoto?.let {
-                it.setImageURI(android.net.Uri.parse(currentPhotoPath))
+                val file = File(currentPhotoPath!!)
+                it.setImageURI(android.net.Uri.fromFile(file))
                 it.scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
                 it.setPadding(0, 0, 0, 0)
             }
+        } else {
+            Toast.makeText(this, "No se capturó la foto", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -81,22 +90,133 @@ class InventarioActivity : AppCompatActivity() {
         binding = ActivityInventarioBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Solicitar permisos de cámara al inicio
+        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (!isGranted) {
+                Toast.makeText(this, "Se requiere permiso de cámara para fotos y escáner", Toast.LENGTH_LONG).show()
+            }
+        }
+        requestPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+
         binding.btnFilterCategory.text = "📂 Todos"
         binding.btnSortAttribute.text = "🔤 Nombre"
 
         setupRecyclerView()
         setupListeners()
+        setupSyncIndicator()
         loadProducts()
+    }
+
+    private fun setupSyncIndicator() {
+        // 1. Observar cambios en la base de datos (pendientes)
+        database.productDao().unsyncedCount.observe(this) { count ->
+            lastUnsyncedCount = count ?: 0
+            // No podemos saber el estado del WorkManager aqui, asi que asumimos false momentaneamente
+            // El observador del WorkManager lo corregira inmediatamente
+            updateSyncIconState(lastUnsyncedCount, false)
+        }
+
+        // 2. Observar estado del WorkManager (sincronizando)
+       WorkManager.getInstance(this).getWorkInfosForUniqueWorkLiveData("offline_sync")
+            .observe(this) { infoList ->
+                val isSyncing = infoList != null && infoList.any { it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED }
+                updateSyncIconState(lastUnsyncedCount, isSyncing)
+            }
+
+        binding.btnSyncIndicator.setOnClickListener {
+            Toast.makeText(this, "Estado: $syncStatusText", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun updateSyncIconState(unsyncedCount: Int, isSyncing: Boolean) {
+        val color: Int
+        val animation: android.view.animation.Animation?
+        val iconRes: Int
+        
+        when {
+            isSyncing -> {
+                syncStatusText = "Sincronizando con la nube..."
+                color = getColor(R.color.sky_600)
+                iconRes = android.R.drawable.stat_notify_sync // Icono de sincronización (flechas circulares)
+                animation = android.view.animation.RotateAnimation(0f, 360f, 
+                    android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f, 
+                    android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f).apply {
+                    duration = 1000
+                    repeatCount = android.view.animation.Animation.INFINITE
+                    interpolator = android.view.animation.LinearInterpolator()
+                }
+            }
+            unsyncedCount > 0 -> {
+                syncStatusText = "Hay $unsyncedCount cambios pendientes por subir"
+                color = getColor(R.color.red_600)
+                iconRes = android.R.drawable.ic_menu_upload // Icono de nube con flecha
+                animation = null
+            }
+            else -> {
+                syncStatusText = "Todo sincronizado y a salvo"
+                color = getColor(R.color.emerald_600)
+                iconRes = android.R.drawable.ic_menu_upload // Icono de nube con flecha
+                animation = null
+            }
+        }
+
+        binding.btnSyncIndicator.setImageResource(iconRes)
+        binding.btnSyncIndicator.imageTintList = android.content.res.ColorStateList.valueOf(color)
+        if (animation != null) {
+            binding.btnSyncIndicator.startAnimation(animation)
+        } else {
+            binding.btnSyncIndicator.clearAnimation()
+        }
     }
 
     private fun setupRecyclerView() {
         adapter = ProductAdapter(
             items = emptyList(),
             onEdit = { product -> showProductDialog(product) },
-            onViewLabel = { product -> showProductLabel(product) }
+            onViewLabel = { product -> showProductLabel(product) },
+            onSelectionChanged = { count ->
+                if (count == -1) {
+                    adapter.setMultiSelectMode(true)
+                    Toast.makeText(this@InventarioActivity, "Modo selección: Toca los productos para marcarlos", Toast.LENGTH_SHORT).show()
+                }
+                updateMultiSelectMenu(count)
+            }
         )
         binding.rvInventario.layoutManager = LinearLayoutManager(this)
         binding.rvInventario.adapter = adapter
+    }
+
+    private fun updateMultiSelectMenu(count: Int) {
+        if (count == 0) {
+            adapter.setMultiSelectMode(false)
+        }
+        isMultiSelectMode = count > 0 || count == -1
+        updateFABState(if (count == -1) 1 else count)
+    }
+
+    private fun updateFABState(selectionCount: Int = 0) {
+        with(binding.fabAddProducto) {
+            when {
+                selectionCount > 0 -> {
+                    // Modo Selección Múltiple
+                    visibility = View.VISIBLE
+                    setImageResource(android.R.drawable.ic_menu_delete)
+                    contentDescription = "Eliminar seleccionados"
+                    setOnClickListener { showMultiDeleteConfirmation() }
+                }
+                isEditorMode -> {
+                    // Modo Editor
+                    visibility = View.GONE
+                }
+                else -> {
+                    // Modo Normal
+                    visibility = View.VISIBLE
+                    setImageResource(android.R.drawable.ic_input_add)
+                    contentDescription = "Añadir Producto"
+                    setOnClickListener { showProductDialog() }
+                }
+            }
+        }
     }
 
     private fun setupListeners() {
@@ -128,9 +248,44 @@ class InventarioActivity : AppCompatActivity() {
                     binding.drawerLayoutInventario.closeDrawer(GravityCompat.END)
                     true
                 }
+                R.id.menu_edit_mode -> {
+                    isEditorMode = !menuItem.isChecked
+                    menuItem.isChecked = isEditorMode
+                    adapter.setEditorMode(isEditorMode)
+                    updateFABState()
+                    binding.cardEditorBanner.visibility = if (isEditorMode) View.VISIBLE else View.GONE
+                    binding.drawerLayoutInventario.closeDrawer(GravityCompat.END)
+                    true
+                }
                 else -> false
             }
         }
+    }
+
+    private fun showMultiDeleteConfirmation() {
+        val selected = adapter.getSelectedItems()
+        if (selected.isEmpty()) return
+
+        AlertDialog.Builder(this)
+            .setTitle("Eliminación Múltiple")
+            .setMessage("¿Estás seguro de que deseas eliminar ${selected.size} productos?")
+            .setPositiveButton("Eliminar Todo") { _, _ ->
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val syncManager = SyncManager(this@InventarioActivity)
+                    selected.forEach { p ->
+                        database.productDao().delete(p)
+                        syncManager.deleteProductFromCloud(p.id)
+                    }
+                    withContext(Dispatchers.Main) {
+                        adapter.setMultiSelectMode(false)
+                        updateMultiSelectMenu(0)
+                        loadProducts()
+                        Toast.makeText(this@InventarioActivity, "Productos eliminados", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun importInventoryFromUri(uri: android.net.Uri) {
@@ -151,12 +306,13 @@ class InventarioActivity : AppCompatActivity() {
                                 parts[3].toIntOrNull() ?: 0, // stock
                                 parts[4].toDoubleOrNull() ?: 0.0, // costo
                                 parts[5].toDoubleOrNull() ?: 0.0  // venta
-                            )
+                            ).apply { isSynced = false }
                             database.productDao().insert(newP)
                             count++
                         }
                         line = reader.readLine()
                     }
+                    SyncManager(this@InventarioActivity).scheduleOfflineSync()
                     withContext(Dispatchers.Main) { 
                         loadProducts()
                         Toast.makeText(this@InventarioActivity, "¡Se recuperaron $count productos!", Toast.LENGTH_LONG).show() 
@@ -369,17 +525,21 @@ class InventarioActivity : AppCompatActivity() {
 
         dialogBinding.layoutProdCodigo.setEndIconOnClickListener {
             val scanner = GmsBarcodeScanning.getClient(this)
-            scanner.startScan().addOnSuccessListener { barcode ->
-                val code = barcode.rawValue ?: ""
-                if (code.isNotEmpty()) {
-                    if (!addedCodes.contains(code)) {
-                        addedCodes.add(code)
-                        val currentVal = dialogBinding.etProdStock.text.toString().toIntOrNull() ?: 0
-                        dialogBinding.etProdStock.setText((currentVal + 1).toString())
-                        refreshUI()
+            scanner.startScan()
+                .addOnSuccessListener { barcode ->
+                    val code = barcode.rawValue ?: ""
+                    if (code.isNotEmpty()) {
+                        if (!addedCodes.contains(code)) {
+                            addedCodes.add(code)
+                            val currentVal = dialogBinding.etProdStock.text.toString().toIntOrNull() ?: 0
+                            dialogBinding.etProdStock.setText((currentVal + 1).toString())
+                            refreshUI()
+                        }
                     }
                 }
-            }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error del escáner: ${e.message}", Toast.LENGTH_LONG).show()
+                }
         }
 
         // FIX: BOTÓN + PARA GENERAR CÓDIGO
@@ -474,19 +634,19 @@ class InventarioActivity : AppCompatActivity() {
     private fun saveOrUpdateProduct(product: ProductEntity?, code: String, name: String, cat: String, stock: Int, cost: Double, sale: Double, exp: Long, photo: String?, location: String, desc: String, dialog: AlertDialog) {
         lifecycleScope.launch(Dispatchers.IO) {
             val finalProduct = if (product != null) {
-                product.apply { codigo = code; nombre = name; categoria = cat; this.stock = stock; precioCosto = cost; precioVenta = sale; expirationDate = exp; photoPath = photo; this.location = location; descripcion = desc }
+                product.apply { codigo = code; nombre = name; categoria = cat; this.stock = stock; precioCosto = cost; precioVenta = sale; expirationDate = exp; photoPath = photo; this.location = location; descripcion = desc; isSynced = false }
                 database.productDao().update(product)
                 product
             } else {
-                val newP = ProductEntity(code, name, cat, stock, cost, sale).apply { expirationDate = exp; photoPath = photo; this.location = location; descripcion = desc }
+                val newP = ProductEntity(code, name, cat, stock, cost, sale).apply { expirationDate = exp; photoPath = photo; this.location = location; descripcion = desc; isSynced = false }
                 database.productDao().insert(newP)
                 newP
             }
             
-            // SINCRONIZAR A LA NUBE
-            SyncManager(this@InventarioActivity).syncProductToCloud(finalProduct)
+            // PROGRAMAR SINCRONIZACIÓN
+            SyncManager(this@InventarioActivity).scheduleOfflineSync()
             
-            withContext(Dispatchers.Main) { loadProducts(); dialog.dismiss(); Toast.makeText(this@InventarioActivity, "Guardado y Sincronizado", Toast.LENGTH_SHORT).show() }
+            withContext(Dispatchers.Main) { loadProducts(); dialog.dismiss(); Toast.makeText(this@InventarioActivity, "Guardado localmente", Toast.LENGTH_SHORT).show() }
         }
     }
 
@@ -503,9 +663,12 @@ class InventarioActivity : AppCompatActivity() {
             if (!photo.isNullOrEmpty()) existing.photoPath = photo
             if (location.isNotEmpty()) existing.location = location
             if (desc.isNotEmpty()) existing.descripcion = desc
+            existing.isSynced = false
 
             database.productDao().update(existing)
             if (productToDelete != null && productToDelete.id != existing.id) database.productDao().delete(productToDelete)
+
+            SyncManager(this@InventarioActivity).scheduleOfflineSync()
 
             withContext(Dispatchers.Main) { loadProducts(); dialog.dismiss(); Toast.makeText(this@InventarioActivity, "¡Producto unificado!", Toast.LENGTH_SHORT).show() }
         }

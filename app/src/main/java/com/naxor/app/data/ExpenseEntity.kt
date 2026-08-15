@@ -10,5 +10,6 @@ data class ExpenseEntity(
     val monto: Double,
     val categoria: String,
     val fecha: Long = System.currentTimeMillis(),
-    val esFijo: Boolean = false // Nuevo campo para punto de equilibrio
+    val esFijo: Boolean = false, // Nuevo campo para punto de equilibrio
+    val isSynced: Boolean = true
 )

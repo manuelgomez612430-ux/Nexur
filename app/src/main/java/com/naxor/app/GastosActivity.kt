@@ -104,7 +104,8 @@ class GastosActivity : AppCompatActivity() {
             
             if (concepto.isNotBlank() && monto > 0) {
                 lifecycleScope.launch(Dispatchers.IO) {
-                    database.expenseDao().insert(ExpenseEntity(concepto = concepto, monto = monto, categoria = categoria))
+                    database.expenseDao().insert(ExpenseEntity(concepto = concepto, monto = monto, categoria = categoria, isSynced = false))
+                    SyncManager(this@GastosActivity).scheduleOfflineSync()
                     withContext(Dispatchers.Main) { loadExpenses() }
                 }
             } else {

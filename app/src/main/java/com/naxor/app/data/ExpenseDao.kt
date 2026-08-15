@@ -7,8 +7,11 @@ interface ExpenseDao {
     @Query("SELECT * FROM expenses ORDER BY fecha DESC")
     suspend fun getAllExpenses(): List<ExpenseEntity>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(expense: ExpenseEntity)
+
+    @Update
+    suspend fun update(expense: ExpenseEntity)
 
     @Delete
     suspend fun delete(expense: ExpenseEntity)
@@ -18,4 +21,7 @@ interface ExpenseDao {
 
     @Query("DELETE FROM expenses")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM expenses WHERE isSynced = 0")
+    suspend fun getAllUnsyncedExpenses(): List<ExpenseEntity>
 }

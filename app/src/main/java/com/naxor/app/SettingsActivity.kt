@@ -28,7 +28,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.etBusinessPhone.setText(prefs.getString("business_phone", ""))
         binding.etBusinessRuc.setText(prefs.getString("business_ruc", ""))
         binding.etCurrencySymbol.setText(prefs.getString("currency_symbol", "S/"))
-        binding.etSecurityPin.setText(prefs.getString("security_pin", ""))
+        binding.etSecurityPin.setText(prefs.getString("user_pin", ""))
     }
 
     private fun saveSettings() {
@@ -47,7 +47,7 @@ class SettingsActivity : AppCompatActivity() {
                 putString("business_phone", phone)
                 putString("business_ruc", ruc)
                 putString("currency_symbol", currency)
-                putString("security_pin", pin)
+                putString("user_pin", pin)
                 apply()
             }
             Toast.makeText(this, "Ajustes guardados correctamente", Toast.LENGTH_SHORT).show()

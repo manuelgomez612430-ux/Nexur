@@ -19,16 +19,39 @@ class ProductAdapter(
     private var items: List<ProductEntity>,
     private var isEditorMode: Boolean = false,
     private val onEdit: (ProductEntity) -> Unit,
-    private val onViewLabel: (ProductEntity) -> Unit
+    private val onViewLabel: (ProductEntity) -> Unit,
+    private val onSelectionChanged: ((Int) -> Unit)? = null
 ) : RecyclerView.Adapter<ProductAdapter.ViewHolder>() {
 
     private val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    private val selectedIds = mutableSetOf<Int>()
+    private var isMultiSelectMode = false
 
     class ViewHolder(val binding: ItemProductoBinding) : RecyclerView.ViewHolder(binding.root)
 
     fun setEditorMode(enabled: Boolean) {
         this.isEditorMode = enabled
         notifyDataSetChanged()
+    }
+
+    fun setMultiSelectMode(enabled: Boolean) {
+        this.isMultiSelectMode = enabled
+        if (!enabled) selectedIds.clear()
+        notifyDataSetChanged()
+    }
+
+    fun getSelectedItems(): List<ProductEntity> {
+        return items.filter { selectedIds.contains(it.id) }
+    }
+
+    fun toggleSelection(productId: Int) {
+        if (selectedIds.contains(productId)) {
+            selectedIds.remove(productId)
+        } else {
+            selectedIds.add(productId)
+        }
+        notifyDataSetChanged()
+        onSelectionChanged?.invoke(selectedIds.size)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -97,8 +120,29 @@ class ProductAdapter(
             }
 
             // --- INTERACCIONES ---
-            root.setOnClickListener { onViewLabel(item) }
-            root.setOnLongClickListener { onEdit(item); true }
+            cbProdSelected.visibility = if (isMultiSelectMode) View.VISIBLE else View.GONE
+            cbProdSelected.isChecked = selectedIds.contains(item.id)
+
+            root.setOnClickListener {
+                when {
+                    isMultiSelectMode -> toggleSelection(item.id)
+                    isEditorMode -> onEdit(item)
+                    else -> onViewLabel(item)
+                }
+            }
+
+            root.setOnLongClickListener {
+                if (!isMultiSelectMode && !isEditorMode) {
+                    onSelectionChanged?.invoke(-1) // Señal para activar modo selección
+                    toggleSelection(item.id)
+                } else if (isEditorMode) {
+                    // En modo editor, el clic largo no hace nada especial o abre el mismo diálogo
+                    onEdit(item)
+                } else {
+                    onEdit(item)
+                }
+                true
+            }
         }
     }
 

@@ -78,6 +78,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.menu_fiados -> { startActivity(Intent(this, DeudoresActivity::class.java)); true }
                 R.id.menu_gastos -> { checkPinAndNavigate { startActivity(Intent(this, GastosActivity::class.java)) }; true }
                 R.id.menu_ganancias -> { checkPinAndNavigate { startActivity(Intent(this, ResumenActivity::class.java)) }; true }
+                R.id.menu_sales_history -> { checkPinAndNavigate { startActivity(Intent(this, SalesHistoryActivity::class.java)) }; true }
                 R.id.menu_lista_compras -> { startActivity(Intent(this, ListaComprasActivity::class.java)); true }
                 R.id.menu_proveedores -> { startActivity(Intent(this, ProveedoresActivity::class.java)); true }
                 R.id.menu_asignador -> { startActivity(Intent(this, AsignadorDePreciosActivity::class.java)); true }

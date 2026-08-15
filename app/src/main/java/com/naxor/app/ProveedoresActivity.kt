@@ -106,7 +106,8 @@ class ProveedoresActivity : AppCompatActivity() {
             
             if (nombre.isNotBlank() && telf.isNotBlank()) {
                 lifecycleScope.launch(Dispatchers.IO) {
-                    database.providerDao().insert(ProviderEntity(nombre = nombre, contacto = contacto, telefono = telf, categoria = cat))
+                    database.providerDao().insert(ProviderEntity(nombre = nombre, contacto = contacto, telefono = telf, categoria = cat, isSynced = false))
+                    SyncManager(this@ProveedoresActivity).scheduleOfflineSync()
                     withContext(Dispatchers.Main) { loadProviders() }
                 }
             }

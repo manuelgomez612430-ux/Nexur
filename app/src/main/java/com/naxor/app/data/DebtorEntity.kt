@@ -9,7 +9,8 @@ data class DebtorEntity(
     val nombre: String,
     val telefono: String,
     var deudaTotal: Double,
-    val ultimaActualizacion: Long = System.currentTimeMillis()
+    val ultimaActualizacion: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = true
 )
 
 @Entity(tableName = "debts")
@@ -18,5 +19,6 @@ data class DebtDetailEntity(
     val debtorId: Int,
     val concepto: String,
     val monto: Double,
-    val fecha: Long = System.currentTimeMillis()
+    val fecha: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = true
 )

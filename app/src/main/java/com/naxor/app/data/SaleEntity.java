@@ -18,6 +18,7 @@ public class SaleEntity {
     public double total;
     public String paymentMethod; // EFECTIVO, DIGITAL, TARJETA
     public long timestamp;
+    public boolean isSynced = true;
 
     public SaleEntity() {}
 

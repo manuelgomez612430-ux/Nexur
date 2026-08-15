@@ -97,7 +97,8 @@ class CustomersActivity : AppCompatActivity() {
             
             if (nombre.isNotBlank() && telf.isNotBlank()) {
                 lifecycleScope.launch(Dispatchers.IO) {
-                    database.customerDao().insert(CustomerEntity(nombre = nombre, telefono = telf, direccion = dir))
+                    database.customerDao().insert(CustomerEntity(nombre = nombre, telefono = telf, direccion = dir, isSynced = false))
+                    SyncManager(this@CustomersActivity).scheduleOfflineSync()
                     withContext(Dispatchers.Main) { loadCustomers() }
                 }
             }

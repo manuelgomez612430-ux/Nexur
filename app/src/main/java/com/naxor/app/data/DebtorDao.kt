@@ -7,7 +7,7 @@ interface DebtorDao {
     @Query("SELECT * FROM debtors ORDER BY deudaTotal DESC")
     suspend fun getAllDebtors(): List<DebtorEntity>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDebtor(debtor: DebtorEntity): Long
 
     @Update
@@ -19,7 +19,7 @@ interface DebtorDao {
     @Query("SELECT * FROM debts WHERE debtorId = :debtorId ORDER BY fecha DESC")
     suspend fun getDebtsForDebtor(debtorId: Int): List<DebtDetailEntity>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDebtDetail(debt: DebtDetailEntity)
 
     @Transaction
@@ -31,4 +31,13 @@ interface DebtorDao {
         // Aquí necesitaríamos una forma de actualizar el total en la tabla deudores
         // Lo manejaremos mejor desde la Activity por simplicidad por ahora
     }
+
+    @Query("SELECT * FROM debtors WHERE isSynced = 0")
+    suspend fun getAllUnsyncedDebtors(): List<DebtorEntity>
+
+    @Query("SELECT * FROM debts WHERE isSynced = 0")
+    suspend fun getAllUnsyncedDebtDetails(): List<DebtDetailEntity>
+
+    @Update
+    suspend fun updateDebtDetail(debt: DebtDetailEntity)
 }

@@ -104,7 +104,8 @@ class DeudoresActivity : AppCompatActivity() {
             
             if (nombre.isNotBlank()) {
                 lifecycleScope.launch(Dispatchers.IO) {
-                    database.debtorDao().insertDebtor(DebtorEntity(nombre = nombre, telefono = telf, deudaTotal = monto))
+                    database.debtorDao().insertDebtor(DebtorEntity(nombre = nombre, telefono = telf, deudaTotal = monto, isSynced = false))
+                    SyncManager(this@DeudoresActivity).scheduleOfflineSync()
                     withContext(Dispatchers.Main) { loadDebtors() }
                 }
             }
@@ -128,12 +129,14 @@ class DeudoresActivity : AppCompatActivity() {
             val pago = etMonto.text.toString().toDoubleOrNull() ?: 0.0
             if (pago > 0) {
                 lifecycleScope.launch(Dispatchers.IO) {
-                    deudor.deudaTotal -= pago
-                    if (deudor.deudaTotal <= 0) {
+                    val nuevoTotal = deudor.deudaTotal - pago
+                    if (nuevoTotal <= 0) {
                         database.debtorDao().deleteDebtor(deudor)
                     } else {
-                        database.debtorDao().updateDebtor(deudor)
+                        val updated = deudor.copy(deudaTotal = nuevoTotal, isSynced = false)
+                        database.debtorDao().updateDebtor(updated)
                     }
+                    SyncManager(this@DeudoresActivity).scheduleOfflineSync()
                     withContext(Dispatchers.Main) { loadDebtors() }
                 }
             }

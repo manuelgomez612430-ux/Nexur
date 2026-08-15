@@ -10,5 +10,6 @@ data class ProviderEntity(
     val contacto: String,
     val telefono: String,
     val categoria: String,
-    val notas: String? = null
+    val notas: String? = null,
+    val isSynced: Boolean = true
 )
