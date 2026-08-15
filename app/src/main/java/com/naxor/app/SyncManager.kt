@@ -148,25 +148,39 @@ class SyncManager(private val context: Context) {
             try {
                 val userRef = db.collection("users").document(userId)
 
-                // Descargar Productos
+                // 1. Descargar Productos
                 val inventorySnap = userRef.collection("inventory").get().await()
                 for (doc in inventorySnap.documents) {
                     val p = doc.toObject(ProductEntity::class.java)
                     if (p != null) localDb.productDao().insert(p)
                 }
 
-                // Descargar Ventas
+                // 2. Descargar Ventas
                 val salesSnap = userRef.collection("sales").get().await()
                 for (doc in salesSnap.documents) {
                     val s = doc.toObject(SaleEntity::class.java)
                     if (s != null) localDb.saleDao().insert(s)
                 }
 
-                // Descargar Deudores
+                // 3. Descargar Deudores
                 val debtorsSnap = userRef.collection("debtors").get().await()
                 for (doc in debtorsSnap.documents) {
                     val d = doc.toObject(DebtorEntity::class.java)
                     if (d != null) localDb.debtorDao().insertDebtor(d)
+                }
+
+                // 4. Descargar Clientes
+                val customersSnap = userRef.collection("customers").get().await()
+                for (doc in customersSnap.documents) {
+                    val c = doc.toObject(CustomerEntity::class.java)
+                    if (c != null) localDb.customerDao().insert(c)
+                }
+
+                // 5. Descargar Proveedores
+                val providersSnap = userRef.collection("providers").get().await()
+                for (doc in providersSnap.documents) {
+                    val pr = doc.toObject(ProviderEntity::class.java)
+                    if (pr != null) localDb.providerDao().insert(pr)
                 }
 
                 withContext(Dispatchers.Main) { onComplete() }

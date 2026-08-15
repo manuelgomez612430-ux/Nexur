@@ -68,6 +68,10 @@ class MainActivity : AppCompatActivity() {
         binding.btnMainMoreOptions.setOnClickListener { toggleMoreOptions() }
         binding.btnMainCatalogo.setOnClickListener { toggleMoreOptions(); generatePDFCatalog() }
         binding.btnMainAjustes.setOnClickListener { toggleMoreOptions(); startActivity(Intent(this, SettingsActivity::class.java)) }
+        binding.btnMainSync.setOnClickListener { 
+            toggleMoreOptions()
+            manualSync()
+        }
 
         binding.btnOpenMenuMain.setOnClickListener { binding.drawerLayoutMain.openDrawer(GravityCompat.END) }
 
@@ -127,6 +131,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun showMoreOptionsPopup() {
         // Obsoleto, reemplazado por toggleMoreOptions()
+    }
+
+    private fun manualSync() {
+        val loading = AlertDialog.Builder(this)
+            .setTitle("Sincronizando")
+            .setMessage("Descargando datos actualizados de la nube...")
+            .setCancelable(false)
+            .show()
+            
+        SyncManager(this).downloadEverythingFromCloud {
+            loading.dismiss()
+            loadDashboardData()
+            Toast.makeText(this, "¡Datos sincronizados correctamente!", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun generatePDFCatalog() {
