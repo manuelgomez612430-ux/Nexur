@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         loadDashboardData()
+        SyncManager(this).scheduleOfflineSync()
     }
 
     private fun loadDashboardData() {

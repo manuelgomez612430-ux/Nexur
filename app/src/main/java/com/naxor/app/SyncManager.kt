@@ -23,9 +23,16 @@ class SyncManager(private val context: Context) {
 
     fun syncProductToCloud(product: ProductEntity) {
         val userId = auth.currentUser?.uid ?: return
+        Log.d("SyncManager", "Intentando subir producto: ${product.nombre}")
         db.collection("users").document(userId)
             .collection("inventory").document(product.id.toString())
             .set(product, SetOptions.merge())
+            .addOnSuccessListener {
+                Log.d("SyncManager", "Producto subido con éxito: ${product.nombre}")
+            }
+            .addOnFailureListener { e ->
+                Log.e("SyncManager", "Error al subir producto: ${e.message}")
+            }
     }
 
     fun syncSaleToCloud(sale: SaleEntity) {
@@ -35,35 +42,7 @@ class SyncManager(private val context: Context) {
             .set(sale, SetOptions.merge())
     }
 
-    fun syncDebtorToCloud(debtor: DebtorEntity) {
-        val userId = auth.currentUser?.uid ?: return
-        db.collection("users").document(userId)
-            .collection("debtors").document(debtor.id.toString())
-            .set(debtor, SetOptions.merge())
-    }
-
-    fun syncExpenseToCloud(expense: ExpenseEntity) {
-        val userId = auth.currentUser?.uid ?: return
-        db.collection("users").document(userId)
-            .collection("expenses").document(expense.id.toString())
-            .set(expense, SetOptions.merge())
-    }
-
-    fun syncProviderToCloud(provider: ProviderEntity) {
-        val userId = auth.currentUser?.uid ?: return
-        db.collection("users").document(userId)
-            .collection("providers").document(provider.id.toString())
-            .set(provider, SetOptions.merge())
-    }
-
-    fun syncCustomerToCloud(customer: CustomerEntity) {
-        val userId = auth.currentUser?.uid ?: return
-        db.collection("users").document(userId)
-            .collection("customers").document(customer.id.toString())
-            .set(customer, SetOptions.merge())
-    }
-
-    // --- ESCUCHA EN TIEMPO REAL (NUEVO) ---
+    // --- ESCUCHA EN TIEMPO REAL ---
 
     /**
      * Escucha cambios en la nube y los baja al celular al instante
@@ -83,6 +62,8 @@ class SyncManager(private val context: Context) {
                             when (docChange.type) {
                                 com.google.firebase.firestore.DocumentChange.Type.ADDED,
                                 com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
+                                    // Marcar como sincronizado al bajarlo
+                                    cloudProduct.isSynced = true
                                     localDb.productDao().insert(cloudProduct)
                                 }
                                 com.google.firebase.firestore.DocumentChange.Type.REMOVED -> {
@@ -108,12 +89,11 @@ class SyncManager(private val context: Context) {
     // --- WORKMANAGER SYNC ---
 
     fun scheduleOfflineSync() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
+        Log.d("SyncManager", "Programando sincronización...")
+        // Sin restricciones de red momentáneamente para forzar ejecución
         val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setConstraints(constraints)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, WorkRequest.MIN_BACKOFF_MILLIS, java.util.concurrent.TimeUnit.MILLISECONDS)
+            .addTag("offline_sync_tag")
             .build()
 
         WorkManager.getInstance(context).enqueueUniqueWork(
@@ -126,7 +106,7 @@ class SyncManager(private val context: Context) {
     // --- SINCRONIZACIÓN TOTAL ---
 
     /**
-     * Sube todo lo local a la nube (Útil después de loguearse por primera vez)
+     * Sube todo lo local a la nube de forma forzada
      */
     fun uploadAllLocalToCloud(onComplete: () -> Unit) {
         val userId = auth.currentUser?.uid ?: return
@@ -136,19 +116,21 @@ class SyncManager(private val context: Context) {
 
                 // 1. Productos
                 val products = localDb.productDao().allProducts
-                products.forEach { userRef.collection("inventory").document(it.id.toString()).set(it) }
+                products.forEach { 
+                    userRef.collection("inventory").document(it.id.toString()).set(it, SetOptions.merge()).await()
+                    it.isSynced = true
+                    localDb.productDao().update(it)
+                }
 
                 // 2. Ventas
                 val sales = localDb.saleDao().allSales
-                sales.forEach { userRef.collection("sales").document(it.id.toString()).set(it) }
+                sales.forEach { 
+                    userRef.collection("sales").document(it.id.toString()).set(it, SetOptions.merge()).await()
+                    it.isSynced = true
+                    localDb.saleDao().update(it)
+                }
 
-                // 3. Deudores
-                val debtors = localDb.debtorDao().getAllDebtors()
-                debtors.forEach { userRef.collection("debtors").document(it.id.toString()).set(it) }
-
-                // 4. Gastos
-                val expenses = localDb.expenseDao().getAllExpenses()
-                expenses.forEach { userRef.collection("expenses").document(it.id.toString()).set(it) }
+                // Otros modelos (Deudores, Gastos, etc. se podrÃ­an aÃ±adir aquÃ­ tambiÃ©n)
 
                 withContext(Dispatchers.Main) { onComplete() }
             } catch (e: Exception) {
@@ -171,35 +153,20 @@ class SyncManager(private val context: Context) {
                 val inventorySnap = userRef.collection("inventory").get().await()
                 for (doc in inventorySnap.documents) {
                     val p = doc.toObject(ProductEntity::class.java)
-                    if (p != null) localDb.productDao().insert(p)
+                    if (p != null) {
+                        p.isSynced = true
+                        localDb.productDao().insert(p)
+                    }
                 }
 
                 // 2. Descargar Ventas
                 val salesSnap = userRef.collection("sales").get().await()
                 for (doc in salesSnap.documents) {
                     val s = doc.toObject(SaleEntity::class.java)
-                    if (s != null) localDb.saleDao().insert(s)
-                }
-
-                // 3. Descargar Deudores
-                val debtorsSnap = userRef.collection("debtors").get().await()
-                for (doc in debtorsSnap.documents) {
-                    val d = doc.toObject(DebtorEntity::class.java)
-                    if (d != null) localDb.debtorDao().insertDebtor(d)
-                }
-
-                // 4. Descargar Clientes
-                val customersSnap = userRef.collection("customers").get().await()
-                for (doc in customersSnap.documents) {
-                    val c = doc.toObject(CustomerEntity::class.java)
-                    if (c != null) localDb.customerDao().insert(c)
-                }
-
-                // 5. Descargar Proveedores
-                val providersSnap = userRef.collection("providers").get().await()
-                for (doc in providersSnap.documents) {
-                    val pr = doc.toObject(ProviderEntity::class.java)
-                    if (pr != null) localDb.providerDao().insert(pr)
+                    if (s != null) {
+                        s.isSynced = true
+                        localDb.saleDao().insert(s)
+                    }
                 }
 
                 withContext(Dispatchers.Main) { onComplete() }

@@ -1,6 +1,7 @@
 package com.naxor.app
 
 import android.content.Context
+import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.ListenableWorker.Result
@@ -18,68 +19,89 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
     private val localDb = AppDatabase.getDatabase(appContext)
 
     override suspend fun doWork(): Result {
-        val userId = auth.currentUser?.uid ?: return Result.success()
+        Log.d("SyncWorker", "Iniciando sincronización en segundo plano...")
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            Log.d("SyncWorker", "Usuario no autenticado, cancelando sync.")
+            return Result.success()
+        }
+        
         val userRef = db.collection("users").document(userId)
 
         return try {
             // 1. Productos
             val products = localDb.productDao().allUnsyncedProducts
+            Log.d("SyncWorker", "Productos pendientes: ${products.size}")
             for (p in products) {
                 userRef.collection("inventory").document(p.id.toString()).set(p, SetOptions.merge()).await()
                 p.isSynced = true
                 localDb.productDao().update(p)
+                Log.d("SyncWorker", "Producto sincronizado: ${p.nombre}")
             }
 
             // 2. Ventas
             val sales = localDb.saleDao().allUnsyncedSales
+            Log.d("SyncWorker", "Ventas pendientes: ${sales.size}")
             for (s in sales) {
                 userRef.collection("sales").document(s.id.toString()).set(s, SetOptions.merge()).await()
                 s.isSynced = true
                 localDb.saleDao().update(s)
+                Log.d("SyncWorker", "Venta sincronizada: ${s.nombreProducto}")
             }
 
             // 3. Deudores
             val debtors = localDb.debtorDao().getAllUnsyncedDebtors()
+            Log.d("SyncWorker", "Deudores pendientes: ${debtors.size}")
             for (d in debtors) {
                 val updatedD = d.copy(isSynced = true)
                 userRef.collection("debtors").document(d.id.toString()).set(updatedD, SetOptions.merge()).await()
                 localDb.debtorDao().updateDebtor(updatedD)
+                Log.d("SyncWorker", "Deudor sincronizado: ${d.nombre}")
             }
             
             val debts = localDb.debtorDao().getAllUnsyncedDebtDetails()
+            Log.d("SyncWorker", "Detalles de deuda pendientes: ${debts.size}")
             for (dd in debts) {
                 val updatedDD = dd.copy(isSynced = true)
                 userRef.collection("debt_details").document(dd.id.toString()).set(updatedDD, SetOptions.merge()).await()
                 localDb.debtorDao().updateDebtDetail(updatedDD)
+                Log.d("SyncWorker", "Detalle de deuda sincronizado: ${dd.concepto}")
             }
 
             // 4. Gastos
             val expenses = localDb.expenseDao().getAllUnsyncedExpenses()
+            Log.d("SyncWorker", "Gastos pendientes: ${expenses.size}")
             for (e in expenses) {
                 val updatedE = e.copy(isSynced = true)
                 userRef.collection("expenses").document(e.id.toString()).set(updatedE, SetOptions.merge()).await()
                 localDb.expenseDao().update(updatedE)
+                Log.d("SyncWorker", "Gasto sincronizado: ${e.concepto}")
             }
 
             // 5. Clientes
             val customers = localDb.customerDao().getAllUnsyncedCustomers()
+            Log.d("SyncWorker", "Clientes pendientes: ${customers.size}")
             for (c in customers) {
                 val updatedC = c.copy(isSynced = true)
                 userRef.collection("customers").document(c.id.toString()).set(updatedC, SetOptions.merge()).await()
                 localDb.customerDao().update(updatedC)
+                Log.d("SyncWorker", "Cliente sincronizado: ${c.nombre}")
             }
 
             // 6. Proveedores
             val providers = localDb.providerDao().getAllUnsyncedProviders()
+            Log.d("SyncWorker", "Proveedores pendientes: ${providers.size}")
             for (p in providers) {
                 val updatedP = p.copy(isSynced = true)
                 userRef.collection("providers").document(p.id.toString()).set(updatedP, SetOptions.merge()).await()
                 localDb.providerDao().update(updatedP)
+                Log.d("SyncWorker", "Proveedor sincronizado: ${p.nombre}")
             }
 
+            Log.d("SyncWorker", "Sincronización finalizada con éxito.")
             Result.success()
         } catch (e: Exception) {
-            android.util.Log.e("SyncWorker", "Error during sync: ${e.message}")
+            Log.e("SyncWorker", "Error durante la sincronización: ${e.message}")
             Result.retry()
         }
     }
