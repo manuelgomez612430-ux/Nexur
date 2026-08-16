@@ -19,35 +19,38 @@ public interface ProductDao {
     @Delete
     void delete(ProductEntity product);
 
-    @Query("SELECT * FROM products ORDER BY nombre ASC")
+    @Query("SELECT * FROM products WHERE isDeleted = 0 ORDER BY nombre ASC")
     List<ProductEntity> getAllProducts();
 
-    @Query("SELECT * FROM products WHERE nombre LIKE :searchQuery OR categoria LIKE :searchQuery OR codigo LIKE :searchQuery ORDER BY nombre ASC")
+    @Query("SELECT * FROM products WHERE (nombre LIKE :searchQuery OR categoria LIKE :searchQuery OR codigo LIKE :searchQuery) AND isDeleted = 0 ORDER BY nombre ASC")
     List<ProductEntity> searchProducts(String searchQuery);
 
-    @Query("SELECT * FROM products WHERE categoria = :categoria ORDER BY nombre ASC")
+    @Query("SELECT * FROM products WHERE categoria = :categoria AND isDeleted = 0 ORDER BY nombre ASC")
     List<ProductEntity> getProductsByCategory(String categoria);
 
     @Query("SELECT * FROM products WHERE id = :id LIMIT 1")
-    ProductEntity getProductById(int id);
+    ProductEntity getProductById(String id);
 
-    @Query("SELECT * FROM products WHERE stock <= 0")
+    @Query("SELECT * FROM products WHERE stock <= 0 AND isDeleted = 0")
     List<ProductEntity> getAgotados();
 
-    @Query("SELECT * FROM products WHERE stock > 0 AND stock <= 5")
+    @Query("SELECT * FROM products WHERE stock > 0 AND stock <= 5 AND isDeleted = 0")
     List<ProductEntity> getPocoStock();
 
-    @Query("SELECT DISTINCT categoria FROM products ORDER BY categoria ASC")
+    @Query("SELECT DISTINCT categoria FROM products WHERE isDeleted = 0 ORDER BY categoria ASC")
     List<String> getUniqueCategories();
 
-    @Query("SELECT * FROM products WHERE nombre = :nombre LIMIT 1")
+    @Query("SELECT * FROM products WHERE nombre = :nombre AND isDeleted = 0 LIMIT 1")
     ProductEntity getProductByName(String nombre);
 
-    @Query("SELECT * FROM products WHERE (',' || codigo || ',') LIKE ('%,' || :codigo || ',%') OR codigo = :codigo LIMIT 1")
+    @Query("SELECT * FROM products WHERE ((',' || codigo || ',') LIKE ('%,' || :codigo || ',%') OR codigo = :codigo) AND isDeleted = 0 LIMIT 1")
     ProductEntity getProductByCode(String codigo);
 
-    @Query("SELECT * FROM products WHERE isSynced = 0")
+    @Query("SELECT * FROM products WHERE isSynced = 0 AND isDeleted = 0")
     List<ProductEntity> getAllUnsyncedProducts();
+
+    @Query("SELECT * FROM products WHERE isSynced = 0 AND isDeleted = 1")
+    List<ProductEntity> getDeletedProducts();
 
     @Query("SELECT COUNT(*) FROM products WHERE isSynced = 0")
     androidx.lifecycle.LiveData<Integer> getUnsyncedCount();

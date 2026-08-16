@@ -125,7 +125,10 @@ class CustomersActivity : AppCompatActivity() {
             .setMessage("¿Deseas eliminar a ${customer.nombre}?")
             .setPositiveButton("Eliminar") { _, _ ->
                 lifecycleScope.launch(Dispatchers.IO) {
-                    database.customerDao().delete(customer)
+                    customer.isDeleted = true
+                    customer.isSynced = false
+                    database.customerDao().update(customer)
+                    SyncManager(this@CustomersActivity).scheduleOfflineSync()
                     withContext(Dispatchers.Main) { loadCustomers() }
                 }
             }

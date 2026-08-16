@@ -65,6 +65,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.btnIrVentas.setOnClickListener { startActivity(Intent(this, VentasActivity::class.java)) }
         binding.btnMainInventario.setOnClickListener { startActivity(Intent(this, InventarioActivity::class.java)) }
+        binding.btnMainGastos.setOnClickListener { checkPinAndNavigate { startActivity(Intent(this, GastosActivity::class.java)) } }
         
         binding.btnMainMoreOptions.setOnClickListener { toggleMoreOptions() }
         binding.btnMainCatalogo.setOnClickListener { toggleMoreOptions(); generatePDFCatalog() }
@@ -81,7 +82,6 @@ class MainActivity : AppCompatActivity() {
             when (menuItem.itemId) {
                 R.id.menu_caja -> { startActivity(Intent(this, CajaActivity::class.java)); true }
                 R.id.menu_fiados -> { startActivity(Intent(this, DeudoresActivity::class.java)); true }
-                R.id.menu_gastos -> { checkPinAndNavigate { startActivity(Intent(this, GastosActivity::class.java)) }; true }
                 R.id.menu_ganancias -> { checkPinAndNavigate { startActivity(Intent(this, ResumenActivity::class.java)) }; true }
                 R.id.menu_sales_history -> { checkPinAndNavigate { startActivity(Intent(this, SalesHistoryActivity::class.java)) }; true }
                 R.id.menu_lista_compras -> { startActivity(Intent(this, ListaComprasActivity::class.java)); true }

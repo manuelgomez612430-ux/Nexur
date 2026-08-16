@@ -23,6 +23,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import android.media.ToneGenerator
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
@@ -31,6 +37,7 @@ import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.ProductEntity
 import com.naxor.app.databinding.ActivityInventarioBinding
 import com.naxor.app.databinding.DialogAddProductBinding
+import com.naxor.app.databinding.DialogViewLabelBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -54,6 +61,29 @@ class InventarioActivity : AppCompatActivity() {
     private var isMultiSelectMode = false
     private var syncStatusText = "Sincronizado"
     private var lastUnsyncedCount = 0
+    private var speechRecognizer: SpeechRecognizer? = null
+
+    // LANZADORES PARA RECONOCIMIENTO DE VOZ (COMO RESPALDO)
+    private val voiceSearchLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0) ?: ""
+            binding.etSearchInventario.setText(spokenText)
+        }
+    }
+
+    private val voiceRegisterLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0) ?: ""
+            currentDialogBinding?.etProdNombre?.setText(spokenText)
+        }
+    }
+
+    private val voiceDescLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0) ?: ""
+            currentDialogBinding?.etProdDescripcion?.setText(spokenText)
+        }
+    }
 
     private val exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         uri?.let { exportInventoryToUri(it) }
@@ -79,13 +109,16 @@ class InventarioActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (!isGranted) Toast.makeText(this, "Se requiere permiso de cámara", Toast.LENGTH_LONG).show()
+            if (!isGranted) Toast.makeText(this, "Se requiere permiso de cámara y audio", Toast.LENGTH_LONG).show()
         }
         requestPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+        // Solicitar audio tambien
+        requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
 
         setupRecyclerView()
         setupListeners()
         setupSyncIndicator()
+        updateFABState() 
         loadProducts()
         
         SyncManager(this).startRealtimeInventorySync { loadProducts() }
@@ -114,35 +147,19 @@ class InventarioActivity : AppCompatActivity() {
     }
 
     private fun testFirebaseWrite() {
-        val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
-        if (userId == null) {
-            Toast.makeText(this, "Error: No has iniciado sesión", Toast.LENGTH_LONG).show()
-            return
-        }
-        
-        val testData = mapOf("test_time" to System.currentTimeMillis(), "msg" to "Prueba de conexión desde Nexur")
+        val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val testData = mapOf("test_time" to System.currentTimeMillis(), "msg" to "Prueba")
         com.google.firebase.firestore.FirebaseFirestore.getInstance()
             .collection("users").document(userId)
             .collection("test").add(testData)
-            .addOnSuccessListener {
-                Toast.makeText(this, "¡Éxito! Firebase recibió la prueba", Toast.LENGTH_LONG).show()
-                Log.d("FirebaseTest", "Prueba escrita con éxito")
-            }
-            .addOnFailureListener { e ->
-                AlertDialog.Builder(this)
-                    .setTitle("Error de Conexión")
-                    .setMessage("Firebase rechazó la prueba: ${e.message}")
-                    .setPositiveButton("OK", null).show()
-                Log.e("FirebaseTest", "Fallo en prueba: ${e.message}")
-            }
+            .addOnSuccessListener { Toast.makeText(this, "¡Conexión Exitosa!", Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { e -> Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
     }
 
     private fun forceFullUpload() {
         lifecycleScope.launch(Dispatchers.IO) {
-            val products = database.productDao().allProducts
-            products.forEach { it.isSynced = false; database.productDao().update(it) }
-            val sales = database.saleDao().allSales
-            sales.forEach { it.isSynced = false; database.saleDao().update(it) }
+            database.productDao().allProducts.forEach { it.isSynced = false; database.productDao().update(it) }
+            database.saleDao().allSales.forEach { it.isSynced = false; database.saleDao().update(it) }
             SyncManager(this@InventarioActivity).scheduleOfflineSync()
             withContext(Dispatchers.Main) { Toast.makeText(this@InventarioActivity, "Sincronizando...", Toast.LENGTH_SHORT).show() }
         }
@@ -224,18 +241,69 @@ class InventarioActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.btnBackInventario.setOnClickListener { finish() }
         binding.btnHelpInventario.setOnClickListener { showHelpDialog() }
+        binding.fabAddProducto.setOnClickListener { showProductDialog() }
         binding.btnExitEditorMode.setOnClickListener { toggleEditorMode(false) }
+
+        // MICRÓFONO INTEGRADO
+        binding.btnVoiceSearch.visibility = View.VISIBLE // Asegurar visibilidad inicial
+        binding.btnVoiceSearch.setOnClickListener { startVoiceRecognition(1) }
+
+        // BOTÓN LIMPIAR MANUAL
+        binding.btnSearchClear.setOnClickListener {
+            binding.etSearchInventario.setText("")
+            binding.etSearchInventario.clearFocus()
+            hideKeyboard()
+            updateControlsLayout(false)
+        }
 
         binding.etSearchInventario.addTextChangedListener { text -> 
             currentSearchQuery = text.toString()
             loadProducts() 
-            updateControlsLayout(currentSearchQuery.isNotEmpty() || binding.etSearchInventario.hasFocus())
+            
+            // Mostrar/Ocultar botón X
+            binding.btnSearchClear.visibility = if (currentSearchQuery.isNotEmpty()) View.VISIBLE else View.GONE
+            
+            if (currentSearchQuery.isEmpty() && !binding.etSearchInventario.hasFocus()) {
+                hideKeyboard()
+            }
+            val isExpanded = currentSearchQuery.isNotEmpty() || binding.etSearchInventario.hasFocus()
+            updateControlsLayout(isExpanded)
+        }
+
+        binding.etSearchInventario.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH || 
+                actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                binding.etSearchInventario.clearFocus()
+                hideKeyboard()
+                true
+            } else false
         }
 
         binding.etSearchInventario.setOnFocusChangeListener { _, hasFocus ->
             updateControlsLayout(currentSearchQuery.isNotEmpty() || hasFocus)
         }
+
+        binding.root.setOnClickListener {
+            binding.etSearchInventario.clearFocus()
+            hideKeyboard()
+        }
         
+        binding.rvInventario.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: androidx.recyclerview.widget.RecyclerView, newState: Int) {
+                if (newState == androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_DRAGGING) {
+                    binding.etSearchInventario.clearFocus()
+                    hideKeyboard()
+                }
+            }
+        })
+        
+        binding.layoutVentaBusqueda.setEndIconOnClickListener {
+            binding.etSearchInventario.setText("")
+            binding.etSearchInventario.clearFocus()
+            hideKeyboard()
+            updateControlsLayout(false)
+        }
+
         binding.btnFilterCategory.setOnClickListener { showCategorySelector() }
         binding.btnSortAttribute.setOnClickListener { showSortAttributeSelector() }
         binding.btnSortOrder.setOnClickListener { toggleSortOrder() }
@@ -249,6 +317,11 @@ class InventarioActivity : AppCompatActivity() {
                 else -> false
             }.also { binding.drawerLayoutInventario.closeDrawer(GravityCompat.END) }
         }
+    }
+
+    private fun hideKeyboard() {
+        val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.hideSoftInputFromWindow(binding.etSearchInventario.windowToken, 0)
     }
 
     private fun toggleEditorMode(enabled: Boolean) {
@@ -266,38 +339,55 @@ class InventarioActivity : AppCompatActivity() {
         set.clone(binding.layoutControlsContainer)
 
         if (actuallyExpanded) {
+            set.clear(binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.END)
+            set.connect(binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.START, androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.START)
             set.connect(binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.END, androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.END)
+            set.constrainWidth(binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.MATCH_CONSTRAINT)
+            binding.layoutVentaBusqueda.hint = "Buscar producto..."
+
             set.connect(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.TOP, binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
             set.connect(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.START, androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.START)
-            set.setMargin(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 8)
+            set.setMargin(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 12)
+
             set.connect(binding.btnSortAttribute.id, androidx.constraintlayout.widget.ConstraintSet.TOP, binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
-            set.setMargin(binding.btnSortAttribute.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 8)
+            set.setMargin(binding.btnSortAttribute.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 12)
+            
             set.connect(binding.btnSortOrder.id, androidx.constraintlayout.widget.ConstraintSet.TOP, binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
-            set.setMargin(binding.btnSortOrder.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 8)
+            set.setMargin(binding.btnSortOrder.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 12)
             binding.btnFilterCategory.text = if (currentCategory == "Todos") "Categoría" else currentCategory
-            binding.btnSortAttribute.text = currentSortAttribute
         } else {
-            set.connect(binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.END, binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.START)
-            set.setMargin(binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.END, 8)
+            // MODO COMPACTO
+            set.clear(binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.END)
+            set.constrainWidth(binding.layoutVentaBusqueda.id, 100.dpToPx()) 
+            binding.layoutVentaBusqueda.hint = ""
+
             set.connect(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.TOP, androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.TOP)
+            set.connect(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.START, binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.END)
             set.setMargin(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 0)
+            set.setMargin(binding.btnFilterCategory.id, androidx.constraintlayout.widget.ConstraintSet.START, 8)
+
             set.connect(binding.btnSortAttribute.id, androidx.constraintlayout.widget.ConstraintSet.TOP, androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.TOP)
             set.setMargin(binding.btnSortAttribute.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 0)
+            
             set.connect(binding.btnSortOrder.id, androidx.constraintlayout.widget.ConstraintSet.TOP, androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.TOP)
             set.setMargin(binding.btnSortOrder.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 0)
             binding.btnFilterCategory.text = "Cat"
-            binding.btnSortAttribute.text = "Nom"
+            binding.btnVoiceSearch.visibility = View.VISIBLE
         }
-        androidx.transition.TransitionManager.beginDelayedTransition(binding.layoutControlsContainer, androidx.transition.AutoTransition().apply { duration = 200 })
+        
+        androidx.transition.TransitionManager.beginDelayedTransition(binding.layoutControlsContainer, androidx.transition.AutoTransition().apply { duration = 250 })
         set.applyTo(binding.layoutControlsContainer)
     }
+
+    private fun Int.dpToPx(): Int = (this * resources.displayMetrics.density).toInt()
 
     private fun showMultiDeleteConfirmation() {
         val selected = adapter.getSelectedItems()
         if (selected.isEmpty()) return
         AlertDialog.Builder(this).setTitle("Eliminar").setMessage("¿Borrar ${selected.size} productos?").setPositiveButton("Eliminar") { _, _ ->
             lifecycleScope.launch(Dispatchers.IO) {
-                selected.forEach { database.productDao().delete(it); SyncManager(this@InventarioActivity).deleteProductFromCloud(it.id) }
+                selected.forEach { it.isDeleted = true; it.isSynced = false; database.productDao().update(it) }
+                SyncManager(this@InventarioActivity).scheduleOfflineSync()
                 withContext(Dispatchers.Main) { adapter.setMultiSelectMode(false); updateMultiSelectMenu(0); loadProducts() }
             }
         }.setNegativeButton("Cancelar", null).show()
@@ -352,7 +442,13 @@ class InventarioActivity : AppCompatActivity() {
         popup.setOnMenuItemClickListener { item -> currentSortAttribute = item.title.toString(); loadProducts(); true }; popup.show()
     }
 
-    private fun toggleSortOrder() { isAscending = !isAscending; loadProducts() }
+    private fun toggleSortOrder() {
+        isAscending = !isAscending
+        val rotation = if (isAscending) 0f else 180f
+        binding.btnSortOrder.animate().rotation(rotation).setDuration(250).start()
+        loadProducts()
+    }
+
     private fun showHelpDialog() { AlertDialog.Builder(this).setTitle("Ayuda").setMessage("Modo normal: Ver. Modo editor: Editar.").setPositiveButton("OK", null).show() }
 
     private fun loadProducts() {
@@ -377,63 +473,344 @@ class InventarioActivity : AppCompatActivity() {
     private fun updateDrawerHeader(v: Double, i: Double) {
         try {
             val h = binding.navigationViewInventario.getHeaderView(0)
-            h.findViewById<TextView>(R.id.tvDrawerValorTotal)?.text = String.format("S/ %.2f", v)
-            h.findViewById<TextView>(R.id.tvDrawerInversionTotal)?.text = String.format("S/ %.2f", i)
+            h.findViewById<TextView>(R.id.tvDrawerValorTotal)?.text = String.format(Locale.getDefault(), "S/ %.2f", v)
+            h.findViewById<TextView>(R.id.tvDrawerInversionTotal)?.text = String.format(Locale.getDefault(), "S/ %.2f", i)
         } catch (e: Exception) {}
     }
 
     private fun showProductDialog(p: ProductEntity? = null) {
         val db = DialogAddProductBinding.inflate(layoutInflater); currentDialogBinding = db
         val dialog = AlertDialog.Builder(this, R.style.Theme_Naxor_Dialog).setView(db.root).create()
-        if (p != null) {
-            db.etProdNombre.setText(p.nombre); db.etProdDescripcion.setText(p.descripcion); db.autoProdCategoria.setText(p.categoria, false); db.etProdStock.setText(p.stock.toString()); db.etProdVenta.setText(p.precioVenta.toString())
+        val addedCodes = mutableListOf<String>()
+
+        fun refreshCodesUI() {
+            db.layoutCodesList.removeAllViews()
+            addedCodes.forEach { code ->
+                val itemView = LayoutInflater.from(this).inflate(android.R.layout.simple_list_item_1, db.layoutCodesList, false) as TextView
+                itemView.text = "• $code (Quitar)"
+                itemView.setOnClickListener { addedCodes.remove(code); refreshCodesUI() }
+                db.layoutCodesList.addView(itemView)
+            }
         }
+
+        if (p != null) {
+            db.etProdNombre.setText(p.nombre)
+            db.etProdDescripcion.setText(p.descripcion)
+            db.autoProdCategoria.setText(p.categoria, false)
+            db.etProdStock.setText(p.stock.toString())
+            db.etProdVenta.setText(p.precioVenta.toString())
+            p.codigo?.split(",")?.filter { it.isNotBlank() }?.let { addedCodes.addAll(it) }
+            refreshCodesUI()
+            if (!p.location.isNullOrEmpty()) { db.cbShowLocation.isChecked = true; db.layoutProdLocation.visibility = View.VISIBLE; db.etProdLocation.setText(p.location) }
+            if (p.precioCosto > 0) { db.cbShowBatchCost.isChecked = true; db.layoutProdCosto.visibility = View.VISIBLE; db.etProdCosto.setText(p.precioCosto.toString()) }
+            if (p.expirationDate > 0) { db.cbShowExpiration.isChecked = true; db.layoutProdExpiration.visibility = View.VISIBLE; db.etProdExpiration.setText(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(p.expirationDate))) }
+            if (!p.photoPath.isNullOrEmpty()) {
+                db.ivDialogProdPhoto.setImageURI(android.net.Uri.parse(p.photoPath))
+                db.ivDialogProdPhoto.scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                db.ivDialogProdPhoto.setPadding(0,0,0,0)
+            }
+            db.btnDeleteProduct.visibility = View.VISIBLE
+            db.btnDeleteProduct.setOnClickListener { showDeleteConfirmation(p); dialog.dismiss() }
+        }
+
+        db.cbShowBatchCost.setOnCheckedChangeListener { _, isChecked -> db.layoutProdCosto.visibility = if (isChecked) View.VISIBLE else View.GONE }
+        db.cbShowExpiration.setOnCheckedChangeListener { _, isChecked -> db.layoutProdExpiration.visibility = if (isChecked) View.VISIBLE else View.GONE }
+        db.cbShowLocation.setOnCheckedChangeListener { _, isChecked -> db.layoutProdLocation.visibility = if (isChecked) View.VISIBLE else View.GONE }
+        
+        db.cardProdPhoto.setOnClickListener {
+            val file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "prod_${System.currentTimeMillis()}.jpg")
+            val uri = FileProvider.getUriForFile(this, "$packageName.provider", file)
+            currentPhotoPath = file.absolutePath
+            takeProductPhotoLauncher.launch(uri)
+        }
+
+        db.layoutProdCodigo.setEndIconOnClickListener {
+            val options = GmsBarcodeScannerOptions.Builder()
+                .setBarcodeFormats(
+                    Barcode.FORMAT_EAN_13,
+                    Barcode.FORMAT_EAN_8,
+                    Barcode.FORMAT_UPC_A,
+                    Barcode.FORMAT_UPC_E,
+                    Barcode.FORMAT_CODE_128,
+                    Barcode.FORMAT_QR_CODE
+                )
+                .enableAutoZoom()
+                .build()
+
+            GmsBarcodeScanning.getClient(this, options).startScan()
+                .addOnSuccessListener { barcode ->
+                    barcode.rawValue?.let { code ->
+                        if (code.length >= 4 && !addedCodes.contains(code)) {
+                            try {
+                                val vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                                    val vibratorManager = getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager
+                                    vibratorManager.defaultVibrator
+                                } else {
+                                    @Suppress("DEPRECATION")
+                                    getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
+                                }
+                                
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                    vibrator.vibrate(android.os.VibrationEffect.createOneShot(120, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                                } else {
+                                    @Suppress("DEPRECATION")
+                                    vibrator.vibrate(120)
+                                }
+                                val tg = ToneGenerator(android.media.AudioManager.STREAM_RING, 100)
+                                tg.startTone(ToneGenerator.TONE_PROP_BEEP, 200)
+                                Toast.makeText(this, "Código capturado: $code", Toast.LENGTH_SHORT).show()
+                            } catch (e: Exception) {}
+                            addedCodes.add(code)
+                            refreshCodesUI()
+                        }
+                    }
+                }
+        }
+
+        db.layoutProdCodigo.setStartIconOnClickListener {
+            generarCodigoAutomatico(db, addedCodes) { refreshCodesUI() }
+        }
+
+        lifecycleScope.launch {
+            val dbCategories = withContext(Dispatchers.IO) { database.productDao().uniqueCategories }
+            val catAdapter = ArrayAdapter(this@InventarioActivity, android.R.layout.simple_dropdown_item_1line, dbCategories)
+            db.autoProdCategoria.setAdapter(catAdapter)
+            db.autoProdCategoria.threshold = 1
+        }
+
+        val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        
+        fun mostrarCategorias() {
+            imm.hideSoftInputFromWindow(db.autoProdCategoria.windowToken, 0)
+            db.autoProdCategoria.clearFocus()
+            db.autoProdCategoria.postDelayed({ db.autoProdCategoria.showDropDown() }, 250)
+        }
+
+        db.layoutProdCategoria.setEndIconOnClickListener {
+            val oldThreshold = db.autoProdCategoria.threshold
+            db.autoProdCategoria.threshold = 0
+            mostrarCategorias()
+            db.autoProdCategoria.postDelayed({ db.autoProdCategoria.threshold = oldThreshold }, 600)
+        }
+
+        db.autoProdCategoria.setOnClickListener { if (db.autoProdCategoria.text.isNotEmpty()) db.autoProdCategoria.showDropDown() }
+
+        db.layoutProdNombre.setEndIconOnClickListener { startVoiceRecognition(2) }
+        db.layoutProdDesc.setEndIconOnClickListener { startVoiceRecognition(3) }
+
         db.btnConfirmAdd.setOnClickListener {
-            val name = db.etProdNombre.text.toString().trim(); val cat = db.autoProdCategoria.text.toString().trim()
+            val name = db.etProdNombre.text.toString().trim()
+            val cat = db.autoProdCategoria.text.toString().trim()
             if (name.isNotBlank() && cat.isNotBlank()) {
-                saveOrUpdateProduct(p, p?.codigo ?: "", name, cat, db.etProdStock.text.toString().toIntOrNull() ?: 0, 0.0, db.etProdVenta.text.toString().toDoubleOrNull() ?: 0.0, 0, p?.photoPath, "", db.etProdDescripcion.text.toString(), dialog)
+                val stock = db.etProdStock.text.toString().toIntOrNull() ?: 0
+                val sale = db.etProdVenta.text.toString().toDoubleOrNull() ?: 0.0
+                val cost = if (db.cbShowBatchCost.isChecked) db.etProdCosto.text.toString().toDoubleOrNull() ?: 0.0 else 0.0
+                val loc = db.etProdLocation.text.toString().trim()
+                val desc = db.etProdDescripcion.text.toString().trim()
+                
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val existing = database.productDao().getProductByName(name)
+                    withContext(Dispatchers.Main) {
+                        if (existing != null && existing.id != (p?.id ?: "")) {
+                            AlertDialog.Builder(this@InventarioActivity)
+                                .setTitle("Producto existente")
+                                .setMessage("¿Unificar stock con '$name'?")
+                                .setPositiveButton("Sí") { _, _ -> unificarProductos(existing, p, addedCodes.joinToString(","), stock, cost, sale, 0, p?.photoPath, loc, desc, dialog) }
+                                .setNegativeButton("No", null).show()
+                        } else {
+                            saveOrUpdateProduct(p, addedCodes.joinToString(","), name, cat, stock, cost, sale, 0, p?.photoPath, loc, desc, dialog)
+                        }
+                    }
+                }
             } else Toast.makeText(this, "Nombre y categoría requeridos", Toast.LENGTH_SHORT).show()
         }
+        
+        db.btnCancelAdd.setOnClickListener { dialog.dismiss() }
         dialog.show()
+        
+        dialog.window?.let {
+            it.setLayout((resources.displayMetrics.widthPixels * 0.95).toInt(), android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+            it.setBackgroundDrawableResource(android.R.color.transparent)
+        }
     }
 
     private fun saveOrUpdateProduct(p: ProductEntity?, code: String, name: String, cat: String, stock: Int, cost: Double, sale: Double, exp: Long, photo: String?, loc: String, desc: String, d: AlertDialog) {
         lifecycleScope.launch(Dispatchers.IO) {
-            val syncManager = SyncManager(this@InventarioActivity)
             val productToSync = if (p != null) {
-                p.apply { codigo = code; nombre = name; categoria = cat; this.stock = stock; precioVenta = sale; photoPath = photo; descripcion = desc; isSynced = false }
+                p.apply { codigo = code; nombre = name; categoria = cat; this.stock = stock; precioCosto = cost; precioVenta = sale; photoPath = photo; location = loc; descripcion = desc; isSynced = false }
                 database.productDao().update(p)
                 p
             } else {
-                val newP = ProductEntity(code, name, cat, stock, cost, sale).apply { photoPath = photo; descripcion = desc; isSynced = false }
+                val newP = ProductEntity(code, name, cat, stock, cost, sale).apply { photoPath = photo; location = loc; descripcion = desc; isSynced = false }
                 database.productDao().insert(newP)
                 newP
             }
-            
-            // Intento de subida inmediata
-            syncManager.syncProductToCloud(productToSync)
-            
-            // Programar para el futuro por si fallÃ³ o no hay red
-            syncManager.scheduleOfflineSync()
-            
+            SyncManager(this@InventarioActivity).syncProductToCloud(productToSync)
+            SyncManager(this@InventarioActivity).scheduleOfflineSync()
+            withContext(Dispatchers.Main) { loadProducts(); d.dismiss() }
+        }
+    }
+
+    private fun unificarProductos(e: ProductEntity, p: ProductEntity?, code: String, s: Int, c: Double, sp: Double, exp: Long, ph: String?, loc: String, desc: String, d: AlertDialog) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val codes = e.codigo?.split(",")?.toMutableList() ?: mutableListOf()
+            code.split(",").forEach { if (it.isNotBlank() && !codes.contains(it)) codes.add(it) }
+            e.apply { codigo = codes.joinToString(","); stock += s; precioCosto += c; precioVenta = sp; photoPath = ph; location = loc; descripcion = desc; isSynced = false }
+            database.productDao().update(e)
+            if (p != null && p.id != e.id) { p.isDeleted = true; p.isSynced = false; database.productDao().update(p) }
+            SyncManager(this@InventarioActivity).scheduleOfflineSync()
             withContext(Dispatchers.Main) { loadProducts(); d.dismiss() }
         }
     }
 
     private fun showProductLabel(p: ProductEntity) {
-        val db = com.naxor.app.databinding.DialogViewLabelBinding.inflate(layoutInflater)
+        val db = DialogViewLabelBinding.inflate(layoutInflater)
         val d = AlertDialog.Builder(this, R.style.Theme_Naxor_Dialog).setView(db.root).create()
         db.tvLabelProdName.text = p.nombre
         db.tvLabelProdDesc.text = p.descripcion ?: "Sin descripción."
+
+        if (!p.photoPath.isNullOrEmpty()) {
+            try {
+                val uri = if (p.photoPath.startsWith("/")) android.net.Uri.fromFile(File(p.photoPath)) else android.net.Uri.parse(p.photoPath)
+                db.ivLabelProdPhoto.setImageURI(uri)
+                db.ivLabelProdPhoto.scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                db.ivLabelProdPhoto.alpha = 1.0f
+            } catch (e: Exception) {}
+        }
+
         val content = if (!p.codigo.isNullOrBlank()) p.codigo!!.split(",")[0] else p.nombre
-        val bitMatrix = MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, 500, 500)
-        val bitmap = Bitmap.createBitmap(500, 500, Bitmap.Config.RGB_565)
-        for (x in 0 until 500) for (y in 0 until 500) bitmap.setPixel(x, y, if (bitMatrix.get(x, y)) Color.BLACK else Color.WHITE)
-        db.ivProductCode.setImageBitmap(bitmap)
+        try {
+            val bitMatrix = MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, 500, 500)
+            val bitmap = Bitmap.createBitmap(500, 500, Bitmap.Config.RGB_565)
+            for (x in 0 until 500) for (y in 0 until 500) bitmap.setPixel(x, y, if (bitMatrix.get(x, y)) Color.BLACK else Color.WHITE)
+            db.ivProductCode.setImageBitmap(bitmap)
+            db.btnShareLabel.setOnClickListener { shareLabelBitmap(bitmap, p.nombre) }
+        } catch (e: Exception) {}
+
+        val codes = p.codigo?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
+        db.tvLabelProdCode.text = if (codes.isNotEmpty()) codes.joinToString("\n") { "• $it" } else "---"
+        db.cbShowLinkedCodes.setOnCheckedChangeListener { _, isChecked ->
+            db.cardLinkedCodes.visibility = if (isChecked) View.VISIBLE else View.GONE
+        }
+
         db.btnCloseLabel.setOnClickListener { d.dismiss() }
         d.show()
+
+        d.window?.let {
+            it.setLayout((resources.displayMetrics.widthPixels * 0.95).toInt(), android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+            it.setBackgroundDrawableResource(android.R.color.transparent)
+        }
     }
 
-    private fun shareLabelBitmap(b: Bitmap, n: String) {}
-    private fun generarCodigoAutomatico(db: DialogAddProductBinding, c: MutableList<String>, r: () -> Unit) {}
+    private fun shareLabelBitmap(bitmap: Bitmap, name: String) {
+        val file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "Ficha_$name.png")
+        try {
+            FileOutputStream(file).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            val uri = FileProvider.getUriForFile(this, "$packageName.provider", file)
+            startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "image/png"; putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, "Compartir Ficha"))
+        } catch (e: Exception) {}
+    }
+
+    private fun startVoiceRecognition(targetFieldId: Int) {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            androidx.core.app.ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.RECORD_AUDIO), 100)
+            return
+        }
+
+        // Feedback táctil al iniciar
+        try {
+            val vibrator = getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                vibrator.vibrate(android.os.VibrationEffect.createOneShot(30, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+            }
+        } catch (e: Exception) {}
+
+        speechRecognizer?.destroy()
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-ES") // Forzar español estándar
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+        }
+
+        speechRecognizer?.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {
+                Toast.makeText(this@InventarioActivity, "Escuchando...", Toast.LENGTH_SHORT).show()
+            }
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() {}
+            override fun onError(error: Int) {
+                Log.e("Speech", "Error detectado: $error")
+                if (error == 12 || error == 5) {
+                    showVoiceErrorDialog() // Si no hay idioma o el servicio falla, mostrar la guía
+                } else {
+                    val msg = when (error) {
+                        SpeechRecognizer.ERROR_NETWORK -> "Sin conexión a internet"
+                        SpeechRecognizer.ERROR_NO_MATCH -> "No te escuché bien"
+                        else -> "Voz no disponible momentáneamente"
+                    }
+                    Toast.makeText(this@InventarioActivity, msg, Toast.LENGTH_SHORT).show()
+                }
+            }
+            override fun onResults(results: Bundle?) {
+                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                if (!matches.isNullOrEmpty()) {
+                    val text = matches[0].replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+                    when (targetFieldId) {
+                        1 -> binding.etSearchInventario.setText(text)
+                        2 -> currentDialogBinding?.etProdNombre?.setText(text)
+                        3 -> currentDialogBinding?.etProdDescripcion?.setText(text)
+                    }
+                }
+            }
+            override fun onPartialResults(partialResults: Bundle?) {}
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        })
+
+        speechRecognizer?.startListening(intent)
+    }
+
+    private fun generarCodigoAutomatico(db: DialogAddProductBinding, codes: MutableList<String>, onRefresh: () -> Unit) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val all = database.productDao().allProducts
+            var max = 0
+            all.forEach { p -> p.codigo?.split(",")?.forEach { it.trim().toIntOrNull()?.let { n -> if(n > max) max = n } } }
+            val next = String.format(Locale.getDefault(), "%03d", max + 1)
+            withContext(Dispatchers.Main) { if(!codes.contains(next)) { codes.add(next); onRefresh() } }
+        }
+    }
+
+    private fun showDeleteConfirmation(p: ProductEntity) {
+        AlertDialog.Builder(this).setTitle("Eliminar").setMessage("¿Borrar ${p.nombre}?").setPositiveButton("Sí") { _, _ ->
+            lifecycleScope.launch(Dispatchers.IO) { 
+                p.isDeleted = true
+                p.isSynced = false
+                database.productDao().update(p)
+                SyncManager(this@InventarioActivity).scheduleOfflineSync()
+                withContext(Dispatchers.Main) { loadProducts() } 
+            }
+        }.setNegativeButton("No", null).show()
+    }
+
+    private fun showVoiceErrorDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Configuración de Voz")
+            .setMessage("Para usar el micrófono sin internet, Nexur necesita que el paquete de idioma esté descargado.\n\n¿Deseas activarlo ahora?")
+            .setPositiveButton("Sí, Activar") { _, _ ->
+                try {
+                    val intent = Intent(Intent.ACTION_MAIN)
+                    intent.setClassName("com.google.android.googlequicksearchbox", "com.google.android.apps.gsa.settings_v2.SettingsRootActivity")
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
+                }
+            }
+            .setNegativeButton("Luego", null)
+            .show()
+    }
+
+    private fun String.capitalize() = this.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
 }

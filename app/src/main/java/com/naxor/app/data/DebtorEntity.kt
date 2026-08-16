@@ -5,20 +5,22 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "debtors")
 data class DebtorEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
     val nombre: String,
     val telefono: String,
     var deudaTotal: Double,
-    val ultimaActualizacion: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = true
+    var ultimaActualizacion: Long = System.currentTimeMillis(),
+    var isSynced: Boolean = false,
+    var isDeleted: Boolean = false
 )
 
 @Entity(tableName = "debts")
 data class DebtDetailEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val debtorId: Int,
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val debtorId: String,
     val concepto: String,
     val monto: Double,
-    val fecha: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = true
+    var fecha: Long = System.currentTimeMillis(),
+    var isSynced: Boolean = false,
+    var isDeleted: Boolean = false
 )

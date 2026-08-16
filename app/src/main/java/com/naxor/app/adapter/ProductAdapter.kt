@@ -24,7 +24,7 @@ class ProductAdapter(
 ) : RecyclerView.Adapter<ProductAdapter.ViewHolder>() {
 
     private val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    private val selectedIds = mutableSetOf<Int>()
+    private val selectedIds = mutableSetOf<String>()
     private var isMultiSelectMode = false
 
     class ViewHolder(val binding: ItemProductoBinding) : RecyclerView.ViewHolder(binding.root)
@@ -44,7 +44,7 @@ class ProductAdapter(
         return items.filter { selectedIds.contains(it.id) }
     }
 
-    fun toggleSelection(productId: Int) {
+    fun toggleSelection(productId: String) {
         if (selectedIds.contains(productId)) {
             selectedIds.remove(productId)
         } else {

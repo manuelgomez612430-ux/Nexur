@@ -1,13 +1,15 @@
 package com.naxor.app.data;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "products")
 public class ProductEntity {
-    @PrimaryKey(autoGenerate = true)
-    public int id;
+    @PrimaryKey
+    @NonNull
+    public String id;
     public String codigo;
     public String nombre;
     public String categoria;
@@ -19,12 +21,16 @@ public class ProductEntity {
     public String photoPath;    // Ruta de la imagen en el cel
     public String location;     // Pasillo / Estante
     public String descripcion;  // Descripción opcional
-    public boolean isSynced = true;
+    public boolean isSynced = false;
+    public boolean isDeleted = false;
 
-    public ProductEntity() {}
+    public ProductEntity() {
+        this.id = java.util.UUID.randomUUID().toString();
+    }
 
     @Ignore
     public ProductEntity(String codigo, String nombre, String categoria, int stock, double precioCosto, double precioVenta) {
+        this.id = java.util.UUID.randomUUID().toString();
         this.codigo = codigo;
         this.nombre = nombre;
         this.categoria = categoria;
@@ -35,6 +41,8 @@ public class ProductEntity {
         this.expirationDate = 0;
         this.photoPath = null;
         this.location = "";
+        this.isSynced = false;
+        this.isDeleted = false;
     }
 }
 

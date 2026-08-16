@@ -4,11 +4,11 @@ import androidx.room.*
 
 @Dao
 interface DebtorDao {
-    @Query("SELECT * FROM debtors ORDER BY deudaTotal DESC")
+    @Query("SELECT * FROM debtors WHERE isDeleted = 0 ORDER BY deudaTotal DESC")
     suspend fun getAllDebtors(): List<DebtorEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertDebtor(debtor: DebtorEntity): Long
+    suspend fun insertDebtor(debtor: DebtorEntity)
 
     @Update
     suspend fun updateDebtor(debtor: DebtorEntity)
@@ -16,28 +16,34 @@ interface DebtorDao {
     @Delete
     suspend fun deleteDebtor(debtor: DebtorEntity)
 
-    @Query("SELECT * FROM debts WHERE debtorId = :debtorId ORDER BY fecha DESC")
-    suspend fun getDebtsForDebtor(debtorId: Int): List<DebtDetailEntity>
+    @Query("SELECT * FROM debts WHERE debtorId = :debtorId AND isDeleted = 0 ORDER BY fecha DESC")
+    suspend fun getDebtsForDebtor(debtorId: String): List<DebtDetailEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDebtDetail(debt: DebtDetailEntity)
 
     @Transaction
-    suspend fun addDebtToDebtor(debtorId: Int, monto: Double, concepto: String) {
+    suspend fun addDebtToDebtor(debtorId: String, monto: Double, concepto: String) {
         // Esta función es especial: agrega la deuda y actualiza el total automáticamente
         val detail = DebtDetailEntity(debtorId = debtorId, concepto = concepto, monto = monto)
         insertDebtDetail(detail)
-        
-        // Aquí necesitaríamos una forma de actualizar el total en la tabla deudores
-        // Lo manejaremos mejor desde la Activity por simplicidad por ahora
     }
 
-    @Query("SELECT * FROM debtors WHERE isSynced = 0")
+    @Query("SELECT * FROM debtors WHERE isSynced = 0 AND isDeleted = 0")
     suspend fun getAllUnsyncedDebtors(): List<DebtorEntity>
 
-    @Query("SELECT * FROM debts WHERE isSynced = 0")
+    @Query("SELECT * FROM debts WHERE isSynced = 0 AND isDeleted = 0")
     suspend fun getAllUnsyncedDebtDetails(): List<DebtDetailEntity>
+
+    @Query("SELECT * FROM debtors WHERE isSynced = 0 AND isDeleted = 1")
+    suspend fun getDeletedDebtors(): List<DebtorEntity>
+
+    @Query("SELECT * FROM debts WHERE isSynced = 0 AND isDeleted = 1")
+    suspend fun getDeletedDebtDetails(): List<DebtDetailEntity>
 
     @Update
     suspend fun updateDebtDetail(debt: DebtDetailEntity)
+
+    @Delete
+    suspend fun deleteDebtDetail(debt: DebtDetailEntity)
 }

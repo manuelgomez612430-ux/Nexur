@@ -5,11 +5,12 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "expenses")
 data class ExpenseEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
     val concepto: String,
     val monto: Double,
     val categoria: String,
-    val fecha: Long = System.currentTimeMillis(),
+    var fecha: Long = System.currentTimeMillis(),
     val esFijo: Boolean = false, // Nuevo campo para punto de equilibrio
-    val isSynced: Boolean = true
+    var isSynced: Boolean = false,
+    var isDeleted: Boolean = false
 )

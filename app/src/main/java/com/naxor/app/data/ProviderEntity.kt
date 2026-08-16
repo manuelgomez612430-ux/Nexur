@@ -5,11 +5,12 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "providers")
 data class ProviderEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
     val nombre: String,
     val contacto: String,
     val telefono: String,
     val categoria: String,
     val notas: String? = null,
-    val isSynced: Boolean = true
+    var isSynced: Boolean = false,
+    var isDeleted: Boolean = false
 )

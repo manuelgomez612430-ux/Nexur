@@ -29,11 +29,63 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
         val userRef = db.collection("users").document(userId)
 
         return try {
+            // --- 1. PROCESAR BORRADOS PRIMERO ---
+            
+            // Productos borrados
+            val deletedProducts = localDb.productDao().deletedProducts
+            for (p in deletedProducts) {
+                userRef.collection("inventory").document(p.id).delete().await()
+                localDb.productDao().delete(p)
+            }
+
+            // Ventas borradas
+            val deletedSales = localDb.saleDao().deletedSales
+            for (s in deletedSales) {
+                userRef.collection("sales").document(s.id).delete().await()
+                localDb.saleDao().delete(s)
+            }
+
+            // Deudores borrados
+            val deletedDebtors = localDb.debtorDao().getDeletedDebtors()
+            for (d in deletedDebtors) {
+                userRef.collection("debtors").document(d.id).delete().await()
+                localDb.debtorDao().deleteDebtor(d)
+            }
+            
+            val deletedDebts = localDb.debtorDao().getDeletedDebtDetails()
+            for (dd in deletedDebts) {
+                userRef.collection("debt_details").document(dd.id).delete().await()
+                localDb.debtorDao().deleteDebtDetail(dd)
+            }
+
+            // Gastos borrados
+            val deletedExpenses = localDb.expenseDao().getDeletedExpenses()
+            for (e in deletedExpenses) {
+                userRef.collection("expenses").document(e.id).delete().await()
+                localDb.expenseDao().delete(e)
+            }
+
+            // Clientes borrados
+            val deletedCustomers = localDb.customerDao().getDeletedCustomers()
+            for (c in deletedCustomers) {
+                userRef.collection("customers").document(c.id).delete().await()
+                localDb.customerDao().delete(c)
+            }
+
+            // Proveedores borrados
+            val deletedProviders = localDb.providerDao().getDeletedProviders()
+            for (p in deletedProviders) {
+                userRef.collection("providers").document(p.id).delete().await()
+                localDb.providerDao().delete(p)
+            }
+
+            // --- 2. PROCESAR SUBIDAS / ACTUALIZACIONES ---
+
             // 1. Productos
             val products = localDb.productDao().allUnsyncedProducts
             Log.d("SyncWorker", "Productos pendientes: ${products.size}")
             for (p in products) {
-                userRef.collection("inventory").document(p.id.toString()).set(p, SetOptions.merge()).await()
+                userRef.collection("inventory").document(p.id).set(p, SetOptions.merge()).await()
                 p.isSynced = true
                 localDb.productDao().update(p)
                 Log.d("SyncWorker", "Producto sincronizado: ${p.nombre}")
@@ -43,7 +95,7 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
             val sales = localDb.saleDao().allUnsyncedSales
             Log.d("SyncWorker", "Ventas pendientes: ${sales.size}")
             for (s in sales) {
-                userRef.collection("sales").document(s.id.toString()).set(s, SetOptions.merge()).await()
+                userRef.collection("sales").document(s.id).set(s, SetOptions.merge()).await()
                 s.isSynced = true
                 localDb.saleDao().update(s)
                 Log.d("SyncWorker", "Venta sincronizada: ${s.nombreProducto}")
@@ -54,7 +106,7 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
             Log.d("SyncWorker", "Deudores pendientes: ${debtors.size}")
             for (d in debtors) {
                 val updatedD = d.copy(isSynced = true)
-                userRef.collection("debtors").document(d.id.toString()).set(updatedD, SetOptions.merge()).await()
+                userRef.collection("debtors").document(d.id).set(updatedD, SetOptions.merge()).await()
                 localDb.debtorDao().updateDebtor(updatedD)
                 Log.d("SyncWorker", "Deudor sincronizado: ${d.nombre}")
             }
@@ -63,7 +115,7 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
             Log.d("SyncWorker", "Detalles de deuda pendientes: ${debts.size}")
             for (dd in debts) {
                 val updatedDD = dd.copy(isSynced = true)
-                userRef.collection("debt_details").document(dd.id.toString()).set(updatedDD, SetOptions.merge()).await()
+                userRef.collection("debt_details").document(dd.id).set(updatedDD, SetOptions.merge()).await()
                 localDb.debtorDao().updateDebtDetail(updatedDD)
                 Log.d("SyncWorker", "Detalle de deuda sincronizado: ${dd.concepto}")
             }
@@ -73,7 +125,7 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
             Log.d("SyncWorker", "Gastos pendientes: ${expenses.size}")
             for (e in expenses) {
                 val updatedE = e.copy(isSynced = true)
-                userRef.collection("expenses").document(e.id.toString()).set(updatedE, SetOptions.merge()).await()
+                userRef.collection("expenses").document(e.id).set(updatedE, SetOptions.merge()).await()
                 localDb.expenseDao().update(updatedE)
                 Log.d("SyncWorker", "Gasto sincronizado: ${e.concepto}")
             }
@@ -83,7 +135,7 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
             Log.d("SyncWorker", "Clientes pendientes: ${customers.size}")
             for (c in customers) {
                 val updatedC = c.copy(isSynced = true)
-                userRef.collection("customers").document(c.id.toString()).set(updatedC, SetOptions.merge()).await()
+                userRef.collection("customers").document(c.id).set(updatedC, SetOptions.merge()).await()
                 localDb.customerDao().update(updatedC)
                 Log.d("SyncWorker", "Cliente sincronizado: ${c.nombre}")
             }
@@ -93,7 +145,7 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
             Log.d("SyncWorker", "Proveedores pendientes: ${providers.size}")
             for (p in providers) {
                 val updatedP = p.copy(isSynced = true)
-                userRef.collection("providers").document(p.id.toString()).set(updatedP, SetOptions.merge()).await()
+                userRef.collection("providers").document(p.id).set(updatedP, SetOptions.merge()).await()
                 localDb.providerDao().update(updatedP)
                 Log.d("SyncWorker", "Proveedor sincronizado: ${p.nombre}")
             }

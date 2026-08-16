@@ -87,20 +87,42 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- BOTÓN INVENTARIO (Morado) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnMainInventario"
+        <!-- FILA DE INVENTARIO Y GASTOS -->
+        <LinearLayout
+            android:id="@+id/layoutMainButtons"
             android:layout_width="match_parent"
-            android:layout_height="70dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
             android:layout_marginHorizontal="24dp"
             android:layout_marginTop="32dp"
-            android:text="📦 INVENTARIO"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/white"
-            app:backgroundTint="#8E44AD"
-            app:cornerRadius="20dp"
-            app:layout_constraintTop_toBottomOf="@id/cardDashboard" />
+            app:layout_constraintTop_toBottomOf="@id/cardDashboard">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMainInventario"
+                android:layout_width="0dp"
+                android:layout_height="70dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="📦 INVENTARIO"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                app:backgroundTint="#8E44AD"
+                app:cornerRadius="20dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMainGastos"
+                android:layout_width="0dp"
+                android:layout_height="70dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="💸 GASTOS"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                app:backgroundTint="@color/red_600"
+                app:cornerRadius="20dp" />
+        </LinearLayout>
 
         <!-- CONTENEDOR DE OPCIONES DESPLEGABLES (ANIMADO) -->
         <LinearLayout

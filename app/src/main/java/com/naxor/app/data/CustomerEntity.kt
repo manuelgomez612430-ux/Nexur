@@ -5,12 +5,13 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "customers")
 data class CustomerEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
     val nombre: String,
     val telefono: String,
     val direccion: String? = null,
     val notas: String? = null,
     val esVip: Boolean = false,
-    val fechaRegistro: Long = System.currentTimeMillis(),
-    val isSynced: Boolean = true
+    var fechaRegistro: Long = System.currentTimeMillis(),
+    var isSynced: Boolean = false,
+    var isDeleted: Boolean = false
 )

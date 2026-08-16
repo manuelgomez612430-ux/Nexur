@@ -5,8 +5,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -16,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.ExpenseEntity
 import com.naxor.app.databinding.ActivityGastosBinding
+import com.naxor.app.databinding.DialogAddExpenseBinding
 import com.naxor.app.databinding.ItemGastoBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -69,51 +68,51 @@ class GastosActivity : AppCompatActivity() {
             binding.layoutEmptyGastos.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
             
             val total = list.sumOf { it.monto }
-            binding.tvTotalGastosMes.text = String.format(Locale.getDefault(), "Gastos acumulados: S/ %.2f", total)
+            binding.tvTotalGastosMes.text = String.format(Locale.getDefault(), "S/ %.2f", total)
         }
     }
 
     private fun showAddExpenseDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Registrar Gasto")
+        val dialogBinding = DialogAddExpenseBinding.inflate(LayoutInflater.from(this))
+        val dialog = AlertDialog.Builder(this, R.style.Theme_Naxor_Dialog).setView(dialogBinding.root).create()
         
-        val layout = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(60, 40, 60, 10)
-        }
-        
-        val etConcepto = EditText(this).apply { hint = "Concepto (ej: Luz, Alquiler)" }
-        val etMonto = EditText(this).apply { 
-            hint = "Monto (S/)"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL 
-        }
-        
-        val spinner = Spinner(this)
         val categories = arrayOf("Servicios", "Alquiler", "Transporte", "Sueldos", "Mercancía", "Otros")
-        spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, categories)
+        dialogBinding.autoExpenseCategoria.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, categories))
+        dialogBinding.autoExpenseCategoria.setText(categories[0], false)
         
-        layout.addView(etConcepto)
-        layout.addView(etMonto)
-        layout.addView(spinner)
-        builder.setView(layout)
-
-        builder.setPositiveButton("Guardar") { _, _ ->
-            val concepto = etConcepto.text.toString()
-            val monto = etMonto.text.toString().toDoubleOrNull() ?: 0.0
-            val categoria = spinner.selectedItem.toString()
+        dialogBinding.btnCancelExpense.setOnClickListener { dialog.dismiss() }
+        
+        dialogBinding.btnSaveExpense.setOnClickListener {
+            val concepto = dialogBinding.etExpenseConcepto.text.toString().trim()
+            val monto = dialogBinding.etExpenseMonto.text.toString().toDoubleOrNull() ?: 0.0
+            val categoria = dialogBinding.autoExpenseCategoria.text.toString()
             
             if (concepto.isNotBlank() && monto > 0) {
                 lifecycleScope.launch(Dispatchers.IO) {
-                    database.expenseDao().insert(ExpenseEntity(concepto = concepto, monto = monto, categoria = categoria, isSynced = false))
+                    val newExpense = ExpenseEntity(
+                        concepto = concepto,
+                        monto = monto,
+                        categoria = categoria,
+                        isSynced = false
+                    )
+                    database.expenseDao().insert(newExpense)
                     SyncManager(this@GastosActivity).scheduleOfflineSync()
-                    withContext(Dispatchers.Main) { loadExpenses() }
+                    withContext(Dispatchers.Main) { 
+                        loadExpenses() 
+                        dialog.dismiss()
+                    }
                 }
             } else {
                 Toast.makeText(this, "Completa los campos correctamente", Toast.LENGTH_SHORT).show()
             }
         }
-        builder.setNegativeButton("Cancelar", null)
-        builder.show()
+        
+        dialog.show()
+        dialog.window?.let {
+            val width = (resources.displayMetrics.widthPixels * 0.95).toInt()
+            it.setLayout(width, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+            it.setBackgroundDrawableResource(android.R.color.transparent)
+        }
     }
 
     private fun showDeleteConfirmation(expense: ExpenseEntity) {
@@ -122,7 +121,10 @@ class GastosActivity : AppCompatActivity() {
             .setMessage("¿Deseas eliminar '${expense.concepto}'?")
             .setPositiveButton("Eliminar") { _, _ ->
                 lifecycleScope.launch(Dispatchers.IO) {
-                    database.expenseDao().delete(expense)
+                    expense.isDeleted = true
+                    expense.isSynced = false
+                    database.expenseDao().update(expense)
+                    SyncManager(this@GastosActivity).scheduleOfflineSync()
                     withContext(Dispatchers.Main) { loadExpenses() }
                 }
             }
@@ -144,7 +146,7 @@ class GastosActivity : AppCompatActivity() {
             val e = list[position]
             holder.b.tvGastoConcepto.text = e.concepto
             holder.b.tvGastoCategoria.text = e.categoria
-            holder.b.tvGastoMonto.text = String.format("- S/ %.2f", e.monto)
+            holder.b.tvGastoMonto.text = String.format(Locale.getDefault(), "- S/ %.2f", e.monto)
             holder.b.root.setOnLongClickListener {
                 onDelete(e)
                 true

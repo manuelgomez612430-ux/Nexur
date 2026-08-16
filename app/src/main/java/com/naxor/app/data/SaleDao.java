@@ -19,22 +19,25 @@ public interface SaleDao {
     @Delete
     void delete(SaleEntity sale);
 
-    @Query("SELECT * FROM sales ORDER BY timestamp DESC")
+    @Query("SELECT * FROM sales WHERE isDeleted = 0 ORDER BY timestamp DESC")
     List<SaleEntity> getAllSales();
 
-    @Query("SELECT SUM(total) FROM sales")
+    @Query("SELECT SUM(total) FROM sales WHERE isDeleted = 0")
     double getTotalSalesAmount();
 
-    @Query("SELECT SUM(total) FROM sales WHERE timestamp >= :startTime")
+    @Query("SELECT SUM(total) FROM sales WHERE timestamp >= :startTime AND isDeleted = 0")
     double getSalesAmountFrom(long startTime);
 
-    @Query("SELECT SUM(total - (costoUnitario * cantidad)) FROM sales WHERE timestamp >= :startTime")
+    @Query("SELECT SUM(total - (costoUnitario * cantidad)) FROM sales WHERE timestamp >= :startTime AND isDeleted = 0")
     double getProfitFrom(long startTime);
 
-    @Query("DELETE FROM sales")
+    @Query("UPDATE sales SET isDeleted = 1, isSynced = 0")
     void deleteAllSales();
 
-    @Query("SELECT * FROM sales WHERE isSynced = 0")
+    @Query("SELECT * FROM sales WHERE isSynced = 0 AND isDeleted = 0")
     List<SaleEntity> getAllUnsyncedSales();
+
+    @Query("SELECT * FROM sales WHERE isSynced = 0 AND isDeleted = 1")
+    List<SaleEntity> getDeletedSales();
 }
 

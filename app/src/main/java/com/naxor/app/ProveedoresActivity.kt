@@ -134,7 +134,10 @@ class ProveedoresActivity : AppCompatActivity() {
             .setMessage("¿Deseas eliminar a ${provider.nombre}?")
             .setPositiveButton("Eliminar") { _, _ ->
                 lifecycleScope.launch(Dispatchers.IO) {
-                    database.providerDao().delete(provider)
+                    provider.isDeleted = true
+                    provider.isSynced = false
+                    database.providerDao().update(provider)
+                    SyncManager(this@ProveedoresActivity).scheduleOfflineSync()
                     withContext(Dispatchers.Main) { loadProviders() }
                 }
             }

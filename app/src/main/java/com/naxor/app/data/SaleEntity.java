@@ -1,15 +1,17 @@
 package com.naxor.app.data;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "sales")
 public class SaleEntity {
-    @PrimaryKey(autoGenerate = true)
-    public int id;
+    @PrimaryKey
+    @NonNull
+    public String id;
     public String transactionId; // Nuevo campo para agrupar ventas
-    public Integer productId; // null if not from inventory
+    public String productId; // Cambiado a String
     public String nombreProducto;
     public String categoria; // Nuevo campo para mÃ©tricas
     public int cantidad;
@@ -18,12 +20,16 @@ public class SaleEntity {
     public double total;
     public String paymentMethod; // EFECTIVO, DIGITAL, TARJETA
     public long timestamp;
-    public boolean isSynced = true;
+    public boolean isSynced = false;
+    public boolean isDeleted = false;
 
-    public SaleEntity() {}
+    public SaleEntity() {
+        this.id = java.util.UUID.randomUUID().toString();
+    }
 
     @Ignore
-    public SaleEntity(String transactionId, Integer productId, String nombreProducto, String categoria, int cantidad, double precioVenta, double costoUnitario, String paymentMethod) {
+    public SaleEntity(String transactionId, String productId, String nombreProducto, String categoria, int cantidad, double precioVenta, double costoUnitario, String paymentMethod) {
+        this.id = java.util.UUID.randomUUID().toString();
         this.transactionId = transactionId;
         this.productId = productId;
         this.nombreProducto = nombreProducto;
@@ -34,6 +40,8 @@ public class SaleEntity {
         this.paymentMethod = paymentMethod;
         this.total = cantidad * precioVenta;
         this.timestamp = System.currentTimeMillis();
+        this.isSynced = false;
+        this.isDeleted = false;
     }
 }
 

@@ -11,10 +11,6 @@
             android:icon="@android:drawable/ic_menu_my_calendar"
             android:title="Lista de Fiados" />
         <item
-            android:id="@+id/menu_gastos"
-            android:icon="@android:drawable/ic_menu_edit"
-            android:title="Gastos del Local" />
-        <item
             android:id="@+id/menu_ganancias"
             android:icon="@android:drawable/ic_menu_view"
             android:title="Ver Ganancias" />

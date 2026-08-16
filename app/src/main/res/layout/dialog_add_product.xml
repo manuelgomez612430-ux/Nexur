@@ -18,14 +18,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="20dp">
 
             <TextView
                 android:id="@+id/tvDialogTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Registro de Producto"
-                android:textSize="20sp"
+                android:textSize="22sp"
                 android:textStyle="bold"
                 android:textColor="?attr/colorPrimary"
                 android:layout_marginBottom="20dp" />
@@ -36,15 +36,15 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="12dp">
+                android:layout_marginBottom="16dp">
 
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardProdPhoto"
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
-                    android:layout_marginEnd="12dp"
-                    app:cardCornerRadius="12dp"
-                    app:strokeWidth="1dp"
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    android:layout_marginEnd="16dp"
+                    app:cardCornerRadius="14dp"
+                    app:strokeWidth="1.5dp"
                     app:strokeColor="?attr/colorOutlineVariant">
                     <ImageView
                         android:id="@+id/ivDialogProdPhoto"
@@ -52,7 +52,7 @@
                         android:layout_height="match_parent"
                         android:src="@android:drawable/ic_menu_camera"
                         android:scaleType="centerInside"
-                        android:padding="16dp"
+                        android:padding="18dp"
                         android:contentDescription="Tomar foto" />
                 </com.google.android.material.card.MaterialCardView>
 
@@ -62,30 +62,36 @@
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:hint="Nombre del producto"
+                    app:endIconMode="custom"
+                    app:endIconDrawable="@android:drawable/ic_btn_speak_now"
                     android:id="@+id/layoutProdNombre">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etProdNombre"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textCapSentences"
-                        android:textSize="15sp" />
+                        android:textSize="16sp" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
             <!-- NUEVA DESCRIPCIÓN -->
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutProdDesc"
                 style="?attr/textInputOutlinedStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Descripción detallada del producto"
-                android:layout_marginBottom="12dp">
+                android:hint="Descripción (Opcional)"
+                app:endIconMode="custom"
+                app:endIconDrawable="@android:drawable/ic_btn_speak_now"
+                android:layout_marginBottom="16dp">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etProdDescripcion"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textCapSentences|textMultiLine"
-                    android:minLines="2"
-                    android:textSize="15sp" />
+                    android:minLines="1"
+                    android:maxLines="3"
+                    android:textSize="16sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- 2. CÓDIGO (ESCRIBIR O ESCANEAR) -->
@@ -93,7 +99,7 @@
                 style="?attr/textInputOutlinedStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Código (Escribir o Escanear)"
+                android:hint="Código de Barras"
                 android:layout_marginBottom="8dp"
                 app:endIconMode="custom"
                 app:endIconDrawable="@android:drawable/ic_menu_camera"
@@ -106,7 +112,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="text"
-                    android:textSize="15sp" />
+                    android:textSize="16sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- LISTA VISIBLE DE CÓDIGOS -->
@@ -114,9 +120,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Códigos vinculados:"
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
-                android:textColor="?attr/colorOnSurfaceVariant" />
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:layout_marginStart="4dp" />
 
             <LinearLayout
                 android:id="@+id/layoutCodesList"
@@ -128,14 +135,14 @@
                 <!-- Dinámico -->
             </LinearLayout>
 
-            <!-- CATEGORÍA (ESTILO AJUSTADO PARA DESPLIEGUE HACIA ABAJO) -->
+            <!-- CATEGORÍA -->
             <com.google.android.material.textfield.TextInputLayout
                 style="?attr/textInputOutlinedStyle"
                 android:id="@+id/layoutProdCategoria"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Categoría"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="20dp"
                 app:endIconMode="custom"
                 app:endIconDrawable="@android:drawable/arrow_down_float">
                 <com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -143,11 +150,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textCapSentences"
-                    android:textSize="15sp"
-                    android:paddingHorizontal="12dp"
-                    android:completionThreshold="1"
-                    android:dropDownAnchor="@id/layoutProdCategoria"
-                    android:dropDownVerticalOffset="2dp" />
+                    android:textSize="16sp"
+                    android:paddingHorizontal="16dp"
+                    android:completionThreshold="1" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- STOCK Y PRECIO VENTA (JUNTOS) -->
@@ -156,7 +161,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:baselineAligned="false"
-                android:layout_marginBottom="8dp">
+                android:layout_marginBottom="16dp">
 
                 <com.google.android.material.textfield.TextInputLayout
                     style="?attr/textInputOutlinedStyle"
@@ -170,7 +175,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="number"
-                        android:textSize="15sp" />
+                        android:textSize="16sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -179,45 +184,47 @@
                     android:layout_weight="1.2"
                     android:layout_height="wrap_content"
                     android:hint="Precio Venta"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="12dp"
                     app:prefixText="S/ ">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etProdVenta"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="numberDecimal"
-                        android:textSize="15sp" />
+                        android:textSize="16sp" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
-            <!-- CHECKS (Costo, Vence, Ubicación) -->
+            <!-- CHECKS (Costo, Vence, Ubicación) - CORREGIDO PARA QUE NO SE VEA ANGOSTO -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="12dp">
+                android:gravity="center"
+                android:layout_marginBottom="16dp">
 
                 <com.google.android.material.checkbox.MaterialCheckBox
                     android:id="@+id/cbShowBatchCost"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="¿Costo?"
-                    android:textSize="10sp" />
+                    android:text="Costo"
+                    android:textSize="12sp"
+                    android:layout_marginEnd="8dp" />
 
                 <com.google.android.material.checkbox.MaterialCheckBox
                     android:id="@+id/cbShowExpiration"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="¿Vence?"
-                    android:textSize="10sp" />
+                    android:text="Vence"
+                    android:textSize="12sp"
+                    android:layout_marginEnd="8dp" />
 
                 <com.google.android.material.checkbox.MaterialCheckBox
                     android:id="@+id/cbShowLocation"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="¿Ubicación?"
-                    android:textSize="10sp" />
+                    android:text="Lugar"
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <!-- CAMPOS OPCIONALES (HIDDEN BY DEFAULT) -->

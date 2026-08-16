@@ -142,7 +142,12 @@ class SalesHistoryActivity : AppCompatActivity() {
 
     private fun deleteTransaction(items: List<SaleEntity>) {
         lifecycleScope.launch(Dispatchers.IO) {
-            items.forEach { database.saleDao().delete(it) }
+            items.forEach { 
+                it.isDeleted = true
+                it.isSynced = false
+                database.saleDao().update(it)
+            }
+            SyncManager(this@SalesHistoryActivity).scheduleOfflineSync()
             loadData()
         }
     }
@@ -161,6 +166,7 @@ class SalesHistoryActivity : AppCompatActivity() {
     private fun deleteAllSales() {
         lifecycleScope.launch(Dispatchers.IO) {
             database.saleDao().deleteAllSales()
+            SyncManager(this@SalesHistoryActivity).scheduleOfflineSync()
             loadData()
         }
     }

@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class SyncManager(private val context: Context) {
 
@@ -24,21 +25,27 @@ class SyncManager(private val context: Context) {
     fun syncProductToCloud(product: ProductEntity) {
         val userId = auth.currentUser?.uid ?: return
         Log.d("SyncManager", "Intentando subir producto: ${product.nombre}")
-        db.collection("users").document(userId)
-            .collection("inventory").document(product.id.toString())
-            .set(product, SetOptions.merge())
-            .addOnSuccessListener {
+        
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // 2. Subir datos a Firestore
+                db.collection("users").document(userId)
+                    .collection("inventory").document(product.id)
+                    .set(product, SetOptions.merge()).await()
+                
                 Log.d("SyncManager", "Producto subido con éxito: ${product.nombre}")
-            }
-            .addOnFailureListener { e ->
+                product.isSynced = true
+                localDb.productDao().update(product)
+            } catch (e: Exception) {
                 Log.e("SyncManager", "Error al subir producto: ${e.message}")
             }
+        }
     }
 
     fun syncSaleToCloud(sale: SaleEntity) {
         val userId = auth.currentUser?.uid ?: return
         db.collection("users").document(userId)
-            .collection("sales").document(sale.id.toString())
+            .collection("sales").document(sale.id)
             .set(sale, SetOptions.merge())
     }
 
@@ -79,10 +86,10 @@ class SyncManager(private val context: Context) {
 
     // --- BORRADOS ---
 
-    fun deleteProductFromCloud(productId: Int) {
+    fun deleteProductFromCloud(productId: String) {
         val userId = auth.currentUser?.uid ?: return
         db.collection("users").document(userId)
-            .collection("inventory").document(productId.toString())
+            .collection("inventory").document(productId)
             .delete()
     }
 
@@ -117,7 +124,7 @@ class SyncManager(private val context: Context) {
                 // 1. Productos
                 val products = localDb.productDao().allProducts
                 products.forEach { 
-                    userRef.collection("inventory").document(it.id.toString()).set(it, SetOptions.merge()).await()
+                    userRef.collection("inventory").document(it.id).set(it, SetOptions.merge()).await()
                     it.isSynced = true
                     localDb.productDao().update(it)
                 }
@@ -125,12 +132,10 @@ class SyncManager(private val context: Context) {
                 // 2. Ventas
                 val sales = localDb.saleDao().allSales
                 sales.forEach { 
-                    userRef.collection("sales").document(it.id.toString()).set(it, SetOptions.merge()).await()
+                    userRef.collection("sales").document(it.id).set(it, SetOptions.merge()).await()
                     it.isSynced = true
                     localDb.saleDao().update(it)
                 }
-
-                // Otros modelos (Deudores, Gastos, etc. se podrÃ­an aÃ±adir aquÃ­ tambiÃ©n)
 
                 withContext(Dispatchers.Main) { onComplete() }
             } catch (e: Exception) {

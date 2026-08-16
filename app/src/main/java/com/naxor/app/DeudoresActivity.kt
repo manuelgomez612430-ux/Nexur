@@ -131,7 +131,9 @@ class DeudoresActivity : AppCompatActivity() {
                 lifecycleScope.launch(Dispatchers.IO) {
                     val nuevoTotal = deudor.deudaTotal - pago
                     if (nuevoTotal <= 0) {
-                        database.debtorDao().deleteDebtor(deudor)
+                        deudor.isDeleted = true
+                        deudor.isSynced = false
+                        database.debtorDao().updateDebtor(deudor)
                     } else {
                         val updated = deudor.copy(deudaTotal = nuevoTotal, isSynced = false)
                         database.debtorDao().updateDebtor(updated)
@@ -143,7 +145,10 @@ class DeudoresActivity : AppCompatActivity() {
         }
         builder.setNeutralButton("Liquidar Total") { _, _ ->
             lifecycleScope.launch(Dispatchers.IO) {
-                database.debtorDao().deleteDebtor(deudor)
+                deudor.isDeleted = true
+                deudor.isSynced = false
+                database.debtorDao().updateDebtor(deudor)
+                SyncManager(this@DeudoresActivity).scheduleOfflineSync()
                 withContext(Dispatchers.Main) { loadDebtors() }
             }
         }
