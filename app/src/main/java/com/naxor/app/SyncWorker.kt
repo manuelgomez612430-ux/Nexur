@@ -150,6 +150,16 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
                 Log.d("SyncWorker", "Proveedor sincronizado: ${p.nombre}")
             }
 
+            // 7. Logs de Movimientos
+            val logs = localDb.movementLogDao().getUnsyncedLogs()
+            Log.d("SyncWorker", "Logs pendientes: ${logs.size}")
+            for (l in logs) {
+                val updatedL = l.copy(isSynced = true)
+                userRef.collection("movement_logs").document(l.id).set(updatedL, SetOptions.merge()).await()
+                localDb.movementLogDao().insert(updatedL)
+                Log.d("SyncWorker", "Log sincronizado: ${l.title}")
+            }
+
             Log.d("SyncWorker", "Sincronización finalizada con éxito.")
             Result.success()
         } catch (e: Exception) {

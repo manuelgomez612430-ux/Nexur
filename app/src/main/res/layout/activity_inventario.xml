@@ -146,13 +146,13 @@
                         android:textSize="14sp"
                         android:paddingVertical="12dp"
                         android:paddingStart="12dp"
-                        android:paddingEnd="80dp" />
+                        android:paddingEnd="84dp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <LinearLayout
                     android:id="@+id/layoutSearchActions"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="0dp"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
                     app:layout_constraintTop_toTopOf="@+id/layoutVentaBusqueda"
@@ -162,8 +162,8 @@
 
                     <ImageButton
                         android:id="@+id/btnSearchClear"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
                         android:src="@android:drawable/ic_menu_close_clear_cancel"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         app:tint="?attr/colorOnSurfaceVariant"

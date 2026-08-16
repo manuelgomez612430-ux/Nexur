@@ -66,6 +66,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnIrVentas.setOnClickListener { startActivity(Intent(this, VentasActivity::class.java)) }
         binding.btnMainInventario.setOnClickListener { startActivity(Intent(this, InventarioActivity::class.java)) }
         binding.btnMainGastos.setOnClickListener { checkPinAndNavigate { startActivity(Intent(this, GastosActivity::class.java)) } }
+        binding.btnMainHistory.setOnClickListener { startActivity(Intent(this, MovementsActivity::class.java)) }
         
         binding.btnMainMoreOptions.setOnClickListener { toggleMoreOptions() }
         binding.btnMainCatalogo.setOnClickListener { toggleMoreOptions(); generatePDFCatalog() }

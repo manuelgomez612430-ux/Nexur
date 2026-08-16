@@ -1,11 +1,17 @@
 package com.naxor.app
 
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -13,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.ExpenseEntity
+import com.naxor.app.data.MovementLogEntity
 import com.naxor.app.databinding.ActivityGastosBinding
 import com.naxor.app.databinding.DialogAddExpenseBinding
 import com.naxor.app.databinding.ItemGastoBinding
@@ -26,6 +33,16 @@ class GastosActivity : AppCompatActivity() {
     private lateinit var binding: ActivityGastosBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
     private lateinit var adapter: GastosAdapter
+    private var currentDialogBinding: DialogAddExpenseBinding? = null
+    private var speechRecognizer: SpeechRecognizer? = null
+    private var listeningDialog: AlertDialog? = null
+
+    private val voiceLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0) ?: ""
+            currentDialogBinding?.etExpenseConcepto?.setText(spokenText.replaceFirstChar { it.uppercase() })
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,21 +90,55 @@ class GastosActivity : AppCompatActivity() {
     }
 
     private fun showAddExpenseDialog() {
-        val dialogBinding = DialogAddExpenseBinding.inflate(LayoutInflater.from(this))
-        val dialog = AlertDialog.Builder(this, R.style.Theme_Naxor_Dialog).setView(dialogBinding.root).create()
+        val db = DialogAddExpenseBinding.inflate(layoutInflater)
+        currentDialogBinding = db
+        val dialog = AlertDialog.Builder(this, R.style.Theme_Naxor_Dialog).setView(db.root).create()
         
-        val categories = arrayOf("Servicios", "Alquiler", "Transporte", "Sueldos", "Mercancía", "Otros")
-        dialogBinding.autoExpenseCategoria.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, categories))
-        dialogBinding.autoExpenseCategoria.setText(categories[0], false)
-        
-        dialogBinding.btnCancelExpense.setOnClickListener { dialog.dismiss() }
-        
-        dialogBinding.btnSaveExpense.setOnClickListener {
-            val concepto = dialogBinding.etExpenseConcepto.text.toString().trim()
-            val monto = dialogBinding.etExpenseMonto.text.toString().toDoubleOrNull() ?: 0.0
-            val categoria = dialogBinding.autoExpenseCategoria.text.toString()
+        // CARGAR CATEGORÍAS DINÁMICAS + PREDEFINIDAS
+        lifecycleScope.launch {
+            val dbCategories = withContext(Dispatchers.IO) { database.expenseDao().getUniqueCategories() }
+            val defaultCategories = listOf("Servicios", "Alquiler", "Transporte", "Sueldos", "Mercancía", "Personal", "Otros")
+            val allCategories = (dbCategories + defaultCategories).distinct().sorted()
             
-            if (concepto.isNotBlank() && monto > 0) {
+            val catAdapter = ArrayAdapter(this@GastosActivity, android.R.layout.simple_dropdown_item_1line, allCategories)
+            db.autoExpenseCategoria.setAdapter(catAdapter)
+            db.autoExpenseCategoria.threshold = 1 // Mostrar sugerencias desde la primera letra
+        }
+        
+        val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+
+        // BOTÓN DESPLEGABLE (FLECHA)
+        db.layoutExpenseCategoria.setEndIconOnClickListener {
+            // Cerrar teclado al abrir el desplegable
+            imm.hideSoftInputFromWindow(db.autoExpenseCategoria.windowToken, 0)
+            db.autoExpenseCategoria.clearFocus()
+            
+            // Forzar el umbral a 0 temporalmente para mostrar todo al pulsar la flecha
+            val oldThreshold = db.autoExpenseCategoria.threshold
+            db.autoExpenseCategoria.threshold = 0
+            db.autoExpenseCategoria.showDropDown()
+            db.autoExpenseCategoria.postDelayed({ db.autoExpenseCategoria.threshold = oldThreshold }, 500)
+        }
+
+        // AL SELECCIONAR UNA CATEGORÍA DEL MENÚ
+        db.autoExpenseCategoria.setOnItemClickListener { _, _, _, _ ->
+            // Cerrar teclado automáticamente
+            imm.hideSoftInputFromWindow(db.autoExpenseCategoria.windowToken, 0)
+            db.autoExpenseCategoria.clearFocus()
+        }
+
+        db.layoutExpenseConcepto.setEndIconOnClickListener {
+            startVoiceRecognition()
+        }
+
+        db.btnCancelExpense.setOnClickListener { dialog.dismiss() }
+        
+        db.btnSaveExpense.setOnClickListener {
+            val concepto = db.etExpenseConcepto.text.toString().trim()
+            val monto = db.etExpenseMonto.text.toString().toDoubleOrNull() ?: 0.0
+            val categoria = db.autoExpenseCategoria.text.toString().trim()
+            
+            if (concepto.isNotBlank() && monto > 0 && categoria.isNotBlank()) {
                 lifecycleScope.launch(Dispatchers.IO) {
                     val newExpense = ExpenseEntity(
                         concepto = concepto,
@@ -96,14 +147,29 @@ class GastosActivity : AppCompatActivity() {
                         isSynced = false
                     )
                     database.expenseDao().insert(newExpense)
+
+                    // REGISTRAR EN HISTORIAL
+                    val log = MovementLogEntity(
+                        type = "EXPENSE",
+                        title = "Gasto Registrado",
+                        description = "${newExpense.categoria}: ${newExpense.concepto}",
+                        value = "- S/ ${String.format(Locale.getDefault(), "%.2f", newExpense.monto)}",
+                        colorHex = "#DC2626",
+                        iconRes = android.R.drawable.ic_menu_send
+                    )
+                    database.movementLogDao().insert(log)
+                    SyncManager(this@GastosActivity).syncLogToCloud(log)
+
+                    SyncManager(this@GastosActivity).syncExpenseToCloud(newExpense)
                     SyncManager(this@GastosActivity).scheduleOfflineSync()
+                    
                     withContext(Dispatchers.Main) { 
                         loadExpenses() 
                         dialog.dismiss()
                     }
                 }
             } else {
-                Toast.makeText(this, "Completa los campos correctamente", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Completa Concepto, Monto y Categoría", Toast.LENGTH_SHORT).show()
             }
         }
         
@@ -115,6 +181,93 @@ class GastosActivity : AppCompatActivity() {
         }
     }
 
+    private fun startVoiceRecognition() {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            androidx.core.app.ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.RECORD_AUDIO), 100)
+            return
+        }
+
+        // PREPARAR INTENT COMÚN
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Diga el concepto claramente...")
+        }
+
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            // FALLBACK DIRECTO AL DIÁLOGO DE GOOGLE
+            try { voiceLauncher.launch(intent) } catch (e: Exception) { Toast.makeText(this, "Voz no disponible", Toast.LENGTH_SHORT).show() }
+            return
+        }
+
+        showListeningDialog()
+
+        speechRecognizer?.destroy()
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        
+        speechRecognizer?.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {}
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(rmsdB: Float) {
+                listeningDialog?.findViewById<View>(R.id.viewPulse)?.let { pulse ->
+                    // Sensibilidad aumentada: divisor más pequeño = más movimiento
+                    val scale = 1.0f + (rmsdB / 5f).coerceAtLeast(0f)
+                    pulse.scaleX = scale
+                    pulse.scaleY = scale
+                    // La opacidad también reacciona a la voz
+                    pulse.alpha = (0.5f + (rmsdB / 20f)).coerceIn(0.5f, 0.9f)
+                }
+            }
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() {
+                listeningDialog?.dismiss()
+            }
+            override fun onError(error: Int) {
+                listeningDialog?.dismiss()
+                Log.e("Speech", "Error: $error")
+                // FALLBACK AL DIÁLOGO DE GOOGLE SI EL SERVICIO INTERNO FALLA (Ej. Busy)
+                try { voiceLauncher.launch(intent) } catch (e: Exception) {}
+            }
+            override fun onResults(results: Bundle?) {
+                listeningDialog?.dismiss()
+                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                if (!matches.isNullOrEmpty()) {
+                    currentDialogBinding?.etExpenseConcepto?.setText(matches[0].replaceFirstChar { it.uppercase() })
+                }
+            }
+            override fun onPartialResults(partialResults: Bundle?) {}
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        })
+        speechRecognizer?.startListening(intent)
+    }
+
+    private fun showListeningDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_voice_listening, null)
+        listeningDialog = AlertDialog.Builder(this, R.style.Theme_Naxor_Dialog)
+            .setView(dialogView)
+            .setCancelable(true)
+            .setOnCancelListener { speechRecognizer?.stopListening() }
+            .create()
+        
+        listeningDialog?.show()
+        
+        // Animación suave infinita por si no hay voz todavía
+        val pulseView = dialogView.findViewById<View>(R.id.viewPulse)
+        pulseView.animate()
+            .scaleX(1.2f)
+            .scaleY(1.2f)
+            .alpha(0.5f)
+            .setDuration(800)
+            .withEndAction {
+                pulseView.animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .alpha(0.3f)
+                    .setDuration(800)
+                    .start()
+            }.start()
+    }
+
     private fun showDeleteConfirmation(expense: ExpenseEntity) {
         AlertDialog.Builder(this)
             .setTitle("Eliminar Gasto")
@@ -124,12 +277,30 @@ class GastosActivity : AppCompatActivity() {
                     expense.isDeleted = true
                     expense.isSynced = false
                     database.expenseDao().update(expense)
+
+                    // REGISTRAR EN HISTORIAL
+                    val log = MovementLogEntity(
+                        type = "EXPENSE_DELETED",
+                        title = "Gasto Eliminado",
+                        description = expense.concepto,
+                        value = "ELIMINADO",
+                        colorHex = "#95A5A6",
+                        iconRes = android.R.drawable.ic_menu_delete
+                    )
+                    database.movementLogDao().insert(log)
+                    SyncManager(this@GastosActivity).syncLogToCloud(log)
+
                     SyncManager(this@GastosActivity).scheduleOfflineSync()
                     withContext(Dispatchers.Main) { loadExpenses() }
                 }
             }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        speechRecognizer?.destroy()
     }
 
     inner class GastosAdapter(private val onDelete: (ExpenseEntity) -> Unit) : RecyclerView.Adapter<GastosAdapter.ViewHolder>() {

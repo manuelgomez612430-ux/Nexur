@@ -1,12 +1,14 @@
 package com.naxor.app
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.work.*
 import com.naxor.app.data.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -18,6 +20,7 @@ class SyncManager(private val context: Context) {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val storage = FirebaseStorage.getInstance()
     private val localDb = AppDatabase.getDatabase(context)
 
     // --- SUBIDAS INDIVIDUALES ---
@@ -47,6 +50,127 @@ class SyncManager(private val context: Context) {
         db.collection("users").document(userId)
             .collection("sales").document(sale.id)
             .set(sale, SetOptions.merge())
+    }
+
+    fun syncExpenseToCloud(expense: ExpenseEntity) {
+        val userId = auth.currentUser?.uid ?: return
+        Log.d("SyncManager", "Intentando subir gasto: ${expense.concepto}")
+        
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                db.collection("users").document(userId)
+                    .collection("expenses").document(expense.id)
+                    .set(expense, SetOptions.merge()).await()
+                
+                Log.d("SyncManager", "Gasto subido con éxito: ${expense.concepto}")
+                expense.isSynced = true
+                localDb.expenseDao().update(expense)
+            } catch (e: Exception) {
+                Log.e("SyncManager", "Error al subir gasto: ${e.message}")
+            }
+        }
+    }
+
+    fun syncLogToCloud(log: MovementLogEntity) {
+        val userId = auth.currentUser?.uid ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                db.collection("users").document(userId)
+                    .collection("movement_logs").document(log.id)
+                    .set(log, SetOptions.merge()).await()
+                log.isSynced = true
+                localDb.movementLogDao().insert(log)
+            } catch (e: Exception) {
+                Log.e("SyncManager", "Error al subir log: ${e.message}")
+            }
+        }
+    }
+
+    fun deleteExpenseFromCloud(expenseId: String) {
+        val userId = auth.currentUser?.uid ?: return
+        db.collection("users").document(userId)
+            .collection("expenses").document(expenseId)
+            .delete()
+    }
+
+    // --- AJUSTES DEL NEGOCIO ---
+
+    fun syncBusinessSettingsToCloud() {
+        val userId = auth.currentUser?.uid ?: return
+        val prefs = context.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        
+        val settings = mutableMapOf(
+            "business_name" to prefs.getString("business_name", "Mi Negocio"),
+            "business_address" to prefs.getString("business_address", ""),
+            "business_phone" to prefs.getString("business_phone", ""),
+            "business_ruc" to prefs.getString("business_ruc", ""),
+            "currency_symbol" to prefs.getString("currency_symbol", "S/"),
+            "user_pin" to prefs.getString("user_pin", "")
+        )
+
+        // Subir Logo si existe
+        val logoPath = prefs.getString("business_logo_local", null)
+        if (!logoPath.isNullOrEmpty()) {
+            val file = File(logoPath)
+            if (file.exists()) {
+                val logoRef = storage.reference.child("users/$userId/logo.png")
+                logoRef.putFile(Uri.fromFile(file)).addOnSuccessListener {
+                    logoRef.downloadUrl.addOnSuccessListener { uri: Uri ->
+                        settings["business_logo_url"] = uri.toString()
+                        db.collection("users").document(userId)
+                            .collection("settings").document("business")
+                            .set(settings, SetOptions.merge())
+                    }
+                }
+            }
+        }
+
+        db.collection("users").document(userId)
+            .collection("settings").document("business")
+            .set(settings, SetOptions.merge())
+    }
+
+    suspend fun downloadBusinessSettingsFromCloud() {
+        val userId = auth.currentUser?.uid ?: return
+        try {
+            val doc = db.collection("users").document(userId)
+                .collection("settings").document("business")
+                .get().await()
+
+            if (doc.exists()) {
+                val prefs = context.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+                val editor = prefs.edit()
+                
+                editor.putString("business_name", doc.getString("business_name"))
+                editor.putString("business_address", doc.getString("business_address"))
+                editor.putString("business_phone", doc.getString("business_phone"))
+                editor.putString("business_ruc", doc.getString("business_ruc"))
+                editor.putString("currency_symbol", doc.getString("currency_symbol"))
+                editor.putString("user_pin", doc.getString("user_pin"))
+                
+                // Descargar logo si hay URL
+                val logoUrl = doc.getString("business_logo_url")
+                if (!logoUrl.isNullOrEmpty()) {
+                    downloadLogoFromUrl(logoUrl)
+                }
+                
+                editor.apply()
+            }
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Error downloading settings: ${e.message}")
+        }
+    }
+
+    private fun downloadLogoFromUrl(url: String) {
+        val file = File(context.filesDir, "business_logo.png")
+        try {
+            storage.getReferenceFromUrl(url).getFile(file).addOnSuccessListener {
+                val prefs = context.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+                prefs.edit().putString("business_logo_local", file.absolutePath).apply()
+            }
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Error downloading logo file: ${e.message}")
+        }
     }
 
     // --- ESCUCHA EN TIEMPO REAL ---
@@ -137,6 +261,17 @@ class SyncManager(private val context: Context) {
                     localDb.saleDao().update(it)
                 }
 
+                // 3. Gastos
+                val expenses = localDb.expenseDao().getAllExpenses()
+                expenses.forEach { 
+                    userRef.collection("expenses").document(it.id).set(it, SetOptions.merge()).await()
+                    it.isSynced = true
+                    localDb.expenseDao().update(it)
+                }
+
+                // 4. Ajustes
+                syncBusinessSettingsToCloud()
+
                 withContext(Dispatchers.Main) { onComplete() }
             } catch (e: Exception) {
                 Log.e("SyncManager", "Error uploading all: ${e.message}")
@@ -173,6 +308,19 @@ class SyncManager(private val context: Context) {
                         localDb.saleDao().insert(s)
                     }
                 }
+
+                // 3. Descargar Gastos
+                val expensesSnap = userRef.collection("expenses").get().await()
+                for (doc in expensesSnap.documents) {
+                    val e = doc.toObject(ExpenseEntity::class.java)
+                    if (e != null) {
+                        e.isSynced = true
+                        localDb.expenseDao().insert(e)
+                    }
+                }
+
+                // 4. Descargar Ajustes
+                downloadBusinessSettingsFromCloud()
 
                 withContext(Dispatchers.Main) { onComplete() }
             } catch (e: Exception) {

@@ -27,4 +27,7 @@ interface ExpenseDao {
 
     @Query("SELECT * FROM expenses WHERE isSynced = 0 AND isDeleted = 1")
     suspend fun getDeletedExpenses(): List<ExpenseEntity>
+
+    @Query("SELECT DISTINCT categoria FROM expenses WHERE isDeleted = 0 ORDER BY categoria ASC")
+    suspend fun getUniqueCategories(): List<String>
 }

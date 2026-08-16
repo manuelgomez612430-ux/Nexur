@@ -22,38 +22,48 @@
             android:textColor="@color/red_600"
             android:layout_marginBottom="24dp" />
 
+        <!-- CONCEPTO CON VOZ -->
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutExpenseConcepto"
             style="?attr/textInputOutlinedStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Concepto (ej: Luz, Alquiler)"
+            android:hint="Concepto del gasto"
+            app:startIconDrawable="@android:drawable/ic_menu_edit"
+            app:endIconMode="custom"
+            app:endIconDrawable="@android:drawable/ic_btn_speak_now"
             android:layout_marginBottom="16dp">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etExpenseConcepto"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textCapSentences" />
+                android:inputType="textCapSentences"
+                android:textSize="16sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             style="?attr/textInputOutlinedStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Monto"
+            android:hint="Monto a pagar"
+            app:startIconDrawable="@android:drawable/ic_menu_send"
             app:prefixText="S/ "
             android:layout_marginBottom="16dp">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etExpenseMonto"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="numberDecimal" />
+                android:inputType="numberDecimal"
+                android:textSize="16sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutExpenseCategoria"
             style="?attr/textInputOutlinedStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Categoría"
+            app:startIconDrawable="@android:drawable/ic_menu_agenda"
             android:layout_marginBottom="24dp"
             app:endIconMode="custom"
             app:endIconDrawable="@android:drawable/arrow_down_float">
@@ -61,8 +71,10 @@
                 android:id="@+id/autoExpenseCategoria"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="none"
-                android:paddingHorizontal="16dp" />
+                android:inputType="textCapSentences"
+                android:paddingHorizontal="16dp"
+                android:textSize="16sp"
+                android:completionThreshold="1" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <LinearLayout
@@ -85,7 +97,8 @@
                 android:layout_height="56dp"
                 android:text="Guardar Gasto"
                 android:textStyle="bold"
-                app:backgroundTint="@color/red_600" />
+                app:backgroundTint="@color/red_600"
+                app:cornerRadius="16dp" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

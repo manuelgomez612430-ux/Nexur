@@ -75,6 +75,7 @@
         <activity android:name=".SettingsActivity" android:label="Ajustes de mi Negocio" />
         <activity android:name=".CustomersActivity" android:label="Mis Clientes VIP" />
         <activity android:name=".SalesHistoryActivity" android:label="Historial de Ventas" />
+        <activity android:name=".MovementsActivity" android:label="Historial de Movimientos" />
     </application>
 
 </manifest>

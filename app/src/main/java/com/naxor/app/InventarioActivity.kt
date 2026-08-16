@@ -34,6 +34,7 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import com.naxor.app.adapter.ProductAdapter
 import com.naxor.app.data.AppDatabase
+import com.naxor.app.data.MovementLogEntity
 import com.naxor.app.data.ProductEntity
 import com.naxor.app.databinding.ActivityInventarioBinding
 import com.naxor.app.databinding.DialogAddProductBinding
@@ -61,27 +62,30 @@ class InventarioActivity : AppCompatActivity() {
     private var isMultiSelectMode = false
     private var syncStatusText = "Sincronizado"
     private var lastUnsyncedCount = 0
+    private var isNetworkAvailable = true
+    private var currentIsSyncing = false
     private var speechRecognizer: SpeechRecognizer? = null
+    private var listeningDialog: AlertDialog? = null
 
-    // LANZADORES PARA RECONOCIMIENTO DE VOZ (COMO RESPALDO)
+    // LANZADORES PARA RECONOCIMIENTO DE VOZ (FALLBACK)
     private val voiceSearchLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0) ?: ""
-            binding.etSearchInventario.setText(spokenText)
+            binding.etSearchInventario.setText(spokenText.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() })
         }
     }
 
     private val voiceRegisterLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0) ?: ""
-            currentDialogBinding?.etProdNombre?.setText(spokenText)
+            currentDialogBinding?.etProdNombre?.setText(spokenText.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() })
         }
     }
 
     private val voiceDescLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0) ?: ""
-            currentDialogBinding?.etProdDescripcion?.setText(spokenText)
+            currentDialogBinding?.etProdDescripcion?.setText(spokenText.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() })
         }
     }
 
@@ -109,14 +113,14 @@ class InventarioActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (!isGranted) Toast.makeText(this, "Se requiere permiso de cámara y audio", Toast.LENGTH_LONG).show()
+            if (!isGranted) Toast.makeText(this, "Se requiere permiso de cÃ¡mara y audio", Toast.LENGTH_LONG).show()
         }
         requestPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-        // Solicitar audio tambien
         requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
 
         setupRecyclerView()
         setupListeners()
+        setupNetworkMonitoring()
         setupSyncIndicator()
         updateFABState() 
         loadProducts()
@@ -124,26 +128,95 @@ class InventarioActivity : AppCompatActivity() {
         SyncManager(this).startRealtimeInventorySync { loadProducts() }
     }
 
+    private fun setupNetworkMonitoring() {
+        val connectivityManager = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val networkRequest = android.net.NetworkRequest.Builder()
+            .addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+
+        connectivityManager.registerNetworkCallback(networkRequest, object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                runOnUiThread {
+                    isNetworkAvailable = true
+                    updateSyncIconState()
+                }
+            }
+
+            override fun onLost(network: android.net.Network) {
+                runOnUiThread {
+                    isNetworkAvailable = false
+                    updateSyncIconState()
+                }
+            }
+        })
+        
+        val activeInfo = connectivityManager.activeNetworkInfo
+        isNetworkAvailable = activeInfo != null && activeInfo.isConnected
+    }
+
     private fun setupSyncIndicator() {
         database.productDao().unsyncedCount.observe(this) { count ->
             lastUnsyncedCount = count ?: 0
-            updateSyncIconState(lastUnsyncedCount, false)
+            updateSyncIconState()
         }
 
         WorkManager.getInstance(this).getWorkInfosForUniqueWorkLiveData("offline_sync")
             .observe(this) { infoList ->
                 val isSyncing = infoList != null && infoList.any { it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED }
-                updateSyncIconState(lastUnsyncedCount, isSyncing)
+                updateSyncIconState(isSyncing)
             }
 
         binding.btnSyncIndicator.setOnClickListener {
+            val networkStatus = if (isNetworkAvailable) "📡 Conectado" else "📵 Sin Internet"
             AlertDialog.Builder(this)
-                .setTitle("Sincronización")
-                .setMessage("Estado: $syncStatusText\n\n¿Deseas forzar la subida de todos los datos ahora?")
+                .setTitle("SincronizaciÃ³n")
+                .setMessage("Estado: $syncStatusText\nRed: $networkStatus\n\nÂ¿Deseas forzar la subida de todos los datos ahora?")
                 .setPositiveButton("Sincronizar Todo") { _, _ -> forceFullUpload() }
-                .setNeutralButton("Probar Conexión") { _, _ -> testFirebaseWrite() }
+                .setNeutralButton("Probar ConexiÃ³n") { _, _ -> testFirebaseWrite() }
                 .setNegativeButton("Cerrar", null).show()
         }
+    }
+
+    private fun updateSyncIconState(isSyncing: Boolean = currentIsSyncing) {
+        currentIsSyncing = isSyncing
+        val color: Int
+        val animation: android.view.animation.Animation?
+        val iconRes: Int
+        
+        when {
+            isSyncing && isNetworkAvailable -> {
+                syncStatusText = "Sincronizando..."
+                color = getColor(R.color.sky_600)
+                iconRes = android.R.drawable.stat_notify_sync
+                animation = android.view.animation.RotateAnimation(0f, 360f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f).apply {
+                    duration = 1000
+                    repeatCount = android.view.animation.Animation.INFINITE
+                    interpolator = android.view.animation.LinearInterpolator()
+                }
+            }
+            !isNetworkAvailable -> {
+                syncStatusText = if (lastUnsyncedCount > 0) "Sin internet ($lastUnsyncedCount pendientes)" else "Sin conexiÃ³n (modo local)"
+                color = getColor(R.color.red_600)
+                iconRes = android.R.drawable.ic_menu_upload
+                animation = null
+            }
+            lastUnsyncedCount > 0 -> {
+                syncStatusText = "Hay $lastUnsyncedCount cambios pendientes"
+                color = getColor(R.color.red_600)
+                iconRes = android.R.drawable.ic_menu_upload
+                animation = null
+            }
+            else -> {
+                syncStatusText = "Todo sincronizado y a salvo"
+                color = getColor(R.color.emerald_600)
+                iconRes = android.R.drawable.ic_menu_upload
+                animation = null
+            }
+        }
+
+        binding.btnSyncIndicator.setImageResource(iconRes)
+        binding.btnSyncIndicator.imageTintList = android.content.res.ColorStateList.valueOf(color)
+        if (animation != null) binding.btnSyncIndicator.startAnimation(animation) else binding.btnSyncIndicator.clearAnimation()
     }
 
     private fun testFirebaseWrite() {
@@ -152,7 +225,7 @@ class InventarioActivity : AppCompatActivity() {
         com.google.firebase.firestore.FirebaseFirestore.getInstance()
             .collection("users").document(userId)
             .collection("test").add(testData)
-            .addOnSuccessListener { Toast.makeText(this, "¡Conexión Exitosa!", Toast.LENGTH_SHORT).show() }
+            .addOnSuccessListener { Toast.makeText(this, "Â¡ConexiÃ³n Exitosa!", Toast.LENGTH_SHORT).show() }
             .addOnFailureListener { e -> Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
     }
 
@@ -163,41 +236,6 @@ class InventarioActivity : AppCompatActivity() {
             SyncManager(this@InventarioActivity).scheduleOfflineSync()
             withContext(Dispatchers.Main) { Toast.makeText(this@InventarioActivity, "Sincronizando...", Toast.LENGTH_SHORT).show() }
         }
-    }
-
-    private fun updateSyncIconState(unsyncedCount: Int, isSyncing: Boolean) {
-        val color: Int
-        val animation: android.view.animation.Animation?
-        val iconRes: Int
-        
-        when {
-            isSyncing -> {
-                syncStatusText = "Sincronizando..."
-                color = getColor(R.color.sky_600)
-                iconRes = android.R.drawable.stat_notify_sync
-                animation = android.view.animation.RotateAnimation(0f, 360f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f).apply {
-                    duration = 1000
-                    repeatCount = android.view.animation.Animation.INFINITE
-                    interpolator = android.view.animation.LinearInterpolator()
-                }
-            }
-            unsyncedCount > 0 -> {
-                syncStatusText = "Pendiente ($unsyncedCount)"
-                color = getColor(R.color.red_600)
-                iconRes = android.R.drawable.ic_menu_upload
-                animation = null
-            }
-            else -> {
-                syncStatusText = "Sincronizado"
-                color = getColor(R.color.emerald_600)
-                iconRes = android.R.drawable.ic_menu_upload
-                animation = null
-            }
-        }
-
-        binding.btnSyncIndicator.setImageResource(iconRes)
-        binding.btnSyncIndicator.imageTintList = android.content.res.ColorStateList.valueOf(color)
-        if (animation != null) binding.btnSyncIndicator.startAnimation(animation) else binding.btnSyncIndicator.clearAnimation()
     }
 
     private fun setupRecyclerView() {
@@ -244,23 +282,13 @@ class InventarioActivity : AppCompatActivity() {
         binding.fabAddProducto.setOnClickListener { showProductDialog() }
         binding.btnExitEditorMode.setOnClickListener { toggleEditorMode(false) }
 
-        // MICRÓFONO INTEGRADO
-        binding.btnVoiceSearch.visibility = View.VISIBLE // Asegurar visibilidad inicial
+        binding.btnVoiceSearch.visibility = View.VISIBLE
         binding.btnVoiceSearch.setOnClickListener { startVoiceRecognition(1) }
-
-        // BOTÓN LIMPIAR MANUAL
-        binding.btnSearchClear.setOnClickListener {
-            binding.etSearchInventario.setText("")
-            binding.etSearchInventario.clearFocus()
-            hideKeyboard()
-            updateControlsLayout(false)
-        }
 
         binding.etSearchInventario.addTextChangedListener { text -> 
             currentSearchQuery = text.toString()
             loadProducts() 
             
-            // Mostrar/Ocultar botón X
             binding.btnSearchClear.visibility = if (currentSearchQuery.isNotEmpty()) View.VISIBLE else View.GONE
             
             if (currentSearchQuery.isEmpty() && !binding.etSearchInventario.hasFocus()) {
@@ -297,7 +325,7 @@ class InventarioActivity : AppCompatActivity() {
             }
         })
         
-        binding.layoutVentaBusqueda.setEndIconOnClickListener {
+        binding.btnSearchClear.setOnClickListener {
             binding.etSearchInventario.setText("")
             binding.etSearchInventario.clearFocus()
             hideKeyboard()
@@ -317,6 +345,133 @@ class InventarioActivity : AppCompatActivity() {
                 else -> false
             }.also { binding.drawerLayoutInventario.closeDrawer(GravityCompat.END) }
         }
+    }
+
+    private fun startVoiceRecognition(targetFieldId: Int) {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            androidx.core.app.ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.RECORD_AUDIO), 100)
+            return
+        }
+
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            Toast.makeText(this, "Servicio de voz no disponible", Toast.LENGTH_SHORT).show()
+            // Fallback
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            }
+            try {
+                when(targetFieldId) {
+                    1 -> voiceSearchLauncher.launch(intent)
+                    2 -> voiceRegisterLauncher.launch(intent)
+                    3 -> voiceDescLauncher.launch(intent)
+                }
+            } catch (e: Exception) { showVoiceErrorDialog() }
+            return
+        }
+
+        showListeningDialog()
+
+        speechRecognizer?.destroy()
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-ES") 
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            putExtra("android.speech.extra.DICTATION_MODE", true)
+        }
+
+        speechRecognizer?.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {}
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(rmsdB: Float) {
+                listeningDialog?.findViewById<View>(R.id.viewPulse)?.let { pulse ->
+                    val scale = 1.0f + (rmsdB / 5f).coerceAtLeast(0f)
+                    pulse.scaleX = scale
+                    pulse.scaleY = scale
+                    pulse.alpha = (0.5f + (rmsdB / 20f)).coerceIn(0.5f, 0.9f)
+                }
+            }
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() {
+                listeningDialog?.dismiss()
+            }
+            override fun onError(error: Int) {
+                listeningDialog?.dismiss()
+                Log.e("Speech", "Error detectado: $error")
+                try {
+                    val intentBackup = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                    }
+                    when(targetFieldId) {
+                        1 -> voiceSearchLauncher.launch(intentBackup)
+                        2 -> voiceRegisterLauncher.launch(intentBackup)
+                        3 -> voiceDescLauncher.launch(intentBackup)
+                    }
+                } catch (e: Exception) {}
+            }
+            override fun onResults(results: Bundle?) {
+                listeningDialog?.dismiss()
+                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                if (!matches.isNullOrEmpty()) {
+                    val text = matches[0].replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+                    when (targetFieldId) {
+                        1 -> binding.etSearchInventario.setText(text)
+                        2 -> currentDialogBinding?.etProdNombre?.setText(text)
+                        3 -> currentDialogBinding?.etProdDescripcion?.setText(text)
+                    }
+                }
+            }
+            override fun onPartialResults(partialResults: Bundle?) {}
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        })
+
+        speechRecognizer?.startListening(intent)
+    }
+
+    private fun showListeningDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_voice_listening, null)
+        listeningDialog = AlertDialog.Builder(this, R.style.Theme_Naxor_Dialog)
+            .setView(dialogView)
+            .setCancelable(true)
+            .setOnCancelListener { speechRecognizer?.stopListening() }
+            .create()
+        
+        listeningDialog?.show()
+        
+        val pulseView = dialogView.findViewById<View>(R.id.viewPulse)
+        pulseView.animate()
+            .scaleX(1.2f)
+            .scaleY(1.2f)
+            .alpha(0.5f)
+            .setDuration(800)
+            .withEndAction {
+                pulseView.animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .alpha(0.3f)
+                    .setDuration(800)
+                    .start()
+            }.start()
+    }
+
+    private fun showVoiceErrorDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("ConfiguraciÃ³n de Voz")
+            .setMessage("Para usar el micrÃ³fono sin internet, Nexur necesita que el paquete de idioma estÃ© descargado.\n\nÂ¿Deseas activarlo ahora?")
+            .setPositiveButton("SÃ­, Activar") { _, _ ->
+                try {
+                    val intent = Intent(Intent.ACTION_MAIN)
+                    intent.setClassName("com.google.android.googlequicksearchbox", "com.google.android.apps.gsa.settings_v2.SettingsRootActivity")
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
+                }
+            }
+            .setNegativeButton("Luego", null)
+            .show()
     }
 
     private fun hideKeyboard() {
@@ -354,9 +509,8 @@ class InventarioActivity : AppCompatActivity() {
             
             set.connect(binding.btnSortOrder.id, androidx.constraintlayout.widget.ConstraintSet.TOP, binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
             set.setMargin(binding.btnSortOrder.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 12)
-            binding.btnFilterCategory.text = if (currentCategory == "Todos") "Categoría" else currentCategory
+            binding.btnFilterCategory.text = if (currentCategory == "Todos") "CategorÃ­a" else currentCategory
         } else {
-            // MODO COMPACTO
             set.clear(binding.layoutVentaBusqueda.id, androidx.constraintlayout.widget.ConstraintSet.END)
             set.constrainWidth(binding.layoutVentaBusqueda.id, 100.dpToPx()) 
             binding.layoutVentaBusqueda.hint = ""
@@ -384,7 +538,7 @@ class InventarioActivity : AppCompatActivity() {
     private fun showMultiDeleteConfirmation() {
         val selected = adapter.getSelectedItems()
         if (selected.isEmpty()) return
-        AlertDialog.Builder(this).setTitle("Eliminar").setMessage("¿Borrar ${selected.size} productos?").setPositiveButton("Eliminar") { _, _ ->
+        AlertDialog.Builder(this).setTitle("Eliminar").setMessage("Â¿Borrar ${selected.size} productos?").setPositiveButton("Eliminar") { _, _ ->
             lifecycleScope.launch(Dispatchers.IO) {
                 selected.forEach { it.isDeleted = true; it.isSynced = false; database.productDao().update(it) }
                 SyncManager(this@InventarioActivity).scheduleOfflineSync()
@@ -416,7 +570,7 @@ class InventarioActivity : AppCompatActivity() {
     private fun exportInventoryToUri(uri: android.net.Uri) {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val csv = StringBuilder("Cód,Producto,Cat,Stock,Costo,Venta\n")
+                val csv = StringBuilder("CÃ³d,Producto,Cat,Stock,Costo,Venta\n")
                 database.productDao().allProducts.forEach { p -> csv.append("${p.codigo},${p.nombre},${p.categoria},${p.stock},${p.precioCosto},${p.precioVenta}\n") }
                 contentResolver.openOutputStream(uri)?.use { it.write(csv.toString().toByteArray()) }
             } catch (e: Exception) { e.printStackTrace() }
@@ -558,7 +712,7 @@ class InventarioActivity : AppCompatActivity() {
                                 }
                                 val tg = ToneGenerator(android.media.AudioManager.STREAM_RING, 100)
                                 tg.startTone(ToneGenerator.TONE_PROP_BEEP, 200)
-                                Toast.makeText(this, "Código capturado: $code", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this, "CÃ³digo capturado: $code", Toast.LENGTH_SHORT).show()
                             } catch (e: Exception) {}
                             addedCodes.add(code)
                             refreshCodesUI()
@@ -583,7 +737,9 @@ class InventarioActivity : AppCompatActivity() {
         fun mostrarCategorias() {
             imm.hideSoftInputFromWindow(db.autoProdCategoria.windowToken, 0)
             db.autoProdCategoria.clearFocus()
-            db.autoProdCategoria.postDelayed({ db.autoProdCategoria.showDropDown() }, 250)
+            db.autoProdCategoria.postDelayed({
+                db.autoProdCategoria.showDropDown()
+            }, 250)
         }
 
         db.layoutProdCategoria.setEndIconOnClickListener {
@@ -593,10 +749,19 @@ class InventarioActivity : AppCompatActivity() {
             db.autoProdCategoria.postDelayed({ db.autoProdCategoria.threshold = oldThreshold }, 600)
         }
 
-        db.autoProdCategoria.setOnClickListener { if (db.autoProdCategoria.text.isNotEmpty()) db.autoProdCategoria.showDropDown() }
+        db.autoProdCategoria.setOnClickListener {
+            if (db.autoProdCategoria.text.isNotEmpty()) {
+                db.autoProdCategoria.showDropDown()
+            }
+        }
 
-        db.layoutProdNombre.setEndIconOnClickListener { startVoiceRecognition(2) }
-        db.layoutProdDesc.setEndIconOnClickListener { startVoiceRecognition(3) }
+        db.layoutProdNombre.setEndIconOnClickListener {
+            startVoiceRecognition(2)
+        }
+
+        db.layoutProdDesc.setEndIconOnClickListener {
+            startVoiceRecognition(3)
+        }
 
         db.btnConfirmAdd.setOnClickListener {
             val name = db.etProdNombre.text.toString().trim()
@@ -614,15 +779,15 @@ class InventarioActivity : AppCompatActivity() {
                         if (existing != null && existing.id != (p?.id ?: "")) {
                             AlertDialog.Builder(this@InventarioActivity)
                                 .setTitle("Producto existente")
-                                .setMessage("¿Unificar stock con '$name'?")
-                                .setPositiveButton("Sí") { _, _ -> unificarProductos(existing, p, addedCodes.joinToString(","), stock, cost, sale, 0, p?.photoPath, loc, desc, dialog) }
+                                .setMessage("Â¿Unificar stock con '$name'?")
+                                .setPositiveButton("SÃ­") { _, _ -> unificarProductos(existing, p, addedCodes.joinToString(","), stock, cost, sale, 0, p?.photoPath, loc, desc, dialog) }
                                 .setNegativeButton("No", null).show()
                         } else {
                             saveOrUpdateProduct(p, addedCodes.joinToString(","), name, cat, stock, cost, sale, 0, p?.photoPath, loc, desc, dialog)
                         }
                     }
                 }
-            } else Toast.makeText(this, "Nombre y categoría requeridos", Toast.LENGTH_SHORT).show()
+            } else Toast.makeText(this, "Nombre y categorÃ­a requeridos", Toast.LENGTH_SHORT).show()
         }
         
         db.btnCancelAdd.setOnClickListener { dialog.dismiss() }
@@ -636,6 +801,19 @@ class InventarioActivity : AppCompatActivity() {
 
     private fun saveOrUpdateProduct(p: ProductEntity?, code: String, name: String, cat: String, stock: Int, cost: Double, sale: Double, exp: Long, photo: String?, loc: String, desc: String, d: AlertDialog) {
         lifecycleScope.launch(Dispatchers.IO) {
+            val isNew = p == null
+            val changes = mutableListOf<String>()
+            
+            // Detectar cambios antes de aplicar
+            if (p != null) {
+                if (p.nombre != name) changes.add("Nombre")
+                if (p.categoria != cat) changes.add("CategorÃ­a")
+                if (p.stock != stock) changes.add("Stock (${p.stock} -> $stock)")
+                if (p.precioVenta != sale) changes.add("Precio (S/ ${p.precioVenta} -> S/ $sale)")
+                if (p.precioCosto != cost) changes.add("Costo")
+                if (p.codigo != code) changes.add("CÃ³digo")
+            }
+
             val productToSync = if (p != null) {
                 p.apply { codigo = code; nombre = name; categoria = cat; this.stock = stock; precioCosto = cost; precioVenta = sale; photoPath = photo; location = loc; descripcion = desc; isSynced = false }
                 database.productDao().update(p)
@@ -645,6 +823,26 @@ class InventarioActivity : AppCompatActivity() {
                 database.productDao().insert(newP)
                 newP
             }
+
+            // REGISTRAR EN HISTORIAL DE MOVIMIENTOS DETALLADO
+            val detailDesc = if (isNew) {
+                "${productToSync.categoria}: ${productToSync.nombre}"
+            } else {
+                if (changes.isEmpty()) "Datos actualizados en ${productToSync.nombre}"
+                else "En ${productToSync.nombre} se cambiÃ³: ${changes.joinToString(", ")}"
+            }
+
+            val log = MovementLogEntity(
+                type = if (isNew) "PRODUCT_CREATED" else "PRODUCT_UPDATED",
+                title = if (isNew) "Nuevo Producto" else "Producto Modificado",
+                description = detailDesc,
+                value = if (isNew) "Stock: ${productToSync.stock}" else "Stock act: ${productToSync.stock}",
+                colorHex = "#8E44AD",
+                iconRes = android.R.drawable.ic_menu_edit
+            )
+            database.movementLogDao().insert(log)
+            SyncManager(this@InventarioActivity).syncLogToCloud(log)
+
             SyncManager(this@InventarioActivity).syncProductToCloud(productToSync)
             SyncManager(this@InventarioActivity).scheduleOfflineSync()
             withContext(Dispatchers.Main) { loadProducts(); d.dismiss() }
@@ -653,10 +851,24 @@ class InventarioActivity : AppCompatActivity() {
 
     private fun unificarProductos(e: ProductEntity, p: ProductEntity?, code: String, s: Int, c: Double, sp: Double, exp: Long, ph: String?, loc: String, desc: String, d: AlertDialog) {
         lifecycleScope.launch(Dispatchers.IO) {
+            val oldStock = e.stock
             val codes = e.codigo?.split(",")?.toMutableList() ?: mutableListOf()
             code.split(",").forEach { if (it.isNotBlank() && !codes.contains(it)) codes.add(it) }
             e.apply { codigo = codes.joinToString(","); stock += s; precioCosto += c; precioVenta = sp; photoPath = ph; location = loc; descripcion = desc; isSynced = false }
             database.productDao().update(e)
+            
+            // REGISTRAR EN HISTORIAL DETALLADO
+            val log = MovementLogEntity(
+                type = "PRODUCT_UPDATED",
+                title = "Productos Unificados",
+                description = "Se sumÃ³ stock a ${e.nombre}. Cambio: $oldStock -> ${e.stock}",
+                value = "+$s uds",
+                colorHex = "#8E44AD",
+                iconRes = android.R.drawable.ic_menu_edit
+            )
+            database.movementLogDao().insert(log)
+            SyncManager(this@InventarioActivity).syncLogToCloud(log)
+
             if (p != null && p.id != e.id) { p.isDeleted = true; p.isSynced = false; database.productDao().update(p) }
             SyncManager(this@InventarioActivity).scheduleOfflineSync()
             withContext(Dispatchers.Main) { loadProducts(); d.dismiss() }
@@ -667,7 +879,7 @@ class InventarioActivity : AppCompatActivity() {
         val db = DialogViewLabelBinding.inflate(layoutInflater)
         val d = AlertDialog.Builder(this, R.style.Theme_Naxor_Dialog).setView(db.root).create()
         db.tvLabelProdName.text = p.nombre
-        db.tvLabelProdDesc.text = p.descripcion ?: "Sin descripción."
+        db.tvLabelProdDesc.text = p.descripcion ?: "Sin descripciÃ³n."
 
         if (!p.photoPath.isNullOrEmpty()) {
             try {
@@ -688,7 +900,7 @@ class InventarioActivity : AppCompatActivity() {
         } catch (e: Exception) {}
 
         val codes = p.codigo?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
-        db.tvLabelProdCode.text = if (codes.isNotEmpty()) codes.joinToString("\n") { "• $it" } else "---"
+        db.tvLabelProdCode.text = if (codes.isNotEmpty()) codes.joinToString("\n") { "â€¢ $it" } else "---"
         db.cbShowLinkedCodes.setOnCheckedChangeListener { _, isChecked ->
             db.cardLinkedCodes.visibility = if (isChecked) View.VISIBLE else View.GONE
         }
@@ -711,67 +923,32 @@ class InventarioActivity : AppCompatActivity() {
         } catch (e: Exception) {}
     }
 
-    private fun startVoiceRecognition(targetFieldId: Int) {
-        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            androidx.core.app.ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.RECORD_AUDIO), 100)
-            return
-        }
+    private fun showDeleteConfirmation(p: ProductEntity) {
+        AlertDialog.Builder(this).setTitle("Eliminar").setMessage("¿Borrar ${p.nombre}?").setPositiveButton("Sí") { _, _ ->
+            lifecycleScope.launch(Dispatchers.IO) { 
+                p.isDeleted = true
+                p.isSynced = false
+                database.productDao().update(p)
+                
+                // REGISTRAR EN HISTORIAL DE MOVIMIENTOS
+                val log = MovementLogEntity(
+                    type = "PRODUCT_DELETED",
+                    title = "Producto Eliminado",
+                    description = p.nombre,
+                    value = "ELIMINADO",
+                    colorHex = "#95A5A6",
+                    iconRes = android.R.drawable.ic_menu_delete
+                )
+                database.movementLogDao().insert(log)
+                SyncManager(this@InventarioActivity).syncLogToCloud(log)
 
-        // Feedback táctil al iniciar
-        try {
-            val vibrator = getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                vibrator.vibrate(android.os.VibrationEffect.createOneShot(30, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                SyncManager(this@InventarioActivity).scheduleOfflineSync()
+                withContext(Dispatchers.Main) { loadProducts() } 
             }
-        } catch (e: Exception) {}
-
-        speechRecognizer?.destroy()
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
-        
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-ES") // Forzar español estándar
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-        }
-
-        speechRecognizer?.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) {
-                Toast.makeText(this@InventarioActivity, "Escuchando...", Toast.LENGTH_SHORT).show()
-            }
-            override fun onBeginningOfSpeech() {}
-            override fun onRmsChanged(rmsdB: Float) {}
-            override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {}
-            override fun onError(error: Int) {
-                Log.e("Speech", "Error detectado: $error")
-                if (error == 12 || error == 5) {
-                    showVoiceErrorDialog() // Si no hay idioma o el servicio falla, mostrar la guía
-                } else {
-                    val msg = when (error) {
-                        SpeechRecognizer.ERROR_NETWORK -> "Sin conexión a internet"
-                        SpeechRecognizer.ERROR_NO_MATCH -> "No te escuché bien"
-                        else -> "Voz no disponible momentáneamente"
-                    }
-                    Toast.makeText(this@InventarioActivity, msg, Toast.LENGTH_SHORT).show()
-                }
-            }
-            override fun onResults(results: Bundle?) {
-                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                if (!matches.isNullOrEmpty()) {
-                    val text = matches[0].replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-                    when (targetFieldId) {
-                        1 -> binding.etSearchInventario.setText(text)
-                        2 -> currentDialogBinding?.etProdNombre?.setText(text)
-                        3 -> currentDialogBinding?.etProdDescripcion?.setText(text)
-                    }
-                }
-            }
-            override fun onPartialResults(partialResults: Bundle?) {}
-            override fun onEvent(eventType: Int, params: Bundle?) {}
-        })
-
-        speechRecognizer?.startListening(intent)
+        }.setNegativeButton("No", null).show()
     }
+
+    private fun String.capitalize() = this.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
 
     private fun generarCodigoAutomatico(db: DialogAddProductBinding, codes: MutableList<String>, onRefresh: () -> Unit) {
         lifecycleScope.launch(Dispatchers.IO) {
@@ -782,35 +959,4 @@ class InventarioActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) { if(!codes.contains(next)) { codes.add(next); onRefresh() } }
         }
     }
-
-    private fun showDeleteConfirmation(p: ProductEntity) {
-        AlertDialog.Builder(this).setTitle("Eliminar").setMessage("¿Borrar ${p.nombre}?").setPositiveButton("Sí") { _, _ ->
-            lifecycleScope.launch(Dispatchers.IO) { 
-                p.isDeleted = true
-                p.isSynced = false
-                database.productDao().update(p)
-                SyncManager(this@InventarioActivity).scheduleOfflineSync()
-                withContext(Dispatchers.Main) { loadProducts() } 
-            }
-        }.setNegativeButton("No", null).show()
-    }
-
-    private fun showVoiceErrorDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("Configuración de Voz")
-            .setMessage("Para usar el micrófono sin internet, Nexur necesita que el paquete de idioma esté descargado.\n\n¿Deseas activarlo ahora?")
-            .setPositiveButton("Sí, Activar") { _, _ ->
-                try {
-                    val intent = Intent(Intent.ACTION_MAIN)
-                    intent.setClassName("com.google.android.googlequicksearchbox", "com.google.android.apps.gsa.settings_v2.SettingsRootActivity")
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
-                }
-            }
-            .setNegativeButton("Luego", null)
-            .show()
-    }
-
-    private fun String.capitalize() = this.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
 }

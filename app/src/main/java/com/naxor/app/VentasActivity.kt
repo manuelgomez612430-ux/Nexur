@@ -16,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.naxor.app.adapter.CartAdapter
 import com.naxor.app.data.AppDatabase
+import com.naxor.app.data.MovementLogEntity
 import com.naxor.app.data.ProductEntity
 import com.naxor.app.data.SaleEntity
 import com.naxor.app.databinding.ActivityVentasBinding
@@ -205,6 +206,18 @@ class VentasActivity : AppCompatActivity() {
                     sale.paymentMethod = method
                     sale.isSynced = false
                     database.saleDao().insert(sale)
+
+                    // REGISTRAR EN HISTORIAL
+                    val log = MovementLogEntity(
+                        type = "SALE",
+                        title = "Venta Realizada",
+                        description = "${sale.cantidad} x ${sale.nombreProducto}",
+                        value = "+ S/ ${String.format(Locale.getDefault(), "%.2f", sale.total)}",
+                        colorHex = "#059669",
+                        iconRes = android.R.drawable.ic_menu_add
+                    )
+                    database.movementLogDao().insert(log)
+                    SyncManager(this@VentasActivity).syncLogToCloud(log)
                     
                     if (product != null) {
                         // Lógica de Inversión Dinámica:
