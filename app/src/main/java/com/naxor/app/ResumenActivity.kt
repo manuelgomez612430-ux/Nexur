@@ -204,7 +204,8 @@ class ResumenActivity : AppCompatActivity() {
                 val costoVentas = ventasTotales - gananciaBruta
                 val gastosTotales = expenses.sumOf { it.monto }
                 val utilidadNeta = gananciaBruta - gastosTotales
-                val inversionStock = products.sumOf { it.precioCosto * it.stock }
+                val inversionTotal = products.sumOf { it.precioCosto * it.stock }
+                val valorInventario = products.sumOf { it.precioVenta * it.stock }
 
                 // 3. Procesar datos para gráficos
                 val entriesPie = sales.groupBy { it.categoria }
@@ -239,7 +240,7 @@ class ResumenActivity : AppCompatActivity() {
                     .take(3)
 
                 // 5. Actualizar UI
-                updateUI(ventasTotales, gananciaBruta, gastosTotales, utilidadNeta, inversionStock, topProducts, ticketPromedio, costoVentas)
+                updateUI(ventasTotales, gananciaBruta, gastosTotales, utilidadNeta, inversionTotal, valorInventario, topProducts, ticketPromedio, costoVentas)
                 updateChartsUI(entriesPie, entriesSales, entriesExpenses, days)
 
             } catch (e: Exception) {
@@ -248,7 +249,7 @@ class ResumenActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateUI(ventas: Double, bruta: Double, gastos: Double, neta: Double, inversion: Double, top: List<Pair<String, Int>>, ticket: Double, cogs: Double) {
+    private fun updateUI(ventas: Double, bruta: Double, gastos: Double, neta: Double, inversion: Double, valorInv: Double, top: List<Pair<String, Int>>, ticket: Double, cogs: Double) {
         val currency = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("currency_symbol", "S/")
         
         binding.tvVentasTotalesResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", ventas)}"
@@ -256,6 +257,7 @@ class ResumenActivity : AppCompatActivity() {
         binding.tvGastosTotalesResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", gastos)}"
         
         binding.tvInversionResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", inversion)}"
+        binding.tvValorInventarioResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", valorInv)}"
         binding.tvGananciaResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", bruta)}"
         
         // Nuevas métricas de la guía

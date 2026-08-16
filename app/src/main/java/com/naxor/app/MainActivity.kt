@@ -4,12 +4,13 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.graphics.RenderEffect
 import android.graphics.Shader
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -21,6 +22,10 @@ import com.naxor.app.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.naxor.app.data.QuickAction
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -29,21 +34,52 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
+    private var activityFilters = mutableSetOf<String>()
+    private lateinit var quickActionsAdapter: QuickActionsAdapter
+
+    private fun loadActivityFilters() {
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val saved = prefs.getString("activity_filters_v2", "TODOS") ?: "TODOS"
+        activityFilters = saved.split(",").filter { it.isNotEmpty() }.toMutableSet()
+        if (activityFilters.isEmpty()) activityFilters.add("TODOS")
+    }
+
+    private fun saveActivityFilters() {
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        prefs.edit().putString("activity_filters_v2", activityFilters.joinToString(",")).apply()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        loadActivityFilters()
         setupListeners()
-        renderQuickTools()
+        setupRealtimeActivityFeed()
+        setupQuickActionsRecyclerView()
+        renderQuickActions()
+    }
+
+    private fun setupQuickActionsRecyclerView() {
+        quickActionsAdapter = QuickActionsAdapter(mutableListOf()) { newOrder ->
+            getSharedPreferences("AppPrefs", MODE_PRIVATE)
+                .edit()
+                .putString("quick_actions_list", newOrder.joinToString(","))
+                .apply()
+        }
+        binding.containerQuickActions.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = quickActionsAdapter
+            ItemTouchHelper(QuickActionTouchHelper(quickActionsAdapter)).attachToRecyclerView(this)
+        }
     }
 
     override fun onResume() {
         super.onResume()
         loadDashboardData()
         updateMailboxBadge()
-        renderQuickTools()
+        renderQuickActions()
         SyncManager(this).scheduleOfflineSync()
     }
 
@@ -79,16 +115,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         binding.btnIrVentas.setOnClickListener { startActivity(Intent(this, VentasActivity::class.java)) }
-        binding.btnMainInventario.setOnClickListener { startActivity(Intent(this, InventarioActivity::class.java)) }
-        binding.btnMainGastos.setOnClickListener { checkPinAndNavigate { startActivity(Intent(this, GastosActivity::class.java)) } }
-        binding.btnMainHistory.setOnClickListener { startActivity(Intent(this, MovementsActivity::class.java)) }
         
-        binding.btnMainMoreOptions.setOnClickListener { toggleMoreOptions() }
-        binding.viewDimBackground.setOnClickListener { if (isMoreOptionsOpen) toggleMoreOptions() }
+        binding.cardActivityPreview.setOnClickListener { startActivity(Intent(this, MovementsActivity::class.java)) }
+        binding.btnViewAllActivity.setOnClickListener { startActivity(Intent(this, MovementsActivity::class.java)) }
         
         binding.btnOpenMenuMain.setOnClickListener { binding.drawerLayoutMain.openDrawer(GravityCompat.END) }
 
         binding.btnInfoDashboard.setOnClickListener { showFinancialInfoDialog() }
+
+        binding.btnFilterActivityMain.setOnClickListener { showActivityFilterDialog() }
 
         binding.cardDashboard.setOnClickListener { 
             checkPinAndNavigate { startActivity(Intent(this, ResumenActivity::class.java)) } 
@@ -97,17 +132,22 @@ class MainActivity : AppCompatActivity() {
         binding.navigationViewMain.setNavigationItemSelectedListener { menuItem ->
             binding.drawerLayoutMain.closeDrawer(GravityCompat.END)
             when (menuItem.itemId) {
+                R.id.menu_stock -> { startActivity(Intent(this, InventarioActivity::class.java)); true }
+                R.id.menu_gastos -> { checkPinAndNavigate { startActivity(Intent(this, GastosActivity::class.java)) }; true }
+                R.id.menu_caja -> { startActivity(Intent(this, CajaActivity::class.java)); true }
+                R.id.menu_fiados -> { startActivity(Intent(this, DeudoresActivity::class.java)); true }
+                R.id.menu_proveedores -> { startActivity(Intent(this, ProveedoresActivity::class.java)); true }
                 R.id.menu_mailbox -> {
                     getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putBoolean("has_new_message", false).apply()
                     updateMailboxBadge()
                     Toast.makeText(this, "Buzón de Mensajes (Próximamente)", Toast.LENGTH_SHORT).show()
                     true
                 }
-                R.id.menu_caja -> { startActivity(Intent(this, CajaActivity::class.java)); true }
-                R.id.menu_fiados -> { startActivity(Intent(this, DeudoresActivity::class.java)); true }
+                R.id.menu_customize_actions -> { showActionsConfigDialog(); true }
+                R.id.menu_catalogo -> { generatePDFCatalog(); true }
+                R.id.menu_sync -> { manualSync(); true }
                 R.id.menu_sales_history -> { checkPinAndNavigate { startActivity(Intent(this, SalesHistoryActivity::class.java)) }; true }
                 R.id.menu_lista_compras -> { startActivity(Intent(this, ListaComprasActivity::class.java)); true }
-                R.id.menu_proveedores -> { startActivity(Intent(this, ProveedoresActivity::class.java)); true }
                 R.id.menu_asignador -> { startActivity(Intent(this, AsignadorDePreciosActivity::class.java)); true }
                 R.id.menu_customers -> { startActivity(Intent(this, CustomersActivity::class.java)); true }
                 R.id.menu_view_history -> { startActivity(Intent(this, HistorialActivity::class.java)); true }
@@ -123,93 +163,202 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun renderQuickTools() {
-        val container = binding.containerQuickTools
-        container.removeAllViews()
-
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val selectedTools = prefs.getStringSet("quick_tools", setOf("catalogo", "ajustes", "sync")) ?: setOf()
-
-        val toolDefinitions = mapOf(
-            "catalogo" to Triple("📖 Catálogo", "#0284C7") { generatePDFCatalog() },
-            "ajustes" to Triple("⚙️ Ajustes", "#475569") { startActivity(Intent(this, SettingsActivity::class.java)) },
-            "sync" to Triple("🔄 Sincronizar", "#10B981") { manualSync() },
-            "caja" to Triple("💰 Caja", "#F59E0B") { startActivity(Intent(this, CajaActivity::class.java)) },
-            "fiados" to Triple("👥 Fiados", "#EF4444") { startActivity(Intent(this, DeudoresActivity::class.java)) },
-            "proveedores" to Triple("🚚 Proveedores", "#0EA5E9") { startActivity(Intent(this, ProveedoresActivity::class.java)) },
-            "compras" to Triple("🛒 Lista Compras", "#6366F1") { startActivity(Intent(this, ListaComprasActivity::class.java)) },
-            "historial" to Triple("📜 Historial Ventas", "#F43F5E") { checkPinAndNavigate { startActivity(Intent(this, SalesHistoryActivity::class.java)) } },
-            "clientes" to Triple("👤 Directorio Clientes", "#10B981") { startActivity(Intent(this, CustomersActivity::class.java)) },
-            "calc" to Triple("🧮 Calculadora Precios", "#D946EF") { startActivity(Intent(this, AsignadorDePreciosActivity::class.java)) }
+    private fun showActivityFilterDialog() {
+        val filterOptions = listOf(
+            "TODOS" to "Todos",
+            "SALE" to "Ventas",
+            "EXPENSE" to "Gastos",
+            "PRODUCT_UPDATED" to "Modif.",
+            "PRODUCT_DELETED" to "Elimin.",
+            "OTHERS" to "Otras"
         )
-
-        selectedTools.forEach { toolId ->
-            toolDefinitions[toolId]?.let { (name, color, action) ->
-                val btn = com.google.android.material.button.MaterialButton(this).apply {
-                    val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 56.dpToPx())
-                    lp.setMargins(0, 0, 0, 8.dpToPx())
-                    layoutParams = lp
-                    text = name
-                    textSize = 15f
-                    setTextColor(Color.WHITE)
-                    backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor(color))
-                    cornerRadius = 20.dpToPx()
-                    elevation = 0f
-                    translationZ = 10.dpToPx().toFloat()
-                    stateListAnimator = null
-                    setOnClickListener { 
-                        toggleMoreOptions()
-                        action()
+        
+        val labels = filterOptions.map { it.second }.toTypedArray()
+        val selectedItems = filterOptions.map { activityFilters.contains(it.first) }.toBooleanArray()
+        
+        AlertDialog.Builder(this)
+            .setTitle("Filtrar Actividad")
+            .setMultiChoiceItems(labels, selectedItems) { dialog, which, isChecked ->
+                val type = filterOptions[which].first
+                
+                if (type == "TODOS") {
+                    if (isChecked) {
+                        activityFilters.clear()
+                        activityFilters.add("TODOS")
+                        // Desmarcar los demás en el diálogo
+                        for (i in 1 until selectedItems.size) {
+                            selectedItems[i] = false
+                            (dialog as AlertDialog).listView.setItemChecked(i, false)
+                        }
+                    } else {
+                        // No permitir desmarcar TODOS si es el único
+                        if (activityFilters.size == 1) {
+                            (dialog as AlertDialog).listView.setItemChecked(which, true)
+                            selectedItems[which] = true
+                        }
+                    }
+                } else {
+                    if (isChecked) {
+                        activityFilters.remove("TODOS")
+                        activityFilters.add(type)
+                        // Desmarcar TODOS en el diálogo
+                        selectedItems[0] = false
+                        (dialog as AlertDialog).listView.setItemChecked(0, false)
+                    } else {
+                        activityFilters.remove(type)
+                        if (activityFilters.isEmpty()) {
+                            activityFilters.add("TODOS")
+                            selectedItems[0] = true
+                            (dialog as AlertDialog).listView.setItemChecked(0, true)
+                        }
                     }
                 }
-                container.addView(btn)
             }
-        }
-
-        // Botón de configuración
-        val btnConfig = com.google.android.material.button.MaterialButton(this).apply {
-            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 52.dpToPx())
-            layoutParams = lp
-            text = "➕ Añadir herramienta"
-            textSize = 14f
-            setTextColor(Color.parseColor("#8E44AD"))
-            backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#F3E5F5"))
-            strokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#8E44AD"))
-            strokeWidth = 2.dpToPx()
-            cornerRadius = 16.dpToPx()
-            elevation = 0f
-            translationZ = 10.dpToPx().toFloat()
-            stateListAnimator = null
-            setOnClickListener { 
-                toggleMoreOptions()
-                showToolsConfigDialog()
+            .setPositiveButton("Aplicar") { _, _ ->
+                saveActivityFilters()
+                setupRealtimeActivityFeed()
             }
-        }
-        container.addView(btnConfig)
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
-    private fun Int.dpToPx(): Int = (this * resources.displayMetrics.density).toInt()
 
-    private fun showToolsConfigDialog() {
-        val toolNames = arrayOf("📖 Catálogo", "⚙️ Ajustes", "🔄 Sincronizar", "💰 Caja", "👥 Fiados", "🚚 Proveedores", "🛒 Lista Compras", "📜 Historial Ventas", "👤 Clientes", "🧮 Calculadora")
-        val toolIds = arrayOf("catalogo", "ajustes", "sync", "caja", "fiados", "proveedores", "compras", "historial", "clientes", "calc")
+    private fun setupRealtimeActivityFeed() {
+        database.movementLogDao().getLastMovements().observe(this) { logs ->
+            val container = binding.containerRecentActivity
+            container.removeAllViews()
+
+            if (logs.isNullOrEmpty()) {
+                val emptyTv = TextView(this).apply {
+                    text = "Sin actividad aún"
+                    textSize = 12f
+                    alpha = 0.5f
+                    gravity = android.view.Gravity.CENTER
+                    setPadding(0, 16, 0, 16)
+                }
+                container.addView(emptyTv)
+                return@observe
+            }
+
+            val filteredLogs = if (activityFilters.contains("TODOS")) {
+                logs
+            } else {
+                logs.filter { log ->
+                    when {
+                        log.type.startsWith("SALE") -> activityFilters.contains("SALE")
+                        log.type.startsWith("EXPENSE") -> activityFilters.contains("EXPENSE")
+                        log.type == "PRODUCT_CREATED" || log.type == "PRODUCT_UPDATED" -> activityFilters.contains("PRODUCT_UPDATED")
+                        log.type == "PRODUCT_DELETED" -> activityFilters.contains("PRODUCT_DELETED")
+                        else -> activityFilters.contains("OTHERS")
+                    }
+                }
+            }
+
+            val timeSdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+
+            filteredLogs.take(6).forEach { log ->
+                val itemView = layoutInflater.inflate(R.layout.item_movement_mini, container, false)
+                
+                val ivIcon = itemView.findViewById<android.widget.ImageView>(R.id.ivMiniIcon)
+                val cardIcon = itemView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.cardMiniIcon)
+                val tvTitle = itemView.findViewById<TextView>(R.id.tvMiniTitle)
+                val tvTime = itemView.findViewById<TextView>(R.id.tvMiniTime)
+                val tvValue = itemView.findViewById<TextView>(R.id.tvMiniValue)
+
+                tvTitle.text = log.title
+                tvTime.text = timeSdf.format(Date(log.timestamp))
+                tvValue.text = log.value
+                
+                ivIcon.setImageResource(log.iconRes)
+                cardIcon.setCardBackgroundColor(Color.parseColor(log.colorHex))
+                
+                when (log.type) {
+                    "SALE" -> tvValue.setTextColor(Color.parseColor("#059669"))
+                    "EXPENSE" -> tvValue.setTextColor(Color.parseColor("#DC2626"))
+                    else -> tvValue.setTextColor(Color.parseColor("#2C3E50"))
+                }
+
+                container.addView(itemView)
+            }
+            
+            if (filteredLogs.isEmpty()) {
+                val emptyTv = TextView(this).apply {
+                    text = "Sin resultados"
+                    textSize = 11f
+                    alpha = 0.4f
+                    gravity = android.view.Gravity.CENTER
+                    setPadding(0, 8, 0, 8)
+                }
+                container.addView(emptyTv)
+            }
+        }
+    }
+
+    private fun renderQuickActions() {
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val selected = prefs.getStringSet("quick_tools", setOf("catalogo", "ajustes", "sync")) ?: setOf()
+        val savedActions = prefs.getString("quick_actions_list", "stock,gastos,caja,fiados,proveedores") ?: ""
+        val selectedActions = if (savedActions.isEmpty()) emptyList() else savedActions.split(",")
+
+        val actionDefinitions = mapOf(
+            "stock" to Triple("📦 STOCK", "#8E44AD") { startActivity(Intent(this, InventarioActivity::class.java)) },
+            "gastos" to Triple("💸 GASTOS", "#DC2626") { checkPinAndNavigate { startActivity(Intent(this, GastosActivity::class.java)) } },
+            "caja" to Triple("💰 CAJA", "#F59E0B") { startActivity(Intent(this, CajaActivity::class.java)) },
+            "fiados" to Triple("👥 DEUDORES", "#EF4444") { startActivity(Intent(this, DeudoresActivity::class.java)) },
+            "proveedores" to Triple("🚚 PROVEED.", "#0EA5E9") { startActivity(Intent(this, ProveedoresActivity::class.java)) },
+            "clientes" to Triple("👤 CLIENTES", "#10B981") { startActivity(Intent(this, CustomersActivity::class.java)) },
+            "catalogo" to Triple("📖 CATÁLOGO", "#0284C7") { generatePDFCatalog() },
+            "sync" to Triple("🔄 SYNC", "#059669") { manualSync() },
+            "mailbox" to Triple("📬 MENSAJES", "#7C3AED") { Toast.makeText(this, "Buzón (Próximamente)", Toast.LENGTH_SHORT).show() },
+            "lista_compras" to Triple("🛒 COMPRAS", "#EA580C") { startActivity(Intent(this, ListaComprasActivity::class.java)) },
+            "asignador" to Triple("⚖️ PRECIOS", "#475569") { startActivity(Intent(this, AsignadorDePreciosActivity::class.java)) },
+            "sales_history" to Triple("📜 VENTAS", "#2563EB") { checkPinAndNavigate { startActivity(Intent(this, SalesHistoryActivity::class.java)) } },
+            "view_history" to Triple("🕒 CÁLCULOS", "#6366F1") { startActivity(Intent(this, HistorialActivity::class.java)) },
+            "instructions" to Triple("💡 AYUDA", "#14B8A6") { startActivity(Intent(this, InstruccionesActivity::class.java)) }
+        )
+
+        val quickActionList = selectedActions.mapNotNull { actionId ->
+            actionDefinitions[actionId]?.let { (name, color, action) ->
+                QuickAction(actionId, name, color, action)
+            }
+        }
         
-        val checkedItems = BooleanArray(toolIds.size) { i -> selected.contains(toolIds[i]) }
+        if (::quickActionsAdapter.isInitialized) {
+            quickActionsAdapter.updateData(quickActionList)
+        }
+    }
+
+    private fun showActionsConfigDialog() {
+        val actionNames = arrayOf(
+            "📦 Inventario", "💸 Gastos", "💰 Caja", "👥 Deudores", "🚚 Proveedores", 
+            "👤 Clientes", "📖 Catálogo", "🔄 Sincronizar", "📬 Buzón", 
+            "🛒 Lista Compras", "⚖️ Asignador Precios", "📜 Historial Ventas", 
+            "🕒 Historial Cálculos", "💡 Instrucciones"
+        )
+        val actionIds = arrayOf(
+            "stock", "gastos", "caja", "fiados", "proveedores", 
+            "clientes", "catalogo", "sync", "mailbox", 
+            "lista_compras", "asignador", "sales_history", 
+            "view_history", "instructions"
+        )
+        
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val savedActions = prefs.getString("quick_actions_list", "stock,gastos,caja,fiados,proveedores") ?: ""
+        val tempSelection = if (savedActions.isEmpty()) mutableListOf<String>() else savedActions.split(",").toMutableList()
+
+        val rv = RecyclerView(this).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = ConfigActionsAdapter(this@MainActivity, actionNames, actionIds, tempSelection)
+            setPadding(0, 16, 0, 16)
+            clipToPadding = false
+        }
 
         AlertDialog.Builder(this)
-            .setTitle("Configurar Herramientas Rápidas")
-            .setMultiChoiceItems(toolNames, checkedItems) { _, which, isChecked ->
-                checkedItems[which] = isChecked
-            }
+            .setTitle("Personalización de Herramientas (Max 5)")
+            .setView(rv)
             .setPositiveButton("Guardar") { _, _ ->
-                val newSelected = mutableSetOf<String>()
-                checkedItems.forEachIndexed { index, isChecked ->
-                    if (isChecked) newSelected.add(toolIds[index])
-                }
-                prefs.edit().putStringSet("quick_tools", newSelected).apply()
-                renderQuickTools()
+                prefs.edit().putString("quick_actions_list", tempSelection.joinToString(",")).apply()
+                renderQuickActions()
             }
             .setNegativeButton("Cancelar", null)
             .show()
@@ -234,62 +383,6 @@ class MainActivity : AppCompatActivity() {
             .setMessage(android.text.Html.fromHtml(message, android.text.Html.FROM_HTML_MODE_COMPACT))
             .setPositiveButton("Entendido", null)
             .show()
-    }
-
-    private var isMoreOptionsOpen = false
-    private fun toggleMoreOptions() {
-        isMoreOptionsOpen = !isMoreOptionsOpen
-        
-        if (isMoreOptionsOpen) {
-            // Aplicar desenfoque (Blur) en Android 12+
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val blurEffect = RenderEffect.createBlurEffect(20f, 20f, Shader.TileMode.CLAMP)
-                binding.layoutMainContent.setRenderEffect(blurEffect)
-            }
-            
-            // Animación Abrir
-            binding.viewDimBackground.visibility = View.VISIBLE
-            binding.viewDimBackground.alpha = 0f
-            binding.viewDimBackground.animate().alpha(1f).setDuration(300).start()
-
-            binding.layoutMoreOptionsExpanded.visibility = View.VISIBLE
-            binding.layoutMoreOptionsExpanded.alpha = 0f
-            binding.layoutMoreOptionsExpanded.translationY = 50f
-            binding.layoutMoreOptionsExpanded.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(300)
-                .setInterpolator(android.view.animation.OvershootInterpolator())
-                .start()
-            
-            binding.ivMoreOptionsIcon.setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
-            binding.ivMoreOptionsIcon.animate().rotation(90f).setDuration(300).start()
-            
-            // Re-renderizar para asegurar clics
-            renderQuickTools()
-        } else {
-            // Quitar desenfoque
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                binding.layoutMainContent.setRenderEffect(null)
-            }
-
-            // Animación Cerrar
-            binding.viewDimBackground.animate()
-                .alpha(0f)
-                .setDuration(250)
-                .withEndAction { binding.viewDimBackground.visibility = View.GONE }
-                .start()
-
-            binding.layoutMoreOptionsExpanded.animate()
-                .alpha(0f)
-                .translationY(50f)
-                .setDuration(250)
-                .withEndAction { binding.layoutMoreOptionsExpanded.visibility = View.GONE }
-                .start()
-            
-            binding.ivMoreOptionsIcon.setImageResource(android.R.drawable.ic_menu_add)
-            binding.ivMoreOptionsIcon.animate().rotation(0f).setDuration(300).start()
-        }
     }
 
     private fun showMoreOptionsPopup() {

@@ -8,12 +8,12 @@ import java.util.UUID
 data class MovementLogEntity(
     @PrimaryKey
     val id: String = UUID.randomUUID().toString(),
-    val type: String, // PRODUCT_CREATED, PRODUCT_UPDATED, PRODUCT_DELETED, SALE, EXPENSE
-    val title: String,
-    val description: String,
-    val value: String,
+    val type: String = "", // PRODUCT_CREATED, PRODUCT_UPDATED, PRODUCT_DELETED, SALE, EXPENSE
+    val title: String = "",
+    val description: String = "",
+    val value: String = "",
     val timestamp: Long = System.currentTimeMillis(),
-    val colorHex: String,
-    val iconRes: Int,
+    val colorHex: String = "",
+    val iconRes: Int = 0,
     var isSynced: Boolean = false
 )

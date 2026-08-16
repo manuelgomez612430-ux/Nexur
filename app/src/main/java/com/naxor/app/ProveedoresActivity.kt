@@ -107,7 +107,7 @@ class ProveedoresActivity : AppCompatActivity() {
         when {
             isSyncing && isNetworkAvailable -> {
                 syncStatusText = "Sincronizando..."
-                color = android.graphics.Color.parseColor("#E0E0E0")
+                color = androidx.core.content.ContextCompat.getColor(this, R.color.white)
                 iconRes = android.R.drawable.stat_notify_sync
                 animation = android.view.animation.RotateAnimation(0f, 360f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f).apply {
                     duration = 1000

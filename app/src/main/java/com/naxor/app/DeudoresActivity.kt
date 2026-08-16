@@ -106,7 +106,7 @@ class DeudoresActivity : AppCompatActivity() {
         when {
             isSyncing && isNetworkAvailable -> {
                 syncStatusText = "Sincronizando..."
-                color = android.graphics.Color.parseColor("#E0E0E0")
+                color = androidx.core.content.ContextCompat.getColor(this, R.color.white)
                 iconRes = android.R.drawable.stat_notify_sync
                 animation = android.view.animation.RotateAnimation(0f, 360f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f).apply {
                     duration = 1000
@@ -167,7 +167,7 @@ class DeudoresActivity : AppCompatActivity() {
 
     private fun showHelpDialog() {
         AlertDialog.Builder(this)
-            .setTitle("Guía de Fiados")
+            .setTitle("Guía de Deudores")
             .setMessage("• REGISTRO: Usa '+' para añadir clientes que te deben.\n" +
                     "• COBRAR: Toca el icono de WhatsApp para enviar un recordatorio automático con el monto de la deuda.\n" +
                     "• PAGAR: Toca el icono de check para registrar un abono o liquidar la deuda total.")
@@ -201,7 +201,7 @@ class DeudoresActivity : AppCompatActivity() {
         
         val etNombre = EditText(this).apply { hint = "Nombre del cliente" }
         val etTelefono = EditText(this).apply { hint = "Teléfono (Opcional)"; inputType = android.text.InputType.TYPE_CLASS_PHONE }
-        val etMonto = EditText(this).apply { hint = "Monto inicial fiado"; inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
+        val etMonto = EditText(this).apply { hint = "Monto inicial de la deuda"; inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
         
         layout.addView(etNombre)
         layout.addView(etTelefono)

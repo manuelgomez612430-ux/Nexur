@@ -249,7 +249,7 @@ class SyncManager(private val context: Context) {
                 if (snapshot != null) {
                     CoroutineScope(Dispatchers.IO).launch {
                         for (docChange in snapshot.documentChanges) {
-                            val cloudProduct = docChange.document.toObject(ProductEntity::class.java)
+                            val cloudProduct = docChange.document.toObject(ProductEntity::class.java) ?: continue
                             when (docChange.type) {
                                 com.google.firebase.firestore.DocumentChange.Type.ADDED,
                                 com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
@@ -274,7 +274,7 @@ class SyncManager(private val context: Context) {
                 if (e != null || snapshot == null) return@addSnapshotListener
                 CoroutineScope(Dispatchers.IO).launch {
                     for (docChange in snapshot.documentChanges) {
-                        val cloudExpense = docChange.document.toObject(ExpenseEntity::class.java)
+                        val cloudExpense = docChange.document.toObject(ExpenseEntity::class.java) ?: continue
                         when (docChange.type) {
                             com.google.firebase.firestore.DocumentChange.Type.ADDED,
                             com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
@@ -298,7 +298,7 @@ class SyncManager(private val context: Context) {
                 if (e != null || snapshot == null) return@addSnapshotListener
                 CoroutineScope(Dispatchers.IO).launch {
                     for (docChange in snapshot.documentChanges) {
-                        val cloudProvider = docChange.document.toObject(ProviderEntity::class.java)
+                        val cloudProvider = docChange.document.toObject(ProviderEntity::class.java) ?: continue
                         when (docChange.type) {
                             com.google.firebase.firestore.DocumentChange.Type.ADDED,
                             com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
@@ -323,7 +323,7 @@ class SyncManager(private val context: Context) {
                 if (e != null || snapshot == null) return@addSnapshotListener
                 CoroutineScope(Dispatchers.IO).launch {
                     for (docChange in snapshot.documentChanges) {
-                        val cloudDebtor = docChange.document.toObject(DebtorEntity::class.java)
+                        val cloudDebtor = docChange.document.toObject(DebtorEntity::class.java) ?: continue
                         when (docChange.type) {
                             com.google.firebase.firestore.DocumentChange.Type.ADDED,
                             com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
@@ -345,7 +345,7 @@ class SyncManager(private val context: Context) {
                 if (e != null || snapshot == null) return@addSnapshotListener
                 CoroutineScope(Dispatchers.IO).launch {
                     for (docChange in snapshot.documentChanges) {
-                        val cloudDebt = docChange.document.toObject(DebtDetailEntity::class.java)
+                        val cloudDebt = docChange.document.toObject(DebtDetailEntity::class.java) ?: continue
                         when (docChange.type) {
                             com.google.firebase.firestore.DocumentChange.Type.ADDED,
                             com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
@@ -369,7 +369,7 @@ class SyncManager(private val context: Context) {
                 if (e != null || snapshot == null) return@addSnapshotListener
                 CoroutineScope(Dispatchers.IO).launch {
                     for (docChange in snapshot.documentChanges) {
-                        val cloudLog = docChange.document.toObject(MovementLogEntity::class.java)
+                        val cloudLog = docChange.document.toObject(MovementLogEntity::class.java) ?: continue
                         when (docChange.type) {
                             com.google.firebase.firestore.DocumentChange.Type.ADDED -> {
                                 cloudLog.isSynced = true
@@ -390,7 +390,7 @@ class SyncManager(private val context: Context) {
                 if (e != null || snapshot == null) return@addSnapshotListener
                 CoroutineScope(Dispatchers.IO).launch {
                     for (docChange in snapshot.documentChanges) {
-                        val cloudSession = docChange.document.toObject(CashSessionEntity::class.java)
+                        val cloudSession = docChange.document.toObject(CashSessionEntity::class.java) ?: continue
                         when (docChange.type) {
                             com.google.firebase.firestore.DocumentChange.Type.ADDED,
                             com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {

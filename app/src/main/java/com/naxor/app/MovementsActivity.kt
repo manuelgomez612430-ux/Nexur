@@ -145,7 +145,7 @@ class MovementsActivity : AppCompatActivity() {
         when {
             isSyncing && isNetworkAvailable -> {
                 syncStatusText = "Sincronizando..."
-                color = Color.parseColor("#0284C7")
+                color = androidx.core.content.ContextCompat.getColor(this, R.color.sky_600)
                 iconRes = android.R.drawable.stat_notify_sync
                 animation = android.view.animation.RotateAnimation(0f, 360f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f).apply {
                     duration = 1000

@@ -122,7 +122,7 @@ class GastosActivity : AppCompatActivity() {
         when {
             isSyncing && isNetworkAvailable -> {
                 syncStatusText = "Sincronizando..."
-                color = getColor(R.color.emerald_50) // Usar un color claro sobre el fondo morado
+                color = androidx.core.content.ContextCompat.getColor(this, R.color.emerald_50)
                 iconRes = android.R.drawable.stat_notify_sync
                 animation = android.view.animation.RotateAnimation(0f, 360f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f).apply {
                     duration = 1000

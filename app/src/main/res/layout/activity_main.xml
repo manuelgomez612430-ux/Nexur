@@ -245,73 +245,106 @@
                 </FrameLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- FILA DINÁMICA: INVENTARIO Y GASTOS -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMainInventario"
+            <!-- SECCIÓN DIVIDIDA: ACTIVIDAD (Izquierda) vs ACCIONES (Derecha) -->
+            <LinearLayout
+                android:id="@+id/layoutMainBody"
                 android:layout_width="0dp"
-                android:layout_height="72dp"
-                android:layout_marginTop="32dp"
-                android:layout_marginEnd="6dp"
-                android:text="📦 INVENTARIO"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                app:autoSizeTextType="uniform"
-                app:autoSizeMinTextSize="10sp"
-                app:autoSizeMaxTextSize="14sp"
-                android:textColor="@android:color/white"
-                app:backgroundTint="#8E44AD"
-                app:cornerRadius="20dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:orientation="horizontal"
+                android:baselineAligned="false"
                 app:layout_constraintTop_toBottomOf="@id/cardDashboard"
                 app:layout_constraintStart_toStartOf="@id/guidelineLeft"
-                app:layout_constraintEnd_toStartOf="@+id/btnMainGastos"
-                app:layout_constraintHorizontal_weight="1" />
+                app:layout_constraintEnd_toEndOf="@id/guidelineRight">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMainGastos"
-                android:layout_width="0dp"
-                android:layout_height="72dp"
-                android:layout_marginTop="32dp"
-                android:layout_marginStart="6dp"
-                android:text="💸 GASTOS"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                app:autoSizeTextType="uniform"
-                app:autoSizeMinTextSize="10sp"
-                app:autoSizeMaxTextSize="14sp"
-                android:textColor="@android:color/white"
-                app:backgroundTint="@color/red_600"
-                app:cornerRadius="20dp"
-                app:layout_constraintTop_toBottomOf="@id/cardDashboard"
-                app:layout_constraintStart_toEndOf="@id/btnMainInventario"
-                app:layout_constraintEnd_toEndOf="@id/guidelineRight"
-                app:layout_constraintHorizontal_weight="1" />
+                <!-- COLUMNA IZQUIERDA: ACTIVIDAD RECIENTE -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardActivityPreview"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.4"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="?attr/colorOutlineVariant"
+                    android:layout_marginEnd="8dp">
 
-            <!-- BOTÓN HISTORIAL DE MOVIMIENTOS -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMainHistory"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="0dp"
-                android:layout_height="64dp"
-                android:layout_marginTop="16dp"
-                android:text="📜 HISTORIAL DE MOVIMIENTOS"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                app:autoSizeTextType="uniform"
-                app:autoSizeMinTextSize="10sp"
-                app:autoSizeMaxTextSize="13sp"
-                app:cornerRadius="20dp"
-                app:layout_constraintTop_toBottomOf="@id/btnMainInventario"
-                app:layout_constraintStart_toStartOf="@id/guidelineLeft"
-                app:layout_constraintEnd_toEndOf="@id/guidelineRight" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
 
-            <!-- BOTÓN REALIZAR VENTA (Dentro del contenido para que se desenfoque) -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="8dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="ACTIVIDAD RECIENTE"
+                                android:textSize="10sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorPrimary"
+                                android:letterSpacing="0.1" />
+
+                            <ImageButton
+                                android:id="@+id/btnFilterActivityMain"
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:src="@android:drawable/ic_menu_sort_by_size"
+                                android:padding="6dp"
+                                android:scaleType="fitCenter"
+                                app:tint="?attr/colorPrimary"
+                                android:contentDescription="Filtrar actividad" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/containerRecentActivity"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+                            <!-- Items mini se cargarán aquí -->
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/btnViewAllActivity"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Ver todo →"
+                            android:textSize="10sp"
+                            android:textColor="?attr/colorPrimary"
+                            android:alpha="0.5"
+                            android:gravity="center" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- COLUMNA DERECHA: ACCIONES RÁPIDAS DINÁMICAS -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/containerQuickActions"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:overScrollMode="never" />
+
+            </LinearLayout>
+
+            <!-- BOTÓN REALIZAR VENTA (Centrado y elegante) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnIrVentas"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="80dp"
                 android:layout_marginBottom="24dp"
-                android:layout_marginStart="92dp"
-                android:layout_marginEnd="6dp"
+                android:paddingHorizontal="32dp"
                 android:text="REALIZAR VENTA"
                 android:textSize="18sp"
                 android:textStyle="bold"
@@ -325,78 +358,10 @@
                 app:iconSize="32dp"
                 app:cornerRadius="24dp"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="@id/guidelineRight"
-                app:layout_constraintStart_toStartOf="@+id/guidelineLeft" />
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <!-- CAPA DE OSCURECIMIENTO (Cubre el contenido principal) -->
-        <View
-            android:id="@+id/viewDimBackground"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#25000000"
-            android:visibility="gone"
-            android:clickable="true"
-            android:focusable="true"
-            android:translationZ="5dp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-
-        <!-- BOTÓN MÁS OPCIONES (Fuera del desenfoque para que sea clickeable y nítido) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/btnMainMoreOptions"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:layout_marginBottom="24dp"
-            android:layout_marginStart="24dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:translationZ="20dp"
-            app:cardBackgroundColor="#8E44AD"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="4dp"
-            app:strokeWidth="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent">
-            <ImageView
-                android:id="@+id/ivMoreOptionsIcon"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:layout_gravity="center"
-                android:src="@android:drawable/ic_menu_add"
-                app:tint="@android:color/white" />
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- MÁS OPCIONES EXPANDIDO (Herramientas - Siempre al frente) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/layoutMoreOptionsExpanded"
-            android:layout_width="260dp"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:translationZ="25dp"
-            app:cardBackgroundColor="?attr/colorSurface"
-            app:cardCornerRadius="32dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="2dp"
-            app:strokeColor="?attr/colorOutlineVariant"
-            android:layout_marginBottom="16dp"
-            app:layout_constraintBottom_toTopOf="@id/btnMainMoreOptions"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="24dp">
-
-            <LinearLayout
-                android:id="@+id/containerQuickTools"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp"
-                android:gravity="center">
-                <!-- Se poblará dinámicamente -->
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

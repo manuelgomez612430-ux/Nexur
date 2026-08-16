@@ -4,14 +4,35 @@
 
     <group android:checkableBehavior="none">
         <item
-            android:id="@+id/menu_caja"
-            android:icon="@android:drawable/ic_menu_today"
-            android:title="Arqueo de Caja Diaria" />
-        <item
-            android:id="@+id/menu_fiados"
-            android:icon="@android:drawable/ic_menu_my_calendar"
-            android:title="Lista de Fiados" />
+            android:id="@+id/menu_customize_actions"
+            android:icon="@android:drawable/ic_menu_manage"
+            android:title="Personalización de herramientas rápidas" />
     </group>
+
+    <item android:title="Gestión Principal">
+        <menu>
+            <item
+                android:id="@+id/menu_stock"
+                android:icon="@android:drawable/ic_menu_edit"
+                android:title="📦 Inventario (Stock)" />
+            <item
+                android:id="@+id/menu_gastos"
+                android:icon="@android:drawable/ic_menu_send"
+                android:title="💸 Control de Gastos" />
+            <item
+                android:id="@+id/menu_caja"
+                android:icon="@android:drawable/ic_menu_save"
+                android:title="💰 Arqueo de Caja" />
+            <item
+                android:id="@+id/menu_fiados"
+                android:icon="@android:drawable/ic_menu_my_calendar"
+                android:title="👥 Control de Deudores" />
+            <item
+                android:id="@+id/menu_proveedores"
+                android:icon="@android:drawable/ic_menu_directions"
+                android:title="🚚 Proveedores" />
+        </menu>
+    </item>
 
     <item android:title="Herramientas de Compra">
         <menu>
@@ -21,13 +42,13 @@
                 android:title="Buzón de Mensajes"
                 app:actionLayout="@layout/menu_badge" />
             <item
+                android:id="@+id/menu_catalogo"
+                android:icon="@android:drawable/ic_menu_gallery"
+                android:title="Catálogo de Productos" />
+            <item
                 android:id="@+id/menu_lista_compras"
                 android:icon="@android:drawable/checkbox_on_background"
                 android:title="Lista de Compras" />
-            <item
-                android:id="@+id/menu_proveedores"
-                android:icon="@android:drawable/ic_menu_set_as"
-                android:title="Mis Proveedores" />
             <item
                 android:id="@+id/menu_asignador"
                 android:icon="@android:drawable/ic_menu_compass"
@@ -37,6 +58,10 @@
 
     <item android:title="Configuración y Otros">
         <menu>
+            <item
+                android:id="@+id/menu_sync"
+                android:icon="@android:drawable/stat_notify_sync"
+                android:title="Sincronizar Datos" />
             <item
                 android:id="@+id/menu_customers"
                 android:icon="@android:drawable/ic_menu_my_calendar"

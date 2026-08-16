@@ -16,6 +16,9 @@ interface MovementLogDao {
     @Query("DELETE FROM movement_logs")
     suspend fun deleteAll()
 
+    @Query("SELECT * FROM movement_logs ORDER BY timestamp DESC LIMIT 20")
+    fun getLastMovements(): androidx.lifecycle.LiveData<List<MovementLogEntity>>
+
     @Query("SELECT COUNT(*) FROM movement_logs WHERE isSynced = 0")
     fun getUnsyncedCount(): androidx.lifecycle.LiveData<Int>
 }

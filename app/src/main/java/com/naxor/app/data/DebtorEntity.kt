@@ -6,9 +6,9 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "debtors")
 data class DebtorEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
-    val nombre: String,
-    val telefono: String,
-    var deudaTotal: Double,
+    val nombre: String = "",
+    val telefono: String = "",
+    var deudaTotal: Double = 0.0,
     var ultimaActualizacion: Long = System.currentTimeMillis(),
     var isSynced: Boolean = false,
     var isDeleted: Boolean = false
@@ -17,9 +17,9 @@ data class DebtorEntity(
 @Entity(tableName = "debts")
 data class DebtDetailEntity(
     @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
-    val debtorId: String,
-    val concepto: String,
-    val monto: Double,
+    val debtorId: String = "",
+    val concepto: String = "",
+    val monto: Double = 0.0,
     var fecha: Long = System.currentTimeMillis(),
     var isSynced: Boolean = false,
     var isDeleted: Boolean = false
