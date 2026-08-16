@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -28,6 +29,12 @@ class MovementsActivity : AppCompatActivity() {
     private var allMovements = mutableListOf<UnifiedMovement>()
     private var currentFilter = "Todos"
 
+    // Sync state
+    private var isNetworkAvailable = false
+    private var lastUnsyncedCount = 0
+    private var currentIsSyncing = false
+    private var syncStatusText = "Conectado"
+
     data class UnifiedMovement(
         val id: String,
         val type: String, // SALE, EXPENSE, PRODUCT, MODIFICATION
@@ -47,7 +54,11 @@ class MovementsActivity : AppCompatActivity() {
 
             setupRecyclerView()
             setupListeners()
+            setupNetworkMonitoring()
+            setupSyncIndicator()
             loadMovements()
+            
+            SyncManager(this).startRealtimeLogsSync { loadMovements() }
         } catch (e: Exception) {
             e.printStackTrace()
             setContentView(R.layout.activity_movements)
@@ -75,6 +86,107 @@ class MovementsActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.btnBackMovements.setOnClickListener { finish() }
         binding.btnFilterMovements.setOnClickListener { showFilterMenu() }
+    }
+
+    private fun setupNetworkMonitoring() {
+        val connectivityManager = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val networkRequest = android.net.NetworkRequest.Builder()
+            .addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+
+        connectivityManager.registerNetworkCallback(networkRequest, object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                runOnUiThread {
+                    isNetworkAvailable = true
+                    updateSyncIconState()
+                }
+            }
+
+            override fun onLost(network: android.net.Network) {
+                runOnUiThread {
+                    isNetworkAvailable = false
+                    updateSyncIconState()
+                }
+            }
+        })
+        
+        val activeInfo = connectivityManager.activeNetworkInfo
+        isNetworkAvailable = activeInfo != null && activeInfo.isConnected
+    }
+
+    private fun setupSyncIndicator() {
+        database.movementLogDao().getUnsyncedCount().observe(this) { count ->
+            lastUnsyncedCount = count ?: 0
+            updateSyncIconState()
+        }
+
+        androidx.work.WorkManager.getInstance(this).getWorkInfosForUniqueWorkLiveData("offline_sync")
+            .observe(this) { infoList ->
+                val isSyncing = infoList != null && infoList.any { it.state == androidx.work.WorkInfo.State.RUNNING || it.state == androidx.work.WorkInfo.State.ENQUEUED }
+                updateSyncIconState(isSyncing)
+            }
+
+        binding.btnSyncIndicator.setOnClickListener {
+            val networkStatus = if (isNetworkAvailable) "📡 Conectado" else "📵 Sin Internet"
+            AlertDialog.Builder(this)
+                .setTitle("Sincronización")
+                .setMessage("Estado: $syncStatusText\nRed: $networkStatus\n\n¿Deseas forzar la subida de todos los datos ahora?")
+                .setPositiveButton("Sincronizar Todo") { _, _ -> forceFullUpload() }
+                .setNegativeButton("Cerrar", null).show()
+        }
+    }
+
+    private fun updateSyncIconState(isSyncing: Boolean = currentIsSyncing) {
+        currentIsSyncing = isSyncing
+        val color: Int
+        val animation: android.view.animation.Animation?
+        val iconRes: Int
+        
+        when {
+            isSyncing && isNetworkAvailable -> {
+                syncStatusText = "Sincronizando..."
+                color = Color.parseColor("#0284C7")
+                iconRes = android.R.drawable.stat_notify_sync
+                animation = android.view.animation.RotateAnimation(0f, 360f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f).apply {
+                    duration = 1000
+                    repeatCount = android.view.animation.Animation.INFINITE
+                    interpolator = android.view.animation.LinearInterpolator()
+                }
+            }
+            !isNetworkAvailable -> {
+                syncStatusText = if (lastUnsyncedCount > 0) "Sin internet ($lastUnsyncedCount pendientes)" else "Sin conexión (modo local)"
+                color = Color.parseColor("#DC2626")
+                iconRes = android.R.drawable.ic_menu_upload
+                animation = null
+            }
+            lastUnsyncedCount > 0 -> {
+                syncStatusText = "Hay $lastUnsyncedCount cambios pendientes"
+                color = Color.parseColor("#F59E0B")
+                iconRes = android.R.drawable.stat_notify_sync
+                animation = null
+            }
+            else -> {
+                syncStatusText = "Todo sincronizado"
+                color = Color.parseColor("#059669")
+                iconRes = android.R.drawable.stat_sys_download_done
+                animation = null
+            }
+        }
+
+        binding.btnSyncIndicator.apply {
+            setImageResource(iconRes)
+            setColorFilter(color)
+            clearAnimation()
+            if (animation != null) startAnimation(animation)
+        }
+    }
+
+    private fun forceFullUpload() {
+        Toast.makeText(this, "Iniciando subida forzada...", Toast.LENGTH_SHORT).show()
+        SyncManager(this).uploadAllLocalToCloud {
+            Toast.makeText(this, "Sincronización finalizada", Toast.LENGTH_SHORT).show()
+            updateSyncIconState()
+        }
     }
 
     private fun setupListenersManual() {

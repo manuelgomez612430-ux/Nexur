@@ -41,6 +41,16 @@
                     android:textColor="@android:color/white" />
 
                 <ImageButton
+                    android:id="@+id/btnSyncIndicator"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_toStartOf="@id/btnFilterMovements"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/stat_notify_sync"
+                    app:tint="?attr/colorOnSurface"
+                    android:contentDescription="Sincronización" />
+
+                <ImageButton
                     android:id="@+id/btnFilterMovements"
                     android:layout_width="48dp"
                     android:layout_height="48dp"

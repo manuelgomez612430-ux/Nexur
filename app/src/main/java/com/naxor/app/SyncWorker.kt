@@ -79,6 +79,13 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
                 localDb.providerDao().delete(p)
             }
 
+            // Sesiones de caja borradas
+            val deletedCash = localDb.cashDao().getDeletedSessions()
+            for (cs in deletedCash) {
+                userRef.collection("cash_sessions").document(cs.id.toString()).delete().await()
+                localDb.cashDao().update(cs.copy(isOpen = false)) // Asumiendo que no queremos borrar físico sino marcar cerrado
+            }
+
             // --- 2. PROCESAR SUBIDAS / ACTUALIZACIONES ---
 
             // 1. Productos
@@ -158,6 +165,16 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
                 userRef.collection("movement_logs").document(l.id).set(updatedL, SetOptions.merge()).await()
                 localDb.movementLogDao().insert(updatedL)
                 Log.d("SyncWorker", "Log sincronizado: ${l.title}")
+            }
+
+            // 8. Sesiones de Caja
+            val cashSessions = localDb.cashDao().getAllUnsyncedSessions()
+            Log.d("SyncWorker", "Sesiones de caja pendientes: ${cashSessions.size}")
+            for (cs in cashSessions) {
+                val updatedCS = cs.copy(isSynced = true)
+                userRef.collection("cash_sessions").document(cs.id.toString()).set(updatedCS, SetOptions.merge()).await()
+                localDb.cashDao().update(updatedCS)
+                Log.d("SyncWorker", "Sesión de caja sincronizada: ID ${cs.id}")
             }
 
             Log.d("SyncWorker", "Sincronización finalizada con éxito.")

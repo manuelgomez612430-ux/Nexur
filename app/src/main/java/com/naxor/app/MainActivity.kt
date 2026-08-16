@@ -4,8 +4,12 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -32,12 +36,27 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupListeners()
+        renderQuickTools()
     }
 
     override fun onResume() {
         super.onResume()
         loadDashboardData()
+        updateMailboxBadge()
+        renderQuickTools()
         SyncManager(this).scheduleOfflineSync()
+    }
+
+    private fun updateMailboxBadge() {
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val hasNewMessage = prefs.getBoolean("has_new_message", true)
+
+        binding.viewMenuBadge.visibility = if (hasNewMessage) View.VISIBLE else View.GONE
+
+        val menuItem = binding.navigationViewMain.menu.findItem(R.id.menu_mailbox)
+        val actionView = menuItem.actionView
+        val badge = actionView?.findViewById<View>(R.id.badge_view)
+        badge?.visibility = if (hasNewMessage) View.VISIBLE else View.GONE
     }
 
     private fun loadDashboardData() {
@@ -46,18 +65,14 @@ class MainActivity : AppCompatActivity() {
         val currency = prefs.getString("currency_symbol", "S/")
 
         lifecycleScope.launch {
-            val cal = Calendar.getInstance()
-            cal.set(Calendar.HOUR_OF_DAY, 0)
-            cal.set(Calendar.MINUTE, 0)
-            cal.set(Calendar.SECOND, 0)
-            val startOfDay = cal.timeInMillis
-
-            val totalToday = withContext(Dispatchers.IO) { database.saleDao().getSalesAmountFrom(startOfDay) }
-            val profitToday = withContext(Dispatchers.IO) { database.saleDao().getProfitFrom(startOfDay) }
+            val totalSales = withContext(Dispatchers.IO) { database.saleDao().getSalesAmountFrom(0) }
+            val totalProfit = withContext(Dispatchers.IO) { database.saleDao().getProfitFrom(0) }
+            val totalExpenses = withContext(Dispatchers.IO) { database.expenseDao().getTotalExpenses() ?: 0.0 }
 
             withContext(Dispatchers.Main) {
-                binding.tvVentasHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", totalToday)}"
-                binding.tvUtilidadHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", profitToday)}"
+                binding.tvVentasHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", totalSales)}"
+                binding.tvUtilidadHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", totalProfit)}"
+                binding.tvGastosHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", totalExpenses)}"
             }
         }
     }
@@ -69,21 +84,27 @@ class MainActivity : AppCompatActivity() {
         binding.btnMainHistory.setOnClickListener { startActivity(Intent(this, MovementsActivity::class.java)) }
         
         binding.btnMainMoreOptions.setOnClickListener { toggleMoreOptions() }
-        binding.btnMainCatalogo.setOnClickListener { toggleMoreOptions(); generatePDFCatalog() }
-        binding.btnMainAjustes.setOnClickListener { toggleMoreOptions(); startActivity(Intent(this, SettingsActivity::class.java)) }
-        binding.btnMainSync.setOnClickListener { 
-            toggleMoreOptions()
-            manualSync()
-        }
-
+        binding.viewDimBackground.setOnClickListener { if (isMoreOptionsOpen) toggleMoreOptions() }
+        
         binding.btnOpenMenuMain.setOnClickListener { binding.drawerLayoutMain.openDrawer(GravityCompat.END) }
+
+        binding.btnInfoDashboard.setOnClickListener { showFinancialInfoDialog() }
+
+        binding.cardDashboard.setOnClickListener { 
+            checkPinAndNavigate { startActivity(Intent(this, ResumenActivity::class.java)) } 
+        }
 
         binding.navigationViewMain.setNavigationItemSelectedListener { menuItem ->
             binding.drawerLayoutMain.closeDrawer(GravityCompat.END)
             when (menuItem.itemId) {
+                R.id.menu_mailbox -> {
+                    getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putBoolean("has_new_message", false).apply()
+                    updateMailboxBadge()
+                    Toast.makeText(this, "Buzón de Mensajes (Próximamente)", Toast.LENGTH_SHORT).show()
+                    true
+                }
                 R.id.menu_caja -> { startActivity(Intent(this, CajaActivity::class.java)); true }
                 R.id.menu_fiados -> { startActivity(Intent(this, DeudoresActivity::class.java)); true }
-                R.id.menu_ganancias -> { checkPinAndNavigate { startActivity(Intent(this, ResumenActivity::class.java)) }; true }
                 R.id.menu_sales_history -> { checkPinAndNavigate { startActivity(Intent(this, SalesHistoryActivity::class.java)) }; true }
                 R.id.menu_lista_compras -> { startActivity(Intent(this, ListaComprasActivity::class.java)); true }
                 R.id.menu_proveedores -> { startActivity(Intent(this, ProveedoresActivity::class.java)); true }
@@ -102,12 +123,135 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun renderQuickTools() {
+        val container = binding.containerQuickTools
+        container.removeAllViews()
+
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val selectedTools = prefs.getStringSet("quick_tools", setOf("catalogo", "ajustes", "sync")) ?: setOf()
+
+        val toolDefinitions = mapOf(
+            "catalogo" to Triple("📖 Catálogo", "#0284C7") { generatePDFCatalog() },
+            "ajustes" to Triple("⚙️ Ajustes", "#475569") { startActivity(Intent(this, SettingsActivity::class.java)) },
+            "sync" to Triple("🔄 Sincronizar", "#10B981") { manualSync() },
+            "caja" to Triple("💰 Caja", "#F59E0B") { startActivity(Intent(this, CajaActivity::class.java)) },
+            "fiados" to Triple("👥 Fiados", "#EF4444") { startActivity(Intent(this, DeudoresActivity::class.java)) },
+            "proveedores" to Triple("🚚 Proveedores", "#0EA5E9") { startActivity(Intent(this, ProveedoresActivity::class.java)) },
+            "compras" to Triple("🛒 Lista Compras", "#6366F1") { startActivity(Intent(this, ListaComprasActivity::class.java)) },
+            "historial" to Triple("📜 Historial Ventas", "#F43F5E") { checkPinAndNavigate { startActivity(Intent(this, SalesHistoryActivity::class.java)) } },
+            "clientes" to Triple("👤 Directorio Clientes", "#10B981") { startActivity(Intent(this, CustomersActivity::class.java)) },
+            "calc" to Triple("🧮 Calculadora Precios", "#D946EF") { startActivity(Intent(this, AsignadorDePreciosActivity::class.java)) }
+        )
+
+        selectedTools.forEach { toolId ->
+            toolDefinitions[toolId]?.let { (name, color, action) ->
+                val btn = com.google.android.material.button.MaterialButton(this).apply {
+                    val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 56.dpToPx())
+                    lp.setMargins(0, 0, 0, 8.dpToPx())
+                    layoutParams = lp
+                    text = name
+                    textSize = 15f
+                    setTextColor(Color.WHITE)
+                    backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor(color))
+                    cornerRadius = 20.dpToPx()
+                    elevation = 0f
+                    translationZ = 10.dpToPx().toFloat()
+                    stateListAnimator = null
+                    setOnClickListener { 
+                        toggleMoreOptions()
+                        action()
+                    }
+                }
+                container.addView(btn)
+            }
+        }
+
+        // Botón de configuración
+        val btnConfig = com.google.android.material.button.MaterialButton(this).apply {
+            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 52.dpToPx())
+            layoutParams = lp
+            text = "➕ Añadir herramienta"
+            textSize = 14f
+            setTextColor(Color.parseColor("#8E44AD"))
+            backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#F3E5F5"))
+            strokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#8E44AD"))
+            strokeWidth = 2.dpToPx()
+            cornerRadius = 16.dpToPx()
+            elevation = 0f
+            translationZ = 10.dpToPx().toFloat()
+            stateListAnimator = null
+            setOnClickListener { 
+                toggleMoreOptions()
+                showToolsConfigDialog()
+            }
+        }
+        container.addView(btnConfig)
+    }
+
+    private fun Int.dpToPx(): Int = (this * resources.displayMetrics.density).toInt()
+
+    private fun showToolsConfigDialog() {
+        val toolNames = arrayOf("📖 Catálogo", "⚙️ Ajustes", "🔄 Sincronizar", "💰 Caja", "👥 Fiados", "🚚 Proveedores", "🛒 Lista Compras", "📜 Historial Ventas", "👤 Clientes", "🧮 Calculadora")
+        val toolIds = arrayOf("catalogo", "ajustes", "sync", "caja", "fiados", "proveedores", "compras", "historial", "clientes", "calc")
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val selected = prefs.getStringSet("quick_tools", setOf("catalogo", "ajustes", "sync")) ?: setOf()
+        
+        val checkedItems = BooleanArray(toolIds.size) { i -> selected.contains(toolIds[i]) }
+
+        AlertDialog.Builder(this)
+            .setTitle("Configurar Herramientas Rápidas")
+            .setMultiChoiceItems(toolNames, checkedItems) { _, which, isChecked ->
+                checkedItems[which] = isChecked
+            }
+            .setPositiveButton("Guardar") { _, _ ->
+                val newSelected = mutableSetOf<String>()
+                checkedItems.forEachIndexed { index, isChecked ->
+                    if (isChecked) newSelected.add(toolIds[index])
+                }
+                prefs.edit().putStringSet("quick_tools", newSelected).apply()
+                renderQuickTools()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun showFinancialInfoDialog() {
+        val message = """
+            <b>💰 Venta total:</b> Es todo el dinero que ha ingresado por tus ventas. Es el ingreso bruto antes de descontar costos o gastos.
+            <br><br>
+            <b>💸 Gasto total:</b> Es la suma de todos los gastos operativos que has registrado (alquiler, luz, personal, etc.).
+            <br><br>
+            <b>📈 Utilidad:</b> Es tu ganancia real. Se calcula restando el costo de los productos a la venta total.
+            <br><br>
+            <b>💡 ¿Cómo interpretarlo?</b>
+            La <b>Venta total</b> muestra el movimiento de tu negocio. El <b>Gasto total</b> muestra cuánto cuesta mantenerlo abierto. La <b>Utilidad</b> te dice cuánto dinero estás ganando realmente después de pagar tus productos. 
+            <br><br>
+            <i>Recuerda: Un negocio sano busca maximizar la utilidad controlando los gastos y optimizando las ventas.</i>
+        """.trimIndent()
+
+        AlertDialog.Builder(this)
+            .setTitle("Interpretación Financiera")
+            .setMessage(android.text.Html.fromHtml(message, android.text.Html.FROM_HTML_MODE_COMPACT))
+            .setPositiveButton("Entendido", null)
+            .show()
+    }
+
     private var isMoreOptionsOpen = false
     private fun toggleMoreOptions() {
         isMoreOptionsOpen = !isMoreOptionsOpen
         
         if (isMoreOptionsOpen) {
-            // Animación Abrir: Aparece y sube
+            // Aplicar desenfoque (Blur) en Android 12+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val blurEffect = RenderEffect.createBlurEffect(20f, 20f, Shader.TileMode.CLAMP)
+                binding.layoutMainContent.setRenderEffect(blurEffect)
+            }
+            
+            // Animación Abrir
+            binding.viewDimBackground.visibility = View.VISIBLE
+            binding.viewDimBackground.alpha = 0f
+            binding.viewDimBackground.animate().alpha(1f).setDuration(300).start()
+
             binding.layoutMoreOptionsExpanded.visibility = View.VISIBLE
             binding.layoutMoreOptionsExpanded.alpha = 0f
             binding.layoutMoreOptionsExpanded.translationY = 50f
@@ -118,9 +262,24 @@ class MainActivity : AppCompatActivity() {
                 .setInterpolator(android.view.animation.OvershootInterpolator())
                 .start()
             
-            binding.btnMainMoreOptions.animate().rotation(180f).setDuration(300).start()
+            binding.ivMoreOptionsIcon.setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+            binding.ivMoreOptionsIcon.animate().rotation(90f).setDuration(300).start()
+            
+            // Re-renderizar para asegurar clics
+            renderQuickTools()
         } else {
-            // Animación Cerrar: Desaparece y baja
+            // Quitar desenfoque
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                binding.layoutMainContent.setRenderEffect(null)
+            }
+
+            // Animación Cerrar
+            binding.viewDimBackground.animate()
+                .alpha(0f)
+                .setDuration(250)
+                .withEndAction { binding.viewDimBackground.visibility = View.GONE }
+                .start()
+
             binding.layoutMoreOptionsExpanded.animate()
                 .alpha(0f)
                 .translationY(50f)
@@ -128,7 +287,8 @@ class MainActivity : AppCompatActivity() {
                 .withEndAction { binding.layoutMoreOptionsExpanded.visibility = View.GONE }
                 .start()
             
-            binding.btnMainMoreOptions.animate().rotation(0f).setDuration(300).start()
+            binding.ivMoreOptionsIcon.setImageResource(android.R.drawable.ic_menu_add)
+            binding.ivMoreOptionsIcon.animate().rotation(0f).setDuration(300).start()
         }
     }
 

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <group android:checkableBehavior="none">
         <item
@@ -10,14 +11,15 @@
             android:id="@+id/menu_fiados"
             android:icon="@android:drawable/ic_menu_my_calendar"
             android:title="Lista de Fiados" />
-        <item
-            android:id="@+id/menu_ganancias"
-            android:icon="@android:drawable/ic_menu_view"
-            android:title="Ver Ganancias" />
     </group>
 
     <item android:title="Herramientas de Compra">
         <menu>
+            <item
+                android:id="@+id/menu_mailbox"
+                android:icon="@android:drawable/ic_dialog_email"
+                android:title="Buzón de Mensajes"
+                app:actionLayout="@layout/menu_badge" />
             <item
                 android:id="@+id/menu_lista_compras"
                 android:icon="@android:drawable/checkbox_on_background"

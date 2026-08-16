@@ -29,6 +29,12 @@ class DeudoresActivity : AppCompatActivity() {
     private val database by lazy { AppDatabase.getDatabase(this) }
     private lateinit var adapter: DeudoresAdapter
 
+    // Sync state
+    private var isNetworkAvailable = false
+    private var lastUnsyncedCount = 0
+    private var currentIsSyncing = false
+    private var syncStatusText = "Conectado"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDeudoresBinding.inflate(layoutInflater)
@@ -36,7 +42,112 @@ class DeudoresActivity : AppCompatActivity() {
 
         setupRecyclerView()
         setupListeners()
+        setupNetworkMonitoring()
+        setupSyncIndicator()
         loadDebtors()
+        
+        SyncManager(this).startRealtimeDebtorsSync { loadDebtors() }
+    }
+
+    private fun setupNetworkMonitoring() {
+        val connectivityManager = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val networkRequest = android.net.NetworkRequest.Builder()
+            .addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+
+        connectivityManager.registerNetworkCallback(networkRequest, object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                runOnUiThread {
+                    isNetworkAvailable = true
+                    updateSyncIconState()
+                }
+            }
+
+            override fun onLost(network: android.net.Network) {
+                runOnUiThread {
+                    isNetworkAvailable = false
+                    updateSyncIconState()
+                }
+            }
+        })
+        
+        val activeInfo = connectivityManager.activeNetworkInfo
+        isNetworkAvailable = activeInfo != null && activeInfo.isConnected
+    }
+
+    private fun setupSyncIndicator() {
+        database.debtorDao().getUnsyncedDebtorsCount().observe(this) { count ->
+            lastUnsyncedCount = count ?: 0
+            updateSyncIconState()
+        }
+
+        androidx.work.WorkManager.getInstance(this).getWorkInfosForUniqueWorkLiveData("offline_sync")
+            .observe(this) { infoList ->
+                val isSyncing = infoList != null && infoList.any { it.state == androidx.work.WorkInfo.State.RUNNING || it.state == androidx.work.WorkInfo.State.ENQUEUED }
+                updateSyncIconState(isSyncing)
+            }
+
+        binding.btnSyncIndicator.setOnClickListener {
+            val networkStatus = if (isNetworkAvailable) "📡 Conectado" else "📵 Sin Internet"
+            AlertDialog.Builder(this)
+                .setTitle("Sincronización")
+                .setMessage("Estado: $syncStatusText\nRed: $networkStatus\n\n¿Deseas forzar la subida de todos los datos ahora?")
+                .setPositiveButton("Sincronizar Todo") { _, _ -> forceFullUpload() }
+                .setNegativeButton("Cerrar", null).show()
+        }
+    }
+
+    private fun updateSyncIconState(isSyncing: Boolean = currentIsSyncing) {
+        currentIsSyncing = isSyncing
+        val color: Int
+        val animation: android.view.animation.Animation?
+        val iconRes: Int
+        
+        when {
+            isSyncing && isNetworkAvailable -> {
+                syncStatusText = "Sincronizando..."
+                color = android.graphics.Color.parseColor("#E0E0E0")
+                iconRes = android.R.drawable.stat_notify_sync
+                animation = android.view.animation.RotateAnimation(0f, 360f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f).apply {
+                    duration = 1000
+                    repeatCount = android.view.animation.Animation.INFINITE
+                    interpolator = android.view.animation.LinearInterpolator()
+                }
+            }
+            !isNetworkAvailable -> {
+                syncStatusText = if (lastUnsyncedCount > 0) "Sin internet ($lastUnsyncedCount pendientes)" else "Sin conexión (modo local)"
+                color = android.graphics.Color.parseColor("#FFCDD2")
+                iconRes = android.R.drawable.ic_menu_upload
+                animation = null
+            }
+            lastUnsyncedCount > 0 -> {
+                syncStatusText = "Hay $lastUnsyncedCount cambios pendientes"
+                color = android.graphics.Color.parseColor("#FFF9C4")
+                iconRes = android.R.drawable.stat_notify_sync
+                animation = null
+            }
+            else -> {
+                syncStatusText = "Todo sincronizado"
+                color = android.graphics.Color.WHITE
+                iconRes = android.R.drawable.stat_sys_download_done
+                animation = null
+            }
+        }
+
+        binding.btnSyncIndicator.apply {
+            setImageResource(iconRes)
+            setColorFilter(color)
+            clearAnimation()
+            if (animation != null) startAnimation(animation)
+        }
+    }
+
+    private fun forceFullUpload() {
+        Toast.makeText(this, "Iniciando subida forzada...", Toast.LENGTH_SHORT).show()
+        SyncManager(this).uploadAllLocalToCloud {
+            Toast.makeText(this, "Sincronización finalizada", Toast.LENGTH_SHORT).show()
+            updateSyncIconState()
+        }
     }
 
     private fun setupRecyclerView() {
@@ -104,7 +215,9 @@ class DeudoresActivity : AppCompatActivity() {
             
             if (nombre.isNotBlank()) {
                 lifecycleScope.launch(Dispatchers.IO) {
-                    database.debtorDao().insertDebtor(DebtorEntity(nombre = nombre, telefono = telf, deudaTotal = monto, isSynced = false))
+                    val debtor = DebtorEntity(nombre = nombre, telefono = telf, deudaTotal = monto, isSynced = false)
+                    database.debtorDao().insertDebtor(debtor)
+                    SyncManager(this@DeudoresActivity).syncDebtorToCloud(debtor)
                     SyncManager(this@DeudoresActivity).scheduleOfflineSync()
                     withContext(Dispatchers.Main) { loadDebtors() }
                 }
@@ -130,14 +243,13 @@ class DeudoresActivity : AppCompatActivity() {
             if (pago > 0) {
                 lifecycleScope.launch(Dispatchers.IO) {
                     val nuevoTotal = deudor.deudaTotal - pago
-                    if (nuevoTotal <= 0) {
-                        deudor.isDeleted = true
-                        deudor.isSynced = false
-                        database.debtorDao().updateDebtor(deudor)
+                    val updated = if (nuevoTotal <= 0) {
+                        deudor.copy(isDeleted = true, isSynced = false)
                     } else {
-                        val updated = deudor.copy(deudaTotal = nuevoTotal, isSynced = false)
-                        database.debtorDao().updateDebtor(updated)
+                        deudor.copy(deudaTotal = nuevoTotal, isSynced = false)
                     }
+                    database.debtorDao().updateDebtor(updated)
+                    SyncManager(this@DeudoresActivity).syncDebtorToCloud(updated)
                     SyncManager(this@DeudoresActivity).scheduleOfflineSync()
                     withContext(Dispatchers.Main) { loadDebtors() }
                 }

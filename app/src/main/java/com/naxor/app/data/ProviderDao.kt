@@ -24,4 +24,7 @@ interface ProviderDao {
 
     @Query("SELECT * FROM providers WHERE isSynced = 0 AND isDeleted = 1")
     suspend fun getDeletedProviders(): List<ProviderEntity>
+
+    @Query("SELECT COUNT(*) FROM providers WHERE isSynced = 0")
+    fun getUnsyncedCount(): androidx.lifecycle.LiveData<Int>
 }

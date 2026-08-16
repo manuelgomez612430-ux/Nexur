@@ -27,6 +27,15 @@
                 app:tint="@android:color/white"
                 android:contentDescription="Volver" />
             <ImageButton
+                android:id="@+id/btnSyncIndicator"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_toStartOf="@id/btnHelpDeudores"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/stat_notify_sync"
+                app:tint="@android:color/white"
+                android:contentDescription="Sincronización" />
+            <ImageButton
                 android:id="@+id/btnHelpDeudores"
                 android:layout_width="40dp"
                 android:layout_height="40dp"

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="none">
+        <item
+            android:id="@+id/menu_financial_guide"
+            android:icon="@android:drawable/ic_dialog_info"
+            android:title="Guía Financiera" />
+        <item
+            android:id="@+id/menu_export_pdf"
+            android:icon="@android:drawable/ic_menu_save"
+            android:title="Exportar Reporte PDF" />
+    </group>
+</menu>

@@ -86,6 +86,66 @@ class SyncManager(private val context: Context) {
         }
     }
 
+    fun syncProviderToCloud(provider: ProviderEntity) {
+        val userId = auth.currentUser?.uid ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                db.collection("users").document(userId)
+                    .collection("providers").document(provider.id)
+                    .set(provider, SetOptions.merge()).await()
+                provider.isSynced = true
+                localDb.providerDao().update(provider)
+            } catch (e: Exception) {
+                Log.e("SyncManager", "Error al subir proveedor: ${e.message}")
+            }
+        }
+    }
+
+    fun syncDebtorToCloud(debtor: DebtorEntity) {
+        val userId = auth.currentUser?.uid ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                db.collection("users").document(userId)
+                    .collection("debtors").document(debtor.id)
+                    .set(debtor, SetOptions.merge()).await()
+                debtor.isSynced = true
+                localDb.debtorDao().updateDebtor(debtor)
+            } catch (e: Exception) {
+                Log.e("SyncManager", "Error al subir deudor: ${e.message}")
+            }
+        }
+    }
+
+    fun syncDebtDetailToCloud(debt: DebtDetailEntity) {
+        val userId = auth.currentUser?.uid ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                db.collection("users").document(userId)
+                    .collection("debt_details").document(debt.id)
+                    .set(debt, SetOptions.merge()).await()
+                debt.isSynced = true
+                localDb.debtorDao().updateDebtDetail(debt)
+            } catch (e: Exception) {
+                Log.e("SyncManager", "Error al subir detalle deuda: ${e.message}")
+            }
+        }
+    }
+
+    fun syncCashSessionToCloud(session: CashSessionEntity) {
+        val userId = auth.currentUser?.uid ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                db.collection("users").document(userId)
+                    .collection("cash_sessions").document(session.id.toString())
+                    .set(session, SetOptions.merge()).await()
+                session.isSynced = true
+                localDb.cashDao().update(session)
+            } catch (e: Exception) {
+                Log.e("SyncManager", "Error al subir sesión caja: ${e.message}")
+            }
+        }
+    }
+
     fun deleteExpenseFromCloud(expenseId: String) {
         val userId = auth.currentUser?.uid ?: return
         db.collection("users").document(userId)
@@ -193,7 +253,6 @@ class SyncManager(private val context: Context) {
                             when (docChange.type) {
                                 com.google.firebase.firestore.DocumentChange.Type.ADDED,
                                 com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
-                                    // Marcar como sincronizado al bajarlo
                                     cloudProduct.isSynced = true
                                     localDb.productDao().insert(cloudProduct)
                                 }
@@ -204,6 +263,144 @@ class SyncManager(private val context: Context) {
                         }
                         withContext(Dispatchers.Main) { onDataChanged() }
                     }
+                }
+            }
+    }
+
+    fun startRealtimeExpensesSync(onDataChanged: () -> Unit) {
+        val userId = auth.currentUser?.uid ?: return
+        db.collection("users").document(userId).collection("expenses")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null) return@addSnapshotListener
+                CoroutineScope(Dispatchers.IO).launch {
+                    for (docChange in snapshot.documentChanges) {
+                        val cloudExpense = docChange.document.toObject(ExpenseEntity::class.java)
+                        when (docChange.type) {
+                            com.google.firebase.firestore.DocumentChange.Type.ADDED,
+                            com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
+                                cloudExpense.isSynced = true
+                                localDb.expenseDao().insert(cloudExpense)
+                            }
+                            com.google.firebase.firestore.DocumentChange.Type.REMOVED -> {
+                                localDb.expenseDao().delete(cloudExpense)
+                            }
+                        }
+                    }
+                    withContext(Dispatchers.Main) { onDataChanged() }
+                }
+            }
+    }
+
+    fun startRealtimeProvidersSync(onDataChanged: () -> Unit) {
+        val userId = auth.currentUser?.uid ?: return
+        db.collection("users").document(userId).collection("providers")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null) return@addSnapshotListener
+                CoroutineScope(Dispatchers.IO).launch {
+                    for (docChange in snapshot.documentChanges) {
+                        val cloudProvider = docChange.document.toObject(ProviderEntity::class.java)
+                        when (docChange.type) {
+                            com.google.firebase.firestore.DocumentChange.Type.ADDED,
+                            com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
+                                cloudProvider.isSynced = true
+                                localDb.providerDao().insert(cloudProvider)
+                            }
+                            com.google.firebase.firestore.DocumentChange.Type.REMOVED -> {
+                                localDb.providerDao().delete(cloudProvider)
+                            }
+                        }
+                    }
+                    withContext(Dispatchers.Main) { onDataChanged() }
+                }
+            }
+    }
+
+    fun startRealtimeDebtorsSync(onDataChanged: () -> Unit) {
+        val userId = auth.currentUser?.uid ?: return
+        // Sincronizar deudores
+        db.collection("users").document(userId).collection("debtors")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null) return@addSnapshotListener
+                CoroutineScope(Dispatchers.IO).launch {
+                    for (docChange in snapshot.documentChanges) {
+                        val cloudDebtor = docChange.document.toObject(DebtorEntity::class.java)
+                        when (docChange.type) {
+                            com.google.firebase.firestore.DocumentChange.Type.ADDED,
+                            com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
+                                cloudDebtor.isSynced = true
+                                localDb.debtorDao().insertDebtor(cloudDebtor)
+                            }
+                            com.google.firebase.firestore.DocumentChange.Type.REMOVED -> {
+                                localDb.debtorDao().deleteDebtor(cloudDebtor)
+                            }
+                        }
+                    }
+                    withContext(Dispatchers.Main) { onDataChanged() }
+                }
+            }
+            
+        // Sincronizar detalles de deuda
+        db.collection("users").document(userId).collection("debt_details")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null) return@addSnapshotListener
+                CoroutineScope(Dispatchers.IO).launch {
+                    for (docChange in snapshot.documentChanges) {
+                        val cloudDebt = docChange.document.toObject(DebtDetailEntity::class.java)
+                        when (docChange.type) {
+                            com.google.firebase.firestore.DocumentChange.Type.ADDED,
+                            com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
+                                cloudDebt.isSynced = true
+                                localDb.debtorDao().insertDebtDetail(cloudDebt)
+                            }
+                            com.google.firebase.firestore.DocumentChange.Type.REMOVED -> {
+                                localDb.debtorDao().deleteDebtDetail(cloudDebt)
+                            }
+                        }
+                    }
+                    withContext(Dispatchers.Main) { onDataChanged() }
+                }
+            }
+    }
+
+    fun startRealtimeLogsSync(onDataChanged: () -> Unit) {
+        val userId = auth.currentUser?.uid ?: return
+        db.collection("users").document(userId).collection("movement_logs")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null) return@addSnapshotListener
+                CoroutineScope(Dispatchers.IO).launch {
+                    for (docChange in snapshot.documentChanges) {
+                        val cloudLog = docChange.document.toObject(MovementLogEntity::class.java)
+                        when (docChange.type) {
+                            com.google.firebase.firestore.DocumentChange.Type.ADDED -> {
+                                cloudLog.isSynced = true
+                                localDb.movementLogDao().insert(cloudLog)
+                            }
+                            else -> { /* No se borran ni editan logs por ahora */ }
+                        }
+                    }
+                    withContext(Dispatchers.Main) { onDataChanged() }
+                }
+            }
+    }
+
+    fun startRealtimeCashSync(onDataChanged: () -> Unit) {
+        val userId = auth.currentUser?.uid ?: return
+        db.collection("users").document(userId).collection("cash_sessions")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null) return@addSnapshotListener
+                CoroutineScope(Dispatchers.IO).launch {
+                    for (docChange in snapshot.documentChanges) {
+                        val cloudSession = docChange.document.toObject(CashSessionEntity::class.java)
+                        when (docChange.type) {
+                            com.google.firebase.firestore.DocumentChange.Type.ADDED,
+                            com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
+                                cloudSession.isSynced = true
+                                localDb.cashDao().update(cloudSession)
+                            }
+                            else -> { /* No se borran sesiones por ahora */ }
+                        }
+                    }
+                    withContext(Dispatchers.Main) { onDataChanged() }
                 }
             }
     }

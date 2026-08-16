@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.SaleEntity
 import com.naxor.app.databinding.ActivityResumenBinding
+import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
@@ -32,18 +33,49 @@ class ResumenActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.btnBackResumen.setOnClickListener { finish() }
-        binding.btnHelpResumen.setOnClickListener { showHelpDialog() }
-        binding.btnExportPdfReport.setOnClickListener { generateBusinessReportPDF() }
+        
+        binding.btnOpenMenuResumen.setOnClickListener { 
+            binding.drawerLayoutResumen.openDrawer(androidx.core.view.GravityCompat.END) 
+        }
+
+        binding.navigationViewResumen.setNavigationItemSelectedListener { menuItem ->
+            binding.drawerLayoutResumen.closeDrawer(androidx.core.view.GravityCompat.END)
+            when (menuItem.itemId) {
+                R.id.menu_financial_guide -> { showDetailedFinancialGuide(); true }
+                R.id.menu_export_pdf -> { generateBusinessReportPDF(); true }
+                else -> false
+            }
+        }
+        
         setupCharts()
         loadStatistics()
     }
 
-    private fun showHelpDialog() {
+    private fun showDetailedFinancialGuide() {
+        val guideText = """
+            <b>📊 Guía Financiera Esencial</b><br><br>
+            
+            <b>1. Control de Ingresos y Ventas</b><br>
+            • <b>Venta Total:</b> Dinero bruto que ingresa (efectivo, transferencias, tarjetas).<br>
+            • <b>Ticket Promedio:</b> Cuánto gasta cada cliente por compra. Ayuda a decidir si vender más cantidad o subir el valor por cliente.<br><br>
+            
+            <b>2. Costos y Gastos</b><br>
+            • <b>Costo de Ventas:</b> Lo que te cuesta comprar la mercadería más gastos directos (traslado, empaque).<br>
+            • <b>Gastos Operativos:</b> Gastos fijos (alquiler, luz) y variables (comisiones, delivery).<br><br>
+            
+            <b>3. Márgenes de Ganancia</b><br>
+            • <b>Ganancia Bruta:</b> Diferencia entre precio de venta y costo de adquisición.<br>
+            • <b>Utilidad Neta:</b> Dinero real en bolsa después de pagar absolutamente todo.<br><br>
+            
+            <b>4. Control de Inventario</b><br>
+            • <b>Inversión en Stock:</b> Dinero "parado" en mercadería. Saber qué rota rápido es clave para no estancar el capital.<br><br>
+            
+            <i>💡 Un negocio sano busca maximizar la utilidad controlando los gastos y optimizando las ventas.</i>
+        """.trimIndent()
+
         AlertDialog.Builder(this)
-            .setTitle("Guía de Resultados")
-            .setMessage("• UTILIDAD NETA: Es tu ganancia real (Ventas - Costos de productos - Gastos del local).\n" +
-                    "• GRÁFICOS: Mira visualmente tus categorías más rentables y tus días de mayor venta.\n" +
-                    "• PDF: Toca el icono de guardado (superior derecha) para generar un reporte financiero formal.")
+            .setTitle("Interpretación de Estadísticas")
+            .setMessage(android.text.Html.fromHtml(guideText, android.text.Html.FROM_HTML_MODE_COMPACT))
             .setPositiveButton("Entendido", null)
             .show()
     }
@@ -129,8 +161,20 @@ class ResumenActivity : AppCompatActivity() {
     private fun setupCharts() {
         // Estética básica para los gráficos
         binding.pieChartCategorias.description.isEnabled = false
-        binding.pieChartCategorias.legend.isEnabled = false
+        
+        // Configuración de la Leyenda
+        val legend = binding.pieChartCategorias.legend
+        legend.isEnabled = true
+        legend.verticalAlignment = Legend.LegendVerticalAlignment.CENTER
+        legend.horizontalAlignment = Legend.LegendHorizontalAlignment.RIGHT
+        legend.orientation = Legend.LegendOrientation.VERTICAL
+        legend.setDrawInside(false)
+        legend.textColor = Color.GRAY
+        legend.textSize = 10f
+        legend.form = Legend.LegendForm.CIRCLE
+        
         binding.pieChartCategorias.setHoleColor(Color.TRANSPARENT)
+        binding.pieChartCategorias.setEntryLabelColor(Color.TRANSPARENT) // Ocultar etiquetas sobre el gráfico para evitar desorden
         
         binding.barChartSemana.description.isEnabled = false
         binding.barChartSemana.setDrawGridBackground(false)
@@ -156,24 +200,36 @@ class ResumenActivity : AppCompatActivity() {
                     gananciaBruta += (sale.total - (sale.costoUnitario * sale.cantidad))
                 }
 
+                val ticketPromedio = if (sales.isNotEmpty()) ventasTotales / sales.size else 0.0
+                val costoVentas = ventasTotales - gananciaBruta
                 val gastosTotales = expenses.sumOf { it.monto }
                 val utilidadNeta = gananciaBruta - gastosTotales
-                val inversionStock = products.sumOf { it.precioCosto }
+                val inversionStock = products.sumOf { it.precioCosto * it.stock }
 
                 // 3. Procesar datos para gráficos
                 val entriesPie = sales.groupBy { it.categoria }
                     .map { PieEntry(it.value.sumOf { s -> s.total }.toFloat(), it.key) }
                 
-                // Ventas por día de la semana
+                // Ventas y Gastos por día de la semana
                 val days = arrayOf("Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb")
                 val daySales = FloatArray(7) { 0f }
+                val dayExpenses = FloatArray(7) { 0f }
                 val cal = Calendar.getInstance()
+                
                 for (sale in sales) {
                     cal.timeInMillis = sale.timestamp
                     val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK) - 1
                     daySales[dayOfWeek] += sale.total.toFloat()
                 }
-                val entriesBar = daySales.mapIndexed { index, value -> BarEntry(index.toFloat(), value) }
+                
+                for (expense in expenses) {
+                    cal.timeInMillis = expense.fecha
+                    val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK) - 1
+                    dayExpenses[dayOfWeek] += expense.monto.toFloat()
+                }
+
+                val entriesSales = daySales.mapIndexed { index, value -> BarEntry(index.toFloat(), value) }
+                val entriesExpenses = dayExpenses.mapIndexed { index, value -> BarEntry(index.toFloat(), value) }
 
                 // 4. Identificar productos estrella (Top 3)
                 val topProducts = sales.groupBy { it.nombreProducto }
@@ -183,8 +239,8 @@ class ResumenActivity : AppCompatActivity() {
                     .take(3)
 
                 // 5. Actualizar UI
-                updateUI(ventasTotales, gananciaBruta, gastosTotales, utilidadNeta, inversionStock, topProducts)
-                updateChartsUI(entriesPie, entriesBar, days)
+                updateUI(ventasTotales, gananciaBruta, gastosTotales, utilidadNeta, inversionStock, topProducts, ticketPromedio, costoVentas)
+                updateChartsUI(entriesPie, entriesSales, entriesExpenses, days)
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -192,12 +248,19 @@ class ResumenActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateUI(ventas: Double, bruta: Double, gastos: Double, neta: Double, inversion: Double, top: List<Pair<String, Int>>) {
-        binding.tvVentasTotalesResumen.text = String.format(Locale.getDefault(), "S/ %.0f", ventas)
-        binding.tvGananciaResumen.text = String.format(Locale.getDefault(), "S/ %.2f", bruta)
-        binding.tvGastosTotalesResumen.text = String.format(Locale.getDefault(), "S/ %.0f", gastos)
-        binding.tvUtilidadNeta.text = String.format(Locale.getDefault(), "S/ %.2f", neta)
-        binding.tvInversionResumen.text = String.format(Locale.getDefault(), "S/ %.0f", inversion)
+    private fun updateUI(ventas: Double, bruta: Double, gastos: Double, neta: Double, inversion: Double, top: List<Pair<String, Int>>, ticket: Double, cogs: Double) {
+        val currency = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("currency_symbol", "S/")
+        
+        binding.tvVentasTotalesResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", ventas)}"
+        binding.tvUtilidadNeta.text = "$currency ${String.format(Locale.getDefault(), "%.2f", neta)}"
+        binding.tvGastosTotalesResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", gastos)}"
+        
+        binding.tvInversionResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", inversion)}"
+        binding.tvGananciaResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", bruta)}"
+        
+        // Nuevas métricas de la guía
+        binding.tvTicketPromedio.text = "$currency ${String.format(Locale.getDefault(), "%.2f", ticket)}"
+        binding.tvCostoVentas.text = "$currency ${String.format(Locale.getDefault(), "%.2f", cogs)}"
         
         binding.tvUtilidadNeta.setTextColor(if(neta >= 0) resources.getColor(R.color.emerald_700, theme) else resources.getColor(R.color.red_700, theme))
 
@@ -216,22 +279,58 @@ class ResumenActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateChartsUI(pieEntries: List<PieEntry>, barEntries: List<BarEntry>, days: Array<String>) {
+    private fun updateChartsUI(pieEntries: List<PieEntry>, salesEntries: List<BarEntry>, expensesEntries: List<BarEntry>, days: Array<String>) {
         // Pie Chart
         val pieDataSet = PieDataSet(pieEntries, "")
-        pieDataSet.colors = ColorTemplate.COLORFUL_COLORS.toList()
+        val colors = listOf(
+            Color.parseColor("#0284C7"), // Sky
+            Color.parseColor("#10B981"), // Emerald
+            Color.parseColor("#F59E0B"), // Amber
+            Color.parseColor("#6366F1"), // Indigo
+            Color.parseColor("#F43F5E")  // Rose
+        )
+        pieDataSet.colors = colors
         pieDataSet.valueTextSize = 12f
         pieDataSet.valueTextColor = Color.WHITE
+        pieDataSet.sliceSpace = 3f
+        
         binding.pieChartCategorias.data = PieData(pieDataSet)
+        binding.pieChartCategorias.animateY(1000)
         binding.pieChartCategorias.invalidate()
 
-        // Bar Chart
-        val barDataSet = BarDataSet(barEntries, "Ventas S/")
-        barDataSet.color = resources.getColor(R.color.indigo_500, theme)
-        barDataSet.valueTextSize = 10f
+        // Bar Chart (Agrupado: Ventas vs Gastos)
+        val salesDataSet = BarDataSet(salesEntries, "Ventas")
+        salesDataSet.color = Color.parseColor("#0284C7") // Azul
+        salesDataSet.valueTextSize = 0f // Ocultar valores sobre barras para evitar desorden
+
+        val expensesDataSet = BarDataSet(expensesEntries, "Gastos")
+        expensesDataSet.color = Color.parseColor("#F43F5E") // Rojo
+        expensesDataSet.valueTextSize = 0f
+
+        val barData = BarData(salesDataSet, expensesDataSet)
+        val barWidth = 0.35f
+        val barSpace = 0.05f
+        val groupSpace = 0.20f
         
+        barData.barWidth = barWidth
+        binding.barChartSemana.data = barData
+        
+        // Configurar Eje X para grupos
         binding.barChartSemana.xAxis.valueFormatter = IndexAxisValueFormatter(days)
-        binding.barChartSemana.data = BarData(barDataSet)
+        binding.barChartSemana.xAxis.setCenterAxisLabels(true)
+        binding.barChartSemana.xAxis.granularity = 1f
+        binding.barChartSemana.xAxis.axisMinimum = 0f
+        binding.barChartSemana.xAxis.axisMaximum = 7f
+        
+        binding.barChartSemana.groupBars(0f, groupSpace, barSpace)
+        binding.barChartSemana.animateY(1000)
+        
+        // Habilitar Leyenda para el BarChart
+        val barLegend = binding.barChartSemana.legend
+        barLegend.isEnabled = true
+        barLegend.horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
+        barLegend.verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
+        
         binding.barChartSemana.invalidate()
     }
 }

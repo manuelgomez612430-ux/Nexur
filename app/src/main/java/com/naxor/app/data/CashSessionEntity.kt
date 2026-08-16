@@ -13,5 +13,7 @@ data class CashSessionEntity(
     var totalExpenses: Double = 0.0,
     var actualAmount: Double? = null, // Lo que el usuario cuenta físicamente
     var note: String? = null,
-    var isOpen: Boolean = true
+    var isOpen: Boolean = true,
+    var isSynced: Boolean = false,
+    var isDeleted: Boolean = false
 )

@@ -10,294 +10,393 @@
         android:layout_height="match_parent"
         android:background="?attr/colorSurface">
 
-        <!-- GUÍAS PORCENTUALES (Aseguran simetría en cualquier ancho) -->
-        <androidx.constraintlayout.widget.Guideline
-            android:id="@+id/guidelineLeft"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            app:layout_constraintGuide_percent="0.06" />
+        <!-- CONTENIDO PRINCIPAL (Se puede desenfocar) -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layoutMainContent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
-        <androidx.constraintlayout.widget.Guideline
-            android:id="@+id/guidelineRight"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            app:layout_constraintGuide_percent="0.94" />
-
-        <!-- BOTÓN MENÚ -->
-        <ImageButton
-            android:id="@+id/btnOpenMenuMain"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginTop="16dp"
-            android:background="@drawable/bg_circle_surface"
-            android:src="@android:drawable/ic_menu_more"
-            app:layout_constraintEnd_toEndOf="@id/guidelineRight"
-            app:layout_constraintTop_toTopOf="parent"
-            app:tint="?attr/colorPrimary"
-            android:contentDescription="Opciones" />
-
-        <!-- HEADER -->
-        <LinearLayout
-            android:id="@+id/headerTitle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:orientation="vertical"
-            app:layout_constraintStart_toStartOf="@id/guidelineLeft"
-            app:layout_constraintEnd_toStartOf="@id/btnOpenMenuMain"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <ImageView
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:src="@drawable/logo_naxor_icon"
-                android:scaleType="fitCenter" />
-
-            <TextView
-                android:id="@+id/tvMainBusinessName"
-                android:layout_width="match_parent"
+            <!-- GUÍAS PORCENTUALES (Aseguran simetría en cualquier ancho) -->
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guidelineLeft"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Mi Negocio"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.06" />
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guidelineRight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.94" />
+
+            <!-- BOTÓN MENÚ CON INDICADOR -->
+            <FrameLayout
+                android:id="@+id/layoutMenuMain"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:layout_constraintEnd_toEndOf="@id/guidelineRight"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <ImageButton
+                    android:id="@+id/btnOpenMenuMain"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_circle_surface"
+                    android:src="@android:drawable/ic_menu_more"
+                    app:tint="?attr/colorPrimary"
+                    android:contentDescription="Opciones" />
+
+                <!-- Punto rojo de notificación -->
+                <View
+                    android:id="@+id/viewMenuBadge"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="@drawable/bg_circle_red"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <!-- HEADER -->
+            <LinearLayout
+                android:id="@+id/headerTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                app:layout_constraintStart_toStartOf="@id/guidelineLeft"
+                app:layout_constraintEnd_toStartOf="@id/layoutMenuMain"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Bienvenido al sistema de"
+                        android:textSize="12sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:alpha="0.7" />
+
+                    <TextView
+                        android:id="@+id/tvMainBusinessName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Mi Negocio"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="14sp"
+                        app:autoSizeMaxTextSize="20sp"
+                        android:maxLines="1"
+                        android:textColor="?attr/colorOnSurface" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- DASHBOARD (VENTAS, UTILIDAD Y GASTOS) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardDashboard"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                app:cardBackgroundColor="?attr/colorPrimaryContainer"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp"
+                app:layout_constraintStart_toStartOf="@id/guidelineLeft"
+                app:layout_constraintEnd_toEndOf="@id/guidelineRight"
+                app:layout_constraintTop_toBottomOf="@id/headerTitle">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="16dp"
+                        android:orientation="horizontal"
+                        android:baselineAligned="false">
+
+                        <!-- VENTAS -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Venta total"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnPrimaryContainer"
+                                android:alpha="0.8" />
+
+                            <TextView
+                                android:id="@+id/tvVentasHoyMain"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="S/ 0.00"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnPrimaryContainer"
+                                android:maxLines="1" />
+                        </LinearLayout>
+
+                        <!-- DIVIDER -->
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="32dp"
+                            android:layout_gravity="center_vertical"
+                            android:background="?attr/colorOnPrimaryContainer"
+                            android:alpha="0.2" />
+
+                        <!-- UTILIDAD -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Utilidad"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnPrimaryContainer"
+                                android:alpha="0.8" />
+
+                            <TextView
+                                android:id="@+id/tvUtilidadHoyMain"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="S/ 0.00"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnPrimaryContainer"
+                                android:maxLines="1" />
+                        </LinearLayout>
+
+                        <!-- DIVIDER -->
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="32dp"
+                            android:layout_gravity="center_vertical"
+                            android:background="?attr/colorOnPrimaryContainer"
+                            android:alpha="0.2" />
+
+                        <!-- GASTOS -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Gasto total"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnPrimaryContainer"
+                                android:alpha="0.8" />
+
+                            <TextView
+                                android:id="@+id/tvGastosHoyMain"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="S/ 0.00"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/red_600"
+                                android:maxLines="1" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Botón de información -->
+                    <ImageButton
+                        android:id="@+id/btnInfoDashboard"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="top|end"
+                        android:layout_marginTop="6dp"
+                        android:layout_marginEnd="6dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@android:drawable/ic_dialog_info"
+                        android:scaleType="fitCenter"
+                        android:padding="4dp"
+                        app:tint="?attr/colorOnPrimaryContainer"
+                        android:alpha="0.4" />
+
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- FILA DINÁMICA: INVENTARIO Y GASTOS -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMainInventario"
+                android:layout_width="0dp"
+                android:layout_height="72dp"
+                android:layout_marginTop="32dp"
+                android:layout_marginEnd="6dp"
+                android:text="📦 INVENTARIO"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="10sp"
+                app:autoSizeMaxTextSize="14sp"
+                android:textColor="@android:color/white"
+                app:backgroundTint="#8E44AD"
+                app:cornerRadius="20dp"
+                app:layout_constraintTop_toBottomOf="@id/cardDashboard"
+                app:layout_constraintStart_toStartOf="@id/guidelineLeft"
+                app:layout_constraintEnd_toStartOf="@+id/btnMainGastos"
+                app:layout_constraintHorizontal_weight="1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMainGastos"
+                android:layout_width="0dp"
+                android:layout_height="72dp"
+                android:layout_marginTop="32dp"
+                android:layout_marginStart="6dp"
+                android:text="💸 GASTOS"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="10sp"
+                app:autoSizeMaxTextSize="14sp"
+                android:textColor="@android:color/white"
+                app:backgroundTint="@color/red_600"
+                app:cornerRadius="20dp"
+                app:layout_constraintTop_toBottomOf="@id/cardDashboard"
+                app:layout_constraintStart_toEndOf="@id/btnMainInventario"
+                app:layout_constraintEnd_toEndOf="@id/guidelineRight"
+                app:layout_constraintHorizontal_weight="1" />
+
+            <!-- BOTÓN HISTORIAL DE MOVIMIENTOS -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMainHistory"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_marginTop="16dp"
+                android:text="📜 HISTORIAL DE MOVIMIENTOS"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="10sp"
+                app:autoSizeMaxTextSize="13sp"
+                app:cornerRadius="20dp"
+                app:layout_constraintTop_toBottomOf="@id/btnMainInventario"
+                app:layout_constraintStart_toStartOf="@id/guidelineLeft"
+                app:layout_constraintEnd_toEndOf="@id/guidelineRight" />
+
+            <!-- BOTÓN REALIZAR VENTA (Dentro del contenido para que se desenfoque) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnIrVentas"
+                android:layout_width="0dp"
+                android:layout_height="80dp"
+                android:layout_marginBottom="24dp"
+                android:layout_marginStart="92dp"
+                android:layout_marginEnd="6dp"
+                android:text="REALIZAR VENTA"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 app:autoSizeTextType="uniform"
-                app:autoSizeMinTextSize="12sp"
+                app:autoSizeMinTextSize="14sp"
                 app:autoSizeMaxTextSize="18sp"
-                android:maxLines="1"
-                android:textColor="?attr/colorOnSurface"
-                android:layout_marginTop="2dp" />
-        </LinearLayout>
-
-        <!-- DASHBOARD (VENTAS Y UTILIDAD) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardDashboard"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            app:cardBackgroundColor="?attr/colorPrimaryContainer"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0dp"
-            app:layout_constraintStart_toStartOf="@id/guidelineLeft"
-            app:layout_constraintEnd_toEndOf="@id/guidelineRight"
-            app:layout_constraintTop_toBottomOf="@id/headerTitle">
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="20dp">
-
-                <TextView
-                    android:id="@+id/labelVentas"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Ventas hoy"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorOnPrimaryContainer"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"/>
-
-                <TextView
-                    android:id="@+id/tvVentasHoyMain"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="S/ 0.00"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
-                    app:autoSizeTextType="uniform"
-                    app:autoSizeMinTextSize="14sp"
-                    app:autoSizeMaxTextSize="22sp"
-                    android:maxLines="1"
-                    android:textColor="?attr/colorOnPrimaryContainer"
-                    app:layout_constraintTop_toBottomOf="@id/labelVentas"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toStartOf="@+id/barrierCenter"/>
-
-                <androidx.constraintlayout.widget.Barrier
-                    android:id="@+id/barrierCenter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:barrierDirection="left"
-                    app:constraint_referenced_ids="labelUtilidad,tvUtilidadHoyMain" />
-
-                <TextView
-                    android:id="@+id/labelUtilidad"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Utilidad"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorOnPrimaryContainer"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
-
-                <TextView
-                    android:id="@+id/tvUtilidadHoyMain"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="S/ 0.00"
-                    android:textSize="22sp"
-                    android:gravity="end"
-                    android:textStyle="bold"
-                    app:autoSizeTextType="uniform"
-                    app:autoSizeMinTextSize="14sp"
-                    app:autoSizeMaxTextSize="22sp"
-                    android:maxLines="1"
-                    android:textColor="?attr/colorOnPrimaryContainer"
-                    app:layout_constraintTop_toBottomOf="@id/labelUtilidad"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/tvVentasHoyMain"/>
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- FILA DINÁMICA: INVENTARIO Y GASTOS (Uso de pesos en ConstraintLayout) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnMainInventario"
-            android:layout_width="0dp"
-            android:layout_height="72dp"
-            android:layout_marginTop="32dp"
-            android:layout_marginEnd="6dp"
-            android:text="📦 INVENTARIO"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="10sp"
-            app:autoSizeMaxTextSize="14sp"
-            android:textColor="@android:color/white"
-            app:backgroundTint="#8E44AD"
-            app:cornerRadius="20dp"
-            app:layout_constraintTop_toBottomOf="@id/cardDashboard"
-            app:layout_constraintStart_toStartOf="@id/guidelineLeft"
-            app:layout_constraintEnd_toStartOf="@+id/btnMainGastos"
-            app:layout_constraintHorizontal_weight="1" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnMainGastos"
-            android:layout_width="0dp"
-            android:layout_height="72dp"
-            android:layout_marginTop="32dp"
-            android:layout_marginStart="6dp"
-            android:text="💸 GASTOS"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="10sp"
-            app:autoSizeMaxTextSize="14sp"
-            android:textColor="@android:color/white"
-            app:backgroundTint="@color/red_600"
-            app:cornerRadius="20dp"
-            app:layout_constraintTop_toBottomOf="@id/cardDashboard"
-            app:layout_constraintStart_toEndOf="@id/btnMainInventario"
-            app:layout_constraintEnd_toEndOf="@id/guidelineRight"
-            app:layout_constraintHorizontal_weight="1" />
-
-        <!-- BOTÓN HISTORIAL DE MOVIMIENTOS -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnMainHistory"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="0dp"
-            android:layout_height="64dp"
-            android:layout_marginTop="16dp"
-            android:text="📜 HISTORIAL DE MOVIMIENTOS"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="10sp"
-            app:autoSizeMaxTextSize="13sp"
-            app:cornerRadius="20dp"
-            app:layout_constraintTop_toBottomOf="@id/btnMainInventario"
-            app:layout_constraintStart_toStartOf="@id/guidelineLeft"
-            app:layout_constraintEnd_toEndOf="@id/guidelineRight" />
-
-        <!-- MÁS OPCIONES EXPANDIDO -->
-        <LinearLayout
-            android:id="@+id/layoutMoreOptionsExpanded"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone"
-            android:gravity="center"
-            android:layout_marginBottom="12dp"
-            app:layout_constraintBottom_toTopOf="@id/btnMainMoreOptions"
-            app:layout_constraintStart_toStartOf="@id/guidelineLeft">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMainCatalogo"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="160dp"
-                android:layout_height="56dp"
-                android:layout_marginBottom="8dp"
-                android:text="📖 Catálogo"
-                android:textColor="@android:color/white"
-                app:backgroundTint="@color/sky_600"
-                app:cornerRadius="16dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMainAjustes"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="160dp"
-                android:layout_height="56dp"
-                android:layout_marginBottom="8dp"
-                android:text="⚙️ Ajustes"
-                android:textColor="@android:color/white"
-                app:backgroundTint="@color/slate_600"
-                app:cornerRadius="16dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMainSync"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="160dp"
-                android:layout_height="56dp"
-                android:text="🔄 Sincronizar"
                 android:textColor="@android:color/white"
                 app:backgroundTint="@color/emerald_600"
-                app:cornerRadius="16dp" />
-        </LinearLayout>
+                app:icon="@android:drawable/ic_menu_add"
+                app:iconTint="@android:color/white"
+                app:iconSize="32dp"
+                app:cornerRadius="24dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@id/guidelineRight"
+                app:layout_constraintStart_toStartOf="@+id/guidelineLeft" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/btnMainMoreOptions"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_marginBottom="16dp"
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- CAPA DE OSCURECIMIENTO (Cubre el contenido principal) -->
+        <View
+            android:id="@+id/viewDimBackground"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#25000000"
+            android:visibility="gone"
             android:clickable="true"
             android:focusable="true"
+            android:translationZ="5dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- BOTÓN MÁS OPCIONES (Fuera del desenfoque para que sea clickeable y nítido) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnMainMoreOptions"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginBottom="24dp"
+            android:layout_marginStart="24dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:translationZ="20dp"
             app:cardBackgroundColor="#8E44AD"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="6dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="4dp"
             app:strokeWidth="0dp"
-            app:layout_constraintBottom_toTopOf="@id/btnIrVentas"
-            app:layout_constraintStart_toStartOf="@id/guidelineLeft">
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:id="@+id/ivMoreOptionsIcon"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:layout_gravity="center"
-                android:src="@android:drawable/arrow_up_float"
+                android:src="@android:drawable/ic_menu_add"
                 app:tint="@android:color/white" />
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- BOTÓN REALIZAR VENTA (Adaptativo) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnIrVentas"
-            android:layout_width="0dp"
-            android:layout_height="80dp"
-            android:layout_marginBottom="24dp"
-            android:text="REALIZAR VENTA"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="14sp"
-            app:autoSizeMaxTextSize="18sp"
-            android:textColor="@android:color/white"
-            app:backgroundTint="@color/emerald_600"
-            app:icon="@android:drawable/ic_menu_add"
-            app:iconTint="@android:color/white"
-            app:iconSize="32dp"
-            app:cornerRadius="24dp"
-            app:layout_constraintStart_toStartOf="@id/guidelineLeft"
-            app:layout_constraintEnd_toEndOf="@id/guidelineRight"
-            app:layout_constraintBottom_toBottomOf="parent" />
+        <!-- MÁS OPCIONES EXPANDIDO (Herramientas - Siempre al frente) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/layoutMoreOptionsExpanded"
+            android:layout_width="260dp"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:translationZ="25dp"
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:cardCornerRadius="32dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="2dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            android:layout_marginBottom="16dp"
+            app:layout_constraintBottom_toTopOf="@id/btnMainMoreOptions"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="24dp">
+
+            <LinearLayout
+                android:id="@+id/containerQuickTools"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp"
+                android:gravity="center">
+                <!-- Se poblará dinámicamente -->
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

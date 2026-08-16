@@ -28,6 +28,12 @@ interface ExpenseDao {
     @Query("SELECT * FROM expenses WHERE isSynced = 0 AND isDeleted = 1")
     suspend fun getDeletedExpenses(): List<ExpenseEntity>
 
+    @Query("SELECT SUM(monto) FROM expenses WHERE fecha >= :startTime AND isDeleted = 0")
+    suspend fun getExpensesAmountFrom(startTime: Long): Double?
+
     @Query("SELECT DISTINCT categoria FROM expenses WHERE isDeleted = 0 ORDER BY categoria ASC")
     suspend fun getUniqueCategories(): List<String>
+
+    @Query("SELECT COUNT(*) FROM expenses WHERE isSynced = 0")
+    fun getUnsyncedCount(): androidx.lifecycle.LiveData<Int>
 }

@@ -15,4 +15,7 @@ interface MovementLogDao {
 
     @Query("DELETE FROM movement_logs")
     suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) FROM movement_logs WHERE isSynced = 0")
+    fun getUnsyncedCount(): androidx.lifecycle.LiveData<Int>
 }
