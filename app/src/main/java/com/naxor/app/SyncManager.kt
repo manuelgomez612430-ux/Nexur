@@ -8,6 +8,9 @@ import com.naxor.app.data.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.naxor.app.data.*
+import com.naxor.app.util.NotificationHelper
+import kotlinx.coroutines.*
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -50,6 +53,12 @@ class SyncManager(private val context: Context) {
         db.collection("users").document(userId)
             .collection("sales").document(sale.id)
             .set(sale, SetOptions.merge())
+            .addOnSuccessListener {
+                CoroutineScope(Dispatchers.IO).launch {
+                    sale.isSynced = true
+                    localDb.saleDao().update(sale)
+                }
+            }
     }
 
     fun syncExpenseToCloud(expense: ExpenseEntity) {
@@ -398,6 +407,43 @@ class SyncManager(private val context: Context) {
                                 localDb.cashDao().update(cloudSession)
                             }
                             else -> { /* No se borran sesiones por ahora */ }
+                        }
+                    }
+                    withContext(Dispatchers.Main) { onDataChanged() }
+                }
+            }
+    }
+
+    fun startRealtimeSalesSync(onDataChanged: () -> Unit) {
+        val userId = auth.currentUser?.uid ?: return
+        db.collection("users").document(userId).collection("sales")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null) return@addSnapshotListener
+                CoroutineScope(Dispatchers.IO).launch {
+                    for (docChange in snapshot.documentChanges) {
+                        val cloudSale = docChange.document.toObject(SaleEntity::class.java) ?: continue
+                        when (docChange.type) {
+                            com.google.firebase.firestore.DocumentChange.Type.ADDED -> {
+                                val existsLocally = localDb?.saleDao()?.getSaleById(cloudSale.id) != null
+                                cloudSale.isSynced = true
+                                localDb?.saleDao()?.insert(cloudSale)
+                                
+                                // Si es nueva (no estaba local) y es reciente (uÌltimos 2 min), notificar
+                                val isRecent = (System.currentTimeMillis() - cloudSale.timestamp) < 120000
+                                if (!existsLocally && isRecent) {
+                                    val totalStr = String.format(java.util.Locale.getDefault(), "S/ %.2f", cloudSale.total)
+                                    val bizName = context.getSharedPreferences("BusinessPrefs", android.content.Context.MODE_PRIVATE)
+                                        .getString("business_name", "Mi Negocio") ?: "Mi Negocio"
+                                    NotificationHelper.showSaleNotification(context, totalStr, bizName)
+                                }
+                            }
+                            com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {
+                                cloudSale.isSynced = true
+                                localDb?.saleDao()?.insert(cloudSale)
+                            }
+                            com.google.firebase.firestore.DocumentChange.Type.REMOVED -> {
+                                localDb?.saleDao()?.delete(cloudSale)
+                            }
                         }
                     }
                     withContext(Dispatchers.Main) { onDataChanged() }

@@ -342,6 +342,7 @@ class InventarioActivity : AppCompatActivity() {
                 R.id.menu_export_excel -> { exportLauncher.launch("Inventario.csv"); true }
                 R.id.menu_import_excel -> { importLauncher.launch("text/*"); true }
                 R.id.menu_edit_mode -> { toggleEditorMode(!menuItem.isChecked); true }
+                R.id.menu_settings_inventario -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
                 else -> false
             }.also { binding.drawerLayoutInventario.closeDrawer(GravityCompat.END) }
         }
@@ -680,14 +681,7 @@ class InventarioActivity : AppCompatActivity() {
 
         db.layoutProdCodigo.setEndIconOnClickListener {
             val options = GmsBarcodeScannerOptions.Builder()
-                .setBarcodeFormats(
-                    Barcode.FORMAT_EAN_13,
-                    Barcode.FORMAT_EAN_8,
-                    Barcode.FORMAT_UPC_A,
-                    Barcode.FORMAT_UPC_E,
-                    Barcode.FORMAT_CODE_128,
-                    Barcode.FORMAT_QR_CODE
-                )
+                .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
                 .enableAutoZoom()
                 .build()
 

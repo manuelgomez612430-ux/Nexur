@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
+        android:id="@+id/menu_sales_history"
+        android:icon="@android:drawable/ic_menu_recent_history"
+        android:title="Historial de Ventas" />
+    <item
         android:id="@+id/menu_reset_day"
         android:icon="@android:drawable/ic_menu_today"
         android:title="Reiniciar Día" />
@@ -12,4 +16,8 @@
         android:id="@+id/menu_undo_info"
         android:icon="@android:drawable/ic_menu_revert"
         android:title="¿Cómo anular una venta?" />
+    <item
+        android:id="@+id/menu_settings_venta"
+        android:icon="@android:drawable/ic_menu_preferences"
+        android:title="Configuración de Negocio" />
 </menu>

@@ -5,7 +5,6 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.button.MaterialButton
 import com.naxor.app.data.QuickAction
 import com.naxor.app.databinding.ItemQuickActionBinding
 import java.util.Collections
@@ -24,10 +23,21 @@ class QuickActionsAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val action = actions[position]
-        holder.binding.btnQuickAction.apply {
-            text = action.name
-            backgroundTintList = ColorStateList.valueOf(Color.parseColor(action.color))
-            setOnClickListener { action.action() }
+        val context = holder.itemView.context
+        
+        with(holder.binding) {
+            // Extraer emoji y texto (Ej: "📦 STOCK")
+            val parts = action.name.split(" ", limit = 2)
+            if (parts.size == 2) {
+                tvActionIcon.text = parts[0]
+                tvActionName.text = parts[1]
+            } else {
+                tvActionIcon.text = "⚡"
+                tvActionName.text = action.name
+            }
+            
+            cardQuickAction.setCardBackgroundColor(Color.parseColor(action.color))
+            root.setOnClickListener { action.action() }
         }
     }
 

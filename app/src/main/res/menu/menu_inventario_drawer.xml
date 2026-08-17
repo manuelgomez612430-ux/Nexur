@@ -18,4 +18,8 @@
         android:title="Editar Inventario"
         android:checkable="true" />
 
+    <item
+        android:id="@+id/menu_settings_inventario"
+        android:icon="@android:drawable/ic_menu_preferences"
+        android:title="Configuración de Negocio" />
 </menu>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="400dp"
+    android:height="800dp"
+    android:viewportWidth="400"
+    android:viewportHeight="800">
+
+    <!-- Círculo de luz superior -->
+    <path
+        android:pathData="M200,100m-150,0a150,150 0,1 1,300 0a150,150 0,1 1,-300 0"
+        android:fillColor="#159333EA" />
+
+    <!-- Órbita superior inspirada en el logo -->
+    <path
+        android:pathData="M-50,150 C50,50 350,50 450,150"
+        android:strokeWidth="2"
+        android:strokeColor="#30C026D3"
+        android:fillColor="#00000000" />
+
+    <!-- Órbita media -->
+    <path
+        android:pathData="M-50,400 C150,300 250,500 450,400"
+        android:strokeWidth="1.5"
+        android:strokeColor="#209333EA"
+        android:fillColor="#00000000" />
+
+    <!-- Círculo de luz inferior -->
+    <path
+        android:pathData="M350,700m-100,0a100,100 0,1 1,200 0a100,100 0,1 1,-200 0"
+        android:fillColor="#10C026D3" />
+
+    <!-- Elementos decorativos (puntos de luz) -->
+    <path
+        android:pathData="M50,200m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0"
+        android:fillColor="#40FFFFFF" />
+    <path
+        android:pathData="M300,120m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0"
+        android:fillColor="#40FFFFFF" />
+    <path
+        android:pathData="M350,500m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0"
+        android:fillColor="#40FFFFFF" />
+
+</vector>

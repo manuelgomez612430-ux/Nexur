@@ -48,22 +48,52 @@
                 android:contentDescription="Opciones" />
         </LinearLayout>
 
-        <!-- Search Bar -->
-        <com.google.android.material.textfield.TextInputLayout
+        <!-- Search Bar and Filter -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginBottom="8dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:startIconDrawable="@android:drawable/ic_menu_search"
+                style="?attr/textInputOutlinedStyle">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etSearchSalesHistory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Buscar por producto..."
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <ImageButton
+                android:id="@+id/btnFilterDateRange"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_circle_surface"
+                android:src="@android:drawable/ic_menu_my_calendar"
+                app:tint="?attr/colorPrimary"
+                android:contentDescription="Filtrar por fecha" />
+        </LinearLayout>
+
+        <!-- Current Filter Label -->
+        <TextView
+            android:id="@+id/tvCurrentDateRange"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="24dp"
-            android:layout_marginBottom="16dp"
-            app:startIconDrawable="@android:drawable/ic_menu_search"
-            style="?attr/textInputOutlinedStyle">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etSearchSalesHistory"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Buscar por producto..."
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginBottom="12dp"
+            android:text="Mostrando: Historial completo"
+            android:textSize="11sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="visible" />
 
         <!-- Sales List -->
         <FrameLayout

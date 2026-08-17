@@ -44,13 +44,24 @@
                 android:textColor="?attr/colorPrimary" />
 
             <ImageButton
-                android:id="@+id/btnShareSaleTicket"
+                android:id="@+id/btnEmitLegalDoc"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginStart="8dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_share"
+                android:src="@android:drawable/ic_menu_agenda"
                 app:tint="?attr/colorPrimary"
+                android:contentDescription="Emitir Comprobante" />
+
+            <ImageButton
+                android:id="@+id/btnShareSaleTicket"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_share"
+                app:tint="?attr/colorOnSurfaceVariant"
+                android:alpha="0.6"
                 android:contentDescription="Compartir Boleta" />
         </LinearLayout>
 

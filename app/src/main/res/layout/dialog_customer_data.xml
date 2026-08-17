@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- CAMPO DOCUMENTO CON BUSCADOR -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutCustomerDoc"
+            style="?attr/textInputOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:endIconMode="custom"
+            app:endIconDrawable="@android:drawable/ic_menu_search"
+            app:endIconTint="?attr/colorPrimary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etCustomerDoc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="DNI / RUC"
+                android:inputType="number"
+                android:maxLength="11" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <ProgressBar
+            android:id="@+id/progressDocSearch"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="12dp"
+            android:visibility="gone"
+            android:indeterminateTint="@color/vibrant_purple" />
+    </RelativeLayout>
+
+    <!-- CAMPO NOMBRE / RAZON SOCIAL -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutCustomerName"
+        style="?attr/textInputOutlinedStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etCustomerName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nombre / RazÃ³n Social"
+            android:inputType="textCapWords" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- CAMPO DIRECCION (PARA FACTURAS) -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutCustomerAddress"
+        style="?attr/textInputOutlinedStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etCustomerAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="DirecciÃ³n Fiscal"
+            android:inputType="textCapSentences" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

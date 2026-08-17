@@ -7,6 +7,10 @@ import android.graphics.Color
 import android.graphics.Shader
 import android.os.Build
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.activity.result.contract.ActivityResultContracts
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
@@ -15,8 +19,13 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
+import android.media.AudioManager
+import android.media.ToneGenerator
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
@@ -49,16 +58,37 @@ class MainActivity : AppCompatActivity() {
         prefs.edit().putString("activity_filters_v2", activityFilters.joinToString(",")).apply()
     }
 
+    private val requestNotificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (!isGranted) {
+            Toast.makeText(this, "Las notificaciones estÃ¡n desactivadas. No recibirÃ¡s avisos de ventas en tiempo real.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        checkNotificationPermission()
         loadActivityFilters()
         setupListeners()
         setupRealtimeActivityFeed()
         setupQuickActionsRecyclerView()
         renderQuickActions()
+
+        val sm = SyncManager(this)
+        sm.startRealtimeSalesSync { loadDashboardData() }
+        sm.startRealtimeLogsSync { setupRealtimeActivityFeed() }
     }
 
     private fun setupQuickActionsRecyclerView() {
@@ -116,6 +146,9 @@ class MainActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.btnIrVentas.setOnClickListener { startActivity(Intent(this, VentasActivity::class.java)) }
         
+        binding.btnScanVenta.setOnClickListener { 
+            startDirectScanner()
+        }
         binding.cardActivityPreview.setOnClickListener { startActivity(Intent(this, MovementsActivity::class.java)) }
         binding.btnViewAllActivity.setOnClickListener { startActivity(Intent(this, MovementsActivity::class.java)) }
         
@@ -137,6 +170,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.menu_caja -> { startActivity(Intent(this, CajaActivity::class.java)); true }
                 R.id.menu_fiados -> { startActivity(Intent(this, DeudoresActivity::class.java)); true }
                 R.id.menu_proveedores -> { startActivity(Intent(this, ProveedoresActivity::class.java)); true }
+                R.id.menu_emitir_comprobante -> { startActivity(Intent(this, EmitirComprobanteActivity::class.java)); true }
                 R.id.menu_mailbox -> {
                     getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putBoolean("has_new_message", false).apply()
                     updateMailboxBadge()
@@ -150,6 +184,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.menu_lista_compras -> { startActivity(Intent(this, ListaComprasActivity::class.java)); true }
                 R.id.menu_asignador -> { startActivity(Intent(this, AsignadorDePreciosActivity::class.java)); true }
                 R.id.menu_customers -> { startActivity(Intent(this, CustomersActivity::class.java)); true }
+                R.id.menu_settings -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
                 R.id.menu_view_history -> { startActivity(Intent(this, HistorialActivity::class.java)); true }
                 R.id.menu_instructions -> { startActivity(Intent(this, InstruccionesActivity::class.java)); true }
                 R.id.menu_logout -> {
@@ -161,6 +196,35 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
+    }
+
+    private fun startDirectScanner() {
+        val options = GmsBarcodeScannerOptions.Builder()
+            .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
+            .enableAutoZoom()
+            .build()
+
+        val scanner = GmsBarcodeScanning.getClient(this, options)
+        scanner.startScan()
+            .addOnSuccessListener { barcode ->
+                val code = barcode.rawValue ?: ""
+                if (code.isNotEmpty()) {
+                    beep(ToneGenerator.TONE_PROP_BEEP)
+                    val intent = Intent(this, VentasActivity::class.java)
+                    intent.putExtra("EXTRA_SCANNED_CODE", code)
+                    startActivity(intent)
+                }
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error del escáner: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun beep(type: Int) {
+        try {
+            val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+            toneGen.startTone(type, 200)
+        } catch (e: Exception) {}
     }
 
     private fun showActivityFilterDialog() {
@@ -300,19 +364,19 @@ class MainActivity : AppCompatActivity() {
         val selectedActions = if (savedActions.isEmpty()) emptyList() else savedActions.split(",")
 
         val actionDefinitions = mapOf(
-            "stock" to Triple("📦 STOCK", "#8E44AD") { startActivity(Intent(this, InventarioActivity::class.java)) },
-            "gastos" to Triple("💸 GASTOS", "#DC2626") { checkPinAndNavigate { startActivity(Intent(this, GastosActivity::class.java)) } },
+            "stock" to Triple("📦 STOCK", "#7C3AED") { startActivity(Intent(this, InventarioActivity::class.java)) },
+            "gastos" to Triple("💸 GASTOS", "#E11D48") { checkPinAndNavigate { startActivity(Intent(this, GastosActivity::class.java)) } },
             "caja" to Triple("💰 CAJA", "#F59E0B") { startActivity(Intent(this, CajaActivity::class.java)) },
-            "fiados" to Triple("👥 DEUDORES", "#EF4444") { startActivity(Intent(this, DeudoresActivity::class.java)) },
-            "proveedores" to Triple("🚚 PROVEED.", "#0EA5E9") { startActivity(Intent(this, ProveedoresActivity::class.java)) },
-            "clientes" to Triple("👤 CLIENTES", "#10B981") { startActivity(Intent(this, CustomersActivity::class.java)) },
-            "catalogo" to Triple("📖 CATÁLOGO", "#0284C7") { generatePDFCatalog() },
-            "sync" to Triple("🔄 SYNC", "#059669") { manualSync() },
-            "mailbox" to Triple("📬 MENSAJES", "#7C3AED") { Toast.makeText(this, "Buzón (Próximamente)", Toast.LENGTH_SHORT).show() },
-            "lista_compras" to Triple("🛒 COMPRAS", "#EA580C") { startActivity(Intent(this, ListaComprasActivity::class.java)) },
-            "asignador" to Triple("⚖️ PRECIOS", "#475569") { startActivity(Intent(this, AsignadorDePreciosActivity::class.java)) },
-            "sales_history" to Triple("📜 VENTAS", "#2563EB") { checkPinAndNavigate { startActivity(Intent(this, SalesHistoryActivity::class.java)) } },
-            "view_history" to Triple("🕒 CÁLCULOS", "#6366F1") { startActivity(Intent(this, HistorialActivity::class.java)) },
+            "fiados" to Triple("👥 DEUDORES", "#4F46E5") { startActivity(Intent(this, DeudoresActivity::class.java)) },
+            "proveedores" to Triple("🚚 PROVEED.", "#0284C7") { startActivity(Intent(this, ProveedoresActivity::class.java)) },
+            "clientes" to Triple("👤 CLIENTES", "#059669") { startActivity(Intent(this, CustomersActivity::class.java)) },
+            "catalogo" to Triple("📖 CATÁLOGO", "#D946EF") { generatePDFCatalog() },
+            "sync" to Triple("🔄 SYNC", "#10B981") { manualSync() },
+            "mailbox" to Triple("📬 MENSAJES", "#6366F1") { Toast.makeText(this, "Buzón (Próximamente)", Toast.LENGTH_SHORT).show() },
+            "lista_compras" to Triple("🛒 COMPRAS", "#F97316") { startActivity(Intent(this, ListaComprasActivity::class.java)) },
+            "asignador" to Triple("⚖️ PRECIOS", "#64748B") { startActivity(Intent(this, AsignadorDePreciosActivity::class.java)) },
+            "sales_history" to Triple("📜 VENTAS", "#3B82F6") { checkPinAndNavigate { startActivity(Intent(this, SalesHistoryActivity::class.java)) } },
+            "view_history" to Triple("🕒 CÁLCULOS", "#8B5CF6") { startActivity(Intent(this, HistorialActivity::class.java)) },
             "instructions" to Triple("💡 AYUDA", "#14B8A6") { startActivity(Intent(this, InstruccionesActivity::class.java)) }
         )
 

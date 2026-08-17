@@ -43,6 +43,7 @@ class ResumenActivity : AppCompatActivity() {
             when (menuItem.itemId) {
                 R.id.menu_financial_guide -> { showDetailedFinancialGuide(); true }
                 R.id.menu_export_pdf -> { generateBusinessReportPDF(); true }
+                R.id.menu_settings_resumen -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
                 else -> false
             }
         }

@@ -26,4 +26,13 @@
     <color name="emerald_700">#047857</color>
     <color name="emerald_800">#065F46</color>
     <color name="emerald_900">#064E3B</color>
+
+    <!-- Premium Purple Palette -->
+    <color name="midnight_purple">#0F051D</color>
+    <color name="dark_purple_card">#2A1045</color>
+    <color name="vibrant_purple">#9333EA</color>
+    <color name="naxor_magenta">#C026D3</color>
+    <color name="purple_glow">#4C1D95</color>
+    <color name="glass_white">#1AFFFFFF</color>
+    <color name="glass_border">#40FFFFFF</color>
 </resources>

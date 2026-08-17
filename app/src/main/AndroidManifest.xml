@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <queries>
@@ -76,6 +77,7 @@
         <activity android:name=".CustomersActivity" android:label="Mis Clientes VIP" />
         <activity android:name=".SalesHistoryActivity" android:label="Historial de Ventas" />
         <activity android:name=".MovementsActivity" android:label="Historial de Movimientos" />
+        <activity android:name=".EmitirComprobanteActivity" android:label="Emitir Comprobante" />
     </application>
 
 </manifest>

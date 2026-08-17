@@ -9,5 +9,9 @@
             android:id="@+id/menu_export_pdf"
             android:icon="@android:drawable/ic_menu_save"
             android:title="Exportar Reporte PDF" />
+        <item
+            android:id="@+id/menu_settings_resumen"
+            android:icon="@android:drawable/ic_menu_preferences"
+            android:title="Configuración de Negocio" />
     </group>
 </menu>

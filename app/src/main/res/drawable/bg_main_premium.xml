@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Capa 1: Fondo Base Sólido -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/midnight_purple" />
+        </shape>
+    </item>
+
+    <!-- Capa 2: Elementos Geométricos (Órbitas y Luces) -->
+    <item android:drawable="@drawable/ic_bg_geometric_elements" />
+
+    <!-- Capa 3: Brillo Radial Suave -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:centerX="10%"
+                android:centerY="30%"
+                android:gradientRadius="600dp"
+                android:startColor="#15C026D3"
+                android:endColor="@android:color/transparent" />
+        </shape>
+    </item>
+</layer-list>

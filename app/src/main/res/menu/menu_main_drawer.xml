@@ -31,6 +31,10 @@
                 android:id="@+id/menu_proveedores"
                 android:icon="@android:drawable/ic_menu_directions"
                 android:title="🚚 Proveedores" />
+            <item
+                android:id="@+id/menu_emitir_comprobante"
+                android:icon="@android:drawable/ic_menu_agenda"
+                android:title="🧾 Emitir Boleta / Factura" />
         </menu>
     </item>
 
@@ -78,6 +82,10 @@
                 android:id="@+id/menu_instructions"
                 android:icon="@android:drawable/ic_menu_help"
                 android:title="Instrucciones de Uso" />
+            <item
+                android:id="@+id/menu_settings"
+                android:icon="@android:drawable/ic_menu_preferences"
+                android:title="Ajustes de mi Negocio" />
             <item
                 android:id="@+id/menu_logout"
                 android:icon="@android:drawable/ic_menu_close_clear_cancel"

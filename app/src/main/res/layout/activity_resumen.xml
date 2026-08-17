@@ -121,6 +121,10 @@
                             android:text="S/ 0.00"
                             android:textSize="18sp"
                             android:textStyle="bold"
+                            app:autoSizeTextType="uniform"
+                            app:autoSizeMinTextSize="12sp"
+                            app:autoSizeMaxTextSize="18sp"
+                            android:maxLines="1"
                             android:textColor="?attr/colorOnSurface" />
                     </LinearLayout>
 
@@ -143,6 +147,10 @@
                             android:text="S/ 0.00"
                             android:textSize="18sp"
                             android:textStyle="bold"
+                            app:autoSizeTextType="uniform"
+                            app:autoSizeMinTextSize="12sp"
+                            app:autoSizeMaxTextSize="18sp"
+                            android:maxLines="1"
                             android:textColor="?attr/colorPrimary" />
                     </LinearLayout>
                 </LinearLayout>

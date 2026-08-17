@@ -23,6 +23,14 @@ public class SaleEntity {
     public boolean isSynced = false;
     public boolean isDeleted = false;
 
+    // Campos para Comprobantes ElectrÃ³nicos (SUNAT)
+    public String documentType; // BOLETA, FACTURA, NOTA_VENTA
+    public String series;       // B001, F001, NV01
+    public int correlative;
+    public String customerDoc;  // DNI o RUC
+    public String customerName; // Nombre o RazÃ³n Social
+    public String customerAddress;
+
     public SaleEntity() {
         this.id = java.util.UUID.randomUUID().toString();
     }

@@ -45,6 +45,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.etBusinessRuc.setText(prefs.getString("business_ruc", ""))
         binding.etCurrencySymbol.setText(prefs.getString("currency_symbol", "S/"))
         binding.etSecurityPin.setText(prefs.getString("user_pin", ""))
+        binding.etApiToken.setText(prefs.getString("api_token", ""))
 
         val logoPath = prefs.getString("business_logo_local", null)
         if (!logoPath.isNullOrEmpty()) {
@@ -64,6 +65,7 @@ class SettingsActivity : AppCompatActivity() {
         val ruc = binding.etBusinessRuc.text.toString().trim()
         val currency = binding.etCurrencySymbol.text.toString().trim()
         val pin = binding.etSecurityPin.text.toString().trim()
+        val token = binding.etApiToken.text.toString().trim()
 
         if (name.isNotEmpty() && currency.isNotEmpty()) {
             val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
@@ -81,6 +83,7 @@ class SettingsActivity : AppCompatActivity() {
                 putString("business_ruc", ruc)
                 putString("currency_symbol", currency)
                 putString("user_pin", pin)
+                putString("api_token", token)
                 putString("business_logo_local", localPath)
                 apply()
             }

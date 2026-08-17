@@ -19,6 +19,9 @@ public interface SaleDao {
     @Delete
     void delete(SaleEntity sale);
 
+    @Query("SELECT * FROM sales WHERE id = :id LIMIT 1")
+    SaleEntity getSaleById(String id);
+
     @Query("SELECT * FROM sales WHERE isDeleted = 0 ORDER BY timestamp DESC")
     List<SaleEntity> getAllSales();
 
