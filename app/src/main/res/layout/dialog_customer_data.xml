@@ -51,7 +51,7 @@
             android:id="@+id/etCustomerName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Nombre / RazÃ³n Social"
+            android:hint="Nombre / Razón Social"
             android:inputType="textCapWords" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -65,7 +65,7 @@
             android:id="@+id/etCustomerAddress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="DirecciÃ³n Fiscal"
+            android:hint="Dirección Fiscal"
             android:inputType="textCapSentences" />
     </com.google.android.material.textfield.TextInputLayout>
 

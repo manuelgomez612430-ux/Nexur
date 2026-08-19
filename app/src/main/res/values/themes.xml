@@ -108,10 +108,26 @@
         <item name="android:layout_marginVertical">16dp</item>
     </style>
 
-    <style name="ShapeAppearanceOverlay.App.Card.TopRounded" parent="">
+    <style name="ShapeAppearance.App.Card.TopRounded" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
         <item name="cornerSizeTopLeft">32dp</item>
         <item name="cornerSizeTopRight">32dp</item>
         <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <style name="ShapeAppearance.App.Card.LeftSquare" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">0dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeTopRight">16dp</item>
+        <item name="cornerSizeBottomRight">16dp</item>
+    </style>
+    <style name="ShapeAppearance.App.Card.Dashboard" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">0dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeTopRight">32dp</item>
         <item name="cornerSizeBottomRight">0dp</item>
     </style>
 </resources>

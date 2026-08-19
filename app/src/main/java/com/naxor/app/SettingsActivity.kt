@@ -70,7 +70,7 @@ class SettingsActivity : AppCompatActivity() {
         if (name.isNotEmpty() && currency.isNotEmpty()) {
             val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
             
-            // Guardar imagen localmente si se seleccionÃ³ una nueva
+            // Guardar imagen localmente si se seleccionó una nueva
             var localPath = prefs.getString("business_logo_local", null)
             selectedLogoUri?.let { uri ->
                 localPath = saveImageToInternalStorage(uri)

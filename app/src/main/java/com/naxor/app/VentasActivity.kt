@@ -24,6 +24,7 @@ import com.naxor.app.databinding.ActivityVentasBinding
 import com.naxor.app.network.RetrofitClient
 import com.naxor.app.util.ComprobantePdfGenerator
 import com.naxor.app.util.NotificationHelper
+import com.naxor.app.util.VoiceRecognitionHelper
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
@@ -42,6 +43,7 @@ class VentasActivity : AppCompatActivity() {
     private val cartItems = mutableListOf<SaleEntity>()
     private val cartProducts = mutableListOf<ProductEntity?>()
     private var currentTransactionId = UUID.randomUUID().toString()
+    private val voiceHelper by lazy { VoiceRecognitionHelper(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,11 +83,11 @@ class VentasActivity : AppCompatActivity() {
         binding.btnBackVentas.setOnClickListener { finish() }
         
         binding.btnOpenMenuVentas.setOnClickListener {
-            binding.drawerLayoutVentas.openDrawer(GravityCompat.END)
+            binding.drawerLayoutVentas.openDrawer(GravityCompat.START)
         }
 
         binding.navigationViewVentas.setNavigationItemSelectedListener { menuItem ->
-            binding.drawerLayoutVentas.closeDrawer(GravityCompat.END)
+            binding.drawerLayoutVentas.closeDrawer(GravityCompat.START)
             when (menuItem.itemId) {
                 R.id.menu_sales_history -> {
                     startActivity(Intent(this, SalesHistoryActivity::class.java))
@@ -140,13 +142,16 @@ class VentasActivity : AppCompatActivity() {
         }
 
         // Icono final (Cámara o Limpiar)
-        binding.layoutVentaBusqueda.setEndIconOnClickListener {
-            if (binding.autoVentaBusqueda.text?.isNotEmpty() == true || binding.autoVentaBusqueda.hasFocus()) {
-                binding.autoVentaBusqueda.setText("")
-                hideKeyboard()
-            } else {
-                startBarcodeScanner()
+        binding.btnVoiceSearchVentas.setOnClickListener {
+            voiceHelper.startListening { text ->
+                binding.autoVentaBusqueda.setText(text)
+                // Opcional: disparar bÃºsqueda inmediatamente
             }
+        }
+
+        binding.btnScanBarcodeVentas.setOnClickListener {
+            if (binding.autoVentaBusqueda.isPopupShowing) binding.autoVentaBusqueda.dismissDropDown()
+            startBarcodeScanner()
         }
 
         // Botones de Pago
@@ -222,12 +227,12 @@ class VentasActivity : AppCompatActivity() {
 
     private fun showComprobanteDialog(paymentMethod: String) {
         if (cartItems.isEmpty()) {
-            Toast.makeText(this, "El carrito estÃ¡ vacÃ­o", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "El carrito está vacío", Toast.LENGTH_SHORT).show()
             return
         }
 
         val total = cartItems.sumOf { it.total }
-        val options = arrayOf("Nota de Venta (Interno)", "Boleta ElectrÃ³nica", "Factura ElectrÃ³nica")
+        val options = arrayOf("Nota de Venta (Interno)", "Boleta Electrónica", "Factura Electrónica")
         var selectedType = 0
 
         AlertDialog.Builder(this)
@@ -255,7 +260,7 @@ class VentasActivity : AppCompatActivity() {
         val progress = view.findViewById<android.view.View>(R.id.progressDocSearch)
         
         etDoc.hint = if (docType == "FACTURA") "RUC del Cliente" else "DNI del Cliente (Opcional)"
-        etName.hint = if (docType == "FACTURA") "RazÃ³n Social" else "Nombre del Cliente (Opcional)"
+        etName.hint = if (docType == "FACTURA") "Razón Social" else "Nombre del Cliente (Opcional)"
 
         val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val apiToken = prefs.getString("api_token", "") ?: ""
@@ -294,7 +299,7 @@ class VentasActivity : AppCompatActivity() {
                 
                 finalizeSaleWithDetails(paymentMethod, docType, doc, name, address)
             }
-            .setNegativeButton("AtrÃ¡s", null)
+            .setNegativeButton("Atrás", null)
             .show()
     }
 
@@ -360,7 +365,7 @@ class VentasActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     beep(ToneGenerator.TONE_PROP_BEEP2)
                     
-                    // Enviar NotificaciÃ³n
+                    // Enviar Notificación
                     val totalStr = String.format(Locale.getDefault(), "S/ %.2f", finalItems.sumOf { it.total })
                     val bizName = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("business_name", "Mi Negocio") ?: "Mi Negocio"
                     NotificationHelper.showSaleNotification(this@VentasActivity, totalStr, bizName)
@@ -373,7 +378,7 @@ class VentasActivity : AppCompatActivity() {
     }
 
     private fun showPrintDialog(items: List<SaleEntity>) {
-        val options = arrayOf("Compartir Comprobante PDF (Legal)", "Imprimir Ticket Bluetooth (RÃ¡pido)", "Solo Cerrar")
+        val options = arrayOf("Compartir Comprobante PDF (Legal)", "Imprimir Ticket Bluetooth (Rápido)", "Solo Cerrar")
         
         AlertDialog.Builder(this)
             .setTitle("Venta Exitosa")
@@ -471,12 +476,12 @@ class VentasActivity : AppCompatActivity() {
                         etName.setText(bizName?.uppercase())
                         etAddress.setText(bizAddr?.uppercase())
                     } else {
-                        Toast.makeText(this@VentasActivity, "RUC no encontrado o invÃ¡lido", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@VentasActivity, "RUC no encontrado o inválido", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
                 Log.e("Ventas", "Error en consulta: ${e.message}")
-                Toast.makeText(this@VentasActivity, "Error de conexiÃ³n con SUNAT/RENIEC", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@VentasActivity, "Error de conexión con SUNAT/RENIEC", Toast.LENGTH_SHORT).show()
             } finally {
                 progress.visibility = View.GONE
             }
@@ -571,5 +576,10 @@ class VentasActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cerrar", null)
             .show()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        voiceHelper.destroy()
     }
 }

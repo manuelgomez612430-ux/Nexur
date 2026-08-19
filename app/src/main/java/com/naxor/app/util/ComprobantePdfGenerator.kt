@@ -38,7 +38,7 @@ class ComprobantePdfGenerator(private val context: Context) {
         
         paint.textSize = 10f; paint.color = Color.DKGRAY
         canvas.drawText(bAddr, 50f, 80f, paint)
-        canvas.drawText("TelÃ©fono: ${prefs.getString("business_phone", "")}", 50f, 95f, paint)
+        canvas.drawText("Teléfono: ${prefs.getString("business_phone", "")}", 50f, 95f, paint)
 
         // 2. RECUADRO DERECHO (NUMERACION)
         val rectPaint = Paint().apply { 
@@ -50,8 +50,8 @@ class ComprobantePdfGenerator(private val context: Context) {
         
         boldPaint.textSize = 14f
         val docTitle = when(firstSale.documentType) {
-            "BOLETA" -> "BOLETA DE VENTA\nELECTRÃ“NICA"
-            "FACTURA" -> "FACTURA\nELECTRÃ“NICA"
+            "BOLETA" -> "BOLETA DE VENTA\nELECTRÓNICA"
+            "FACTURA" -> "FACTURA\nELECTRÓNICA"
             else -> "NOTA DE VENTA"
         }
         
@@ -73,16 +73,16 @@ class ComprobantePdfGenerator(private val context: Context) {
         // 3. DATOS DEL CLIENTE
         paint.color = Color.BLACK; paint.textSize = 10f
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-        canvas.drawText("Fecha de EmisiÃ³n: ${sdf.format(Date(firstSale.timestamp))}", 50f, 150f, paint)
-        canvas.drawText("Cliente: ${firstSale.customerName ?: "ANÃ“NIMO"}", 50f, 165f, paint)
+        canvas.drawText("Fecha de Emisión: ${sdf.format(Date(firstSale.timestamp))}", 50f, 150f, paint)
+        canvas.drawText("Cliente: ${firstSale.customerName ?: "ANÓNIMO"}", 50f, 165f, paint)
         canvas.drawText("Documento: ${firstSale.customerDoc ?: "---"}", 50f, 180f, paint)
-        canvas.drawText("DirecciÃ³n: ${firstSale.customerAddress ?: "---"}", 50f, 195f, paint)
+        canvas.drawText("Dirección: ${firstSale.customerAddress ?: "---"}", 50f, 195f, paint)
         canvas.drawText("Moneda: SOLES", 50f, 210f, paint)
 
         // 4. TABLA DE PRODUCTOS
         paint.isFakeBoldText = true
         canvas.drawText("Cant.", 50f, 245f, paint)
-        canvas.drawText("DescripciÃ³n", 100f, 245f, paint)
+        canvas.drawText("Descripción", 100f, 245f, paint)
         canvas.drawText("P. Unit", 420f, 245f, paint)
         canvas.drawText("Importe", 500f, 245f, paint)
         canvas.drawLine(50f, 250f, 550f, 250f, paint)
@@ -133,7 +133,7 @@ class ComprobantePdfGenerator(private val context: Context) {
         paint.isFakeBoldText = false
         y += 30f
         if (firstSale.documentType != "NOTA_VENTA") {
-            canvas.drawText("RepresentaciÃ³n impresa de la ${firstSale.documentType} ELECTRÃ“NICA", 50f, y, paint)
+            canvas.drawText("Representación impresa de la ${firstSale.documentType} ELECTRÓNICA", 50f, y, paint)
         }
 
         doc.finishPage(page)

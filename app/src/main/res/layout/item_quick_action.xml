@@ -3,15 +3,15 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/cardQuickAction"
     android:layout_width="match_parent"
-    android:layout_height="52dp"
-    android:layout_marginBottom="8dp"
+    android:layout_height="44dp"
+    android:layout_marginBottom="6dp"
     android:clickable="true"
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground"
-    app:cardCornerRadius="16dp"
     app:cardElevation="1dp"
-    app:strokeWidth="1dp"
-    app:strokeColor="#15FFFFFF">
+    app:shapeAppearance="@style/ShapeAppearance.App.Card.LeftSquare"
+    app:strokeColor="#15FFFFFF"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -22,24 +22,25 @@
 
         <TextView
             android:id="@+id/tvActionIcon"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:background="#15FFFFFF"
             android:gravity="center"
             android:text="📦"
-            android:textSize="16sp" />
+            android:textSize="14sp" />
 
         <TextView
             android:id="@+id/tvActionName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="10dp"
+            android:layout_marginStart="8dp"
             android:text="ACCION"
-            android:textSize="11sp"
+            android:textSize="10sp"
             android:textStyle="bold"
             android:textColor="@android:color/white"
-            android:letterSpacing="0.03" />
+            android:maxLines="1"
+            android:ellipsize="end" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

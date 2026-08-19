@@ -13,7 +13,7 @@ public class SaleEntity {
     public String transactionId; // Nuevo campo para agrupar ventas
     public String productId; // Cambiado a String
     public String nombreProducto;
-    public String categoria; // Nuevo campo para mÃ©tricas
+    public String categoria; // Nuevo campo para métricas
     public int cantidad;
     public double precioVenta;
     public double costoUnitario;
@@ -23,12 +23,12 @@ public class SaleEntity {
     public boolean isSynced = false;
     public boolean isDeleted = false;
 
-    // Campos para Comprobantes ElectrÃ³nicos (SUNAT)
+    // Campos para Comprobantes Electrónicos (SUNAT)
     public String documentType; // BOLETA, FACTURA, NOTA_VENTA
     public String series;       // B001, F001, NV01
     public int correlative;
     public String customerDoc;  // DNI o RUC
-    public String customerName; // Nombre o RazÃ³n Social
+    public String customerName; // Nombre o Razón Social
     public String customerAddress;
 
     public SaleEntity() {

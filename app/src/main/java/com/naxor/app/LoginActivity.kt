@@ -8,6 +8,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.naxor.app.databinding.ActivityLoginBinding
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class LoginActivity : AppCompatActivity() {
 
@@ -108,6 +109,11 @@ class LoginActivity : AppCompatActivity() {
 
         auth.createUserWithEmailAndPassword(e, p).addOnCompleteListener { task ->
             if (task.isSuccessful) {
+                val userId = task.result?.user?.uid
+                if (userId != null) {
+                    sendWelcomeMessage(userId)
+                }
+
                 // Subir lo que haya local a la nueva cuenta
                 SyncManager(this).uploadAllLocalToCloud {
                     loading.dismiss()
@@ -120,5 +126,19 @@ class LoginActivity : AppCompatActivity() {
                 Toast.makeText(this, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    private fun sendWelcomeMessage(userId: String) {
+        val welcomeMessage = hashMapOf(
+            "title" to "¡Bienvenido a Nexur! 🚀",
+            "content" to "Estamos felices de tenerte aquí. Explora las herramientas de Inventario, Ventas y Rendimiento para potenciar tu negocio. Si tienes dudas, revisa la sección de Ayuda.",
+            "timestamp" to com.google.firebase.Timestamp.now()
+        )
+
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(userId)
+            .collection("messages")
+            .add(welcomeMessage)
     }
 }

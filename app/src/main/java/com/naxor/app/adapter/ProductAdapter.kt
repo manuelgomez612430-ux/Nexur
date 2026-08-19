@@ -80,7 +80,7 @@ class ProductAdapter(
                 ivProdItemPhoto.alpha = 0.3f
             }
 
-            // 2. InformaciÃ³n Central
+            // 2. Información Central
             tvProdItemNombre.text = item.nombre
             tvProdItemCategoria.text = item.categoria
             
@@ -92,7 +92,7 @@ class ProductAdapter(
                 else -> codigoReal
             }
 
-            // 3. Fecha e IntegraciÃ³n (CÃ¡lculo preciso de calendario)
+            // 3. Fecha e Integración (Cálculo preciso de calendario)
             val dias = getDaysDifference(item.timestamp)
             val textoDias = when {
                 dias == 0L -> "Hoy"

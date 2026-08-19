@@ -4,9 +4,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
-import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
-import android.speech.SpeechRecognizer
+import com.naxor.app.util.VoiceRecognitionHelper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -35,7 +33,7 @@ class GastosActivity : AppCompatActivity() {
     private val database by lazy { AppDatabase.getDatabase(this) }
     private lateinit var adapter: GastosAdapter
     private var currentDialogBinding: DialogAddExpenseBinding? = null
-    private var speechRecognizer: SpeechRecognizer? = null
+    private val voiceHelper by lazy { VoiceRecognitionHelper(this) }
     private var listeningDialog: AlertDialog? = null
 
     // Sync state
@@ -44,12 +42,6 @@ class GastosActivity : AppCompatActivity() {
     private var currentIsSyncing = false
     private var syncStatusText = "Conectado"
 
-    private val voiceLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0) ?: ""
-            currentDialogBinding?.etExpenseConcepto?.setText(spokenText.replaceFirstChar { it.uppercase() })
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -240,7 +232,9 @@ class GastosActivity : AppCompatActivity() {
         }
 
         db.layoutExpenseConcepto.setEndIconOnClickListener {
-            startVoiceRecognition()
+            voiceHelper.startListening { text ->
+                db.etExpenseConcepto.setText(text.replaceFirstChar { it.uppercase() })
+            }
         }
 
         db.btnCancelExpense.setOnClickListener { dialog.dismiss() }
@@ -293,93 +287,6 @@ class GastosActivity : AppCompatActivity() {
         }
     }
 
-    private fun startVoiceRecognition() {
-        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            androidx.core.app.ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.RECORD_AUDIO), 100)
-            return
-        }
-
-        // PREPARAR INTENT COMÚN
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Diga el concepto claramente...")
-        }
-
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            // FALLBACK DIRECTO AL DIÁLOGO DE GOOGLE
-            try { voiceLauncher.launch(intent) } catch (e: Exception) { Toast.makeText(this, "Voz no disponible", Toast.LENGTH_SHORT).show() }
-            return
-        }
-
-        showListeningDialog()
-
-        speechRecognizer?.destroy()
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
-        
-        speechRecognizer?.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) {}
-            override fun onBeginningOfSpeech() {}
-            override fun onRmsChanged(rmsdB: Float) {
-                listeningDialog?.findViewById<View>(R.id.viewPulse)?.let { pulse ->
-                    // Sensibilidad aumentada: divisor más pequeño = más movimiento
-                    val scale = 1.0f + (rmsdB / 5f).coerceAtLeast(0f)
-                    pulse.scaleX = scale
-                    pulse.scaleY = scale
-                    // La opacidad también reacciona a la voz
-                    pulse.alpha = (0.5f + (rmsdB / 20f)).coerceIn(0.5f, 0.9f)
-                }
-            }
-            override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {
-                listeningDialog?.dismiss()
-            }
-            override fun onError(error: Int) {
-                listeningDialog?.dismiss()
-                Log.e("Speech", "Error: $error")
-                // FALLBACK AL DIÁLOGO DE GOOGLE SI EL SERVICIO INTERNO FALLA (Ej. Busy)
-                try { voiceLauncher.launch(intent) } catch (e: Exception) {}
-            }
-            override fun onResults(results: Bundle?) {
-                listeningDialog?.dismiss()
-                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                if (!matches.isNullOrEmpty()) {
-                    currentDialogBinding?.etExpenseConcepto?.setText(matches[0].replaceFirstChar { it.uppercase() })
-                }
-            }
-            override fun onPartialResults(partialResults: Bundle?) {}
-            override fun onEvent(eventType: Int, params: Bundle?) {}
-        })
-        speechRecognizer?.startListening(intent)
-    }
-
-    private fun showListeningDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_voice_listening, null)
-        listeningDialog = AlertDialog.Builder(this, R.style.Theme_Naxor_Dialog)
-            .setView(dialogView)
-            .setCancelable(true)
-            .setOnCancelListener { speechRecognizer?.stopListening() }
-            .create()
-        
-        listeningDialog?.show()
-        
-        // Animación suave infinita por si no hay voz todavía
-        val pulseView = dialogView.findViewById<View>(R.id.viewPulse)
-        pulseView.animate()
-            .scaleX(1.2f)
-            .scaleY(1.2f)
-            .alpha(0.5f)
-            .setDuration(800)
-            .withEndAction {
-                pulseView.animate()
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .alpha(0.3f)
-                    .setDuration(800)
-                    .start()
-            }.start()
-    }
-
     private fun showDeleteConfirmation(expense: ExpenseEntity) {
         AlertDialog.Builder(this)
             .setTitle("Eliminar Gasto")
@@ -412,7 +319,7 @@ class GastosActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        speechRecognizer?.destroy()
+        voiceHelper.destroy()
     }
 
     inner class GastosAdapter(private val onDelete: (ExpenseEntity) -> Unit) : RecyclerView.Adapter<GastosAdapter.ViewHolder>() {

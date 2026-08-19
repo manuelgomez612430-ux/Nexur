@@ -33,13 +33,9 @@ class ResumenActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.btnBackResumen.setOnClickListener { finish() }
-        
-        binding.btnOpenMenuResumen.setOnClickListener { 
-            binding.drawerLayoutResumen.openDrawer(androidx.core.view.GravityCompat.END) 
-        }
 
         binding.navigationViewResumen.setNavigationItemSelectedListener { menuItem ->
-            binding.drawerLayoutResumen.closeDrawer(androidx.core.view.GravityCompat.END)
+            binding.drawerLayoutResumen.closeDrawer(androidx.core.view.GravityCompat.START)
             when (menuItem.itemId) {
                 R.id.menu_financial_guide -> { showDetailedFinancialGuide(); true }
                 R.id.menu_export_pdf -> { generateBusinessReportPDF(); true }

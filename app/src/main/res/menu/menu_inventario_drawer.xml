@@ -3,6 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/menu_check_code"
+        android:icon="@android:drawable/ic_menu_camera"
+        android:title="Comprobar producto por código" />
+
+    <item
         android:id="@+id/menu_export_excel"
         android:icon="@android:drawable/ic_menu_save"
         android:title="Exportar Inventario a Excel" />
@@ -13,10 +18,9 @@
         android:title="Importar Inventario desde Excel (CSV)" />
 
     <item
-        android:id="@+id/menu_edit_mode"
-        android:icon="@android:drawable/ic_menu_edit"
-        android:title="Editar Inventario"
-        android:checkable="true" />
+        android:id="@+id/menu_multi_delete"
+        android:icon="@android:drawable/ic_menu_delete"
+        android:title="Borrar varios productos" />
 
     <item
         android:id="@+id/menu_settings_inventario"

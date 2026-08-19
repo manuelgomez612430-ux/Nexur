@@ -34,6 +34,15 @@ public interface SaleDao {
     @Query("SELECT SUM(total - (costoUnitario * cantidad)) FROM sales WHERE timestamp >= :startTime AND isDeleted = 0")
     double getProfitFrom(long startTime);
 
+    @Query("SELECT SUM(total) FROM sales WHERE timestamp >= :startTime AND timestamp <= :endTime AND isDeleted = 0")
+    double getSalesAmountInRange(long startTime, long endTime);
+
+    @Query("SELECT SUM(total - (costoUnitario * cantidad)) FROM sales WHERE timestamp >= :startTime AND timestamp <= :endTime AND isDeleted = 0")
+    double getProfitInRange(long startTime, long endTime);
+
+    @Query("SELECT * FROM sales WHERE timestamp >= :startTime AND timestamp <= :endTime AND isDeleted = 0 ORDER BY timestamp DESC")
+    List<SaleEntity> getSalesInRange(long startTime, long endTime);
+
     @Query("UPDATE sales SET isDeleted = 1, isSynced = 0")
     void deleteAllSales();
 

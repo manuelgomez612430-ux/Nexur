@@ -161,19 +161,25 @@ class CajaActivity : AppCompatActivity() {
 
     private fun updateUI(session: CashSessionEntity?) {
         if (session == null) {
-            binding.tvCajaStatus.text = "Estado: CERRADA"
+            binding.tvCajaStatus.text = "Estado: CERRADA 🔴"
             binding.tvCajaPrompt.text = "Ingresa el monto inicial para abrir el día:"
             binding.etCajaMonto.text?.clear()
             binding.btnCajaAction.text = "Abrir Caja"
+            binding.btnCajaAction.setIconResource(android.R.drawable.ic_menu_add)
             binding.layoutCajaResumen.visibility = View.GONE
             binding.btnCajaAction.setOnClickListener { openCaja() }
         } else {
-            binding.tvCajaStatus.text = "Estado: ABIERTA"
-            binding.tvCajaPrompt.text = "Cuenta el dinero físico (billetes/monedas) y escribe el total para CERRAR:"
+            binding.tvCajaStatus.text = "Estado: EN PROCESO 🟢"
+            binding.tvCajaPrompt.text = "Ingresa el total de DINERO FÍSICO contado para CERRAR:"
             binding.btnCajaAction.text = "Cerrar Caja"
+            binding.btnCajaAction.setIconResource(android.R.drawable.ic_lock_power_off)
             binding.layoutCajaResumen.visibility = View.VISIBLE
             loadRealTimeData(session)
             binding.btnCajaAction.setOnClickListener { closeCaja(session) }
+        }
+        
+        binding.btnVerHistorialCaja.setOnClickListener {
+            Toast.makeText(this, "Historial de Cierres (Próximamente)", Toast.LENGTH_SHORT).show()
         }
     }
 

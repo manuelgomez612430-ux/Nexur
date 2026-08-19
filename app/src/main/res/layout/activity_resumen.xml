@@ -60,11 +60,21 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Estadísticas"
+                        android:text="Rendimiento"
                         android:textSize="24sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorOnSurface" />
                 </LinearLayout>
+
+                <ImageButton
+                    android:id="@+id/btnFilterDateMetricas"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_my_calendar"
+                    app:tint="?attr/colorPrimary"
+                    android:contentDescription="Filtrar por fecha" />
 
                 <ImageButton
                     android:id="@+id/btnOpenMenuResumen"
@@ -75,6 +85,18 @@
                     app:tint="?attr/colorPrimary"
                     android:contentDescription="Opciones" />
             </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvCurrentFilterRange"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="Mostrando: Historial completo"
+                android:textSize="11sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:alpha="0.8"
+                android:gravity="center_vertical"
+                android:visibility="visible" />
 
             <!-- PILLAR 1: CONTROL DE INGRESOS Y VENTAS -->
             <TextView
@@ -470,12 +492,12 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- NAVIGATION VIEW PARA ESTADÍSTICAS -->
+    <!-- NAVIGATION VIEW PARA RENDIMIENTO -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigationViewResumen"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_gravity="end"
+        android:layout_gravity="start"
         app:menu="@menu/menu_resumen_drawer"
         app:headerLayout="@layout/drawer_header_simple" />
 

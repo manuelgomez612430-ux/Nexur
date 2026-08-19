@@ -1,29 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="160dp"
+    android:layout_height="80dp"
     android:background="?attr/colorPrimary"
-    android:gravity="bottom"
+    android:gravity="center_vertical"
     android:orientation="vertical"
-    android:padding="24dp">
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="NAXOR"
-        android:textColor="@android:color/white"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:letterSpacing="0.1" />
+    android:paddingHorizontal="24dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="SISTEMA COMERCIAL INTEGRAL"
         android:textColor="@android:color/white"
-        android:textSize="10sp"
-        android:alpha="0.8"
-        android:letterSpacing="0.2"
-        android:layout_marginTop="2dp" />
+        android:textSize="11sp"
+        android:alpha="0.9"
+        android:textStyle="bold"
+        android:letterSpacing="0.1" />
 
 </LinearLayout>

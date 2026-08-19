@@ -259,6 +259,8 @@ class SyncManager(private val context: Context) {
                     CoroutineScope(Dispatchers.IO).launch {
                         for (docChange in snapshot.documentChanges) {
                             val cloudProduct = docChange.document.toObject(ProductEntity::class.java) ?: continue
+                            Log.d("SyncManager", "Cambio detectado en inventario: ${docChange.type} -> ${cloudProduct.nombre}")
+                            
                             when (docChange.type) {
                                 com.google.firebase.firestore.DocumentChange.Type.ADDED,
                                 com.google.firebase.firestore.DocumentChange.Type.MODIFIED -> {

@@ -1,9 +1,9 @@
 package com.naxor.app
 
-import android.content.res.ColorStateList
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.naxor.app.data.QuickAction
 import com.naxor.app.databinding.ItemQuickActionBinding
@@ -23,10 +23,8 @@ class QuickActionsAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val action = actions[position]
-        val context = holder.itemView.context
         
         with(holder.binding) {
-            // Extraer emoji y texto (Ej: "📦 STOCK")
             val parts = action.name.split(" ", limit = 2)
             if (parts.size == 2) {
                 tvActionIcon.text = parts[0]
@@ -58,7 +56,17 @@ class QuickActionsAdapter(
     }
 
     fun updateData(newActions: List<QuickAction>) {
+        val diffCallback = object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = actions.size
+            override fun getNewListSize(): Int = newActions.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                actions[oldItemPosition].id == newActions[newItemPosition].id
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                actions[oldItemPosition].name == newActions[newItemPosition].name &&
+                        actions[oldItemPosition].color == newActions[newItemPosition].color
+        }
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
         actions = newActions.toMutableList()
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 }

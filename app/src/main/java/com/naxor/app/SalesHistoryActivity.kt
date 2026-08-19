@@ -59,11 +59,11 @@ class SalesHistoryActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.btnBackSalesHistory.setOnClickListener { finish() }
         binding.btnOpenMenuSalesHistory.setOnClickListener {
-            binding.drawerLayoutSalesHistory.openDrawer(androidx.core.view.GravityCompat.END)
+            binding.drawerLayoutSalesHistory.openDrawer(androidx.core.view.GravityCompat.START)
         }
 
         binding.navigationViewSalesHistory.setNavigationItemSelectedListener { menuItem ->
-            binding.drawerLayoutSalesHistory.closeDrawer(androidx.core.view.GravityCompat.END)
+            binding.drawerLayoutSalesHistory.closeDrawer(androidx.core.view.GravityCompat.START)
             when (menuItem.itemId) {
                 R.id.menu_clear_history -> {
                     showDeleteAllConfirmation()
@@ -189,7 +189,7 @@ class SalesHistoryActivity : AppCompatActivity() {
 
     private fun showComprobanteDialog(items: List<SaleEntity>) {
         val total = items.sumOf { it.total }
-        val options = arrayOf("Nota de Venta (Interno)", "Boleta ElectrÃ³nica", "Factura ElectrÃ³nica")
+        val options = arrayOf("Nota de Venta (Interno)", "Boleta Electrónica", "Factura Electrónica")
         var selectedType = 0
 
         AlertDialog.Builder(this)
@@ -217,7 +217,7 @@ class SalesHistoryActivity : AppCompatActivity() {
         val progress = view.findViewById<android.view.View>(R.id.progressDocSearch)
         
         etDoc.hint = if (docType == "FACTURA") "RUC del Cliente" else "DNI del Cliente (Opcional)"
-        etName.hint = if (docType == "FACTURA") "RazÃ³n Social" else "Nombre del Cliente (Opcional)"
+        etName.hint = if (docType == "FACTURA") "Razón Social" else "Nombre del Cliente (Opcional)"
 
         val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val apiToken = prefs.getString("api_token", "") ?: ""
@@ -256,7 +256,7 @@ class SalesHistoryActivity : AppCompatActivity() {
                 
                 finalizeEmissionWithDetails(items, docType, doc, name, address)
             }
-            .setNegativeButton("AtrÃ¡s", null)
+            .setNegativeButton("Atrás", null)
             .show()
     }
 
@@ -281,12 +281,12 @@ class SalesHistoryActivity : AppCompatActivity() {
                         etName.setText(bizName?.uppercase())
                         etAddress.setText(bizAddr?.uppercase())
                     } else {
-                        Toast.makeText(this@SalesHistoryActivity, "RUC no encontrado o invÃ¡lido", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@SalesHistoryActivity, "RUC no encontrado o inválido", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
                 Log.e("SalesHistory", "Error en consulta: ${e.message}")
-                Toast.makeText(this@SalesHistoryActivity, "Error de conexiÃ³n con SUNAT/RENIEC", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@SalesHistoryActivity, "Error de conexión con SUNAT/RENIEC", Toast.LENGTH_SHORT).show()
             } finally {
                 progress.visibility = View.GONE
             }
@@ -319,7 +319,7 @@ class SalesHistoryActivity : AppCompatActivity() {
                 SyncManager(this@SalesHistoryActivity).scheduleOfflineSync()
 
                 withContext(Dispatchers.Main) {
-                    shareTicket(items) // Reutiliza la funciÃ³n que genera el PDF
+                    shareTicket(items) // Reutiliza la función que genera el PDF
                     loadData()
                 }
             } catch (e: Exception) { e.printStackTrace() }

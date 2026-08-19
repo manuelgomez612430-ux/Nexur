@@ -9,6 +9,9 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <queries>
@@ -66,7 +69,7 @@
         <activity android:name=".HistorialActivity" android:label="Historial" />
         <activity android:name=".InventarioActivity" android:label="Inventario" />
         <activity android:name=".VentasActivity" android:label="Registro de Ventas" />
-        <activity android:name=".ResumenActivity" android:label="Estadísticas" />
+        <activity android:name=".ResumenActivity" android:label="Rendimiento" />
         <activity android:name=".InstruccionesActivity" android:label="Instrucciones" />
         <activity android:name=".DeudoresActivity" android:label="Control de Deudas" />
         <activity android:name=".GastosActivity" android:label="Gastos del Local" />
@@ -78,6 +81,22 @@
         <activity android:name=".SalesHistoryActivity" android:label="Historial de Ventas" />
         <activity android:name=".MovementsActivity" android:label="Historial de Movimientos" />
         <activity android:name=".EmitirComprobanteActivity" android:label="Emitir Comprobante" />
+        <activity android:name=".AddProductActivity" android:label="Producto" />
+        <activity android:name=".MailboxActivity" android:label="Buzón de Mensajes" />
+
+        <!-- Servicio para Notificaciones Push (FCM) -->
+        <service
+            android:name=".network.MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".network.NexurSyncService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
     </application>
 
 </manifest>

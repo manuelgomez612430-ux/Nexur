@@ -122,9 +122,7 @@
                     app:boxStrokeWidth="0dp"
                     app:boxStrokeWidthFocused="0dp"
                     app:hintEnabled="true"
-                    app:hintAnimationEnabled="true"
-                    app:endIconMode="custom"
-                    app:endIconDrawable="@android:drawable/ic_menu_camera">
+                    app:hintAnimationEnabled="true">
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         android:id="@+id/autoVentaBusqueda"
                         android:layout_width="match_parent"
@@ -136,6 +134,25 @@
                         android:background="@android:color/transparent"
                         android:completionThreshold="1" />
                 </com.google.android.material.textfield.TextInputLayout>
+
+                <ImageButton
+                    android:id="@+id/btnVoiceSearchVentas"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_btn_speak_now"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="?attr/colorPrimary"
+                    android:contentDescription="Voz" />
+
+                <ImageButton
+                    android:id="@+id/btnScanBarcodeVentas"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_menu_camera"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="?attr/colorOnSurfaceVariant"
+                    android:alpha="0.6"
+                    android:contentDescription="Escanear" />
 
                 <View
                     android:layout_width="1dp"
@@ -300,7 +317,7 @@
         android:id="@+id/navigationViewVentas"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_gravity="end"
+        android:layout_gravity="start"
         app:menu="@menu/menu_ventas_drawer"
         app:headerLayout="@layout/drawer_header_simple" />
 

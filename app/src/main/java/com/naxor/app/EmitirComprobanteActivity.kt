@@ -41,7 +41,7 @@ class EmitirComprobanteActivity : AppCompatActivity() {
         adapter = SaleAdapter(
             items = emptyList(),
             onShare = { items -> sharePdf(items) },
-            onEmit = { items -> sharePdf(items) }, // TambiÃ©n permite emitir/re-emitir desde aquÃ­
+            onEmit = { items -> sharePdf(items) }, // También permite emitir/re-emitir desde aquí
             onLongClick = { /* No op */ }
         )
         binding.rvSalesEmitir.layoutManager = LinearLayoutManager(this)
@@ -89,7 +89,7 @@ class EmitirComprobanteActivity : AppCompatActivity() {
             val allSales = database.saleDao().allSales
             val filtered = allSales.filter { it.timestamp in start..end }
             
-            // Agrupar por transacciÃ³n y luego convertir a SaleListItem
+            // Agrupar por transacción y luego convertir a SaleListItem
             val grouped = filtered.groupBy { it.transactionId }.values.toList()
                 .sortedByDescending { it[0].timestamp }
 

@@ -30,8 +30,8 @@ object NotificationHelper {
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_chat)
-            .setContentTitle("Â¡Venta Realizada!")
-            .setContentText("Se registrÃ³ una venta por $total en $businessName")
+            .setContentTitle("¡Venta Realizada!")
+            .setContentText("Se registró una venta por $total en $businessName")
             .setPriority(NotificationCompat.PRIORITY_HIGH) // Subir prioridad para que aparezca arriba
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)

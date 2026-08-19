@@ -130,7 +130,7 @@
         android:id="@+id/navigationViewSalesHistory"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_gravity="end"
+        android:layout_gravity="start"
         app:menu="@menu/menu_historial_drawer"
         app:headerLayout="@layout/drawer_header_simple" />
 

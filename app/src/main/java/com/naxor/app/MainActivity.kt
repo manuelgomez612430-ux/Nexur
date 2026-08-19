@@ -7,8 +7,11 @@ import android.graphics.Color
 import android.graphics.Shader
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.Manifest
 import android.content.pm.PackageManager
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.messaging.FirebaseMessaging
 import androidx.core.content.ContextCompat
 import androidx.activity.result.contract.ActivityResultContracts
 import android.view.View
@@ -31,6 +34,8 @@ import com.naxor.app.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.view.GestureDetector
+import android.view.MotionEvent
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -43,26 +48,15 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
-    private var activityFilters = mutableSetOf<String>()
-    private lateinit var quickActionsAdapter: QuickActionsAdapter
 
-    private fun loadActivityFilters() {
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val saved = prefs.getString("activity_filters_v2", "TODOS") ?: "TODOS"
-        activityFilters = saved.split(",").filter { it.isNotEmpty() }.toMutableSet()
-        if (activityFilters.isEmpty()) activityFilters.add("TODOS")
-    }
+    private lateinit var globalGestureDetector: GestureDetector
 
-    private fun saveActivityFilters() {
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        prefs.edit().putString("activity_filters_v2", activityFilters.joinToString(",")).apply()
-    }
 
     private val requestNotificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (!isGranted) {
-            Toast.makeText(this, "Las notificaciones estÃ¡n desactivadas. No recibirÃ¡s avisos de ventas en tiempo real.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Las notificaciones están desactivadas. No recibirás avisos de ventas en tiempo real.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -79,104 +73,135 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setupGlobalGesture()
         checkNotificationPermission()
-        loadActivityFilters()
         setupListeners()
-        setupRealtimeActivityFeed()
-        setupQuickActionsRecyclerView()
-        renderQuickActions()
+        startSyncService()
+        subscribeToSalesTopic()
 
-        val sm = SyncManager(this)
-        sm.startRealtimeSalesSync { loadDashboardData() }
-        sm.startRealtimeLogsSync { setupRealtimeActivityFeed() }
-    }
-
-    private fun setupQuickActionsRecyclerView() {
-        quickActionsAdapter = QuickActionsAdapter(mutableListOf()) { newOrder ->
-            getSharedPreferences("AppPrefs", MODE_PRIVATE)
-                .edit()
-                .putString("quick_actions_list", newOrder.joinToString(","))
-                .apply()
-        }
-        binding.containerQuickActions.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = quickActionsAdapter
-            ItemTouchHelper(QuickActionTouchHelper(quickActionsAdapter)).attachToRecyclerView(this)
+        if (savedInstanceState == null) {
+            navigateToInicio()
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        loadDashboardData()
-        updateMailboxBadge()
-        renderQuickActions()
-        SyncManager(this).scheduleOfflineSync()
+    private fun setupGlobalGesture() {
+        globalGestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+                if (e1 == null) return false
+                val diffX = e2.x - e1.x
+                val diffY = e2.y - e1.y
+                
+                // Si el movimiento es horizontal y hacia la derecha
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    if (diffX > 150 && Math.abs(velocityX) > 200) {
+                        // Solo abrir si no hay un menú ya abierto
+                        if (!binding.drawerLayoutMain.isDrawerOpen(GravityCompat.START)) {
+                            openAnyDrawer()
+                            return true
+                        }
+                    }
+                }
+                return false
+            }
+        })
     }
 
-    private fun updateMailboxBadge() {
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val hasNewMessage = prefs.getBoolean("has_new_message", true)
-
-        binding.viewMenuBadge.visibility = if (hasNewMessage) View.VISIBLE else View.GONE
-
-        val menuItem = binding.navigationViewMain.menu.findItem(R.id.menu_mailbox)
-        val actionView = menuItem.actionView
-        val badge = actionView?.findViewById<View>(R.id.badge_view)
-        badge?.visibility = if (hasNewMessage) View.VISIBLE else View.GONE
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        if (ev != null) globalGestureDetector.onTouchEvent(ev)
+        return super.dispatchTouchEvent(ev)
     }
 
-    private fun loadDashboardData() {
-        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-        binding.tvMainBusinessName.text = prefs.getString("business_name", "Mi Negocio")
-        val currency = prefs.getString("currency_symbol", "S/")
-
-        lifecycleScope.launch {
-            val totalSales = withContext(Dispatchers.IO) { database.saleDao().getSalesAmountFrom(0) }
-            val totalProfit = withContext(Dispatchers.IO) { database.saleDao().getProfitFrom(0) }
-            val totalExpenses = withContext(Dispatchers.IO) { database.expenseDao().getTotalExpenses() ?: 0.0 }
-
-            withContext(Dispatchers.Main) {
-                binding.tvVentasHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", totalSales)}"
-                binding.tvUtilidadHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", totalProfit)}"
-                binding.tvGastosHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", totalExpenses)}"
+    private fun openAnyDrawer() {
+        val currentFrag = supportFragmentManager.findFragmentById(R.id.mainFragmentContainer)
+        
+        when (currentFrag) {
+            is com.naxor.app.fragment.HomeFragment -> {
+                binding.drawerLayoutMain.openDrawer(GravityCompat.START)
+            }
+            is com.naxor.app.fragment.StockFragment -> {
+                currentFrag.openDrawer()
+            }
+            is com.naxor.app.fragment.MetricasFragment -> {
+                currentFrag.openDrawer()
+            }
+            is com.naxor.app.fragment.SettingsFragment -> {
+                // No hacer nada, barra lateral desactivada en Ajustes
+            }
+            else -> {
+                // Comportamiento por defecto
+                binding.drawerLayoutMain.openDrawer(GravityCompat.START)
             }
         }
     }
 
+    fun navigateToInicio() {
+        if (supportFragmentManager.findFragmentByTag("HOME")?.isVisible == true) return
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.mainFragmentContainer, com.naxor.app.fragment.HomeFragment(), "HOME")
+            .commit()
+    }
+
+    fun navigateToStock() {
+        if (supportFragmentManager.findFragmentByTag("STOCK")?.isVisible == true) return
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.mainFragmentContainer, com.naxor.app.fragment.StockFragment(), "STOCK")
+            .commit()
+    }
+
+    fun navigateToMetricas() {
+        if (supportFragmentManager.findFragmentByTag("METRICAS")?.isVisible == true) return
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.mainFragmentContainer, com.naxor.app.fragment.MetricasFragment(), "METRICAS")
+            .commit()
+    }
+
+    fun navigateToSettings() {
+        if (supportFragmentManager.findFragmentByTag("SETTINGS")?.isVisible == true) return
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.mainFragmentContainer, com.naxor.app.fragment.SettingsFragment(), "SETTINGS")
+            .commit()
+    }
+
+    fun navigateToGestion() {
+        binding.drawerLayoutMain.openDrawer(GravityCompat.START)
+    }
+
+    private fun startSyncService() {
+        val serviceIntent = Intent(this, com.naxor.app.network.NexurSyncService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+    }
+
+    private fun subscribeToSalesTopic() {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val topic = "sales_$userId"
+        FirebaseMessaging.getInstance().subscribeToTopic(topic)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    Log.d("FCM", "Suscrito con éxito al tema: $topic")
+                } else {
+                    Log.e("FCM", "Error al suscribirse al tema")
+                }
+            }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        SyncManager(this).scheduleOfflineSync()
+    }
+
     private fun setupListeners() {
-        binding.btnIrVentas.setOnClickListener { startActivity(Intent(this, VentasActivity::class.java)) }
-        
-        binding.btnScanVenta.setOnClickListener { 
-            startDirectScanner()
-        }
-        binding.cardActivityPreview.setOnClickListener { startActivity(Intent(this, MovementsActivity::class.java)) }
-        binding.btnViewAllActivity.setOnClickListener { startActivity(Intent(this, MovementsActivity::class.java)) }
-        
-        binding.btnOpenMenuMain.setOnClickListener { binding.drawerLayoutMain.openDrawer(GravityCompat.END) }
-
-        binding.btnInfoDashboard.setOnClickListener { showFinancialInfoDialog() }
-
-        binding.btnFilterActivityMain.setOnClickListener { showActivityFilterDialog() }
-
-        binding.cardDashboard.setOnClickListener { 
-            checkPinAndNavigate { startActivity(Intent(this, ResumenActivity::class.java)) } 
-        }
-
         binding.navigationViewMain.setNavigationItemSelectedListener { menuItem ->
-            binding.drawerLayoutMain.closeDrawer(GravityCompat.END)
+            binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
             when (menuItem.itemId) {
-                R.id.menu_stock -> { startActivity(Intent(this, InventarioActivity::class.java)); true }
                 R.id.menu_gastos -> { checkPinAndNavigate { startActivity(Intent(this, GastosActivity::class.java)) }; true }
                 R.id.menu_caja -> { startActivity(Intent(this, CajaActivity::class.java)); true }
                 R.id.menu_fiados -> { startActivity(Intent(this, DeudoresActivity::class.java)); true }
                 R.id.menu_proveedores -> { startActivity(Intent(this, ProveedoresActivity::class.java)); true }
                 R.id.menu_emitir_comprobante -> { startActivity(Intent(this, EmitirComprobanteActivity::class.java)); true }
-                R.id.menu_mailbox -> {
-                    getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putBoolean("has_new_message", false).apply()
-                    updateMailboxBadge()
-                    Toast.makeText(this, "Buzón de Mensajes (Próximamente)", Toast.LENGTH_SHORT).show()
-                    true
-                }
                 R.id.menu_customize_actions -> { showActionsConfigDialog(); true }
                 R.id.menu_catalogo -> { generatePDFCatalog(); true }
                 R.id.menu_sync -> { manualSync(); true }
@@ -196,9 +221,31 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
+
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_inicio -> {
+                    navigateToInicio()
+                    true
+                }
+                R.id.nav_stock -> {
+                    navigateToStock()
+                    true
+                }
+                R.id.nav_metricas -> {
+                    navigateToMetricas()
+                    true
+                }
+                R.id.nav_config -> {
+                    navigateToSettings()
+                    true
+                }
+                else -> false
+            }
+        }
     }
 
-    private fun startDirectScanner() {
+    fun startDirectScanner() {
         val options = GmsBarcodeScannerOptions.Builder()
             .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
             .enableAutoZoom()
@@ -227,233 +274,12 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {}
     }
 
-    private fun showActivityFilterDialog() {
-        val filterOptions = listOf(
-            "TODOS" to "Todos",
-            "SALE" to "Ventas",
-            "EXPENSE" to "Gastos",
-            "PRODUCT_UPDATED" to "Modif.",
-            "PRODUCT_DELETED" to "Elimin.",
-            "OTHERS" to "Otras"
-        )
-        
-        val labels = filterOptions.map { it.second }.toTypedArray()
-        val selectedItems = filterOptions.map { activityFilters.contains(it.first) }.toBooleanArray()
-        
-        AlertDialog.Builder(this)
-            .setTitle("Filtrar Actividad")
-            .setMultiChoiceItems(labels, selectedItems) { dialog, which, isChecked ->
-                val type = filterOptions[which].first
-                
-                if (type == "TODOS") {
-                    if (isChecked) {
-                        activityFilters.clear()
-                        activityFilters.add("TODOS")
-                        // Desmarcar los demás en el diálogo
-                        for (i in 1 until selectedItems.size) {
-                            selectedItems[i] = false
-                            (dialog as AlertDialog).listView.setItemChecked(i, false)
-                        }
-                    } else {
-                        // No permitir desmarcar TODOS si es el único
-                        if (activityFilters.size == 1) {
-                            (dialog as AlertDialog).listView.setItemChecked(which, true)
-                            selectedItems[which] = true
-                        }
-                    }
-                } else {
-                    if (isChecked) {
-                        activityFilters.remove("TODOS")
-                        activityFilters.add(type)
-                        // Desmarcar TODOS en el diálogo
-                        selectedItems[0] = false
-                        (dialog as AlertDialog).listView.setItemChecked(0, false)
-                    } else {
-                        activityFilters.remove(type)
-                        if (activityFilters.isEmpty()) {
-                            activityFilters.add("TODOS")
-                            selectedItems[0] = true
-                            (dialog as AlertDialog).listView.setItemChecked(0, true)
-                        }
-                    }
-                }
-            }
-            .setPositiveButton("Aplicar") { _, _ ->
-                saveActivityFilters()
-                setupRealtimeActivityFeed()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
 
 
-    private fun setupRealtimeActivityFeed() {
-        database.movementLogDao().getLastMovements().observe(this) { logs ->
-            val container = binding.containerRecentActivity
-            container.removeAllViews()
 
-            if (logs.isNullOrEmpty()) {
-                val emptyTv = TextView(this).apply {
-                    text = "Sin actividad aún"
-                    textSize = 12f
-                    alpha = 0.5f
-                    gravity = android.view.Gravity.CENTER
-                    setPadding(0, 16, 0, 16)
-                }
-                container.addView(emptyTv)
-                return@observe
-            }
 
-            val filteredLogs = if (activityFilters.contains("TODOS")) {
-                logs
-            } else {
-                logs.filter { log ->
-                    when {
-                        log.type.startsWith("SALE") -> activityFilters.contains("SALE")
-                        log.type.startsWith("EXPENSE") -> activityFilters.contains("EXPENSE")
-                        log.type == "PRODUCT_CREATED" || log.type == "PRODUCT_UPDATED" -> activityFilters.contains("PRODUCT_UPDATED")
-                        log.type == "PRODUCT_DELETED" -> activityFilters.contains("PRODUCT_DELETED")
-                        else -> activityFilters.contains("OTHERS")
-                    }
-                }
-            }
 
-            val timeSdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
-
-            filteredLogs.take(6).forEach { log ->
-                val itemView = layoutInflater.inflate(R.layout.item_movement_mini, container, false)
-                
-                val ivIcon = itemView.findViewById<android.widget.ImageView>(R.id.ivMiniIcon)
-                val cardIcon = itemView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.cardMiniIcon)
-                val tvTitle = itemView.findViewById<TextView>(R.id.tvMiniTitle)
-                val tvTime = itemView.findViewById<TextView>(R.id.tvMiniTime)
-                val tvValue = itemView.findViewById<TextView>(R.id.tvMiniValue)
-
-                tvTitle.text = log.title
-                tvTime.text = timeSdf.format(Date(log.timestamp))
-                tvValue.text = log.value
-                
-                ivIcon.setImageResource(log.iconRes)
-                cardIcon.setCardBackgroundColor(Color.parseColor(log.colorHex))
-                
-                when (log.type) {
-                    "SALE" -> tvValue.setTextColor(Color.parseColor("#059669"))
-                    "EXPENSE" -> tvValue.setTextColor(Color.parseColor("#DC2626"))
-                    else -> tvValue.setTextColor(Color.parseColor("#2C3E50"))
-                }
-
-                container.addView(itemView)
-            }
-            
-            if (filteredLogs.isEmpty()) {
-                val emptyTv = TextView(this).apply {
-                    text = "Sin resultados"
-                    textSize = 11f
-                    alpha = 0.4f
-                    gravity = android.view.Gravity.CENTER
-                    setPadding(0, 8, 0, 8)
-                }
-                container.addView(emptyTv)
-            }
-        }
-    }
-
-    private fun renderQuickActions() {
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val savedActions = prefs.getString("quick_actions_list", "stock,gastos,caja,fiados,proveedores") ?: ""
-        val selectedActions = if (savedActions.isEmpty()) emptyList() else savedActions.split(",")
-
-        val actionDefinitions = mapOf(
-            "stock" to Triple("📦 STOCK", "#7C3AED") { startActivity(Intent(this, InventarioActivity::class.java)) },
-            "gastos" to Triple("💸 GASTOS", "#E11D48") { checkPinAndNavigate { startActivity(Intent(this, GastosActivity::class.java)) } },
-            "caja" to Triple("💰 CAJA", "#F59E0B") { startActivity(Intent(this, CajaActivity::class.java)) },
-            "fiados" to Triple("👥 DEUDORES", "#4F46E5") { startActivity(Intent(this, DeudoresActivity::class.java)) },
-            "proveedores" to Triple("🚚 PROVEED.", "#0284C7") { startActivity(Intent(this, ProveedoresActivity::class.java)) },
-            "clientes" to Triple("👤 CLIENTES", "#059669") { startActivity(Intent(this, CustomersActivity::class.java)) },
-            "catalogo" to Triple("📖 CATÁLOGO", "#D946EF") { generatePDFCatalog() },
-            "sync" to Triple("🔄 SYNC", "#10B981") { manualSync() },
-            "mailbox" to Triple("📬 MENSAJES", "#6366F1") { Toast.makeText(this, "Buzón (Próximamente)", Toast.LENGTH_SHORT).show() },
-            "lista_compras" to Triple("🛒 COMPRAS", "#F97316") { startActivity(Intent(this, ListaComprasActivity::class.java)) },
-            "asignador" to Triple("⚖️ PRECIOS", "#64748B") { startActivity(Intent(this, AsignadorDePreciosActivity::class.java)) },
-            "sales_history" to Triple("📜 VENTAS", "#3B82F6") { checkPinAndNavigate { startActivity(Intent(this, SalesHistoryActivity::class.java)) } },
-            "view_history" to Triple("🕒 CÁLCULOS", "#8B5CF6") { startActivity(Intent(this, HistorialActivity::class.java)) },
-            "instructions" to Triple("💡 AYUDA", "#14B8A6") { startActivity(Intent(this, InstruccionesActivity::class.java)) }
-        )
-
-        val quickActionList = selectedActions.mapNotNull { actionId ->
-            actionDefinitions[actionId]?.let { (name, color, action) ->
-                QuickAction(actionId, name, color, action)
-            }
-        }
-        
-        if (::quickActionsAdapter.isInitialized) {
-            quickActionsAdapter.updateData(quickActionList)
-        }
-    }
-
-    private fun showActionsConfigDialog() {
-        val actionNames = arrayOf(
-            "📦 Inventario", "💸 Gastos", "💰 Caja", "👥 Deudores", "🚚 Proveedores", 
-            "👤 Clientes", "📖 Catálogo", "🔄 Sincronizar", "📬 Buzón", 
-            "🛒 Lista Compras", "⚖️ Asignador Precios", "📜 Historial Ventas", 
-            "🕒 Historial Cálculos", "💡 Instrucciones"
-        )
-        val actionIds = arrayOf(
-            "stock", "gastos", "caja", "fiados", "proveedores", 
-            "clientes", "catalogo", "sync", "mailbox", 
-            "lista_compras", "asignador", "sales_history", 
-            "view_history", "instructions"
-        )
-        
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val savedActions = prefs.getString("quick_actions_list", "stock,gastos,caja,fiados,proveedores") ?: ""
-        val tempSelection = if (savedActions.isEmpty()) mutableListOf<String>() else savedActions.split(",").toMutableList()
-
-        val rv = RecyclerView(this).apply {
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = ConfigActionsAdapter(this@MainActivity, actionNames, actionIds, tempSelection)
-            setPadding(0, 16, 0, 16)
-            clipToPadding = false
-        }
-
-        AlertDialog.Builder(this)
-            .setTitle("Personalización de Herramientas (Max 5)")
-            .setView(rv)
-            .setPositiveButton("Guardar") { _, _ ->
-                prefs.edit().putString("quick_actions_list", tempSelection.joinToString(",")).apply()
-                renderQuickActions()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-
-    private fun showFinancialInfoDialog() {
-        val message = """
-            <b>💰 Venta total:</b> Es todo el dinero que ha ingresado por tus ventas. Es el ingreso bruto antes de descontar costos o gastos.
-            <br><br>
-            <b>💸 Gasto total:</b> Es la suma de todos los gastos operativos que has registrado (alquiler, luz, personal, etc.).
-            <br><br>
-            <b>📈 Utilidad:</b> Es tu ganancia real. Se calcula restando el costo de los productos a la venta total.
-            <br><br>
-            <b>💡 ¿Cómo interpretarlo?</b>
-            La <b>Venta total</b> muestra el movimiento de tu negocio. El <b>Gasto total</b> muestra cuánto cuesta mantenerlo abierto. La <b>Utilidad</b> te dice cuánto dinero estás ganando realmente después de pagar tus productos. 
-            <br><br>
-            <i>Recuerda: Un negocio sano busca maximizar la utilidad controlando los gastos y optimizando las ventas.</i>
-        """.trimIndent()
-
-        AlertDialog.Builder(this)
-            .setTitle("Interpretación Financiera")
-            .setMessage(android.text.Html.fromHtml(message, android.text.Html.FROM_HTML_MODE_COMPACT))
-            .setPositiveButton("Entendido", null)
-            .show()
-    }
-
-    private fun showMoreOptionsPopup() {
-        // Obsoleto, reemplazado por toggleMoreOptions()
-    }
-
-    private fun manualSync() {
+    fun manualSync() {
         val loading = AlertDialog.Builder(this)
             .setTitle("Sincronizando")
             .setMessage("Descargando datos actualizados de la nube...")
@@ -462,12 +288,12 @@ class MainActivity : AppCompatActivity() {
             
         SyncManager(this).downloadEverythingFromCloud {
             loading.dismiss()
-            loadDashboardData()
+            navigateToInicio() // Recargar el fragmento para refrescar datos
             Toast.makeText(this, "¡Datos sincronizados correctamente!", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun generatePDFCatalog() {
+    fun generatePDFCatalog() {
         val loadingDialog = AlertDialog.Builder(this)
             .setTitle("Generando Catálogo")
             .setMessage("Por favor espera, estamos preparando tus productos con imágenes HD...")
@@ -638,7 +464,54 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkPinAndNavigate(onSuccess: () -> Unit) {
+    fun showActionsConfigDialog() {
+        val actionNames = arrayOf(
+            "💸 Gastos", "💰 Caja", "👥 Deudores", "🚚 Proveedores", 
+            "👤 Clientes", "📖 Catálogo", "🔄 Sincronizar", "📬 Buzón", 
+            "🛒 Lista Compras", "⚖️ Asignador Precios", "📜 Historial Ventas", 
+            "🕒 Historial Cálculos", "💡 Instrucciones"
+        )
+        val actionIds = arrayOf(
+            "gastos", "caja", "fiados", "proveedores", 
+            "clientes", "catalogo", "sync", "mailbox", 
+            "lista_compras", "asignador", "sales_history", 
+            "view_history", "instructions"
+        )
+        
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val savedActions = prefs.getString("quick_actions_list", "stock,gastos,caja,fiados,proveedores") ?: ""
+        val tempSelection = if (savedActions.isEmpty()) mutableListOf<String>() else savedActions.split(",").toMutableSet().toMutableList()
+
+        val rv = RecyclerView(this).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = ConfigActionsAdapter(this@MainActivity, actionNames, actionIds, tempSelection)
+            setPadding(0, 16, 0, 16)
+            clipToPadding = false
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Personalización de Herramientas (Exactamente 5)")
+            .setView(rv)
+            .setPositiveButton("Guardar", null) // Set null to override later
+            .setNegativeButton("Cancelar", null)
+            .create()
+
+        dialog.show()
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            if (tempSelection.size == 5) {
+                prefs.edit().putString("quick_actions_list", tempSelection.joinToString(",")).apply()
+                navigateToInicio()
+                dialog.dismiss()
+            } else {
+                Toast.makeText(this, "¡Atención! Debes seleccionar exactamente 5 herramientas para mantener la estética del menú.", Toast.LENGTH_LONG).show()
+                // Animación de feedback en el diálogo si es necesario
+            }
+        }
+    }
+
+    fun checkPinAndNavigate(onSuccess: () -> Unit) {
         val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val savedPin = prefs.getString("user_pin", "") ?: ""
         if (savedPin.isEmpty()) { onSuccess(); return }

@@ -38,21 +38,45 @@
                 android:layout_marginTop="8dp"
                 android:layout_gravity="center" />
 
-            <!-- IMAGEN Y QR (LADO A LADO - ADAPTATIVO) -->
+            <!-- SELECTOR DE TIPO DE CÓDIGO -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupCodeType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipShowQR"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ver QR"
+                    android:checked="true" />
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipShowBarcode"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ver Barras" />
+            </com.google.android.material.chip.ChipGroup>
+
+            <!-- IMAGEN Y CÓDIGO (ALINEADOS LADO A LADO) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center"
-                android:layout_marginTop="24dp"
-                android:weightSum="2"
-                android:baselineAligned="false">
+                android:layout_marginTop="16dp"
+                android:weightSum="2">
 
                 <!-- Imagen del Producto -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_weight="1"
-                    android:layout_height="140dp"
+                    android:layout_height="160dp"
+                    android:layout_marginEnd="8dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="1dp"
@@ -66,26 +90,35 @@
                         android:alpha="0.8" />
                 </com.google.android.material.card.MaterialCardView>
 
-                <View
-                    android:layout_width="16dp"
-                    android:layout_height="1dp" />
-
-                <!-- QR del Producto -->
+                <!-- Área de Códigos -->
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardCodeContainer"
                     android:layout_width="0dp"
                     android:layout_weight="1"
-                    android:layout_height="140dp"
+                    android:layout_height="160dp"
+                    android:layout_marginStart="8dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="1dp"
                     app:strokeColor="?attr/colorOutlineVariant">
-                    <ImageView
-                        android:id="@+id/ivProductCode"
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:padding="8dp"
-                        android:background="@android:color/white"
-                        android:scaleType="fitCenter" />
+                        android:background="@android:color/white">
+                        <ImageView
+                            android:id="@+id/ivProductCode"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:padding="12dp"
+                            android:scaleType="fitCenter" />
+                        <ImageView
+                            android:id="@+id/ivProductBarcode"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:padding="12dp"
+                            android:scaleType="fitCenter"
+                            android:visibility="gone" />
+                    </FrameLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 

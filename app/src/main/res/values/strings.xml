@@ -13,7 +13,7 @@
     <string name="empty_ventas">No hay ventas registradas hoy</string>
     <string name="desc_nueva_venta">Nueva venta</string>
     <string name="btn_resumen">Resumen de Ventas</string>
-    <string name="title_resumen">Estadísticas</string>
+    <string name="title_resumen">Rendimiento</string>
 
     <!-- Inventario -->
     <string name="title_inventario">Inventario</string>

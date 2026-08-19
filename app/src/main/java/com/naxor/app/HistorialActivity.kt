@@ -87,7 +87,7 @@ class HistorialActivity : AppCompatActivity() {
 
         // Abrir barra lateral
         binding.btnOpenMenuHistorial.setOnClickListener {
-            binding.drawerLayoutHistorial.openDrawer(GravityCompat.END)
+            binding.drawerLayoutHistorial.openDrawer(GravityCompat.START)
         }
 
         // Manejar clics en el menú de la barra lateral
@@ -95,7 +95,7 @@ class HistorialActivity : AppCompatActivity() {
             when (menuItem.itemId) {
                 R.id.menu_clear_history -> {
                     showDeleteAllConfirmation()
-                    binding.drawerLayoutHistorial.closeDrawer(GravityCompat.END)
+                    binding.drawerLayoutHistorial.closeDrawer(GravityCompat.START)
                     true
                 }
                 else -> false
