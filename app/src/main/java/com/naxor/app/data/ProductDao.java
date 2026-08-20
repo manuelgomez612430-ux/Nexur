@@ -28,6 +28,9 @@ public interface ProductDao {
     @Query("SELECT * FROM products WHERE categoria = :categoria AND isDeleted = 0 ORDER BY nombre ASC")
     List<ProductEntity> getProductsByCategory(String categoria);
 
+    @Query("SELECT * FROM products WHERE (nombre LIKE :search OR categoria LIKE :search OR codigo LIKE :search) AND (:cat = 'Todos' OR categoria LIKE :cat) AND isDeleted = 0")
+    List<ProductEntity> getFilteredAndSorted(String search, String cat);
+
     @Query("SELECT * FROM products WHERE id = :id LIMIT 1")
     ProductEntity getProductById(String id);
 

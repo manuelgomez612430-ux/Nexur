@@ -37,9 +37,7 @@ import com.naxor.app.data.ProductEntity
 import com.naxor.app.databinding.ActivityInventarioBinding
 import com.naxor.app.databinding.DialogViewLabelBinding
 import com.naxor.app.util.VoiceRecognitionHelper
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
@@ -51,7 +49,6 @@ class StockFragment : Fragment() {
     
     private val adapter by lazy { 
         ProductAdapter(
-            items = emptyList(),
             onEdit = { product -> 
                 val intent = Intent(requireContext(), AddProductActivity::class.java)
                 intent.putExtra("PRODUCT_ID", product.id)
@@ -63,6 +60,8 @@ class StockFragment : Fragment() {
     }
     
     private val database by lazy { AppDatabase.getDatabase(requireContext()) }
+    private var loadJob: Job? = null
+    private var lastLoadedList: List<ProductEntity> = emptyList()
     private var currentSortAttribute: String = "NOMBRE"
     private var isAscending: Boolean = true
     private var currentCategory: String = "Todos"
@@ -97,14 +96,32 @@ class StockFragment : Fragment() {
         }
     }
 
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (!hidden) {
+            // Solo recargar si la lista está vacía o si hubo cambios externos
+            if (lastLoadedList.isEmpty()) {
+                loadProducts()
+            }
+        }
+    }
+
     override fun onResume() {
         super.onResume()
-        loadProducts()
+        if (!isHidden && lastLoadedList.isEmpty()) {
+            loadProducts()
+        }
     }
 
     private fun setupRecyclerView() {
-        binding.rvInventario.layoutManager = LinearLayoutManager(requireContext())
-        binding.rvInventario.adapter = adapter
+        binding.rvInventario.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = this@StockFragment.adapter
+            setHasFixedSize(true)
+            setItemViewCacheSize(20)
+            isDrawingCacheEnabled = true
+            drawingCacheQuality = View.DRAWING_CACHE_QUALITY_HIGH
+        }
     }
 
     private fun setupSyncIndicator() {
@@ -216,6 +233,19 @@ class StockFragment : Fragment() {
         isEditorMode = enabled
         adapter.setEditorMode(enabled)
         binding.cardEditorBanner.visibility = if (enabled) View.VISIBLE else View.GONE
+        
+        if (isEditorMode) {
+            // Icono de X en color intenso (Magenta)
+            binding.fabToggleEditor.setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+            binding.fabToggleEditor.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#C026D3"))
+            binding.fabToggleEditor.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
+        } else {
+            // Icono de Lápiz original
+            binding.fabToggleEditor.setImageResource(android.R.drawable.ic_menu_edit)
+            binding.fabToggleEditor.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F1F5F9"))
+            binding.fabToggleEditor.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#6B21A8"))
+        }
+        
         loadProducts()
     }
 
@@ -258,37 +288,62 @@ class StockFragment : Fragment() {
     }
 
     private fun loadProducts() {
-        lifecycleScope.launch {
-            val list = withContext(Dispatchers.IO) {
-                val dbList = if (currentSearchQuery.isNotBlank()) database.productDao().searchProducts("%$currentSearchQuery%")
-                else if (currentCategory == "Todos") database.productDao().allProducts
-                else database.productDao().getProductsByCategory(currentCategory)
+        loadJob?.cancel()
+        loadJob = lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                if (currentSearchQuery.isNotEmpty()) delay(150)
                 
-                when (currentSortAttribute) {
+                val searchPattern = if (currentSearchQuery.isBlank()) "%%" else "%$currentSearchQuery%"
+                
+                // 1. Obtener datos de la DB
+                val dbList = database.productDao().getFilteredAndSorted(
+                    searchPattern, 
+                    currentCategory
+                )
+                
+                val fullList = when (currentSortAttribute) {
                     "STOCK" -> if (isAscending) dbList.sortedBy { it.stock } else dbList.sortedByDescending { it.stock }
                     "PRECIO" -> if (isAscending) dbList.sortedBy { it.precioVenta } else dbList.sortedByDescending { it.precioVenta }
-                    else -> if (isAscending) dbList.sortedBy { it.nombre.lowercase() } else dbList.sortedByDescending { it.nombre.lowercase() }
+                    else -> if (isAscending) {
+                        dbList.sortedBy { it.nombre?.lowercase() ?: "" }
+                    } else {
+                        dbList.sortedByDescending { it.nombre?.lowercase() ?: "" }
+                    }
                 }
-            }
-            if (_binding != null) {
-                adapter.updateList(list)
-                binding.rvInventario.scrollToPosition(0)
-                
-                // Cálculos Correctos para el menú lateral (Inversión real y Valor venta)
-                val totalInversion = list.sumOf { it.precioCosto * it.stock } 
-                val totalValorVenta = list.sumOf { it.stock * it.precioVenta }
-                updateDrawerHeader(totalValorVenta, totalInversion)
-                
-                updateSyncIconState()
+
+                if (!isActive) return@launch
+
+                // 2. Cálculos pesados en el hilo de fondo (IO) para no trabar el Main
+                val totalInversion = fullList.sumOf { it.precioCosto } 
+                val totalValorVenta = fullList.sumOf { it.stock * it.precioVenta }
+
+                withContext(Dispatchers.Main) {
+                    if (_binding != null && isAdded) {
+                        // 3. Actualizar la lista en el adaptador
+                        adapter.updateList(fullList)
+                        lastLoadedList = fullList
+                        
+                        // Forzar scroll al inicio
+                        binding.rvInventario.scrollToPosition(0)
+
+                        // 4. Actualizar header de forma segura
+                        updateDrawerHeader(totalValorVenta, totalInversion)
+                        updateSyncIconState()
+                    }
+                }
+            } catch (e: Exception) {
+                if (e !is CancellationException) e.printStackTrace()
             }
         }
     }
 
     private fun updateDrawerHeader(v: Double, i: Double) {
         try {
-            val h = binding.navigationViewInventario.getHeaderView(0)
-            h.findViewById<TextView>(R.id.tvDrawerValorTotal)?.text = String.format(Locale.getDefault(), "S/ %.2f", v)
-            h.findViewById<TextView>(R.id.tvDrawerInversionTotal)?.text = String.format(Locale.getDefault(), "S/ %.2f", i)
+            if (_binding != null && binding.navigationViewInventario.headerCount > 0) {
+                val h = binding.navigationViewInventario.getHeaderView(0)
+                h.findViewById<TextView>(R.id.tvDrawerValorTotal)?.text = String.format(Locale.getDefault(), "S/ %.2f", v)
+                h.findViewById<TextView>(R.id.tvDrawerInversionTotal)?.text = String.format(Locale.getDefault(), "S/ %.2f", i)
+            }
         } catch (e: Exception) {}
     }
 
@@ -397,7 +452,7 @@ class StockFragment : Fragment() {
     private fun showHelpDialog() {
         AlertDialog.Builder(requireContext())
             .setTitle("Guía de Gestión de Inventario")
-            .setMessage("Mantén tus existencias actualizadas para que Nexur pueda darte un análisis de rendimiento preciso.")
+            .setMessage("Mantén tus existencias actualizadas para que Naxor pueda darte un análisis de rendimiento preciso.")
             .setPositiveButton("Entendido", null).show()
     }
 

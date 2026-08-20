@@ -47,6 +47,9 @@ interface DebtorDao {
     @Delete
     suspend fun deleteDebtDetail(debt: DebtDetailEntity)
 
+    @Query("SELECT * FROM debtors WHERE isDeleted = 0 AND fechaCobro > 0 AND fechaCobro <= :timeLimit")
+    suspend fun getPendingCollections(timeLimit: Long): List<DebtorEntity>
+
     @Query("SELECT COUNT(*) FROM debtors WHERE isSynced = 0")
     fun getUnsyncedDebtorsCount(): androidx.lifecycle.LiveData<Int>
 

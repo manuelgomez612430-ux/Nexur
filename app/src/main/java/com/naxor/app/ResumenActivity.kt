@@ -3,6 +3,8 @@ package com.naxor.app
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.text.Html
+import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -27,6 +29,13 @@ class ResumenActivity : AppCompatActivity() {
     private lateinit var binding: ActivityResumenBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
 
+    // Variables para IA bajo demanda
+    private var currentVentas = 0.0
+    private var currentUtilidad = 0.0
+    private var currentGastos = 0.0
+    private var currentDeudores = 0.0
+    private var currentDeudas = 0.0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityResumenBinding.inflate(layoutInflater)
@@ -42,6 +51,10 @@ class ResumenActivity : AppCompatActivity() {
                 R.id.menu_settings_resumen -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
                 else -> false
             }
+        }
+
+        binding.btnRefreshAiAnalysis.setOnClickListener {
+            generateAiAnalysis()
         }
         
         setupCharts()
@@ -236,8 +249,23 @@ class ResumenActivity : AppCompatActivity() {
                     .sortedByDescending { it.second }
                     .take(3)
 
+                // NUEVO: Cargar deudas y deudores
+                val totalDeudores = withContext(Dispatchers.IO) { 
+                    database.debtorDao().getAllDebtors().sumOf { it.deudaTotal }
+                }
+                val totalDeudasPropias = withContext(Dispatchers.IO) { 
+                    database.businessDebtDao().getTotalOwed() ?: 0.0
+                }
+
+                // Guardar para IA
+                currentVentas = ventasTotales
+                currentUtilidad = gananciaBruta
+                currentGastos = gastosTotales
+                currentDeudores = totalDeudores
+                currentDeudas = totalDeudasPropias
+
                 // 5. Actualizar UI
-                updateUI(ventasTotales, gananciaBruta, gastosTotales, utilidadNeta, inversionTotal, valorInventario, topProducts, ticketPromedio, costoVentas)
+                updateUI(ventasTotales, gananciaBruta, gastosTotales, utilidadNeta, inversionTotal, valorInventario, topProducts, ticketPromedio, costoVentas, totalDeudores, totalDeudasPropias)
                 updateChartsUI(entriesPie, entriesSales, entriesExpenses, days)
 
             } catch (e: Exception) {
@@ -246,7 +274,25 @@ class ResumenActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateUI(ventas: Double, bruta: Double, gastos: Double, neta: Double, inversion: Double, valorInv: Double, top: List<Pair<String, Int>>, ticket: Double, cogs: Double) {
+    private fun generateAiAnalysis() {
+        val range = binding.tvCurrentFilterRange.text.toString()
+        
+        binding.progressAiAnalysis.visibility = android.view.View.VISIBLE
+        binding.tvAiAnalysisContent.alpha = 0.5f
+
+        lifecycleScope.launch {
+            val analysis = com.naxor.app.util.GeminiHelper.getBusinessAnalysis(
+                currentVentas, currentUtilidad, currentGastos, currentDeudores, currentDeudas, range
+            )
+            withContext(Dispatchers.Main) {
+                binding.tvAiAnalysisContent.text = analysis
+                binding.tvAiAnalysisContent.alpha = 1.0f
+                binding.progressAiAnalysis.visibility = android.view.View.GONE
+            }
+        }
+    }
+
+    private fun updateUI(ventas: Double, bruta: Double, gastos: Double, neta: Double, inversion: Double, valorInv: Double, top: List<Pair<String, Int>>, ticket: Double, cogs: Double, deudores: Double, deudas: Double) {
         val currency = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("currency_symbol", "S/")
         
         binding.tvVentasTotalesResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", ventas)}"
@@ -260,6 +306,9 @@ class ResumenActivity : AppCompatActivity() {
         // Nuevas métricas de la guía
         binding.tvTicketPromedio.text = "$currency ${String.format(Locale.getDefault(), "%.2f", ticket)}"
         binding.tvCostoVentas.text = "$currency ${String.format(Locale.getDefault(), "%.2f", cogs)}"
+        
+        binding.tvTotalDeudoresResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", deudores)}"
+        binding.tvTotalDeudasPropiasResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", deudas)}"
         
         binding.tvUtilidadNeta.setTextColor(if(neta >= 0) resources.getColor(R.color.emerald_700, theme) else resources.getColor(R.color.red_700, theme))
 

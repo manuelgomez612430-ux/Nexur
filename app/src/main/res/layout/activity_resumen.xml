@@ -1,141 +1,168 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawerLayoutResumen"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/slate_50">
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="?attr/colorSurface"
         android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="20dp">
 
-            <!-- HEADER CON BOTÓN DE MENÚ -->
-            <LinearLayout
+            <!-- CUSTOM HEADER -->
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
                 android:layout_marginBottom="24dp">
 
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/btnBackResumen"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="0dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp"
                     app:strokeWidth="0dp"
                     android:clickable="true"
                     android:focusable="true">
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
                         android:layout_gravity="center"
                         android:src="@android:drawable/ic_menu_revert"
-                        app:tint="?attr/colorOnSurface"
-                        android:contentDescription="Regresar" />
+                        app:tint="@color/slate_900" />
                 </com.google.android.material.card.MaterialCardView>
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_toEndOf="@id/btnBackResumen"
                     android:layout_marginStart="16dp"
+                    android:layout_centerVertical="true"
                     android:orientation="vertical">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Guía Financiera"
+                        android:text="Dashboard Financiero"
                         android:textSize="12sp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:alpha="0.7" />
+                        android:textColor="@color/slate_500"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05" />
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Rendimiento"
-                        android:textSize="24sp"
+                        android:textSize="28sp"
                         android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface" />
+                        android:textColor="@color/slate_900" />
                 </LinearLayout>
 
-                <ImageButton
-                    android:id="@+id/btnFilterDateMetricas"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginEnd="8dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_menu_my_calendar"
-                    app:tint="?attr/colorPrimary"
-                    android:contentDescription="Filtrar por fecha" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:orientation="horizontal">
 
-                <ImageButton
-                    android:id="@+id/btnOpenMenuResumen"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_menu_more"
-                    app:tint="?attr/colorPrimary"
-                    android:contentDescription="Opciones" />
-            </LinearLayout>
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/btnFilterDateMetricas"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:layout_marginEnd="12dp"
+                        app:cardBackgroundColor="@color/white"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="2dp"
+                        app:strokeWidth="0dp"
+                        android:clickable="true"
+                        android:focusable="true">
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:src="@android:drawable/ic_menu_my_calendar"
+                            app:tint="@color/purple_600" />
+                    </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:id="@+id/tvCurrentFilterRange"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:text="Mostrando: Historial completo"
-                android:textSize="11sp"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:alpha="0.8"
-                android:gravity="center_vertical"
-                android:visibility="visible" />
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/btnOpenMenuResumen"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        app:cardBackgroundColor="@color/white"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="2dp"
+                        app:strokeWidth="0dp"
+                        android:clickable="true"
+                        android:focusable="true">
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:src="@android:drawable/ic_menu_more"
+                            app:tint="@color/purple_600" />
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+            </RelativeLayout>
 
-            <!-- PILLAR 1: CONTROL DE INGRESOS Y VENTAS -->
-            <TextView
+            <!-- DATE RANGE BADGE -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1. CONTROL DE INGRESOS"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.1"
-                android:textColor="?attr/colorPrimary"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="@color/slate_100"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="0dp">
+                <TextView
+                    android:id="@+id/tvCurrentFilterRange"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="6dp"
+                    android:text="Filtro: Hoy"
+                    android:textSize="12sp"
+                    android:textColor="@color/slate_700"
+                    android:textStyle="bold" />
+            </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
+            <!-- PRIMARY METRICS GRID -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="1dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant">
+                android:orientation="horizontal"
+                android:baselineAligned="false"
+                android:layout_marginBottom="12dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp">
-
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp">
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:padding="16dp">
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Venta Total"
-                            android:textSize="10sp"
-                            android:textColor="?attr/colorOnSurfaceVariant" />
+                            android:text="Ventas"
+                            android:textSize="12sp"
+                            android:textColor="@color/slate_500" />
                         <TextView
                             android:id="@+id/tvVentasTotalesResumen"
                             android:layout_width="wrap_content"
@@ -143,101 +170,67 @@
                             android:text="S/ 0.00"
                             android:textSize="18sp"
                             android:textStyle="bold"
-                            app:autoSizeTextType="uniform"
-                            app:autoSizeMinTextSize="12sp"
-                            app:autoSizeMaxTextSize="18sp"
-                            android:maxLines="1"
-                            android:textColor="?attr/colorOnSurface" />
+                            android:textColor="@color/slate_900" />
                     </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardBackgroundColor="@color/emerald_50"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp">
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:orientation="vertical"
-                        android:gravity="end">
+                        android:padding="16dp">
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Ticket Promedio"
-                            android:textSize="10sp"
-                            android:textColor="?attr/colorOnSurfaceVariant" />
+                            android:text="Utilidad Neta"
+                            android:textSize="12sp"
+                            android:textColor="@color/emerald_700" />
                         <TextView
-                            android:id="@+id/tvTicketPromedio"
+                            android:id="@+id/tvUtilidadNeta"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="S/ 0.00"
                             android:textSize="18sp"
                             android:textStyle="bold"
-                            app:autoSizeTextType="uniform"
-                            app:autoSizeMinTextSize="12sp"
-                            app:autoSizeMaxTextSize="18sp"
-                            android:maxLines="1"
-                            android:textColor="?attr/colorPrimary" />
+                            android:textColor="@color/emerald_900" />
                     </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
 
-            <!-- PILLAR 2: COSTOS Y GASTOS -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="2. COSTOS Y GASTOS (LO QUE SALE)"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.1"
-                android:textColor="@color/red_600"
-                android:layout_marginBottom="8dp" />
-
-            <com.google.android.material.card.MaterialCardView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="1dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant">
+                android:orientation="horizontal"
+                android:baselineAligned="false"
+                android:layout_marginBottom="24dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp">
-
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp">
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Costo de Ventas"
-                            android:textSize="10sp"
-                            android:textColor="?attr/colorOnSurfaceVariant" />
-                        <TextView
-                            android:id="@+id/tvCostoVentas"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="S/ 0.00"
-                            android:textSize="18sp"
-                            android:textStyle="bold"
-                            android:textColor="?attr/colorOnSurface" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:orientation="vertical"
-                        android:gravity="end">
+                        android:padding="16dp">
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Gastos Operativos"
-                            android:textSize="10sp"
-                            android:textColor="?attr/colorOnSurfaceVariant" />
+                            android:text="Gastos"
+                            android:textSize="12sp"
+                            android:textColor="@color/slate_500" />
                         <TextView
                             android:id="@+id/tvGastosTotalesResumen"
                             android:layout_width="wrap_content"
@@ -247,242 +240,421 @@
                             android:textStyle="bold"
                             android:textColor="@color/red_600" />
                     </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                </com.google.android.material.card.MaterialCardView>
 
-            <!-- PILLAR 3: MÁRGENES DE GANANCIA -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="3. MÁRGENES DE GANANCIA"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.1"
-                android:textColor="@color/emerald_600"
-                android:layout_marginBottom="8dp" />
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ticket Promedio"
+                            android:textSize="12sp"
+                            android:textColor="@color/slate_500" />
+                        <TextView
+                            android:id="@+id/tvTicketPromedio"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="S/ 0.00"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/sky_600" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
 
+            <!-- SMART IA ADVISOR (HERO CARD) -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardSmartAnalysis"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/emerald_50"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="0dp">
+                android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="@color/midnight_purple"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="8dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/glass_border">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp">
+                    android:orientation="vertical"
+                    android:padding="24dp">
 
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            app:cardBackgroundColor="@color/glass_white"
+                            app:cardCornerRadius="20dp"
+                            app:cardElevation="0dp">
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_gravity="center"
+                                android:src="@android:drawable/ic_menu_compass"
+                                app:tint="@color/white" />
+                        </com.google.android.material.card.MaterialCardView>
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="CONSEJERO IA NAXOR"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.1"
+                            android:textColor="@color/white" />
+
+                        <ProgressBar
+                            android:id="@+id/progressAiAnalysis"
+                            style="?android:attr/progressBarStyleSmall"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_marginStart="12dp"
+                            android:indeterminateTint="@color/white"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvAiAnalysisContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="¿Quieres un análisis experto de hoy? Pulsa el botón para que Gemini analice tus números."
+                        android:textSize="14sp"
+                        android:textColor="@color/white"
+                        android:alpha="0.9"
+                        android:lineSpacingExtra="6dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRefreshAiAnalysis"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:layout_gravity="end"
+                        android:text="Generar Análisis con IA"
+                        android:textSize="12sp"
+                        android:textColor="@color/midnight_purple"
+                        app:backgroundTint="@color/white"
+                        app:cornerRadius="12dp"
+                        app:icon="@android:drawable/stat_notify_sync"
+                        app:iconSize="16dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- DETAILED INSIGHTS -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DETALLES DE OPERACIÓN"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_900"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="8dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="12dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Costo de Ventas (COGS)"
+                            android:textColor="@color/slate_600"
+                            android:textSize="14sp" />
+                        <TextView
+                            android:id="@+id/tvCostoVentas"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="S/ 0.00"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_900" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/slate_100" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="12dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:text="Ganancia Bruta"
-                            android:textSize="10sp"
-                            android:textColor="@color/emerald_700" />
+                            android:textColor="@color/slate_600"
+                            android:textSize="14sp" />
                         <TextView
                             android:id="@+id/tvGananciaResumen"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="S/ 0.00"
-                            android:textSize="18sp"
                             android:textStyle="bold"
-                            android:textColor="@color/emerald_800" />
+                            android:textColor="@color/emerald_600" />
                     </LinearLayout>
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="end">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Utilidad Neta"
-                            android:textSize="10sp"
-                            android:textColor="@color/emerald_700" />
-                        <TextView
-                            android:id="@+id/tvUtilidadNeta"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="S/ 0.00"
-                            android:textSize="22sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/emerald_900" />
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- PILLAR 4: INVENTARIO -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="4. CAPITAL Y STOCK"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.1"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:layout_marginBottom="8dp" />
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardBackgroundColor="?attr/colorSurfaceContainer"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp"
-                    android:orientation="horizontal">
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/slate_100" />
 
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:padding="12dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="Valor de Inventario (Venta)"
-                            android:textSize="10sp"
-                            android:textColor="?attr/colorOnSurfaceVariant" />
+                            android:layout_weight="1"
+                            android:text="Valor del Inventario"
+                            android:textColor="@color/slate_600"
+                            android:textSize="14sp" />
                         <TextView
                             android:id="@+id/tvValorInventarioResumen"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="S/ 0.00"
-                            android:textSize="18sp"
                             android:textStyle="bold"
-                            android:textColor="?attr/colorOnSurface" />
+                            android:textColor="@color/slate_900" />
                     </LinearLayout>
 
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/slate_100" />
+
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:gravity="end">
+                        android:padding="12dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="Inversión Total (Costo)"
-                            android:textSize="10sp"
-                            android:textColor="?attr/colorOnSurfaceVariant" />
+                            android:layout_weight="1"
+                            android:text="Capital Invertido"
+                            android:textColor="@color/slate_600"
+                            android:textSize="14sp" />
                         <TextView
                             android:id="@+id/tvInversionResumen"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="S/ 0.00"
-                            android:textSize="18sp"
                             android:textStyle="bold"
-                            android:textColor="?attr/colorPrimary" />
+                            android:textColor="@color/purple_600" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Gráficos y Análisis -->
+            <!-- DEBT BALANCE SECTION -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="24dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="2dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@android:drawable/btn_star_big_off"
+                            app:tint="@color/emerald_600"
+                            android:layout_marginBottom="8dp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Por Cobrar"
+                            android:textSize="12sp"
+                            android:textColor="@color/emerald_600" />
+                        <TextView
+                            android:id="@+id/tvTotalDeudoresResumen"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="S/ 0.00"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/emerald_700" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="2dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@android:drawable/ic_menu_agenda"
+                            app:tint="@color/red_600"
+                            android:layout_marginBottom="8dp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Por Pagar"
+                            android:textSize="12sp"
+                            android:textColor="@color/red_600" />
+                        <TextView
+                            android:id="@+id/tvTotalDeudasPropiasResumen"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="S/ 0.00"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/red_700" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- TREND CHART CARD -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="24dp"
-                app:cardElevation="2dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant">
-
+                app:cardElevation="2dp">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="20dp">
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="TENDENCIA SEMANAL"
-                        android:textSize="12sp"
+                        android:text="Tendencia Semanal"
+                        android:textSize="14sp"
                         android:textStyle="bold"
-                        android:textColor="?attr/colorPrimary"
-                        android:layout_marginBottom="12dp" />
-
+                        android:textColor="@color/slate_900"
+                        android:layout_marginBottom="16dp" />
                     <com.github.mikephil.charting.charts.BarChart
                         android:id="@+id/barChartSemana"
                         android:layout_width="match_parent"
-                        android:layout_height="250dp"
-                        android:layout_marginBottom="24dp" />
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="?attr/colorOutlineVariant"
-                        android:layout_marginBottom="20dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="VENTAS POR CATEGORÍA"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorPrimary"
-                        android:layout_marginBottom="12dp" />
-
-                    <com.github.mikephil.charting.charts.PieChart
-                        android:id="@+id/pieChartCategorias"
-                        android:layout_width="match_parent"
-                        android:layout_height="280dp" />
+                        android:layout_height="220dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Productos Estrella -->
+            <!-- CATEGORIES CHART CARD -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Distribución por Categoría"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_900"
+                        android:layout_marginBottom="16dp" />
+                    <com.github.mikephil.charting.charts.PieChart
+                        android:id="@+id/pieChartCategorias"
+                        android:layout_width="match_parent"
+                        android:layout_height="250dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- STAR PRODUCTS CARD -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="32dp"
-                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="24dp"
-                app:cardElevation="2dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="?attr/colorOutlineVariant">
-
+                app:cardElevation="2dp">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="20dp">
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="PRODUCTOS ESTRELLA (TOP 3)"
-                        android:textSize="12sp"
+                        android:text="Productos Estrella (Top 3)"
+                        android:textSize="14sp"
                         android:textStyle="bold"
-                        android:textColor="?attr/colorPrimary"
+                        android:textColor="@color/slate_900"
                         android:layout_marginBottom="16dp" />
-
                     <LinearLayout
                         android:id="@+id/layoutTopProducts"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical">
-
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Registra ventas para ver tus productos estrella"
-                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:text="Analizando ventas..."
+                            android:textColor="@color/slate_500"
                             android:textSize="13sp"
                             android:gravity="center"
                             android:padding="20dp" />
@@ -490,9 +662,9 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
-    <!-- NAVIGATION VIEW PARA RENDIMIENTO -->
+    <!-- NAVIGATION VIEW -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigationViewResumen"
         android:layout_width="wrap_content"

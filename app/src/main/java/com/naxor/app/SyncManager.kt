@@ -125,6 +125,21 @@ class SyncManager(private val context: Context) {
         }
     }
 
+    fun syncBusinessDebtToCloud(debt: BusinessDebtEntity) {
+        val userId = auth.currentUser?.uid ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                db.collection("users").document(userId)
+                    .collection("business_debts").document(debt.id)
+                    .set(debt, SetOptions.merge()).await()
+                debt.isSynced = true
+                localDb.businessDebtDao().update(debt)
+            } catch (e: Exception) {
+                Log.e("SyncManager", "Error al subir deuda negocio: ${e.message}")
+            }
+        }
+    }
+
     fun syncDebtDetailToCloud(debt: DebtDetailEntity) {
         val userId = auth.currentUser?.uid ?: return
         CoroutineScope(Dispatchers.IO).launch {
@@ -514,6 +529,14 @@ class SyncManager(private val context: Context) {
                     localDb.expenseDao().update(it)
                 }
 
+                // 3.5 Deudas del Negocio
+                val businessDebts = localDb.businessDebtDao().getPendingDebts() + localDb.businessDebtDao().getPaidDebts()
+                businessDebts.forEach { 
+                    userRef.collection("business_debts").document(it.id).set(it, SetOptions.merge()).await()
+                    it.isSynced = true
+                    localDb.businessDebtDao().update(it)
+                }
+
                 // 4. Ajustes
                 syncBusinessSettingsToCloud()
 
@@ -561,6 +584,16 @@ class SyncManager(private val context: Context) {
                     if (e != null) {
                         e.isSynced = true
                         localDb.expenseDao().insert(e)
+                    }
+                }
+
+                // 3.5 Descargar Deudas del Negocio
+                val bDebtsSnap = userRef.collection("business_debts").get().await()
+                for (doc in bDebtsSnap.documents) {
+                    val d = doc.toObject(BusinessDebtEntity::class.java)
+                    if (d != null) {
+                        d.isSynced = true
+                        localDb.businessDebtDao().insert(d)
                     }
                 }
 

@@ -27,9 +27,7 @@ import com.naxor.app.data.ProductEntity
 import com.naxor.app.databinding.ActivityInventarioBinding
 import com.naxor.app.databinding.DialogViewLabelBinding
 import com.naxor.app.util.VoiceRecognitionHelper
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
@@ -39,7 +37,6 @@ class InventarioActivity : AppCompatActivity() {
     private lateinit var binding: ActivityInventarioBinding
     private val adapter by lazy { 
         ProductAdapter(
-            items = emptyList(),
             onEdit = { product -> 
                 val intent = Intent(this, AddProductActivity::class.java)
                 intent.putExtra("PRODUCT_ID", product.id)
@@ -61,6 +58,7 @@ class InventarioActivity : AppCompatActivity() {
     private var lastUnsyncedCount: Int = 0
     private var isNetworkAvailable: Boolean = true
     private var currentIsSyncing: Boolean = false
+    private var loadJob: kotlinx.coroutines.Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -207,13 +205,15 @@ class InventarioActivity : AppCompatActivity() {
         binding.cardEditorBanner.visibility = if (enabled) View.VISIBLE else View.GONE
         
         if (isEditorMode) {
+            // Icono de X en color intenso (Magenta)
             binding.fabToggleEditor.setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
-            binding.fabToggleEditor.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#9333EA"))
+            binding.fabToggleEditor.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#C026D3"))
             binding.fabToggleEditor.imageTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
         } else {
+            // Icono de Lápiz original
             binding.fabToggleEditor.setImageResource(android.R.drawable.ic_menu_edit)
             binding.fabToggleEditor.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#F1F5F9"))
-            binding.fabToggleEditor.imageTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#9333EA"))
+            binding.fabToggleEditor.imageTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#6B21A8"))
         }
         updateControlsLayout(currentSearchQuery.isNotEmpty() || binding.etSearchInventario.hasFocus())
     }
@@ -287,35 +287,57 @@ class InventarioActivity : AppCompatActivity() {
     }
 
     private fun loadProducts() {
-        lifecycleScope.launch {
-            val list = withContext(Dispatchers.IO) {
-                val dbList = if (currentSearchQuery.isNotBlank()) database.productDao().searchProducts("%$currentSearchQuery%")
-                else if (currentCategory == "Todos") database.productDao().allProducts
-                else database.productDao().getProductsByCategory(currentCategory)
-                
-                when (currentSortAttribute) {
-                    "STOCK" -> if (isAscending) dbList.sortedBy { it.stock } else dbList.sortedByDescending { it.stock }
-                    "PRECIO" -> if (isAscending) dbList.sortedBy { it.precioVenta } else dbList.sortedByDescending { it.precioVenta }
-                    else -> if (isAscending) dbList.sortedBy { it.nombre.lowercase() } else dbList.sortedByDescending { it.nombre.lowercase() }
+        loadJob?.cancel()
+        loadJob = lifecycleScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val search = if (currentSearchQuery.isBlank()) "%%" else "%$currentSearchQuery%"
+                    val dbList = database.productDao().getFilteredAndSorted(search, currentCategory)
+                    
+                    val sortedList = when (currentSortAttribute) {
+                        "STOCK" -> if (isAscending) dbList.sortedBy { it.stock } else dbList.sortedByDescending { it.stock }
+                        "PRECIO" -> if (isAscending) dbList.sortedBy { it.precioVenta } else dbList.sortedByDescending { it.precioVenta }
+                        else -> if (isAscending) {
+                            dbList.sortedBy { it.nombre?.lowercase()?.trim() ?: "" }
+                        } else {
+                            dbList.sortedByDescending { it.nombre?.lowercase()?.trim() ?: "" }
+                        }
+                    }
+
+                    val totalInversion = sortedList.sumOf { it.precioCosto }
+                    val totalValorVenta = sortedList.sumOf { it.stock * it.precioVenta }
+                    
+                    Triple(sortedList, totalInversion, totalValorVenta)
                 }
+                
+                if (!isActive) return@launch
+
+                adapter.updateList(result.first)
+                
+                // Forzar scroll al inicio para mostrar los resultados desde arriba
+                binding.rvInventario.scrollToPosition(0) 
+                
+                updateDrawerHeader(result.third, result.second)
+                updateSyncIconState()
+            } catch (e: Exception) {
+                android.util.Log.e("INVENTARIO", "Error cargando productos", e)
             }
-            adapter.updateList(list)
-            binding.rvInventario.scrollToPosition(0)
-            
-            // Cálculos Correctos para el menú lateral (Inversión real y Valor venta)
-            val totalInversion = list.sumOf { it.precioCosto } 
-            val totalValorVenta = list.sumOf { it.stock * it.precioVenta }
-            updateDrawerHeader(totalValorVenta, totalInversion)
-            updateSyncIconState()
         }
     }
 
     private fun updateDrawerHeader(v: Double, i: Double) {
         try {
-            val h = binding.navigationViewInventario.getHeaderView(0)
-            h.findViewById<TextView>(R.id.tvDrawerValorTotal)?.text = String.format(Locale.getDefault(), "S/ %.2f", v)
-            h.findViewById<TextView>(R.id.tvDrawerInversionTotal)?.text = String.format(Locale.getDefault(), "S/ %.2f", i)
-        } catch (e: Exception) {}
+            if (binding.navigationViewInventario.headerCount > 0) {
+                val h = binding.navigationViewInventario.getHeaderView(0)
+                val tvValor = h.findViewById<TextView>(R.id.tvDrawerValorTotal)
+                val tvInversion = h.findViewById<TextView>(R.id.tvDrawerInversionTotal)
+                
+                tvValor?.text = String.format(Locale.getDefault(), "S/ %.2f", v)
+                tvInversion?.text = String.format(Locale.getDefault(), "S/ %.2f", i)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("INVENTARIO", "Error actualizando header", e)
+        }
     }
 
     private fun showMultiDeleteConfirmation() {
@@ -364,17 +386,20 @@ class InventarioActivity : AppCompatActivity() {
     private fun showCategorySelector() {
         lifecycleScope.launch {
             val categories = withContext(Dispatchers.IO) { 
-                val list = database.productDao().uniqueCategories.toMutableList()
+                val rawCategories = database.productDao().uniqueCategories
+                val list = rawCategories.filterNotNull().filter { it.isNotBlank() }.toMutableList()
                 list.add(0, "Todos")
                 list.toTypedArray()
             }
-            AlertDialog.Builder(this@InventarioActivity)
-                .setTitle("Seleccionar Categoría")
-                .setItems(categories) { _, which ->
-                    currentCategory = categories[which]
-                    binding.btnFilterCategory.text = if (currentCategory == "Todos") "Categoría" else currentCategory
-                    loadProducts()
-                }.show()
+            if (categories.isNotEmpty()) {
+                AlertDialog.Builder(this@InventarioActivity)
+                    .setTitle("Seleccionar Categoría")
+                    .setItems(categories) { _, which ->
+                        currentCategory = categories[which]
+                        binding.btnFilterCategory.text = if (currentCategory == "Todos") "Categoría" else currentCategory
+                        loadProducts()
+                    }.show()
+            }
         }
     }
 
@@ -401,9 +426,9 @@ class InventarioActivity : AppCompatActivity() {
             📦 IMPORTANCIA DEL INVENTARIO
             Un inventario bien gestionado es el corazón de tu negocio. Te permite conocer tu inversión real, evitar quiebres de stock (quedarte sin productos para vender) y detectar pérdidas o mermas a tiempo.
 
-            💎 CARACTERÍSTICAS DE NEXUR
+            💎 CARACTERÍSTICAS DE NAXOR
             • Identificación Dual: Genera o escanea códigos QR y de Barras (CODE_128) para cada producto.
-            • Inteligencia de Costos: Nexur calcula tu inversión basándose en el costo del lote y el stock actual.
+            • Inteligencia de Costos: Naxor calcula tu inversión basándose en el costo del lote y el stock actual.
             • Categorización: Organiza tus productos para encontrarlos en segundos.
 
             🛠️ CÓMO USAR ESTE MÓDULO
@@ -412,7 +437,7 @@ class InventarioActivity : AppCompatActivity() {
             3. Selección Múltiple: Úsala desde el menú lateral para borrar varios productos a la vez.
             4. Ficha Técnica: Toca cualquier producto en modo normal para ver y compartir su código identificador.
 
-            🚀 TIP: Mantén tus existencias actualizadas para que Nexur pueda darte estadísticas de utilidad precisas en la pantalla principal.
+            🚀 TIP: Mantén tus existencias actualizadas para que Naxor pueda darte estadísticas de utilidad precisas en la pantalla principal.
         """.trimIndent()
 
         AlertDialog.Builder(this)

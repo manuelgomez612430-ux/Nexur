@@ -10,8 +10,11 @@ import java.util.Locale
 
 class CartAdapter(
     private var items: MutableList<SaleEntity>,
+    private var products: MutableList<com.naxor.app.data.ProductEntity?>,
     private val onQtyChanged: () -> Unit,
-    private val onRemove: (Int) -> Unit
+    private val onRemove: (Int) -> Unit,
+    private val onIncrease: (Int) -> Unit,
+    private val onDecrease: (Int) -> Unit
 ) : RecyclerView.Adapter<CartAdapter.ViewHolder>() {
 
     class ViewHolder(val binding: ItemCartProductBinding) : RecyclerView.ViewHolder(binding.root)
@@ -23,28 +26,41 @@ class CartAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
+        val product = products.getOrNull(position)
+        
         with(holder.binding) {
             tvCartProdName.text = item.nombreProducto
             tvCartProdPrice.text = String.format(Locale.getDefault(), "S/ %.2f c/u", item.precioVenta)
             tvCartQty.text = item.cantidad.toString()
             tvCartSubtotal.text = String.format(Locale.getDefault(), "S/ %.2f", item.total)
 
+            // Lógica de Advertencia de Stock (Sincronizada con el producto real)
+            if (product != null) {
+                when {
+                    item.cantidad > product.stock -> {
+                        tvStockWarning.visibility = android.view.View.VISIBLE
+                        tvStockWarning.text = "⚠️ Superaste el stock disponible (${product.stock})"
+                        tvStockWarning.setTextColor(android.graphics.Color.RED)
+                    }
+                    item.cantidad == product.stock -> {
+                        tvStockWarning.visibility = android.view.View.VISIBLE
+                        tvStockWarning.text = "⚠️ Stock al límite"
+                        tvStockWarning.setTextColor(android.graphics.Color.parseColor("#F59E0B")) // Amber
+                    }
+                    else -> {
+                        tvStockWarning.visibility = android.view.View.GONE
+                    }
+                }
+            } else {
+                tvStockWarning.visibility = android.view.View.GONE
+            }
+
             btnCartPlus.setOnClickListener {
-                item.cantidad++
-                item.total = item.cantidad * item.precioVenta
-                notifyItemChanged(holder.adapterPosition)
-                onQtyChanged()
+                onIncrease(holder.adapterPosition)
             }
 
             btnCartMinus.setOnClickListener {
-                if (item.cantidad > 1) {
-                    item.cantidad--
-                    item.total = item.cantidad * item.precioVenta
-                    notifyItemChanged(holder.adapterPosition)
-                    onQtyChanged()
-                } else {
-                    onRemove(holder.adapterPosition)
-                }
+                onDecrease(holder.adapterPosition)
             }
         }
     }

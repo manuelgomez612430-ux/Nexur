@@ -136,15 +136,59 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
+    <!-- FILTROS Y ACCIONES GRUPALES -->
+    <LinearLayout
+        android:id="@+id/layoutDeudoresFilters"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toBottomOf="@id/cardTotalDeuda">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupDebtorFilters"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            app:singleSelection="true"
+            app:selectionRequired="true">
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFilterAll"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Todos"
+                android:checked="true" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFilterOverdue"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Vencidos ⚠️" />
+        </com.google.android.material.chip.ChipGroup>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMassReminder"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Recordar a todos"
+            android:textSize="11sp"
+            android:visibility="gone"
+            app:icon="@android:drawable/ic_menu_send"
+            app:iconSize="16dp" />
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvDeudores"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:paddingTop="16dp"
         android:clipToPadding="false"
         android:paddingBottom="100dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cardTotalDeuda" />
+        app:layout_constraintTop_toBottomOf="@id/layoutDeudoresFilters" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddDeudor"
@@ -168,7 +212,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cardTotalDeuda">
+        app:layout_constraintTop_toBottomOf="@id/layoutDeudoresFilters">
 
         <ImageView
             android:layout_width="100dp"

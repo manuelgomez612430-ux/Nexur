@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import com.naxor.app.*
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.databinding.ActivityResumenBinding
+import com.naxor.app.util.GeminiHelper
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
@@ -36,6 +37,13 @@ class MetricasFragment : Fragment() {
     private var startDate: Long? = null
     private var endDate: Long? = null
 
+    // Variables para almacenar las métricas actuales y pasarlas a la IA
+    private var currentVentas = 0.0
+    private var currentUtilidad = 0.0
+    private var currentGastos = 0.0
+    private var currentDeudores = 0.0
+    private var currentDeudas = 0.0
+
     fun openDrawer() {
         if (_binding != null) {
             binding.drawerLayoutResumen.openDrawer(GravityCompat.START)
@@ -50,8 +58,6 @@ class MetricasFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.btnBackResumen.visibility = View.GONE
-        
         // Inicializar con la fecha de HOY por defecto
         val calendar = Calendar.getInstance()
         calendar.set(Calendar.HOUR_OF_DAY, 0)
@@ -73,6 +79,10 @@ class MetricasFragment : Fragment() {
 
         binding.btnOpenMenuResumen.setOnClickListener {
             openDrawer()
+        }
+
+        binding.btnRefreshAiAnalysis.setOnClickListener {
+            generateAiAnalysis(currentVentas, currentUtilidad, currentGastos, currentDeudores, currentDeudas)
         }
         
         setupCharts()
@@ -295,9 +305,27 @@ class MetricasFragment : Fragment() {
                     .sortedByDescending { it.second }
                     .take(3)
 
+                // NUEVO: Cargar deudas y deudores
+                val totalDeudores = withContext(Dispatchers.IO) { 
+                    database.debtorDao().getAllDebtors().sumOf { it.deudaTotal }
+                }
+                val totalDeudasPropias = withContext(Dispatchers.IO) { 
+                    database.businessDebtDao().getTotalOwed() ?: 0.0
+                }
+
+                // Guardar métricas actuales para el análisis de IA bajo demanda
+                currentVentas = ventasTotales
+                currentUtilidad = gananciaBruta
+                currentGastos = gastosTotales
+                currentDeudores = totalDeudores
+                currentDeudas = totalDeudasPropias
+
                 if (_binding != null) {
-                    updateUI(ventasTotales, gananciaBruta, gastosTotales, utilidadNeta, inversionTotal, valorInventario, topProducts, ticketPromedio, costoVentas)
+                    updateUI(ventasTotales, gananciaBruta, gastosTotales, utilidadNeta, inversionTotal, valorInventario, topProducts, ticketPromedio, costoVentas, totalDeudores, totalDeudasPropias)
                     updateChartsUI(entriesPie, entriesSales, entriesExpenses, days)
+                    
+                    // Ya NO se dispara el análisis automáticamente
+                    // generateAiAnalysis(ventasTotales, gananciaBruta, gastosTotales, totalDeudores, totalDeudasPropias)
                 }
 
             } catch (e: Exception) {
@@ -306,7 +334,25 @@ class MetricasFragment : Fragment() {
         }
     }
 
-    private fun updateUI(ventas: Double, bruta: Double, gastos: Double, neta: Double, inversion: Double, valorInv: Double, top: List<Pair<String, Int>>, ticket: Double, cogs: Double) {
+    private fun generateAiAnalysis(v: Double, u: Double, g: Double, dr: Double, dp: Double) {
+        val range = binding.tvCurrentFilterRange.text.toString().replace("Mostrando: ", "")
+        
+        binding.progressAiAnalysis.visibility = View.VISIBLE
+        binding.tvAiAnalysisContent.alpha = 0.5f
+
+        lifecycleScope.launch {
+            val analysis = GeminiHelper.getBusinessAnalysis(v, u, g, dr, dp, range)
+            withContext(Dispatchers.Main) {
+                if (_binding != null) {
+                    binding.tvAiAnalysisContent.text = analysis
+                    binding.tvAiAnalysisContent.alpha = 1.0f
+                    binding.progressAiAnalysis.visibility = View.GONE
+                }
+            }
+        }
+    }
+
+    private fun updateUI(ventas: Double, bruta: Double, gastos: Double, neta: Double, inversion: Double, valorInv: Double, top: List<Pair<String, Int>>, ticket: Double, cogs: Double, deudores: Double, deudas: Double) {
         val currency = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE).getString("currency_symbol", "S/")
         
         binding.tvVentasTotalesResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", ventas)}"
@@ -319,6 +365,9 @@ class MetricasFragment : Fragment() {
         
         binding.tvTicketPromedio.text = "$currency ${String.format(Locale.getDefault(), "%.2f", ticket)}"
         binding.tvCostoVentas.text = "$currency ${String.format(Locale.getDefault(), "%.2f", cogs)}"
+
+        binding.tvTotalDeudoresResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", deudores)}"
+        binding.tvTotalDeudasPropiasResumen.text = "$currency ${String.format(Locale.getDefault(), "%.2f", deudas)}"
         
         binding.tvUtilidadNeta.setTextColor(if(neta >= 0) resources.getColor(R.color.emerald_700, null) else resources.getColor(R.color.red_700, null))
 
@@ -370,6 +419,13 @@ class MetricasFragment : Fragment() {
         binding.barChartSemana.groupBars(0f, 0.20f, 0.05f)
         binding.barChartSemana.animateY(1000)
         binding.barChartSemana.invalidate()
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (!hidden) {
+            loadStatistics()
+        }
     }
 
     override fun onDestroyView() {

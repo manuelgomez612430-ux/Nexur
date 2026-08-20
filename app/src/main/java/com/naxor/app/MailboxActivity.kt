@@ -1,5 +1,6 @@
 package com.naxor.app
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -90,13 +91,31 @@ class MailboxActivity : AppCompatActivity() {
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val msg = items[position]
             holder.b.tvMessageTitle.text = msg.title
-            holder.b.tvMessageContent.text = msg.content
+            
+            // Mostrar solo una vista previa si es muy largo
+            val previewText = if (msg.content.length > 80) msg.content.take(77) + "..." else msg.content
+            holder.b.tvMessageContent.text = previewText
             
             val date = msg.timestamp?.toDate() ?: Date()
             val sdf = SimpleDateFormat("dd/MM/yyyy hh:mm a", Locale.getDefault())
             holder.b.tvMessageTime.text = sdf.format(date)
+
+            // Acción para abrir el mensaje completo
+            holder.itemView.setOnClickListener {
+                showMessageDetail(msg)
+            }
         }
 
         override fun getItemCount() = items.size
+    }
+
+    private fun showMessageDetail(msg: AppMessage) {
+        val intent = Intent(this, MessageDetailActivity::class.java).apply {
+            putExtra("EXTRA_TITLE", msg.title)
+            putExtra("EXTRA_CONTENT", msg.content)
+            putExtra("EXTRA_TIME", msg.timestamp?.toDate()?.time ?: 0L)
+        }
+        startActivity(intent)
+        overridePendingTransition(R.anim.slide_in_up, R.anim.stay)
     }
 }

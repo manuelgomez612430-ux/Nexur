@@ -7,7 +7,13 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.naxor.app.databinding.ActivityLoginBinding
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 
 class LoginActivity : AppCompatActivity() {
@@ -15,6 +21,18 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
     private val auth by lazy { FirebaseAuth.getInstance() }
     private var isLoginMode = true
+
+    private val googleSignInLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)!!
+                firebaseAuthWithGoogle(account.idToken!!)
+            } catch (e: ApiException) {
+                Toast.makeText(this, "Error de Google: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +54,10 @@ class LoginActivity : AppCompatActivity() {
         binding.btnToggleLoginMode.setOnClickListener {
             isLoginMode = !isLoginMode
             updateUI()
+        }
+
+        binding.btnGoogleSignIn.setOnClickListener {
+            signInWithGoogle()
         }
 
         binding.btnContinueGuest.setOnClickListener {
@@ -128,9 +150,59 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
+    private fun signInWithGoogle() {
+        // Obtenemos el ID de cliente web de las strings generadas por Google Services
+        val webClientId = try {
+            getString(resources.getIdentifier("default_web_client_id", "string", packageName))
+        } catch (e: Exception) {
+            "" // Si no existe, fallará la autenticación pero no la compilación
+        }
+
+        if (webClientId.isEmpty()) {
+            Toast.makeText(this, "Error: Configuración de Google no encontrada", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(webClientId)
+            .requestEmail()
+            .build()
+
+        val googleSignInClient = GoogleSignIn.getClient(this, gso)
+        googleSignInLauncher.launch(googleSignInClient.signInIntent)
+    }
+
+    private fun firebaseAuthWithGoogle(idToken: String) {
+        val loading = AlertDialog.Builder(this)
+            .setMessage("Accediendo con Google...")
+            .setCancelable(false)
+            .show()
+
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        auth.signInWithCredential(credential).addOnCompleteListener(this) { task ->
+            if (task.isSuccessful) {
+                val user = auth.currentUser
+                val isNewUser = task.result?.additionalUserInfo?.isNewUser == true
+                
+                if (isNewUser && user != null) {
+                    sendWelcomeMessage(user.uid)
+                }
+
+                SyncManager(this).downloadEverythingFromCloud {
+                    loading.dismiss()
+                    startActivity(Intent(this, MainActivity::class.java))
+                    finish()
+                }
+            } else {
+                loading.dismiss()
+                Toast.makeText(this, "Error al autenticar con Firebase", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun sendWelcomeMessage(userId: String) {
         val welcomeMessage = hashMapOf(
-            "title" to "¡Bienvenido a Nexur! 🚀",
+            "title" to "¡Bienvenido a Naxor! 🚀",
             "content" to "Estamos felices de tenerte aquí. Explora las herramientas de Inventario, Ventas y Rendimiento para potenciar tu negocio. Si tienes dudas, revisa la sección de Ayuda.",
             "timestamp" to com.google.firebase.Timestamp.now()
         )

@@ -48,7 +48,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Este es el contenido de un mensaje de prueba para el buzón de Nexur..."
+            android:text="Este es el contenido de un mensaje de prueba para el buzón de Naxor..."
             android:textSize="14sp"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:lineSpacingExtra="2dp" />

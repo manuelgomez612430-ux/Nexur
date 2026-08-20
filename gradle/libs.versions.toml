@@ -1,6 +1,6 @@
 [versions]
 agp = "8.6.0"
-kotlin = "2.0.21"
+kotlin = "2.3.10"
 coreKtx = "1.15.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
@@ -9,15 +9,16 @@ appcompat = "1.7.0"
 material = "1.12.0"
 activityKtx = "1.9.3"
 constraintlayout = "2.2.0"
-room = "2.6.1"
+room = "2.8.4"
 zxing = "3.5.3"
 playServicesCodeScanner = "16.1.0"
 mlkitImageLabeling = "17.0.9"
 mlkitTextRecognition = "16.0.1"
 mlkitBarcodeScanning = "17.3.0"
+playServicesAuth = "21.1.1"
 camerax = "1.4.0"
 glide = "4.16.0"
-firebaseBom = "32.8.0"
+firebaseBom = "34.18.0"
 
 [libraries]
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
@@ -31,6 +32,7 @@ google-scanner = { group = "com.google.android.gms", name = "play-services-code-
 google-labeling = { group = "com.google.mlkit", name = "image-labeling", version.ref = "mlkitImageLabeling" }
 google-textrecognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
 google-barcodescanning = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "mlkitBarcodeScanning" }
+google-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

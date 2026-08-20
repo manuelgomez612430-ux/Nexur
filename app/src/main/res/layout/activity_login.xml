@@ -7,43 +7,44 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="32dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:paddingHorizontal="32dp"
+        android:paddingVertical="16dp"
+        android:gravity="center_horizontal">
 
         <ImageView
-            android:layout_width="220dp"
-            android:layout_height="220dp"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
             android:layout_gravity="center"
             android:src="@drawable/logo_naxor_full"
             android:scaleType="fitCenter"
-            android:layout_marginTop="-10dp"
-            android:layout_marginBottom="0dp" />
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp" />
 
         <TextView
             android:id="@+id/tvLoginTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
             android:text="Bienvenido a tu gestión inteligente"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:textColor="?attr/colorOnSurfaceVariant"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="16dp" />
 
         <com.google.android.material.textfield.TextInputLayout
             style="?attr/textInputOutlinedStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Correo electrónico"
-            android:layout_marginBottom="16dp"
-            app:startIconDrawable="@android:drawable/ic_dialog_email">
+            android:layout_marginBottom="8dp"
+            app:startIconDrawable="@android:drawable/ic_dialog_email"
+            app:errorEnabled="false">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etLoginEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textEmailAddress" />
+                android:inputType="textEmailAddress"
+                android:paddingVertical="12dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -51,14 +52,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Contraseña"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="8dp"
             app:passwordToggleEnabled="true"
-            app:startIconDrawable="@android:drawable/ic_lock_idle_lock">
+            app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
+            app:errorEnabled="false">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etLoginPassword"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPassword" />
+                android:inputType="textPassword"
+                android:paddingVertical="12dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -67,7 +70,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Confirmar Contraseña"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="12dp"
             android:visibility="gone"
             app:passwordToggleEnabled="true"
             app:startIconDrawable="@android:drawable/ic_lock_idle_lock">
@@ -75,34 +78,62 @@
                 android:id="@+id/etConfirmPassword"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPassword" />
+                android:inputType="textPassword"
+                android:paddingVertical="12dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnLoginAction"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
+            android:layout_height="54dp"
             android:text="Iniciar Sesión"
             android:textStyle="bold"
-            app:cornerRadius="16dp" />
+            app:cornerRadius="12dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnContinueGuest"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_marginTop="12dp"
-            android:text="Usar sin cuenta (Modo Local)"
-            app:cornerRadius="16dp" />
+            android:layout_height="54dp"
+            android:layout_marginTop="8dp"
+            android:text="Modo Local"
+            android:textSize="13sp"
+            app:cornerRadius="12dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnToggleLoginMode"
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
             android:text="¿No tienes cuenta? Regístrate aquí"
+            android:textSize="12sp"
             android:textAllCaps="false" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?attr/colorOutlineVariant"
+            android:layout_marginVertical="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGoogleSignIn"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Continuar con Google"
+            android:textSize="15sp"
+            android:textColor="@color/slate_900"
+            android:textStyle="bold"
+            app:icon="@drawable/ic_google_round"
+            app:iconTint="@null"
+            app:iconSize="34dp"
+            app:iconGravity="textStart"
+            app:iconPadding="12dp"
+            app:strokeColor="@color/slate_200"
+            app:strokeWidth="1.2dp"
+            app:cornerRadius="16dp"
+            android:backgroundTint="@color/white"
+            android:elevation="2dp" />
 
     </LinearLayout>
 

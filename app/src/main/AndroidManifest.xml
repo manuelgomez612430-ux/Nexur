@@ -29,6 +29,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
+        android:name=".NaxorApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -68,7 +69,11 @@
         <activity android:name=".AsignadorDePreciosActivity" android:label="@string/title_asignador_precios" />
         <activity android:name=".HistorialActivity" android:label="Historial" />
         <activity android:name=".InventarioActivity" android:label="Inventario" />
-        <activity android:name=".VentasActivity" android:label="Registro de Ventas" />
+        <activity
+            android:name=".VentasActivity"
+            android:exported="false"
+            android:label="Registro de Ventas"
+            android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ResumenActivity" android:label="Rendimiento" />
         <activity android:name=".InstruccionesActivity" android:label="Instrucciones" />
         <activity android:name=".DeudoresActivity" android:label="Control de Deudas" />
@@ -83,6 +88,9 @@
         <activity android:name=".EmitirComprobanteActivity" android:label="Emitir Comprobante" />
         <activity android:name=".AddProductActivity" android:label="Producto" />
         <activity android:name=".MailboxActivity" android:label="Buzón de Mensajes" />
+        <activity android:name=".MessageDetailActivity" android:label="Detalle de Mensaje" />
+        <activity android:name=".BusinessDebtsActivity" android:label="Mis Cuentas por Pagar" />
+        <activity android:name=".TutorialActivity" android:exported="false" android:theme="@style/Theme.Naxor" />
 
         <!-- Servicio para Notificaciones Push (FCM) -->
         <service
@@ -94,7 +102,7 @@
         </service>
 
         <service
-            android:name=".network.NexurSyncService"
+            android:name=".network.NaxorSyncService"
             android:foregroundServiceType="dataSync"
             android:exported="false" />
     </application>

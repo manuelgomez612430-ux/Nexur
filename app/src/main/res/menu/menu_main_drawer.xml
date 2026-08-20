@@ -24,6 +24,10 @@
                 android:icon="@android:drawable/ic_menu_my_calendar"
                 android:title="👥 Control de Deudores" />
             <item
+                android:id="@+id/menu_business_debts"
+                android:icon="@android:drawable/ic_menu_edit"
+                android:title="💸 Mis Cuentas por Pagar" />
+            <item
                 android:id="@+id/menu_proveedores"
                 android:icon="@android:drawable/ic_menu_directions"
                 android:title="🚚 Proveedores" />

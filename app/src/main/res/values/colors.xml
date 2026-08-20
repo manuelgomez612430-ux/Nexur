@@ -6,6 +6,7 @@
     <!-- Palette Slate -->
     <color name="slate_50">#F8FAFC</color>
     <color name="slate_100">#F1F5F9</color>
+    <color name="slate_200">#E2E8F0</color>
     <color name="slate_400">#94A3B8</color>
     <color name="slate_500">#64748B</color>
     <color name="slate_600">#475569</color>
@@ -35,4 +36,5 @@
     <color name="purple_glow">#4C1D95</color>
     <color name="glass_white">#1AFFFFFF</color>
     <color name="glass_border">#40FFFFFF</color>
+    <color name="nav_indicator">#6B21A8</color>
 </resources>

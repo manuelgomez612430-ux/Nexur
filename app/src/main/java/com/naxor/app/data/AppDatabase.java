@@ -5,7 +5,7 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-@Database(entities = {CalculationEntity.class, ProductEntity.class, SaleEntity.class, DebtorEntity.class, DebtDetailEntity.class, ExpenseEntity.class, ProviderEntity.class, CustomerEntity.class, CashSessionEntity.class, PriceHistoryEntity.class, MovementLogEntity.class}, version = 20, exportSchema = false)
+@Database(entities = {CalculationEntity.class, ProductEntity.class, SaleEntity.class, DebtorEntity.class, DebtDetailEntity.class, ExpenseEntity.class, ProviderEntity.class, CustomerEntity.class, CashSessionEntity.class, PriceHistoryEntity.class, MovementLogEntity.class, BusinessDebtEntity.class}, version = 22, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract CalculationDao calculationDao();
     public abstract ProductDao productDao();
@@ -17,6 +17,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract CashDao cashDao();
     public abstract PriceHistoryDao priceHistoryDao();
     public abstract MovementLogDao movementLogDao();
+    public abstract BusinessDebtDao businessDebtDao();
 
     private static volatile AppDatabase INSTANCE;
 

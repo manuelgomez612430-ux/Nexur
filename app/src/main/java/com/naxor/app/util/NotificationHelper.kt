@@ -9,7 +9,7 @@ import com.naxor.app.R
 
 object NotificationHelper {
     private const val CHANNEL_ID = "sales_notifications"
-    private const val CHANNEL_NAME = "Ventas Nexur"
+    private const val CHANNEL_NAME = "Ventas Naxor"
     private const val CHANNEL_DESC = "Notificaciones al realizar ventas con éxito"
 
     fun showSaleNotification(context: Context, total: String, businessName: String) {
@@ -29,7 +29,7 @@ object NotificationHelper {
         }
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_notify_chat)
+            .setSmallIcon(R.drawable.logo_naxor_icon)
             .setContentTitle("¡Venta Realizada!")
             .setContentText("Se registró una venta por $total en $businessName")
             .setPriority(NotificationCompat.PRIORITY_HIGH) // Subir prioridad para que aparezca arriba

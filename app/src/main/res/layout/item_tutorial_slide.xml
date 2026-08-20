@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="32dp">
+
+    <ImageView
+        android:id="@+id/ivTutorialImage"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:src="@drawable/logo_naxor_full"
+        android:scaleType="fitCenter" />
+
+    <TextView
+        android:id="@+id/tvTutorialTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:gravity="center"
+        android:text="Título del Tutorial"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvTutorialDesc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:alpha="0.7"
+        android:gravity="center"
+        android:text="Esta es la descripción detallada de cómo funciona esta parte de la aplicación."
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="16sp" />
+
+</LinearLayout>

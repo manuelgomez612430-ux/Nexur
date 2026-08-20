@@ -9,6 +9,7 @@ data class DebtorEntity(
     val nombre: String = "",
     val telefono: String = "",
     var deudaTotal: Double = 0.0,
+    var fechaCobro: Long = 0L, // 0 si no está programado
     var ultimaActualizacion: Long = System.currentTimeMillis(),
     var isSynced: Boolean = false,
     var isDeleted: Boolean = false

@@ -61,22 +61,76 @@ class VentasActivity : AppCompatActivity() {
         setupCartRecyclerView()
         setupListeners()
         loadProducts()
+        checkEmptyState()
     }
 
     private fun setupCartRecyclerView() {
         cartAdapter = CartAdapter(
             items = cartItems,
+            products = cartProducts,
             onQtyChanged = { updateTotalPrice() },
             onRemove = { position ->
-                cartItems.removeAt(position)
-                cartProducts.removeAt(position)
-                cartAdapter.notifyItemRemoved(position)
-                updateTotalPrice()
-                checkEmptyState()
+                removeCartItem(position)
+            },
+            onIncrease = { position ->
+                increaseCartItem(position)
+            },
+            onDecrease = { position ->
+                decreaseCartItem(position)
             }
         )
         binding.rvCartItems.layoutManager = LinearLayoutManager(this)
         binding.rvCartItems.adapter = cartAdapter
+    }
+
+    private fun removeCartItem(position: Int) {
+        if (position >= 0 && position < cartItems.size) {
+            cartItems.removeAt(position)
+            cartProducts.removeAt(position)
+            cartAdapter.notifyItemRemoved(position)
+            updateTotalPrice()
+            checkEmptyState()
+        }
+    }
+
+    private fun increaseCartItem(position: Int) {
+        if (position < 0 || position >= cartItems.size) return
+        
+        val item = cartItems[position]
+        val product = cartProducts[position]
+        
+        if (product != null && item.cantidad + 1 > product.stock) {
+            AlertDialog.Builder(this)
+                .setTitle("Stock Insuficiente")
+                .setMessage("¿Deseas vender ${item.cantidad + 1} unidades de '${item.nombreProducto}' aunque solo queden ${product.stock} en stock?")
+                .setPositiveButton("Sí, Continuar") { _, _ ->
+                    processIncrease(item, position)
+                }
+                .setNegativeButton("No, Cancelar", null)
+                .show()
+        } else {
+            processIncrease(item, position)
+        }
+    }
+
+    private fun processIncrease(item: SaleEntity, position: Int) {
+        item.cantidad++
+        item.total = item.cantidad * item.precioVenta
+        cartAdapter.notifyItemChanged(position)
+        updateTotalPrice()
+    }
+
+    private fun decreaseCartItem(position: Int) {
+        if (position < 0 || position >= cartItems.size) return
+        val item = cartItems[position]
+        if (item.cantidad > 1) {
+            item.cantidad--
+            item.total = item.cantidad * item.precioVenta
+            cartAdapter.notifyItemChanged(position)
+            updateTotalPrice()
+        } else {
+            removeCartItem(position)
+        }
     }
 
     private fun setupListeners() {
@@ -120,25 +174,32 @@ class VentasActivity : AppCompatActivity() {
         // Búsqueda de Productos
         binding.autoVentaBusqueda.setOnFocusChangeListener { _, hasFocus ->
             updateSearchIcon(hasFocus)
+            // Ocultar el footer de pago al buscar para dar más espacio
+            if (hasFocus) {
+                binding.paymentFooter.visibility = View.GONE
+            } else {
+                if (cartItems.isNotEmpty()) {
+                    binding.paymentFooter.visibility = View.VISIBLE
+                }
+            }
         }
 
         binding.autoVentaBusqueda.addTextChangedListener { text ->
             val query = text.toString().trim()
             updateSearchIcon(binding.autoVentaBusqueda.hasFocus())
 
-            if (query.length >= 1) {
-                val matched = allProducts.find { p ->
-                    p.codigo == query || p.nombre.equals(query, ignoreCase = true)
-                }
-                matched?.let { addToCart(it); binding.autoVentaBusqueda.setText("", false) }
+            if (query.isNotEmpty()) {
+                binding.paymentFooter.visibility = View.GONE
             }
         }
 
         binding.autoVentaBusqueda.setOnItemClickListener { parent, _, position, _ ->
             val selection = parent.getItemAtPosition(position) as String
-            val matched = allProducts.find { "${it.codigo} - ${it.nombre}" == selection || it.nombre == selection }
+            val matched = allProducts.find { it.nombre == selection }
             matched?.let { addToCart(it) }
             binding.autoVentaBusqueda.setText("", false)
+            binding.autoVentaBusqueda.clearFocus()
+            hideKeyboard()
         }
 
         // Icono final (Cámara o Limpiar)
@@ -167,7 +228,7 @@ class VentasActivity : AppCompatActivity() {
     private fun loadProducts() {
         lifecycleScope.launch(Dispatchers.IO) {
             allProducts = database.productDao().allProducts
-            val productNames = allProducts.map { "${it.codigo} - ${it.nombre}" }
+            val productNames = allProducts.map { it.nombre }
             withContext(Dispatchers.Main) {
                 val adapter = ArrayAdapter(this@VentasActivity, android.R.layout.simple_dropdown_item_1line, productNames)
                 binding.autoVentaBusqueda.setAdapter(adapter)
@@ -187,31 +248,40 @@ class VentasActivity : AppCompatActivity() {
     }
 
     private fun addToCart(product: ProductEntity) {
-        if (product.stock <= 0) {
-            Toast.makeText(this, "¡Producto agotado!", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // Buscar si ya está en el carrito
+        // Buscar si ya está en el carrito para calcular la cantidad total solicitada
         val existingIndex = cartItems.indexOfFirst { it.productId == product.id }
+        val currentQtyInCart = if (existingIndex != -1) cartItems[existingIndex].cantidad else 0
+        val requestedQty = currentQtyInCart + 1
+
+        if (requestedQty > product.stock) {
+            // Advertencia de falta de stock
+            AlertDialog.Builder(this)
+                .setTitle("Stock Insuficiente")
+                .setMessage("Estás intentando vender ${requestedQty} unidades de '${product.nombre}', pero solo quedan ${product.stock} en stock. ¿Deseas registrar la venta de todas formas?")
+                .setPositiveButton("Sí, Continuar") { _, _ ->
+                    processAddToCart(product, existingIndex)
+                }
+                .setNegativeButton("No, Cancelar", null)
+                .show()
+        } else {
+            processAddToCart(product, existingIndex)
+        }
+    }
+
+    private fun processAddToCart(product: ProductEntity, existingIndex: Int) {
         if (existingIndex != -1) {
             val item = cartItems[existingIndex]
-            if (item.cantidad < product.stock) {
-                item.cantidad++
-                item.total = item.cantidad * item.precioVenta
-                cartAdapter.notifyItemChanged(existingIndex)
-            } else {
-                Toast.makeText(this, "No hay más stock disponible", Toast.LENGTH_SHORT).show()
-            }
+            item.cantidad++
+            item.total = item.cantidad * item.precioVenta
+            cartAdapter.notifyItemChanged(existingIndex)
         } else {
-            val costU = if(product.stock > 0) product.precioCosto / product.stock else 0.0
+            val costU = if (product.stock > 0) product.precioCosto / product.stock else 0.0
             val newItem = SaleEntity(currentTransactionId, product.id, product.nombre, product.categoria, 1, product.precioVenta, costU, "EFECTIVO")
             cartItems.add(0, newItem)
             cartProducts.add(0, product)
             cartAdapter.notifyItemInserted(0)
             binding.rvCartItems.scrollToPosition(0)
         }
-        
         updateTotalPrice()
         checkEmptyState()
     }
@@ -222,7 +292,15 @@ class VentasActivity : AppCompatActivity() {
     }
 
     private fun checkEmptyState() {
-        binding.layoutEmptyCart.visibility = if (cartItems.isEmpty()) View.VISIBLE else View.GONE
+        val isEmpty = cartItems.isEmpty()
+        binding.layoutEmptyCart.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        
+        // El footer solo aparece si hay items Y NO se está buscando
+        if (!isEmpty && !binding.autoVentaBusqueda.hasFocus()) {
+            binding.paymentFooter.visibility = View.VISIBLE
+        } else {
+            binding.paymentFooter.visibility = View.GONE
+        }
     }
 
     private fun showComprobanteDialog(paymentMethod: String) {
@@ -231,79 +309,31 @@ class VentasActivity : AppCompatActivity() {
             return
         }
 
-        val total = cartItems.sumOf { it.total }
-        val options = arrayOf("Nota de Venta (Interno)", "Boleta Electrónica", "Factura Electrónica")
-        var selectedType = 0
-
+        // 1. Confirmar registro de venta inmediatamente
         AlertDialog.Builder(this)
-            .setTitle("Tipo de Comprobante")
-            .setSingleChoiceItems(options, 0) { _, which -> selectedType = which }
-            .setPositiveButton("Continuar") { _, _ ->
-                when (selectedType) {
-                    0 -> finalizeSaleWithDetails(paymentMethod, "NOTA_VENTA", "", "", "")
-                    1 -> {
-                        if (total > 700) showCustomerDataDialog(paymentMethod, "BOLETA", true)
-                        else showCustomerDataDialog(paymentMethod, "BOLETA", false)
-                    }
-                    2 -> showCustomerDataDialog(paymentMethod, "FACTURA", true)
-                }
+            .setTitle("Confirmar Venta")
+            .setMessage("¿Deseas registrar esta venta de ${binding.tvVentaTotalDinamico.text}?")
+            .setPositiveButton("Registrar") { _, _ ->
+                finalizeSaleStep1(paymentMethod)
             }
             .setNegativeButton("Cancelar", null)
             .show()
     }
 
-    private fun showCustomerDataDialog(paymentMethod: String, docType: String, isMandatory: Boolean) {
-        val view = layoutInflater.inflate(R.layout.dialog_customer_data, null)
-        val etDoc = view.findViewById<android.widget.EditText>(R.id.etCustomerDoc)
-        val etName = view.findViewById<android.widget.EditText>(R.id.etCustomerName)
-        val etAddress = view.findViewById<android.widget.EditText>(R.id.etCustomerAddress)
-        val progress = view.findViewById<android.view.View>(R.id.progressDocSearch)
-        
-        etDoc.hint = if (docType == "FACTURA") "RUC del Cliente" else "DNI del Cliente (Opcional)"
-        etName.hint = if (docType == "FACTURA") "Razón Social" else "Nombre del Cliente (Opcional)"
-
-        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-        val apiToken = prefs.getString("api_token", "") ?: ""
-
-        val inputLayout = view.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.layoutCustomerDoc)
-
-        val consultaAction = {
-            val code = etDoc.text.toString().trim()
-            if (code.length == 8 || code.length == 11) {
-                if (apiToken.isEmpty()) {
-                    Toast.makeText(this, "Configura el Token de API en Ajustes", Toast.LENGTH_SHORT).show()
-                } else {
-                    ejecutarConsultaDocumento(code, apiToken, etName, etAddress, progress)
-                }
-            }
-        }
-
-        etDoc.addTextChangedListener { text ->
-            if (text?.length == 8 || text?.length == 11) consultaAction()
-        }
-
-        inputLayout.setEndIconOnClickListener { consultaAction() }
-
-        AlertDialog.Builder(this)
-            .setTitle("Datos del Cliente")
-            .setView(view)
-            .setPositiveButton("Finalizar Venta") { _, _ ->
-                val doc = etDoc.text.toString().trim()
-                val name = etName.text.toString().trim()
-                val address = etAddress.text.toString().trim()
-
-                if (isMandatory && doc.isEmpty()) {
-                    Toast.makeText(this, "El documento es obligatorio para este comprobante", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
-                }
-                
-                finalizeSaleWithDetails(paymentMethod, docType, doc, name, address)
-            }
-            .setNegativeButton("Atrás", null)
-            .show()
+    private fun finalizeSaleStep1(paymentMethod: String) {
+        // Registrar la venta en la base de datos (por ahora con tipo NOTA_VENTA)
+        // Luego preguntaremos por Boleta/Factura
+        finalizeSaleWithDetails(paymentMethod, "NOTA_VENTA", "", "", "", "")
     }
 
-    private fun finalizeSaleWithDetails(method: String, docType: String, cDoc: String, cName: String, cAddress: String) {
+    private fun finalizeSaleWithDetails(method: String, docType: String, cDoc: String, cName: String, cAddress: String, cPhone: String) {
+        if (cartItems.isEmpty()) return
+
+        val loadingDialog = AlertDialog.Builder(this)
+            .setMessage("Registrando venta...")
+            .setCancelable(false)
+            .show()
+
         val docPrefs = getSharedPreferences("DocumentPrefs", MODE_PRIVATE)
         val series = when(docType) {
             "BOLETA" -> "B001"
@@ -314,10 +344,12 @@ class VentasActivity : AppCompatActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val finalItems = cartItems.map { it }
-                for (i in cartItems.indices) {
-                    val sale = cartItems[i]
-                    val product = cartProducts[i]
+                val finalItems = ArrayList(cartItems)
+                val totalVenta = finalItems.sumOf { it.total }
+                
+                for (i in finalItems.indices) {
+                    val sale = finalItems[i]
+                    val product = cartProducts.getOrNull(i)
                     
                     sale.paymentMethod = method
                     sale.documentType = docType
@@ -329,78 +361,162 @@ class VentasActivity : AppCompatActivity() {
                     sale.isSynced = false
                     
                     database.saleDao().insert(sale)
-                    // ... (resto de logica de stock igual)
-
-                    // REGISTRAR EN HISTORIAL
-                    val log = MovementLogEntity(
-                        type = "SALE",
-                        title = "Venta Realizada",
-                        description = "${sale.cantidad} x ${sale.nombreProducto}",
-                        value = "+ S/ ${String.format(Locale.getDefault(), "%.2f", sale.total)}",
-                        colorHex = "#059669",
-                        iconRes = android.R.drawable.ic_menu_add
-                    )
-                    database.movementLogDao().insert(log)
-                    SyncManager(this@VentasActivity).syncLogToCloud(log)
                     
                     if (product != null) {
-                        // Lógica de Inversión Dinámica:
-                        // Calculamos el costo unitario del producto antes de descontar stock
-                        val unitCost = if (product.stock > 0) product.precioCosto / product.stock else 0.0
-                        
-                        // Actualizamos el stock
                         product.stock = (product.stock - sale.cantidad).coerceAtLeast(0)
-                        
-                        // Actualizamos la inversión remanente basándonos en el nuevo stock
-                        product.precioCosto = product.stock * unitCost
                         product.isSynced = false
-                        
                         database.productDao().update(product)
                     }
                 }
-                // Incrementar correlativo
-                docPrefs.edit().putInt("last_${docType.lowercase()}", nextCorrelative).apply()
 
+                val log = MovementLogEntity(
+                    type = "SALE",
+                    title = "Venta Realizada",
+                    description = if(finalItems.size == 1) finalItems[0].nombreProducto else "${finalItems.size} productos",
+                    value = "+ S/ ${String.format(Locale.getDefault(), "%.2f", totalVenta)}",
+                    colorHex = "#059669",
+                    iconRes = android.R.drawable.ic_menu_add
+                )
+                database.movementLogDao().insert(log)
+                SyncManager(this@VentasActivity).syncLogToCloud(log)
+
+                docPrefs.edit().putInt("last_${docType.lowercase()}", nextCorrelative).apply()
                 SyncManager(this@VentasActivity).scheduleOfflineSync()
+
                 withContext(Dispatchers.Main) {
+                    loadingDialog.dismiss()
                     beep(ToneGenerator.TONE_PROP_BEEP2)
                     
-                    // Enviar Notificación
-                    val totalStr = String.format(Locale.getDefault(), "S/ %.2f", finalItems.sumOf { it.total })
+                    val totalStr = String.format(Locale.getDefault(), "S/ %.2f", totalVenta)
                     val bizName = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("business_name", "Mi Negocio") ?: "Mi Negocio"
                     NotificationHelper.showSaleNotification(this@VentasActivity, totalStr, bizName)
 
-                    showPrintDialog(finalItems)
+                    // 2. UNA VEZ REGISTRADO, PREGUNTAR POR COMPROBANTE PARA ENVIAR
+                    showPostSaleReceiptDialog(finalItems)
                     resetSale()
                 }
-            } catch (e: Exception) { e.printStackTrace() }
+            } catch (e: Exception) {
+                Log.e("Ventas", "Error al finalizar venta: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    loadingDialog.dismiss()
+                    Toast.makeText(this@VentasActivity, "Error al procesar venta: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
-    private fun showPrintDialog(items: List<SaleEntity>) {
-        val options = arrayOf("Compartir Comprobante PDF (Legal)", "Imprimir Ticket Bluetooth (Rápido)", "Solo Cerrar")
+    private fun showPostSaleReceiptDialog(items: List<SaleEntity>) {
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Venta Exitosa ✅")
+            .setMessage("¿Deseas emitir un comprobante para el cliente?")
+            .setPositiveButton("Boleta / Factura") { _, _ ->
+                showReceiptTypeDialog(items)
+            }
+            .setNegativeButton("Solo Cerrar") { d, _ -> d.dismiss() }
+            .setCancelable(false)
+            .create()
+
+        dialog.show()
+    }
+
+    private fun showReceiptTypeDialog(items: List<SaleEntity>) {
+        val options = arrayOf("📄 Boleta de Venta", "🏢 Factura Electrónica")
+        AlertDialog.Builder(this)
+            .setTitle("Tipo de Comprobante")
+            .setItems(options) { _, which ->
+                val type = if (which == 0) "BOLETA" else "FACTURA"
+                showCustomerDataDialog(items, type, which == 1)
+            }
+            .setNegativeButton("Atrás", null)
+            .show()
+    }
+
+    private fun showCustomerDataDialog(items: List<SaleEntity>, docType: String, isMandatory: Boolean) {
+        val view = layoutInflater.inflate(R.layout.dialog_customer_data, null)
+        val etDoc = view.findViewById<android.widget.EditText>(R.id.etCustomerDoc)
+        val etName = view.findViewById<android.widget.EditText>(R.id.etCustomerName)
+        val etPhone = view.findViewById<android.widget.EditText>(R.id.etCustomerPhone)
+        val etAddress = view.findViewById<android.widget.EditText>(R.id.etCustomerAddress)
+        val progress = view.findViewById<android.view.View>(R.id.progressDocSearch)
+        
+        val layoutDoc = view.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.layoutCustomerDoc)
+        val layoutName = view.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.layoutCustomerName)
+        val layoutAddress = view.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.layoutCustomerAddress)
+
+        layoutDoc.hint = if (docType == "FACTURA") "RUC del Cliente" else "DNI (Opcional)"
+        layoutName.hint = if (docType == "FACTURA") "Razón Social" else "Nombre (Opcional)"
+        layoutAddress.visibility = if (docType == "FACTURA") View.VISIBLE else View.GONE
+
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val apiToken = prefs.getString("api_token", "") ?: ""
+
+        val consultaAction = {
+            val code = etDoc.text.toString().trim()
+            if (code.length == 8 || code.length == 11) {
+                if (apiToken.isNotEmpty()) ejecutarConsultaDocumento(code, apiToken, etName, etAddress, progress)
+            }
+        }
+        etDoc.addTextChangedListener { text -> if (text?.length == 8 || text?.length == 11) consultaAction() }
+        layoutDoc.setEndIconOnClickListener { consultaAction() }
+
+        AlertDialog.Builder(this)
+            .setTitle("Datos del Cliente")
+            .setView(view)
+            .setPositiveButton("Generar") { _, _ ->
+                val phone = etPhone.text.toString().trim()
+                items.forEach { 
+                    it.customerDoc = etDoc.text.toString()
+                    it.customerName = etName.text.toString()
+                    it.customerAddress = etAddress.text.toString()
+                    it.documentType = docType
+                }
+                showPrintDialog(items, phone)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun showPrintDialog(items: List<SaleEntity>, customerPhone: String) {
+        val options = arrayOf("Compartir Comprobante PDF (WhatsApp)", "Imprimir Ticket Bluetooth", "Solo Cerrar")
         
         AlertDialog.Builder(this)
             .setTitle("Venta Exitosa")
             .setItems(options) { _, which ->
                 when (which) {
-                    0 -> sharePdfComprobante(items)
+                    0 -> sharePdfComprobante(items, customerPhone)
                     1 -> printBluetoothTicket(items)
                 }
             }
             .show()
     }
 
-    private fun sharePdfComprobante(items: List<SaleEntity>) {
+    private fun sharePdfComprobante(items: List<SaleEntity>, customerPhone: String) {
         val pdfFile = ComprobantePdfGenerator(this).generateComprobantePdf(items)
         if (pdfFile != null && pdfFile.exists()) {
             val uri = androidx.core.content.FileProvider.getUriForFile(this, "$packageName.provider", pdfFile)
-            val intent = Intent(Intent.ACTION_SEND).apply {
+            
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "application/pdf"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            startActivity(Intent.createChooser(intent, "Enviar Comprobante"))
+
+            if (customerPhone.isNotEmpty()) {
+                // Intentar abrir WhatsApp directamente al número del cliente
+                val phoneClean = customerPhone.replace("[^0-9]".toRegex(), "")
+                val whatsappNum = if (phoneClean.length == 9) "51$phoneClean" else phoneClean
+                
+                try {
+                    // Para enviar a un número específico de WhatsApp con archivo adjunto
+                    shareIntent.`package` = "com.whatsapp"
+                    shareIntent.putExtra("jid", "$whatsappNum@s.whatsapp.net")
+                    startActivity(shareIntent)
+                } catch (e: Exception) {
+                    startActivity(Intent.createChooser(shareIntent, "Enviar Comprobante"))
+                }
+            } else {
+                startActivity(Intent.createChooser(shareIntent, "Enviar Comprobante"))
+            }
         } else {
             Toast.makeText(this, "Error al generar PDF", Toast.LENGTH_SHORT).show()
         }

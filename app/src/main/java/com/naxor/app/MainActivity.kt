@@ -10,8 +10,12 @@ import android.os.Bundle
 import android.util.Log
 import android.Manifest
 import android.content.pm.PackageManager
+import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
+import com.google.firebase.appcheck.appCheck
+import com.google.firebase.initialize
 import androidx.core.content.ContextCompat
 import androidx.activity.result.contract.ActivityResultContracts
 import android.view.View
@@ -31,6 +35,7 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.databinding.ActivityMainBinding
+import androidx.work.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,6 +56,18 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var globalGestureDetector: GestureDetector
 
+    // SISTEMA DE TUTORIAL CONTEXTUAL
+    private var currentTutorialStep = 0
+    private val tutorialSteps = listOf(
+        "¡Bienvenido a Naxor! 🚀" to "Hemos rediseñado todo para que tu negocio crezca. Vamos a darte un recorrido rápido.",
+        "Navegación Central" to "Usa la barra inferior para moverte entre tu Inventario, el Rendimiento de tu negocio y los Ajustes.",
+        "Menú de Gestión" to "Desliza tu dedo hacia la derecha en cualquier parte de la pantalla para abrir herramientas como Gastos, Caja y Deudores.",
+        "Herramientas de Control" to "Dentro del menú encontrarás funciones para controlar tus deudas, proveedores y comprobantes electrónicos.",
+        "Tu Dashboard" to "Aquí ves tus Ventas, Utilidad y Gastos de HOY. Todo se actualiza en tiempo real.",
+        "Registro de Ventas" to "Usa el botón central para vender. ¡Puedes usar la cámara para escanear códigos de barras!",
+        "Buzón de Mensajes" to "Mira el sobre arriba a la derecha. Ahí te enviaremos novedades y consejos para tu negocio.",
+        "¡Todo listo!" to "Ya puedes empezar a usar Naxor. Recuerda que puedes ver esta guía de nuevo en Ajustes."
+    )
 
     private val requestNotificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -70,18 +87,160 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        hideBottomNavIndicator()
+        setupCustomBottomNav()
         setupGlobalGesture()
         checkNotificationPermission()
         setupListeners()
         startSyncService()
         subscribeToSalesTopic()
+        scheduleReminders()
 
         if (savedInstanceState == null) {
             navigateToInicio()
+            checkTutorial()
         }
+    }
+
+    private fun hideBottomNavIndicator() {
+        binding.bottomNavigation.post {
+            try {
+                val menuView = binding.bottomNavigation.getChildAt(0) as? android.view.ViewGroup
+                for (i in 0 until (menuView?.childCount ?: 0)) {
+                    val item = menuView?.getChildAt(i) as? android.view.ViewGroup
+                    val indicator = item?.findViewById<View>(com.google.android.material.R.id.navigation_bar_item_active_indicator_view)
+                    indicator?.visibility = View.GONE
+                    indicator?.alpha = 0f
+                }
+            } catch (e: Exception) { e.printStackTrace() }
+        }
+    }
+
+    private fun setupCustomBottomNav() {
+        // Inicializar posición 0 (Inicio)
+        binding.bottomNavigation.post {
+            val itemWidth = binding.bottomNavigation.width / 4
+            binding.navIndicatorCustom.translationX = 0f
+        }
+    }
+
+    private fun moveNavIndicator(index: Int) {
+        hideBottomNavIndicator() // Asegurar que el indicador por defecto estÃ© oculto
+        binding.bottomNavigation.post {
+            val itemWidth = binding.bottomNavigation.width / 4
+            binding.navIndicatorCustom.animate()
+                .translationX(index * itemWidth.toFloat())
+                .setDuration(400)
+                .setInterpolator(android.view.animation.OvershootInterpolator(0.7f))
+                .start()
+        }
+    }
+
+    private fun scheduleReminders() {
+        val reminderRequest = PeriodicWorkRequestBuilder<ReminderWorker>(3, java.util.concurrent.TimeUnit.HOURS)
+            .setConstraints(Constraints.NONE)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "debt_reminders",
+            ExistingPeriodicWorkPolicy.KEEP,
+            reminderRequest
+        )
+    }
+
+    private fun checkTutorial() {
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val shown = prefs.getBoolean("tutorial_shown_v3", false)
+        if (!shown) {
+            startInteractiveTutorial()
+        }
+    }
+
+    fun startInteractiveTutorial() {
+        currentTutorialStep = 0
+        binding.layoutTutorialOverlay.visibility = View.VISIBLE
+        updateTutorialUI()
+        
+        binding.btnNextTutorialStep.setOnClickListener {
+            currentTutorialStep++
+            if (currentTutorialStep < tutorialSteps.size) {
+                updateTutorialUI()
+            } else {
+                finishTutorial()
+            }
+        }
+    }
+
+    private fun updateTutorialUI() {
+        val step = tutorialSteps[currentTutorialStep]
+        val title = step.first
+        val desc = step.second
+        
+        binding.tvTutorialStepTitle.text = title
+        binding.tvTutorialStepDesc.text = desc
+        
+        // Lógica de resaltado (Spotlight)
+        when(currentTutorialStep) {
+            1 -> highlightView(binding.bottomNavigation)
+            2 -> highlightView(null)
+            3 -> {
+                binding.drawerLayoutMain.openDrawer(GravityCompat.START)
+                highlightView(null)
+            }
+            4 -> {
+                binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
+                highlightView(findViewById(R.id.cardDashboard))
+            }
+            5 -> highlightView(findViewById(R.id.layoutVentaActions))
+            6 -> highlightView(findViewById(R.id.btnMailboxHome))
+            else -> highlightView(null)
+        }
+    }
+
+    private fun highlightView(view: View?) {
+        val spotlight = findViewById<com.naxor.app.util.TutorialSpotlightView>(R.id.viewTutorialSpotlight) ?: return
+        
+        if (view == null) {
+            spotlight.clearTarget()
+            val params = binding.cardTutorialInfo.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            params.topToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
+            params.bottomToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
+            params.verticalBias = 0.5f
+            binding.cardTutorialInfo.layoutParams = params
+            return
+        }
+
+        view.post {
+            spotlight.setTarget(view)
+            
+            val location = IntArray(2)
+            view.getLocationInWindow(location)
+            
+            val params = binding.cardTutorialInfo.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            val screenHeight = resources.displayMetrics.heightPixels
+            
+            // Posicionamiento dinámico más cercano al centro
+            params.topToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
+            params.bottomToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
+            
+            if (location[1] > screenHeight / 2) {
+                // Si el botón está abajo, poner el mensaje arriba (pero no al extremo)
+                params.verticalBias = 0.42f
+            } else {
+                // Si el botón está arriba, poner el mensaje abajo (pero no al extremo)
+                params.verticalBias = 0.58f
+            }
+            binding.cardTutorialInfo.layoutParams = params
+        }
+    }
+
+    private fun finishTutorial() {
+        binding.layoutTutorialOverlay.visibility = View.GONE
+        getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putBoolean("tutorial_shown_v3", true).apply()
     }
 
     private fun setupGlobalGesture() {
@@ -114,52 +273,102 @@ class MainActivity : AppCompatActivity() {
     private fun openAnyDrawer() {
         val currentFrag = supportFragmentManager.findFragmentById(R.id.mainFragmentContainer)
         
-        when (currentFrag) {
-            is com.naxor.app.fragment.HomeFragment -> {
+        // Buscar por tag si el ID no es suficiente (debido a la nueva lÃ³gica de show/hide)
+        val homeFrag = supportFragmentManager.findFragmentByTag("HOME")
+        val stockFrag = supportFragmentManager.findFragmentByTag("STOCK")
+        val metricsFrag = supportFragmentManager.findFragmentByTag("METRICAS")
+
+        when {
+            homeFrag != null && homeFrag.isVisible -> {
                 binding.drawerLayoutMain.openDrawer(GravityCompat.START)
             }
-            is com.naxor.app.fragment.StockFragment -> {
-                currentFrag.openDrawer()
+            stockFrag != null && stockFrag.isVisible -> {
+                (stockFrag as? com.naxor.app.fragment.StockFragment)?.openDrawer()
             }
-            is com.naxor.app.fragment.MetricasFragment -> {
-                currentFrag.openDrawer()
-            }
-            is com.naxor.app.fragment.SettingsFragment -> {
-                // No hacer nada, barra lateral desactivada en Ajustes
+            metricsFrag != null && metricsFrag.isVisible -> {
+                (metricsFrag as? com.naxor.app.fragment.MetricasFragment)?.openDrawer()
             }
             else -> {
-                // Comportamiento por defecto
-                binding.drawerLayoutMain.openDrawer(GravityCompat.START)
+                // No hacer nada o comportamiento por defecto
             }
         }
     }
 
+    private var isNavigatingInternally = false
+
+    private fun showFragment(tag: String) {
+        val fm = supportFragmentManager
+        val transaction = fm.beginTransaction()
+        
+        // Animación suave de entrada
+        transaction.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+
+        val fragments = listOf("HOME", "STOCK", "METRICAS", "SETTINGS")
+        
+        // Ocultar todos los fragmentos
+        fragments.forEach { t ->
+            fm.findFragmentByTag(t)?.let { transaction.hide(it) }
+        }
+
+        val target = fm.findFragmentByTag(tag)
+        if (target != null) {
+            transaction.show(target)
+        } else {
+            val newFrag = when(tag) {
+                "HOME" -> com.naxor.app.fragment.HomeFragment()
+                "STOCK" -> com.naxor.app.fragment.StockFragment()
+                "METRICAS" -> com.naxor.app.fragment.MetricasFragment()
+                "SETTINGS" -> com.naxor.app.fragment.SettingsFragment()
+                else -> com.naxor.app.fragment.HomeFragment()
+            }
+            transaction.add(R.id.mainFragmentContainer, newFrag, tag)
+        }
+
+        transaction.commitAllowingStateLoss()
+    }
+
     fun navigateToInicio() {
-        if (supportFragmentManager.findFragmentByTag("HOME")?.isVisible == true) return
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.mainFragmentContainer, com.naxor.app.fragment.HomeFragment(), "HOME")
-            .commit()
+        if (isNavigatingInternally) return
+        isNavigatingInternally = true
+        if (binding.bottomNavigation.selectedItemId != R.id.nav_inicio) {
+            binding.bottomNavigation.selectedItemId = R.id.nav_inicio
+        }
+        moveNavIndicator(0)
+        showFragment("HOME")
+        isNavigatingInternally = false
     }
 
     fun navigateToStock() {
-        if (supportFragmentManager.findFragmentByTag("STOCK")?.isVisible == true) return
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.mainFragmentContainer, com.naxor.app.fragment.StockFragment(), "STOCK")
-            .commit()
+        if (isNavigatingInternally) return
+        isNavigatingInternally = true
+        if (binding.bottomNavigation.selectedItemId != R.id.nav_stock) {
+            binding.bottomNavigation.selectedItemId = R.id.nav_stock
+        }
+        moveNavIndicator(1)
+        showFragment("STOCK")
+        isNavigatingInternally = false
     }
 
     fun navigateToMetricas() {
-        if (supportFragmentManager.findFragmentByTag("METRICAS")?.isVisible == true) return
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.mainFragmentContainer, com.naxor.app.fragment.MetricasFragment(), "METRICAS")
-            .commit()
+        if (isNavigatingInternally) return
+        isNavigatingInternally = true
+        if (binding.bottomNavigation.selectedItemId != R.id.nav_metricas) {
+            binding.bottomNavigation.selectedItemId = R.id.nav_metricas
+        }
+        moveNavIndicator(2)
+        showFragment("METRICAS")
+        isNavigatingInternally = false
     }
 
     fun navigateToSettings() {
-        if (supportFragmentManager.findFragmentByTag("SETTINGS")?.isVisible == true) return
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.mainFragmentContainer, com.naxor.app.fragment.SettingsFragment(), "SETTINGS")
-            .commit()
+        if (isNavigatingInternally) return
+        isNavigatingInternally = true
+        if (binding.bottomNavigation.selectedItemId != R.id.nav_config) {
+            binding.bottomNavigation.selectedItemId = R.id.nav_config
+        }
+        moveNavIndicator(3)
+        showFragment("SETTINGS")
+        isNavigatingInternally = false
     }
 
     fun navigateToGestion() {
@@ -167,7 +376,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startSyncService() {
-        val serviceIntent = Intent(this, com.naxor.app.network.NexurSyncService::class.java)
+        val serviceIntent = Intent(this, com.naxor.app.network.NaxorSyncService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
         } else {
@@ -197,21 +406,22 @@ class MainActivity : AppCompatActivity() {
         binding.navigationViewMain.setNavigationItemSelectedListener { menuItem ->
             binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
             when (menuItem.itemId) {
-                R.id.menu_gastos -> { checkPinAndNavigate { startActivity(Intent(this, GastosActivity::class.java)) }; true }
-                R.id.menu_caja -> { startActivity(Intent(this, CajaActivity::class.java)); true }
-                R.id.menu_fiados -> { startActivity(Intent(this, DeudoresActivity::class.java)); true }
-                R.id.menu_proveedores -> { startActivity(Intent(this, ProveedoresActivity::class.java)); true }
-                R.id.menu_emitir_comprobante -> { startActivity(Intent(this, EmitirComprobanteActivity::class.java)); true }
+                R.id.menu_gastos -> { checkPinAndNavigate { startToolActivity(Intent(this, GastosActivity::class.java)) }; true }
+                R.id.menu_caja -> { startToolActivity(Intent(this, CajaActivity::class.java)); true }
+                R.id.menu_fiados -> { startToolActivity(Intent(this, DeudoresActivity::class.java)); true }
+                R.id.menu_business_debts -> { startToolActivity(Intent(this, BusinessDebtsActivity::class.java)); true }
+                R.id.menu_proveedores -> { startToolActivity(Intent(this, ProveedoresActivity::class.java)); true }
+                R.id.menu_emitir_comprobante -> { startToolActivity(Intent(this, EmitirComprobanteActivity::class.java)); true }
                 R.id.menu_customize_actions -> { showActionsConfigDialog(); true }
                 R.id.menu_catalogo -> { generatePDFCatalog(); true }
                 R.id.menu_sync -> { manualSync(); true }
-                R.id.menu_sales_history -> { checkPinAndNavigate { startActivity(Intent(this, SalesHistoryActivity::class.java)) }; true }
-                R.id.menu_lista_compras -> { startActivity(Intent(this, ListaComprasActivity::class.java)); true }
-                R.id.menu_asignador -> { startActivity(Intent(this, AsignadorDePreciosActivity::class.java)); true }
-                R.id.menu_customers -> { startActivity(Intent(this, CustomersActivity::class.java)); true }
-                R.id.menu_settings -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
-                R.id.menu_view_history -> { startActivity(Intent(this, HistorialActivity::class.java)); true }
-                R.id.menu_instructions -> { startActivity(Intent(this, InstruccionesActivity::class.java)); true }
+                R.id.menu_sales_history -> { checkPinAndNavigate { startToolActivity(Intent(this, SalesHistoryActivity::class.java)) }; true }
+                R.id.menu_lista_compras -> { startToolActivity(Intent(this, ListaComprasActivity::class.java)); true }
+                R.id.menu_asignador -> { startToolActivity(Intent(this, AsignadorDePreciosActivity::class.java)); true }
+                R.id.menu_customers -> { startToolActivity(Intent(this, CustomersActivity::class.java)); true }
+                R.id.menu_settings -> { startToolActivity(Intent(this, SettingsActivity::class.java)); true }
+                R.id.menu_view_history -> { startToolActivity(Intent(this, HistorialActivity::class.java)); true }
+                R.id.menu_instructions -> { startToolActivity(Intent(this, InstruccionesActivity::class.java)); true }
                 R.id.menu_logout -> {
                     com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
                     startActivity(Intent(this, LoginActivity::class.java))
@@ -223,6 +433,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.bottomNavigation.setOnItemSelectedListener { item ->
+            val currentId = binding.bottomNavigation.selectedItemId
+            if (currentId == item.itemId) return@setOnItemSelectedListener true
+
             when (item.itemId) {
                 R.id.nav_inicio -> {
                     navigateToInicio()
@@ -528,5 +741,15 @@ class MainActivity : AppCompatActivity() {
                 else Toast.makeText(this, "PIN Incorrecto", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Cancelar", null).show()
+    }
+
+    private fun startToolActivity(intent: Intent) {
+        startActivity(intent)
+        overridePendingTransition(R.anim.slide_in_up, R.anim.stay)
+    }
+
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.stay, R.anim.slide_out_down)
     }
 }

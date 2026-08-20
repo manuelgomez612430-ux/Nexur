@@ -1,5 +1,6 @@
 package com.naxor.app
 
+import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -57,14 +58,22 @@ class Updater(private val context: Context) {
     private fun startDownload(downloadUrl: String) {
         Toast.makeText(context, "Iniciando descarga...", Toast.LENGTH_LONG).show()
 
-        val fileName = "Naxor_v${System.currentTimeMillis()}.apk"
+        val fileName = "Naxor_Update.apk"
         val file = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
+        if (file.exists()) file.delete()
         
-        val request = DownloadManager.Request(Uri.parse(downloadUrl))
-            .setTitle("Actualizando Nexur")
-            .setDescription("Descargando nueva versión...")
-            .setDestinationUri(Uri.fromFile(file))
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+        val request = try {
+            DownloadManager.Request(Uri.parse(downloadUrl))
+                .setTitle("Actualizando Naxor")
+                .setDescription("Descargando nueva versión...")
+                .setDestinationUri(Uri.fromFile(file))
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(true)
+        } catch (e: Exception) {
+            Toast.makeText(context, "URL de descarga inválida", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val downloadId = manager.enqueue(request)
@@ -73,14 +82,30 @@ class Updater(private val context: Context) {
             override fun onReceive(context: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 if (id == downloadId) {
-                    installApk(file)
+                    val query = DownloadManager.Query().setFilterById(downloadId)
+                    val cursor = manager.query(query)
+                    if (cursor.moveToFirst()) {
+                        @SuppressLint("Range")
+                        val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
+                        if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                            installApk(file)
+                        } else {
+                            Toast.makeText(context, "Error al descargar el archivo", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    cursor.close()
                     context.unregisterReceiver(this)
                 }
             }
         }
         
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_NOT_EXPORTED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                Context.RECEIVER_EXPORTED
+            } else {
+                0
+            }
+            context.registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), flags)
         } else {
             context.registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
         }

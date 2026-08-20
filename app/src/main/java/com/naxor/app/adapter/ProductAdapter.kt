@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.naxor.app.R
 import com.naxor.app.data.ProductEntity
 import com.naxor.app.databinding.ItemProductoBinding
@@ -16,7 +17,6 @@ import java.util.Date
 import java.util.Locale
 
 class ProductAdapter(
-    private var items: List<ProductEntity>,
     private var isEditorMode: Boolean = false,
     private val onEdit: (ProductEntity) -> Unit,
     private val onViewLabel: (ProductEntity) -> Unit,
@@ -27,30 +27,49 @@ class ProductAdapter(
     private val selectedIds = mutableSetOf<String>()
     private var isMultiSelectMode = false
 
+    private val differCallback = object : DiffUtil.ItemCallback<ProductEntity>() {
+        override fun areItemsTheSame(oldItem: ProductEntity, newItem: ProductEntity) = oldItem.id == newItem.id
+        override fun areContentsTheSame(oldItem: ProductEntity, newItem: ProductEntity): Boolean {
+            return oldItem.id == newItem.id && 
+                   (oldItem.nombre ?: "") == (newItem.nombre ?: "") &&
+                   oldItem.stock == newItem.stock &&
+                   oldItem.precioVenta == newItem.precioVenta &&
+                   (oldItem.categoria ?: "") == (newItem.categoria ?: "") &&
+                   (oldItem.photoPath ?: "") == (newItem.photoPath ?: "")
+        }
+        override fun getChangePayload(oldItem: ProductEntity, newItem: ProductEntity): Any? {
+            return if (oldItem.stock != newItem.stock) "STOCK" else null
+        }
+    }
+    
+    private val differ = androidx.recyclerview.widget.AsyncListDiffer(this, differCallback)
+
     class ViewHolder(val binding: ItemProductoBinding) : RecyclerView.ViewHolder(binding.root)
 
     fun setEditorMode(enabled: Boolean) {
+        if (this.isEditorMode == enabled) return
         this.isEditorMode = enabled
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, itemCount)
     }
 
     fun setMultiSelectMode(enabled: Boolean) {
+        if (this.isMultiSelectMode == enabled) return
         this.isMultiSelectMode = enabled
         if (!enabled) selectedIds.clear()
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, itemCount)
     }
 
     fun getSelectedItems(): List<ProductEntity> {
-        return items.filter { selectedIds.contains(it.id) }
+        return differ.currentList.filter { selectedIds.contains(it.id) }
     }
 
-    fun toggleSelection(productId: String) {
+    fun toggleSelection(productId: String, position: Int) {
         if (selectedIds.contains(productId)) {
             selectedIds.remove(productId)
         } else {
             selectedIds.add(productId)
         }
-        notifyDataSetChanged()
+        notifyItemChanged(position, "SELECTION")
         onSelectionChanged?.invoke(selectedIds.size)
     }
 
@@ -62,22 +81,42 @@ class ProductAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = items[position]
+        onBindViewHolder(holder, position, emptyList())
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: List<Any>) {
+        val currentItems = differ.currentList
+        if (position < 0 || position >= currentItems.size) return
+        val item = currentItems[position]
+        
+        if (payloads.isNotEmpty()) {
+            for (payload in payloads) {
+                if (payload == "STOCK") {
+                    holder.binding.tvProdItemStock.text = if (item.stock <= 0) "X" else item.stock.toString()
+                    updateStockColor(holder.binding.tvProdItemStock, item.stock)
+                }
+                if (payload == "SELECTION") {
+                    holder.binding.cbProdSelected.isChecked = selectedIds.contains(item.id)
+                }
+            }
+            return
+        }
+
         with(holder.binding) {
             val context = root.context
             
-            // 1. Mostrar Foto (Optimizado con Glide)
+            // 1. Mostrar Foto (Optimizado para scroll masivo)
             if (!item.photoPath.isNullOrEmpty()) {
                 Glide.with(context)
                     .load(item.photoPath)
+                    .override(150, 150) // Miniaturas más pequeñas para más FPS
+                    .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
                     .transform(CenterCrop(), RoundedCorners(12))
-                    .placeholder(android.R.drawable.ic_menu_camera)
-                    .error(android.R.drawable.ic_menu_report_image)
                     .into(ivProdItemPhoto)
                 ivProdItemPhoto.alpha = 1.0f
             } else {
                 ivProdItemPhoto.setImageResource(android.R.drawable.ic_menu_camera)
-                ivProdItemPhoto.alpha = 0.3f
+                ivProdItemPhoto.alpha = 0.2f
             }
 
             // 2. Información Central
@@ -85,39 +124,18 @@ class ProductAdapter(
             tvProdItemCategoria.text = item.categoria
             
             val codigoReal = item.codigo ?: ""
-            tvProdItemCodigoSub.text = when {
-                codigoReal.isBlank() -> "---"
-                codigoReal.contains(",") -> codigoReal.split(",")[0].take(4) + "..."
-                codigoReal.length > 8 -> codigoReal.take(4) + "..."
-                else -> codigoReal
-            }
+            tvProdItemCodigoSub.text = if (codigoReal.length > 6) codigoReal.take(6) + ".." else if (codigoReal.isEmpty()) "---" else codigoReal
 
-            // 3. Fecha e Integración (Cálculo preciso de calendario)
-            val dias = getDaysDifference(item.timestamp)
-            val textoDias = when {
-                dias == 0L -> "Hoy"
-                dias == 1L -> "Ayer"
-                else -> "Hace $dias d"
-            }
-            tvProdItemIntegration.text = "Ingreso: ${sdf.format(Date(item.timestamp))} ($textoDias)"
+            // 3. Fecha (Formato simple)
+            tvProdItemIntegration.text = sdf.format(Date(item.timestamp))
 
-            // 4. Stock
-            tvProdItemStock.text = item.stock.toString()
+            // 4. Stock y Precios
+            tvProdItemStock.text = if (item.stock <= 0) "X" else item.stock.toString()
+            updateStockColor(tvProdItemStock, item.stock)
 
-            // 5. Precios
-            tvProdItemPrecioVenta.text = String.format(Locale.getDefault(), "S/ %.2f", item.precioVenta)
-            val costoUnitario = if (item.stock > 0) item.precioCosto / item.stock else 0.0
-            tvProdItemPrecioCosto.text = String.format(Locale.getDefault(), "C: S/ %.2f", costoUnitario)
-
-            // Alertas visuales de stock
-            if (item.stock <= 0) {
-                tvProdItemStock.setTextColor(context.getColor(R.color.red_600))
-                tvProdItemStock.text = "X"
-            } else if (item.stock <= 5) {
-                tvProdItemStock.setTextColor(context.getColor(R.color.red_600))
-            } else {
-                tvProdItemStock.setTextColor(context.getColor(R.color.sky_600))
-            }
+            tvProdItemPrecioVenta.text = "S/ ${String.format(Locale.US, "%.2f", item.precioVenta)}"
+            val costU = if (item.stock > 0) item.precioCosto / item.stock else 0.0
+            tvProdItemPrecioCosto.text = "C: S/ ${String.format(Locale.US, "%.2f", costU)}"
 
             // --- INTERACCIONES ---
             cbProdSelected.visibility = if (isMultiSelectMode) View.VISIBLE else View.GONE
@@ -125,7 +143,7 @@ class ProductAdapter(
 
             root.setOnClickListener {
                 when {
-                    isMultiSelectMode -> toggleSelection(item.id)
+                    isMultiSelectMode -> toggleSelection(item.id, holder.adapterPosition)
                     isEditorMode -> onEdit(item)
                     else -> onViewLabel(item)
                 }
@@ -133,11 +151,8 @@ class ProductAdapter(
 
             root.setOnLongClickListener {
                 if (!isMultiSelectMode && !isEditorMode) {
-                    onSelectionChanged?.invoke(-1) // Señal para activar modo selección
-                    toggleSelection(item.id)
-                } else if (isEditorMode) {
-                    // En modo editor, el clic largo no hace nada especial o abre el mismo diálogo
-                    onEdit(item)
+                    onSelectionChanged?.invoke(-1) 
+                    toggleSelection(item.id, holder.adapterPosition)
                 } else {
                     onEdit(item)
                 }
@@ -146,18 +161,20 @@ class ProductAdapter(
         }
     }
 
-    override fun getItemCount() = items.size
+    private fun updateStockColor(textView: android.widget.TextView, stock: Int) {
+        val color = if (stock <= 0) R.color.red_600 else if (stock <= 5) R.color.red_600 else R.color.sky_600
+        textView.setTextColor(textView.context.getColor(color))
+    }
+
+    override fun getItemCount() = differ.currentList.size
 
     fun updateList(newList: List<ProductEntity>) {
-        val diffCallback = object : DiffUtil.Callback() {
-            override fun getOldListSize() = items.size
-            override fun getNewListSize() = newList.size
-            override fun areItemsTheSame(oldPos: Int, newPos: Int) = items[oldPos].id == newList[newPos].id
-            override fun areContentsTheSame(oldPos: Int, newPos: Int) = items[oldPos] == newList[newPos]
-        }
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
-        items = newList
-        diffResult.dispatchUpdatesTo(this)
+        differ.submitList(newList)
+    }
+
+    override fun onViewRecycled(holder: ViewHolder) {
+        super.onViewRecycled(holder)
+        Glide.with(holder.binding.ivProdItemPhoto.context).clear(holder.binding.ivProdItemPhoto)
     }
 
     private fun getDaysDifference(timestamp: Long): Long {

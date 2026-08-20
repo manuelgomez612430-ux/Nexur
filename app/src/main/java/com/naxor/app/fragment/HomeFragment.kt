@@ -18,9 +18,13 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.naxor.app.*
 import com.naxor.app.adapter.RecentActivityAdapter
 import com.naxor.app.data.AppDatabase
+import com.naxor.app.data.AppMessage
 import com.naxor.app.data.QuickAction
 import com.naxor.app.databinding.FragmentHomeBinding
 import kotlinx.coroutines.*
@@ -48,7 +52,7 @@ class HomeFragment : Fragment() {
         
         // Cargar logo con Glide para evitar pixelado por gran tamaño del PNG
         Glide.with(this)
-            .load(R.drawable.logo_naxor_icon)
+            .load(R.drawable.logo_naxor_full) // Cambiado a full para mejor calidad en cabecera
             .into(homeBinding.ivLogoHome)
 
         loadActivityFilters()
@@ -58,11 +62,40 @@ class HomeFragment : Fragment() {
         setupRecentActivityRecyclerView()
         renderQuickActions()
         loadDashboardData()
-        updateMailboxBadge()
+        listenForNewMessages()
 
         val sm = SyncManager(requireContext())
         sm.startRealtimeSalesSync { loadDashboardData() }
         sm.startRealtimeLogsSync { setupRealtimeActivityFeed() }
+    }
+
+    private fun listenForNewMessages() {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        val lastRead = prefs.getLong("last_mailbox_read_time", 0L)
+
+        // 1. Escuchar mensajes globales
+        FirebaseFirestore.getInstance().collection("app_messages")
+            .addSnapshotListener { snapshot, _ ->
+                val messages = snapshot?.toObjects(AppMessage::class.java) ?: emptyList()
+                checkIfAnyNew(messages, lastRead)
+            }
+
+        // 2. Escuchar mensajes privados
+        FirebaseFirestore.getInstance().collection("users").document(userId).collection("messages")
+            .addSnapshotListener { snapshot, _ ->
+                val messages = snapshot?.toObjects(AppMessage::class.java) ?: emptyList()
+                checkIfAnyNew(messages, lastRead)
+            }
+    }
+
+    private fun checkIfAnyNew(messages: List<AppMessage>, lastRead: Long) {
+        val hasNew = messages.any { (it.timestamp?.toDate()?.time ?: 0L) > lastRead }
+        if (hasNew) {
+            requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+                .edit().putBoolean("has_new_message", true).apply()
+            updateMailboxBadge()
+        }
     }
 
     override fun onResume() {
@@ -72,7 +105,7 @@ class HomeFragment : Fragment() {
 
     private fun updateMailboxBadge() {
         val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        val hasNew = prefs.getBoolean("has_new_message", true)
+        val hasNew = prefs.getBoolean("has_new_message", false)
         homeBinding.viewMailboxBadge.visibility = if (hasNew) View.VISIBLE else View.GONE
     }
 
@@ -84,14 +117,17 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupListeners() {
-        homeBinding.btnIrVentas.setOnClickListener { startActivity(Intent(requireContext(), VentasActivity::class.java)) }
+        homeBinding.btnIrVentas.setOnClickListener { startToolActivity(Intent(requireContext(), VentasActivity::class.java)) }
         homeBinding.btnScanVenta.setOnClickListener { (activity as? MainActivity)?.startDirectScanner() }
 
         homeBinding.btnMailboxHome.setOnClickListener {
             requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-                .edit().putBoolean("has_new_message", false).apply()
+                .edit()
+                .putBoolean("has_new_message", false)
+                .putLong("last_mailbox_read_time", System.currentTimeMillis())
+                .apply()
             updateMailboxBadge()
-            startActivity(Intent(requireContext(), MailboxActivity::class.java))
+            startToolActivity(Intent(requireContext(), MailboxActivity::class.java))
         }
 
         homeBinding.ivLogoHome.setOnClickListener { 
@@ -102,13 +138,18 @@ class HomeFragment : Fragment() {
         }
         homeBinding.btnInfoDashboard.setOnClickListener { showFinancialInfoDialog() }
         homeBinding.btnFilterActivityMain.setOnClickListener { showActivityFilterDialog() }
-        homeBinding.cardActivityPreview.setOnClickListener { startActivity(Intent(requireContext(), MovementsActivity::class.java)) }
-        homeBinding.btnViewAllActivity.setOnClickListener { startActivity(Intent(requireContext(), MovementsActivity::class.java)) }
+        homeBinding.cardActivityPreview.setOnClickListener { startToolActivity(Intent(requireContext(), MovementsActivity::class.java)) }
+        homeBinding.btnViewAllActivity.setOnClickListener { startToolActivity(Intent(requireContext(), MovementsActivity::class.java)) }
         homeBinding.cardDashboard.setOnClickListener { 
             (activity as? MainActivity)?.checkPinAndNavigate { 
                 (activity as? MainActivity)?.navigateToMetricas()
             }
         }
+    }
+
+    private fun startToolActivity(intent: Intent) {
+        startActivity(intent)
+        activity?.overridePendingTransition(R.anim.slide_in_up, R.anim.stay)
     }
 
     private fun loadDashboardData() {
@@ -193,19 +234,19 @@ class HomeFragment : Fragment() {
         val selectedActions = if (savedActions.isEmpty()) emptyList() else savedActions.split(",")
 
         val actionDefinitions = mapOf(
-            "gastos" to Triple("💸 GASTOS", "#E11D48") { (activity as? MainActivity)?.checkPinAndNavigate { startActivity(Intent(requireContext(), GastosActivity::class.java)) } },
-            "caja" to Triple("💰 CAJA", "#F59E0B") { startActivity(Intent(requireContext(), CajaActivity::class.java)) },
-            "fiados" to Triple("👥 DEUDORES", "#4F46E5") { startActivity(Intent(requireContext(), DeudoresActivity::class.java)) },
-            "proveedores" to Triple("🚚 PROVEED.", "#0284C7") { startActivity(Intent(requireContext(), ProveedoresActivity::class.java)) },
-            "clientes" to Triple("👤 CLIENTES", "#059669") { startActivity(Intent(requireContext(), CustomersActivity::class.java)) },
+            "gastos" to Triple("💸 GASTOS", "#E11D48") { (activity as? MainActivity)?.checkPinAndNavigate { startToolActivity(Intent(requireContext(), GastosActivity::class.java)) } },
+            "caja" to Triple("💰 CAJA", "#F59E0B") { startToolActivity(Intent(requireContext(), CajaActivity::class.java)) },
+            "fiados" to Triple("👥 DEUDORES", "#4F46E5") { startToolActivity(Intent(requireContext(), DeudoresActivity::class.java)) },
+            "proveedores" to Triple("🚚 PROVEED.", "#0284C7") { startToolActivity(Intent(requireContext(), ProveedoresActivity::class.java)) },
+            "clientes" to Triple("👤 CLIENTES", "#059669") { startToolActivity(Intent(requireContext(), CustomersActivity::class.java)) },
             "catalogo" to Triple("📖 CATÁLOGO", "#D946EF") { (activity as? MainActivity)?.generatePDFCatalog() },
             "sync" to Triple("🔄 SYNC", "#10B981") { (activity as? MainActivity)?.manualSync() },
             "mailbox" to Triple("📬 MENSAJES", "#6366F1") { Toast.makeText(requireContext(), "Buzón (Próximamente)", Toast.LENGTH_SHORT).show() },
-            "lista_compras" to Triple("🛒 COMPRAS", "#F97316") { startActivity(Intent(requireContext(), ListaComprasActivity::class.java)) },
-            "asignador" to Triple("⚖️ PRECIOS", "#64748B") { startActivity(Intent(requireContext(), AsignadorDePreciosActivity::class.java)) },
-            "sales_history" to Triple("📜 VENTAS", "#3B82F6") { (activity as? MainActivity)?.checkPinAndNavigate { startActivity(Intent(requireContext(), SalesHistoryActivity::class.java)) } },
-            "view_history" to Triple("🕒 CÁLCULOS", "#8B5CF6") { startActivity(Intent(requireContext(), HistorialActivity::class.java)) },
-            "instructions" to Triple("💡 AYUDA", "#14B8A6") { startActivity(Intent(requireContext(), InstruccionesActivity::class.java)) }
+            "lista_compras" to Triple("🛒 COMPRAS", "#F97316") { startToolActivity(Intent(requireContext(), ListaComprasActivity::class.java)) },
+            "asignador" to Triple("⚖️ PRECIOS", "#64748B") { startToolActivity(Intent(requireContext(), AsignadorDePreciosActivity::class.java)) },
+            "sales_history" to Triple("📜 VENTAS", "#3B82F6") { (activity as? MainActivity)?.checkPinAndNavigate { startToolActivity(Intent(requireContext(), SalesHistoryActivity::class.java)) } },
+            "view_history" to Triple("🕒 CÁLCULOS", "#8B5CF6") { startToolActivity(Intent(requireContext(), HistorialActivity::class.java)) },
+            "instructions" to Triple("💡 AYUDA", "#14B8A6") { startToolActivity(Intent(requireContext(), InstruccionesActivity::class.java)) }
         )
 
         val quickActionList = selectedActions.mapNotNull { actionId ->
@@ -224,6 +265,25 @@ class HomeFragment : Fragment() {
             .setTitle("Dashboard Financiero")
             .setMessage("Resumen de tus operaciones de hoy.")
             .setPositiveButton("Cerrar", null).show()
+    }
+
+    fun checkPinAndNavigate(onSuccess: () -> Unit) {
+        val prefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val savedPin = prefs.getString("user_pin", "") ?: ""
+        if (savedPin.isEmpty()) { onSuccess(); return }
+        val etPin = android.widget.EditText(requireContext()).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            hint = "Escribe el PIN"
+        }
+        AlertDialog.Builder(requireContext())
+            .setTitle("Acceso Restringido")
+            .setMessage("Para ver esta sección, ingresa tu PIN de seguridad:")
+            .setView(etPin)
+            .setPositiveButton("Entrar") { _, _ ->
+                if (etPin.text.toString() == savedPin) onSuccess()
+                else Toast.makeText(requireContext(), "PIN Incorrecto", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancelar", null).show()
     }
 
     private fun showActivityFilterDialog() {

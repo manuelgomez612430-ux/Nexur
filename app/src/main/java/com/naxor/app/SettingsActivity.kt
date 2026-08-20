@@ -32,7 +32,7 @@ class SettingsActivity : AppCompatActivity() {
 
         loadSettings()
 
-        binding.btnBackSettings.setOnClickListener { finish() }
+        binding.toolbarSettings.setNavigationOnClickListener { finish() }
         binding.btnSaveSettings.setOnClickListener { saveSettings() }
         binding.cardBusinessLogo.setOnClickListener { pickImageLauncher.launch("image/*") }
     }

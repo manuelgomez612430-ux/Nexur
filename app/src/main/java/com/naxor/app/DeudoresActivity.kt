@@ -11,6 +11,8 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -19,10 +21,10 @@ import com.naxor.app.data.DebtorEntity
 import com.naxor.app.data.MovementLogEntity
 import com.naxor.app.databinding.ActivityDeudoresBinding
 import com.naxor.app.databinding.ItemDeudorBinding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.naxor.app.util.DebtorPdfGenerator
+import kotlinx.coroutines.*
 import java.net.URLEncoder
+import java.text.SimpleDateFormat
 import java.util.*
 
 class DeudoresActivity : AppCompatActivity() {
@@ -30,6 +32,8 @@ class DeudoresActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDeudoresBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
     private lateinit var adapter: DeudoresAdapter
+    private var allDebtorsList: List<DebtorEntity> = emptyList()
+    private var isFilterOverdue = false
 
     // Temp references for dialog
     private var currentEtNombre: EditText? = null
@@ -52,7 +56,6 @@ class DeudoresActivity : AppCompatActivity() {
                         currentEtNombre?.setText(name)
                         currentEtTelefono?.setText(phone)
                     } else {
-                        // If dialog wasn't open, open it now with data
                         showAddDebtorDialog(name, phone)
                     }
                 }
@@ -150,7 +153,7 @@ class DeudoresActivity : AppCompatActivity() {
         when {
             isSyncing && isNetworkAvailable -> {
                 syncStatusText = "Sincronizando..."
-                color = androidx.core.content.ContextCompat.getColor(this, R.color.white)
+                color = ContextCompat.getColor(this, R.color.white)
                 iconRes = android.R.drawable.stat_notify_sync
                 animation = android.view.animation.RotateAnimation(0f, 360f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f).apply {
                     duration = 1000
@@ -198,7 +201,9 @@ class DeudoresActivity : AppCompatActivity() {
         adapter = DeudoresAdapter(
             onPagar = { deudor -> showPaymentDialog(deudor) },
             onWhatsApp = { deudor -> sendWhatsAppReminder(deudor) },
-            onAumentar = { deudor -> showIncreaseDebtDialog(deudor) }
+            onAumentar = { deudor -> showIncreaseDebtDialog(deudor) },
+            onPdf = { deudor -> shareDebtorPdf(deudor) },
+            onEdit = { deudor -> showAddDebtorDialog(existingDebtor = deudor) }
         )
         binding.rvDeudores.layoutManager = LinearLayoutManager(this)
         binding.rvDeudores.adapter = adapter
@@ -208,6 +213,47 @@ class DeudoresActivity : AppCompatActivity() {
         binding.btnBackDeudores.setOnClickListener { finish() }
         binding.btnHelpDeudores.setOnClickListener { showHelpDialog() }
         binding.fabAddDeudor.setOnClickListener { showAddOptions() }
+
+        binding.chipFilterAll.setOnClickListener {
+            isFilterOverdue = false
+            applyFilters()
+        }
+        binding.chipFilterOverdue.setOnClickListener {
+            isFilterOverdue = true
+            applyFilters()
+        }
+
+        binding.btnMassReminder.setOnClickListener {
+            sendMassReminders()
+        }
+    }
+
+    private fun applyFilters() {
+        val filtered = if (isFilterOverdue) {
+            val now = Calendar.getInstance().timeInMillis
+            allDebtorsList.filter { it.fechaCobro in 1..now && !it.isDeleted }
+        } else {
+            allDebtorsList
+        }
+        adapter.submitList(filtered)
+        binding.layoutEmptyDeudores.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+        binding.btnMassReminder.visibility = if (isFilterOverdue && filtered.isNotEmpty()) View.VISIBLE else View.GONE
+    }
+
+    private fun sendMassReminders() {
+        val now = Calendar.getInstance().timeInMillis
+        val overdue = allDebtorsList.filter { it.fechaCobro in 1..now && !it.isDeleted }
+        
+        if (overdue.isEmpty()) return
+
+        AlertDialog.Builder(this)
+            .setTitle("Recordatorio Masivo 👥")
+            .setMessage("Se abrirán los chats de WhatsApp uno por uno para enviar los recordatorios a los ${overdue.size} clientes vencidos.\n\n¿Deseas comenzar?")
+            .setPositiveButton("Comenzar") { _, _ ->
+                if (overdue.isNotEmpty()) sendWhatsAppReminder(overdue[0])
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun showAddOptions() {
@@ -218,7 +264,7 @@ class DeudoresActivity : AppCompatActivity() {
                 when (which) {
                     0 -> showAddDebtorDialog()
                     1 -> {
-                        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
                             openContactPicker()
                         } else {
                             requestContactsPermissionLauncher.launch(android.Manifest.permission.READ_CONTACTS)
@@ -233,8 +279,9 @@ class DeudoresActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle("Guía de Deudores")
             .setMessage("• REGISTRO: Usa '+' para añadir clientes que te deben.\n" +
-                    "• COBRAR: Toca el icono de WhatsApp para enviar un recordatorio automático con el monto de la deuda.\n" +
-                    "• PAGAR: Toca el icono de check para registrar un abono o liquidar la deuda total.")
+                    "• COBRAR: Toca el icono de WhatsApp para enviar un recordatorio automático.\n" +
+                    "• PAGAR: Registra abonos o liquida deudas.\n" +
+                    "• EDITAR: Toca el lápiz para corregir nombre o fecha.")
             .setPositiveButton("Entendido", null)
             .show()
     }
@@ -244,17 +291,17 @@ class DeudoresActivity : AppCompatActivity() {
             val list = withContext(Dispatchers.IO) {
                 database.debtorDao().getAllDebtors()
             }
-            adapter.submitList(list)
-            binding.layoutEmptyDeudores.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
+            allDebtorsList = list
+            applyFilters()
             
             val total = list.sumOf { it.deudaTotal }
-            binding.tvTotalDeudaGlobal.text = String.format(Locale.getDefault(), "Total por cobrar: S/ %.2f", total)
+            binding.tvTotalDeudaGlobal.text = String.format(Locale.getDefault(), "S/ %.2f", total)
         }
     }
 
-    private fun showAddDebtorDialog(preName: String = "", prePhone: String = "") {
+    private fun showAddDebtorDialog(preName: String = "", prePhone: String = "", existingDebtor: DebtorEntity? = null) {
         val builder = AlertDialog.Builder(this)
-        builder.setTitle("Agregar Deudor")
+        builder.setTitle(if (existingDebtor == null) "Agregar Deudor" else "Editar Deudor")
         
         val layout = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
@@ -263,16 +310,36 @@ class DeudoresActivity : AppCompatActivity() {
         
         val etNombre = EditText(this).apply { 
             hint = "Nombre del cliente"
-            setText(preName)
+            setText(existingDebtor?.nombre ?: preName)
         }
         val etTelefono = EditText(this).apply { 
             hint = "Teléfono (Opcional)"
             inputType = android.text.InputType.TYPE_CLASS_PHONE
-            setText(prePhone)
+            setText(existingDebtor?.telefono ?: prePhone)
         }
         val etMonto = EditText(this).apply { 
-            hint = "Monto inicial de la deuda"
+            hint = "Monto de la deuda"
             inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL 
+            if (existingDebtor != null) setText(existingDebtor.deudaTotal.toString())
+        }
+
+        var selectedFechaCobro = existingDebtor?.fechaCobro ?: 0L
+        val btnFechaCobro = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            text = if (selectedFechaCobro > 0) "📅 Cobrar el: ${sdf.format(Date(selectedFechaCobro))}" else "📅 Programar Fecha de Cobro"
+            setOnClickListener {
+                val cal = Calendar.getInstance()
+                if (selectedFechaCobro > 0) cal.timeInMillis = selectedFechaCobro
+                android.app.DatePickerDialog(this@DeudoresActivity, { _, y, m, d ->
+                    val selCal = Calendar.getInstance()
+                    selCal.set(y, m, d, 9, 0, 0)
+                    selectedFechaCobro = selCal.timeInMillis
+                    this.text = "📅 Cobrar el: ${sdf.format(Date(selectedFechaCobro))}"
+                }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+            }
+            layoutParams = android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                setMargins(0, 8, 0, 8)
+            }
         }
         
         currentEtNombre = etNombre
@@ -280,8 +347,9 @@ class DeudoresActivity : AppCompatActivity() {
 
         val btnImportContact = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
             text = "Cambiar/Importar de Contactos 👥"
+            visibility = if (existingDebtor == null) View.VISIBLE else View.GONE
             setOnClickListener {
-                if (androidx.core.content.ContextCompat.checkSelfPermission(this@DeudoresActivity, android.Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                if (ContextCompat.checkSelfPermission(this@DeudoresActivity, android.Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
                     openContactPicker()
                 } else {
                     requestContactsPermissionLauncher.launch(android.Manifest.permission.READ_CONTACTS)
@@ -293,6 +361,7 @@ class DeudoresActivity : AppCompatActivity() {
         layout.addView(etNombre)
         layout.addView(etTelefono)
         layout.addView(etMonto)
+        layout.addView(btnFechaCobro)
         builder.setView(layout)
 
         builder.setPositiveButton("Guardar") { _, _ ->
@@ -302,16 +371,24 @@ class DeudoresActivity : AppCompatActivity() {
             
             if (nombre.isNotBlank()) {
                 lifecycleScope.launch(Dispatchers.IO) {
-                    val debtor = DebtorEntity(nombre = nombre, telefono = telf, deudaTotal = monto, isSynced = false)
+                    val debtor = existingDebtor?.copy(
+                        nombre = nombre,
+                        telefono = telf,
+                        deudaTotal = monto,
+                        fechaCobro = selectedFechaCobro,
+                        isSynced = false,
+                        ultimaActualizacion = System.currentTimeMillis()
+                    ) ?: DebtorEntity(nombre = nombre, telefono = telf, deudaTotal = monto, fechaCobro = selectedFechaCobro, isSynced = false)
+                    
                     database.debtorDao().insertDebtor(debtor)
                     
                     val log = MovementLogEntity(
-                        type = "DEBTOR_ADDED",
-                        title = "Nuevo Deudor",
+                        type = if (existingDebtor == null) "DEBTOR_ADDED" else "DEBTOR_UPDATED",
+                        title = if (existingDebtor == null) "Nuevo Deudor" else "Deudor Editado",
                         description = "Cliente: $nombre",
                         value = "S/ ${String.format(Locale.getDefault(), "%.2f", monto)}",
-                        colorHex = "#3B82F6", // Azul para deudores
-                        iconRes = android.R.drawable.ic_input_add
+                        colorHex = "#3B82F6",
+                        iconRes = if (existingDebtor == null) android.R.drawable.ic_input_add else android.R.drawable.ic_menu_edit
                     )
                     database.movementLogDao().insert(log)
                     
@@ -328,7 +405,7 @@ class DeudoresActivity : AppCompatActivity() {
                 }
             }
         }
-        builder.setNegativeButton("Cancelar") { _, _ -> }
+        builder.setNegativeButton("Cancelar", null)
         val dialog = builder.show()
         dialog.setOnDismissListener {
             currentEtNombre = null
@@ -353,7 +430,7 @@ class DeudoresActivity : AppCompatActivity() {
                 lifecycleScope.launch(Dispatchers.IO) {
                     val nuevoTotal = deudor.deudaTotal - pago
                     val updated = if (nuevoTotal <= 0) {
-                        deudor.copy(isDeleted = true, isSynced = false)
+                        deudor.copy(deudaTotal = 0.0, isDeleted = true, isSynced = false)
                     } else {
                         deudor.copy(deudaTotal = nuevoTotal, isSynced = false)
                     }
@@ -364,7 +441,7 @@ class DeudoresActivity : AppCompatActivity() {
                         title = "Pago de Deuda",
                         description = "Cliente: ${deudor.nombre}",
                         value = "+ S/ ${String.format(Locale.getDefault(), "%.2f", pago)}",
-                        colorHex = "#10B981", // Esmeralda para ingresos
+                        colorHex = "#10B981",
                         iconRes = android.R.drawable.checkbox_on_background
                     )
                     database.movementLogDao().insert(log)
@@ -430,7 +507,7 @@ class DeudoresActivity : AppCompatActivity() {
                         title = "Deuda Aumentada",
                         description = "Cliente: ${deudor.nombre}",
                         value = "- S/ ${String.format(Locale.getDefault(), "%.2f", monto)}",
-                        colorHex = "#F43F5E", // Rosa/Rojo para salidas/deudas
+                        colorHex = "#F43F5E",
                         iconRes = android.R.drawable.ic_input_add
                     )
                     database.movementLogDao().insert(log)
@@ -454,10 +531,20 @@ class DeudoresActivity : AppCompatActivity() {
             return
         }
 
-        val mensaje = "Hola ${deudor.nombre}, te saludo de *Naxor*. 👋 Te escribo para recordarte que tienes un saldo pendiente de *S/ ${String.format("%.2f", deudor.deudaTotal)}*. ¡Muchas gracias! 😊"
+        val bizName = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("business_name", "Naxor") ?: "Naxor"
+        val montoStr = String.format("%.2f", deudor.deudaTotal)
+        
+        val mensaje = if (deudor.fechaCobro > 0) {
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            "Hola *${deudor.nombre}*, te saluda *${bizName}*. 👋 Te escribo para recordarte tu saldo pendiente de *S/ $montoStr*. La fecha programada para el pago es el *${sdf.format(Date(deudor.fechaCobro))}*. ¡Gracias! 😊"
+        } else {
+            "Hola *${deudor.nombre}*, te saluda *${bizName}*. 👋 Te escribo para recordarte que tienes un saldo pendiente de *S/ $montoStr*. ¡Muchas gracias! 😊"
+        }
         
         try {
-            val url = "https://api.whatsapp.com/send?phone=51${deudor.telefono}&text=" + URLEncoder.encode(mensaje, "UTF-8")
+            var cleanNumber = deudor.telefono.replace(" ", "").replace("-", "").replace("+", "")
+            val finalNumber = if (cleanNumber.startsWith("51")) cleanNumber else "51$cleanNumber"
+            val url = "https://api.whatsapp.com/send?phone=$finalNumber&text=" + URLEncoder.encode(mensaje, "UTF-8")
             val intent = Intent(Intent.ACTION_VIEW)
             intent.data = Uri.parse(url)
             startActivity(intent)
@@ -466,10 +553,27 @@ class DeudoresActivity : AppCompatActivity() {
         }
     }
 
+    private fun shareDebtorPdf(deudor: DebtorEntity) {
+        val pdfFile = DebtorPdfGenerator(this).generateDebtorReport(deudor)
+        if (pdfFile != null && pdfFile.exists()) {
+            val uri = FileProvider.getUriForFile(this, "$packageName.provider", pdfFile)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/pdf"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(intent, "Enviar Estado de Cuenta"))
+        } else {
+            Toast.makeText(this, "Error al generar PDF", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     inner class DeudoresAdapter(
         private val onPagar: (DebtorEntity) -> Unit,
         private val onWhatsApp: (DebtorEntity) -> Unit,
-        private val onAumentar: (DebtorEntity) -> Unit
+        private val onAumentar: (DebtorEntity) -> Unit,
+        private val onPdf: (DebtorEntity) -> Unit,
+        private val onEdit: (DebtorEntity) -> Unit
     ) : RecyclerView.Adapter<DeudoresAdapter.ViewHolder>() {
         
         private var list: List<DebtorEntity> = emptyList()
@@ -492,9 +596,26 @@ class DeudoresActivity : AppCompatActivity() {
             holder.binding.tvDeudorTelefono.text = if(d.telefono.isBlank()) "Sin número" else d.telefono
             holder.binding.tvDeudorMonto.text = String.format("S/ %.2f", d.deudaTotal)
             
+            if (d.fechaCobro > 0) {
+                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                holder.binding.tvFechaCobro.text = "Cobrar: ${sdf.format(Date(d.fechaCobro))}"
+                holder.binding.tvFechaCobro.visibility = View.VISIBLE
+                val cal = Calendar.getInstance()
+                cal.set(Calendar.HOUR_OF_DAY, 23)
+                if (d.fechaCobro <= cal.timeInMillis) {
+                    holder.binding.tvFechaCobro.setTextColor(android.graphics.Color.RED)
+                } else {
+                    holder.binding.tvFechaCobro.setTextColor(ContextCompat.getColor(holder.itemView.context, R.color.purple_600))
+                }
+            } else {
+                holder.binding.tvFechaCobro.visibility = View.GONE
+            }
+            
             holder.binding.btnPagarDeuda.setOnClickListener { onPagar(d) }
             holder.binding.btnCobrarWhatsApp.setOnClickListener { onWhatsApp(d) }
             holder.binding.btnAumentarDeuda.setOnClickListener { onAumentar(d) }
+            holder.binding.btnGeneratePdf.setOnClickListener { onPdf(d) }
+            holder.binding.btnEditDebtor.setOnClickListener { onEdit(d) }
         }
 
         override fun getItemCount() = list.size
