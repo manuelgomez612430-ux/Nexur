@@ -7,6 +7,7 @@
     <color name="slate_50">#F8FAFC</color>
     <color name="slate_100">#F1F5F9</color>
     <color name="slate_200">#E2E8F0</color>
+    <color name="slate_300">#CBD5E1</color>
     <color name="slate_400">#94A3B8</color>
     <color name="slate_500">#64748B</color>
     <color name="slate_600">#475569</color>
@@ -20,6 +21,10 @@
     <color name="red_700">#B91C1C</color>
     <color name="indigo_500">#6366F1</color>
     <color name="purple_600">#7C3AED</color>
+    <color name="purple_700">#6D28D9</color>
+    <color name="purple_800">#5B21B6</color>
+    <color name="green_600">#16A34A</color>
+    <color name="orange_600">#EA580C</color>
 
     <!-- Emerald Palette -->
     <color name="emerald_50">#ECFDF5</color>

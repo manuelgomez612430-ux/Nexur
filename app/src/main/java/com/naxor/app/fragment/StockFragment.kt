@@ -87,6 +87,10 @@ class StockFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
+        val prefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val businessType = prefs.getString("business_type", "PRODUCTS") ?: "PRODUCTS"
+        adapter.setBusinessType(businessType)
+
         setupSyncIndicator()
         setupRecyclerView()
         setupListeners()

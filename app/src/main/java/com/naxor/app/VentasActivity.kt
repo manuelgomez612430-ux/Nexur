@@ -1,5 +1,6 @@
 package com.naxor.app
 
+import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.media.ToneGenerator
@@ -248,12 +249,15 @@ class VentasActivity : AppCompatActivity() {
     }
 
     private fun addToCart(product: ProductEntity) {
+        val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val businessType = prefs.getString("business_type", "PRODUCTS")
+
         // Buscar si ya está en el carrito para calcular la cantidad total solicitada
         val existingIndex = cartItems.indexOfFirst { it.productId == product.id }
         val currentQtyInCart = if (existingIndex != -1) cartItems[existingIndex].cantidad else 0
         val requestedQty = currentQtyInCart + 1
 
-        if (requestedQty > product.stock) {
+        if (businessType == "PRODUCTS" && requestedQty > product.stock) {
             // Advertencia de falta de stock
             AlertDialog.Builder(this)
                 .setTitle("Stock Insuficiente")

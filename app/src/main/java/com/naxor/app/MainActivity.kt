@@ -1,5 +1,6 @@
 package com.naxor.app
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -91,6 +92,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        updateMenuForBusinessType()
         hideBottomNavIndicator()
         setupCustomBottomNav()
         setupGlobalGesture()
@@ -103,6 +105,36 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState == null) {
             navigateToInicio()
             checkTutorial()
+        }
+    }
+
+    private fun updateMenuForBusinessType() {
+        val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val businessType = prefs.getString("business_type", "PRODUCTS")
+        
+        // --- 1. Bottom Navigation ---
+        val menu = binding.bottomNavigation.menu
+        val stockItem = menu.findItem(R.id.nav_stock)
+        
+        stockItem?.let { item ->
+            if (businessType == "SERVICES" || businessType == "HOTEL") {
+                item.title = if (businessType == "HOTEL") "Habitaciones" else "Servicios"
+                item.setIcon(android.R.drawable.ic_menu_agenda)
+                
+                // --- 2. Side Drawer ---
+                binding.navigationViewMain.menu.clear()
+                if (businessType == "HOTEL") {
+                    binding.navigationViewMain.inflateMenu(R.menu.menu_hotel_drawer)
+                } else {
+                    binding.navigationViewMain.inflateMenu(R.menu.menu_main_drawer)
+                }
+            } else {
+                item.title = "Inventario"
+                item.setIcon(android.R.drawable.ic_menu_save)
+                
+                binding.navigationViewMain.menu.clear()
+                binding.navigationViewMain.inflateMenu(R.menu.menu_main_drawer)
+            }
         }
     }
 
@@ -270,6 +302,10 @@ class MainActivity : AppCompatActivity() {
         return super.dispatchTouchEvent(ev)
     }
 
+    fun openSideMenu() {
+        binding.drawerLayoutMain.openDrawer(GravityCompat.START)
+    }
+
     private fun openAnyDrawer() {
         val currentFrag = supportFragmentManager.findFragmentById(R.id.mainFragmentContainer)
         
@@ -314,10 +350,22 @@ class MainActivity : AppCompatActivity() {
         if (target != null) {
             transaction.show(target)
         } else {
+            val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+            val businessType = prefs.getString("business_type", "PRODUCTS")
+            
             val newFrag = when(tag) {
-                "HOME" -> com.naxor.app.fragment.HomeFragment()
-                "STOCK" -> com.naxor.app.fragment.StockFragment()
-                "METRICAS" -> com.naxor.app.fragment.MetricasFragment()
+                "HOME" -> {
+                    if (businessType == "HOTEL") com.naxor.app.fragment.HotelHomeFragment()
+                    else com.naxor.app.fragment.HomeFragment()
+                }
+                "STOCK" -> {
+                    if (businessType == "HOTEL") com.naxor.app.fragment.HotelRoomsFragment()
+                    else com.naxor.app.fragment.StockFragment()
+                }
+                "METRICAS" -> {
+                    if (businessType == "HOTEL") com.naxor.app.fragment.HotelCalendarFragment()
+                    else com.naxor.app.fragment.MetricasFragment()
+                }
                 "SETTINGS" -> com.naxor.app.fragment.SettingsFragment()
                 else -> com.naxor.app.fragment.HomeFragment()
             }
@@ -399,6 +447,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        updateMenuForBusinessType()
         SyncManager(this).scheduleOfflineSync()
     }
 
@@ -406,6 +455,16 @@ class MainActivity : AppCompatActivity() {
         binding.navigationViewMain.setNavigationItemSelectedListener { menuItem ->
             binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
             when (menuItem.itemId) {
+                // Hotel Specific
+                R.id.menu_hotel_guests -> { startToolActivity(Intent(this, CustomersActivity::class.java)); true }
+                R.id.menu_hotel_bookings -> { navigateToMetricas(); true }
+                R.id.menu_hotel_payments -> { startToolActivity(Intent(this, BusinessDebtsActivity::class.java)); true }
+                R.id.menu_hotel_rooms_graph -> { navigateToStock(); true }
+                R.id.menu_hotel_maintenance -> { Toast.makeText(this, "Control de Fallas", Toast.LENGTH_SHORT).show(); true }
+                R.id.menu_hotel_tools -> { Toast.makeText(this, "Inventario de Herramientas", Toast.LENGTH_SHORT).show(); true }
+                R.id.menu_hotel_guide -> { Toast.makeText(this, "Guía de la Ciudad", Toast.LENGTH_SHORT).show(); true }
+                
+                // General
                 R.id.menu_gastos -> { checkPinAndNavigate { startToolActivity(Intent(this, GastosActivity::class.java)) }; true }
                 R.id.menu_caja -> { startToolActivity(Intent(this, CajaActivity::class.java)); true }
                 R.id.menu_fiados -> { startToolActivity(Intent(this, DeudoresActivity::class.java)); true }

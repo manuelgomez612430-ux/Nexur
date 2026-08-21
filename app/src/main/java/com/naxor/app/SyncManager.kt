@@ -188,6 +188,7 @@ class SyncManager(private val context: Context) {
             "business_address" to prefs.getString("business_address", ""),
             "business_phone" to prefs.getString("business_phone", ""),
             "business_ruc" to prefs.getString("business_ruc", ""),
+            "business_type" to prefs.getString("business_type", "PRODUCTS"),
             "currency_symbol" to prefs.getString("currency_symbol", "S/"),
             "user_pin" to prefs.getString("user_pin", "")
         )
@@ -229,6 +230,7 @@ class SyncManager(private val context: Context) {
                 editor.putString("business_address", doc.getString("business_address"))
                 editor.putString("business_phone", doc.getString("business_phone"))
                 editor.putString("business_ruc", doc.getString("business_ruc"))
+                editor.putString("business_type", doc.getString("business_type") ?: "PRODUCTS")
                 editor.putString("currency_symbol", doc.getString("currency_symbol"))
                 editor.putString("user_pin", doc.getString("user_pin"))
                 

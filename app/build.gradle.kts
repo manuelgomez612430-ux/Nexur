@@ -21,23 +21,22 @@ android {
         applicationId = "com.naxor.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2 // Sube esto cada vez que envíes una actualización
-        versionName = "1.1" // Nombre visual de la versión
+        versionCode = 4 // Sube esto cada vez que envíes una actualización
+        versionName = "1.3" // Nombre visual de la versión
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
     }
 
     signingConfigs {
-        val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "asistente_comercial.jks"
+        val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "naxor.jks"
         val keystoreFile = file(keystorePath)
-        if (keystoreFile.exists()) {
-            create("release") {
-                storeFile = keystoreFile
-                storePassword = project.findProperty("MYAPP_RELEASE_STORE_PASSWORD")?.toString()
-                keyAlias = project.findProperty("MYAPP_RELEASE_KEY_ALIAS")?.toString()
-                keyPassword = project.findProperty("MYAPP_RELEASE_KEY_PASSWORD")?.toString()
-            }
+        
+        create("release") {
+            storeFile = keystoreFile
+            storePassword = project.findProperty("MYAPP_RELEASE_STORE_PASSWORD")?.toString()
+            keyAlias = project.findProperty("MYAPP_RELEASE_KEY_ALIAS")?.toString()
+            keyPassword = project.findProperty("MYAPP_RELEASE_KEY_PASSWORD")?.toString()
         }
     }
 

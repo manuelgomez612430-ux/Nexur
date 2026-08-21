@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="Gestión de Huéspedes">
+        <menu>
+            <item
+                android:id="@+id/menu_hotel_guests"
+                android:icon="@android:drawable/ic_menu_my_calendar"
+                android:title="👤 Control de Clientes / Extranjeros" />
+            <item
+                android:id="@+id/menu_hotel_bookings"
+                android:icon="@android:drawable/ic_menu_today"
+                android:title="📅 Control de Reservas" />
+            <item
+                android:id="@+id/menu_hotel_payments"
+                android:icon="@android:drawable/ic_menu_save"
+                android:title="💸 Compromisos de Pago" />
+        </menu>
+    </item>
+
+    <item android:title="Infraestructura y Ciudad">
+        <menu>
+            <item
+                android:id="@+id/menu_hotel_rooms_graph"
+                android:icon="@android:drawable/ic_menu_sort_by_size"
+                android:title="🏨 Disponibilidad Gráfica" />
+            <item
+                android:id="@+id/menu_hotel_maintenance"
+                android:icon="@android:drawable/ic_menu_manage"
+                android:title="🛠️ Fallas y Mantenimiento" />
+            <item
+                android:id="@+id/menu_hotel_tools"
+                android:icon="@android:drawable/ic_menu_agenda"
+                android:title="🧰 Inventario de Herramientas" />
+            <item
+                android:id="@+id/menu_hotel_guide"
+                android:icon="@android:drawable/ic_menu_directions"
+                android:title="🗺️ Guía Digital de la Ciudad" />
+        </menu>
+    </item>
+
+    <item android:title="Sistema">
+        <menu>
+            <item
+                android:id="@+id/menu_settings"
+                android:icon="@android:drawable/ic_menu_preferences"
+                android:title="Ajustes de mi Negocio" />
+            <item
+                android:id="@+id/menu_logout"
+                android:icon="@android:drawable/ic_menu_close_clear_cancel"
+                android:title="Cerrar Sesión" />
+        </menu>
+    </item>
+</menu>

@@ -26,6 +26,12 @@ class ProductAdapter(
     private val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     private val selectedIds = mutableSetOf<String>()
     private var isMultiSelectMode = false
+    private var businessType: String = "PRODUCTS"
+
+    fun setBusinessType(type: String) {
+        this.businessType = type
+        notifyItemRangeChanged(0, itemCount)
+    }
 
     private val differCallback = object : DiffUtil.ItemCallback<ProductEntity>() {
         override fun areItemsTheSame(oldItem: ProductEntity, newItem: ProductEntity) = oldItem.id == newItem.id
@@ -130,12 +136,19 @@ class ProductAdapter(
             tvProdItemIntegration.text = sdf.format(Date(item.timestamp))
 
             // 4. Stock y Precios
-            tvProdItemStock.text = if (item.stock <= 0) "X" else item.stock.toString()
-            updateStockColor(tvProdItemStock, item.stock)
+            if (businessType == "SERVICES") {
+                tvProdItemStock.visibility = View.GONE
+                tvProdItemPrecioCosto.visibility = View.GONE
+            } else {
+                tvProdItemStock.visibility = View.VISIBLE
+                tvProdItemPrecioCosto.visibility = View.VISIBLE
+                tvProdItemStock.text = if (item.stock <= 0) "X" else item.stock.toString()
+                updateStockColor(tvProdItemStock, item.stock)
+                val costU = if (item.stock > 0) item.precioCosto / item.stock else 0.0
+                tvProdItemPrecioCosto.text = "C: S/ ${String.format(Locale.US, "%.2f", costU)}"
+            }
 
             tvProdItemPrecioVenta.text = "S/ ${String.format(Locale.US, "%.2f", item.precioVenta)}"
-            val costU = if (item.stock > 0) item.precioCosto / item.stock else 0.0
-            tvProdItemPrecioCosto.text = "C: S/ ${String.format(Locale.US, "%.2f", costU)}"
 
             // --- INTERACCIONES ---
             cbProdSelected.visibility = if (isMultiSelectMode) View.VISIBLE else View.GONE

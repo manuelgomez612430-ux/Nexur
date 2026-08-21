@@ -1,5 +1,6 @@
 package com.naxor.app
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -39,8 +40,7 @@ class LoginActivity : AppCompatActivity() {
         
         // Verificar si ya hay una sesión activa
         if (auth.currentUser != null) {
-            startActivity(Intent(this, MainActivity::class.java))
-            finish()
+            checkBusinessConfigAndStart()
             return
         }
 
@@ -102,6 +102,18 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
+    private fun checkBusinessConfigAndStart() {
+        val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val businessType = prefs.getString("business_type", null)
+        
+        if (businessType == null) {
+            startActivity(Intent(this, BusinessSelectionActivity::class.java))
+        } else {
+            startActivity(Intent(this, MainActivity::class.java))
+        }
+        finish()
+    }
+
     private fun login(e: String, p: String) {
         val loading = AlertDialog.Builder(this)
             .setMessage("Sincronizando con la nube...")
@@ -113,8 +125,7 @@ class LoginActivity : AppCompatActivity() {
                 // Descargar datos antes de entrar
                 SyncManager(this).downloadEverythingFromCloud {
                     loading.dismiss()
-                    startActivity(Intent(this, MainActivity::class.java))
-                    finish()
+                    checkBusinessConfigAndStart()
                 }
             } else {
                 loading.dismiss()
@@ -140,8 +151,7 @@ class LoginActivity : AppCompatActivity() {
                 SyncManager(this).uploadAllLocalToCloud {
                     loading.dismiss()
                     Toast.makeText(this, "¡Cuenta creada y sincronizada!", Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this, MainActivity::class.java))
-                    finish()
+                    checkBusinessConfigAndStart()
                 }
             } else {
                 loading.dismiss()
@@ -190,8 +200,7 @@ class LoginActivity : AppCompatActivity() {
 
                 SyncManager(this).downloadEverythingFromCloud {
                     loading.dismiss()
-                    startActivity(Intent(this, MainActivity::class.java))
-                    finish()
+                    checkBusinessConfigAndStart()
                 }
             } else {
                 loading.dismiss()

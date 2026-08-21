@@ -1,6 +1,7 @@
 package com.naxor.app
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -47,6 +48,54 @@ class SettingsActivity : AppCompatActivity() {
         binding.etSecurityPin.setText(prefs.getString("user_pin", ""))
         binding.etApiToken.setText(prefs.getString("api_token", ""))
 
+        val businessType = prefs.getString("business_type", "PRODUCTS")
+        when(businessType) {
+            "PRODUCTS" -> {
+                binding.toggleBusinessType.check(R.id.btnTypeProducts)
+                binding.layoutHotelOption.visibility = android.view.View.GONE
+            }
+            "SERVICES", "HOTEL" -> {
+                binding.toggleBusinessType.check(R.id.btnTypeServices)
+                binding.layoutHotelOption.visibility = android.view.View.VISIBLE
+                if (businessType == "HOTEL") {
+                    // Podríamos cambiar el color del botón para indicar selección
+                    binding.btnSelectHotel.setBackgroundColor(getColor(R.color.purple_600))
+                    binding.btnSelectHotel.setTextColor(getColor(R.color.white))
+                    binding.btnSelectHotel.iconTint = android.content.res.ColorStateList.valueOf(getColor(R.color.white))
+                }
+            }
+        }
+
+        binding.toggleBusinessType.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                if (checkedId == R.id.btnTypeServices) {
+                    binding.layoutHotelOption.visibility = android.view.View.VISIBLE
+                } else {
+                    binding.layoutHotelOption.visibility = android.view.View.GONE
+                    // Resetear selección de hotel al cambiar a Productos
+                    binding.btnSelectHotel.setTag(R.id.btnSelectHotel, null)
+                    binding.btnSelectHotel.setBackgroundColor(getColor(android.R.color.transparent))
+                    binding.btnSelectHotel.setTextColor(getColor(R.color.slate_900))
+                    binding.btnSelectHotel.iconTint = android.content.res.ColorStateList.valueOf(getColor(R.color.purple_600))
+                }
+                binding.btnChangeSystem.visibility = android.view.View.VISIBLE
+            }
+        }
+
+        binding.btnSelectHotel.setOnClickListener {
+            // Al seleccionar hotelería, marcamos internamente para el guardado
+            binding.btnSelectHotel.setTag(R.id.btnSelectHotel, "SELECTED")
+            binding.btnSelectHotel.setBackgroundColor(getColor(R.color.purple_600))
+            binding.btnSelectHotel.setTextColor(getColor(R.color.white))
+            binding.btnSelectHotel.iconTint = android.content.res.ColorStateList.valueOf(getColor(R.color.white))
+            binding.btnChangeSystem.visibility = android.view.View.VISIBLE
+            Toast.makeText(this, "Rubro Hotelero Seleccionado", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.btnChangeSystem.setOnClickListener {
+            saveSettings()
+        }
+
         val logoPath = prefs.getString("business_logo_local", null)
         if (!logoPath.isNullOrEmpty()) {
             val file = File(logoPath)
@@ -66,9 +115,24 @@ class SettingsActivity : AppCompatActivity() {
         val currency = binding.etCurrencySymbol.text.toString().trim()
         val pin = binding.etSecurityPin.text.toString().trim()
         val token = binding.etApiToken.text.toString().trim()
+        
+        val isHotelSelected = binding.btnSelectHotel.getTag(R.id.btnSelectHotel) == "SELECTED"
+        
+        // Validación: Si elige Servicios, debe elegir una especialidad
+        if (binding.toggleBusinessType.checkedButtonId == R.id.btnTypeServices && !isHotelSelected) {
+            Toast.makeText(this, "⚠️ Debes seleccionar una especialidad (ej: Hotelería)", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val newType = when {
+            binding.toggleBusinessType.checkedButtonId == R.id.btnTypeProducts -> "PRODUCTS"
+            isHotelSelected && binding.toggleBusinessType.checkedButtonId == R.id.btnTypeServices -> "HOTEL"
+            else -> "SERVICES"
+        }
 
         if (name.isNotEmpty() && currency.isNotEmpty()) {
             val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+            val oldType = prefs.getString("business_type", "PRODUCTS")
             
             // Guardar imagen localmente si se seleccionó una nueva
             var localPath = prefs.getString("business_logo_local", null)
@@ -84,14 +148,22 @@ class SettingsActivity : AppCompatActivity() {
                 putString("currency_symbol", currency)
                 putString("user_pin", pin)
                 putString("api_token", token)
+                putString("business_type", newType)
                 putString("business_logo_local", localPath)
                 apply()
             }
             
-            // Sincronizar con la nube (Incluyendo intento de subida de imagen)
+            // Sincronizar con la nube
             SyncManager(this).syncBusinessSettingsToCloud()
             
-            Toast.makeText(this, "Ajustes guardados correctamente", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Ajustes guardados", Toast.LENGTH_SHORT).show()
+
+            if (oldType != newType) {
+                // Reiniciar App para aplicar cambios de interfaz radicalmente
+                val intent = Intent(this, MainActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                startActivity(intent)
+            }
             finish()
         } else {
             Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()

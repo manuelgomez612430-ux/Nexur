@@ -56,6 +56,7 @@ class HomeFragment : Fragment() {
             .into(homeBinding.ivLogoHome)
 
         loadActivityFilters()
+        updateUIForBusinessType()
         setupListeners()
         setupRealtimeActivityFeed()
         setupQuickActionsRecyclerView()
@@ -114,6 +115,17 @@ class HomeFragment : Fragment() {
         val saved = prefs.getString("activity_filters_v2", "TODOS") ?: "TODOS"
         activityFilters = saved.split(",").filter { it.isNotEmpty() }.toMutableSet()
         if (activityFilters.isEmpty()) activityFilters.add("TODOS")
+    }
+
+    private fun updateUIForBusinessType() {
+        val prefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val businessType = prefs.getString("business_type", "PRODUCTS")
+        
+        if (businessType == "SERVICES") {
+            homeBinding.tvRealizarVentaText.text = "REGISTRAR SERVICIO"
+        } else {
+            homeBinding.tvRealizarVentaText.text = "REALIZAR VENTA"
+        }
     }
 
     private fun setupListeners() {
