@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/slate_100">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarPdf"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        app:layout_constraintTop_toTopOf="parent">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarPdf"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Vista Previa PDF"
+            app:navigationIcon="@android:drawable/ic_menu_close_clear_cancel" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvPdfPages"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:padding="16dp"
+        android:clipToPadding="false"
+        app:layout_constraintTop_toBottomOf="@id/appBarPdf"
+        app:layout_constraintBottom_toTopOf="@id/cardSendActions" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardSendActions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="0dp"
+        app:cardElevation="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:background="@color/white">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSendWhatsApp"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:text="ENVIAR POR WHATSAPP"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:icon="@android:drawable/ic_menu_send"
+                app:iconGravity="textStart"
+                app:cornerRadius="16dp"
+                app:backgroundTint="@color/emerald_600" />
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

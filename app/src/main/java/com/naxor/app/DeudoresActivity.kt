@@ -556,13 +556,12 @@ class DeudoresActivity : AppCompatActivity() {
     private fun shareDebtorPdf(deudor: DebtorEntity) {
         val pdfFile = DebtorPdfGenerator(this).generateDebtorReport(deudor)
         if (pdfFile != null && pdfFile.exists()) {
-            val uri = FileProvider.getUriForFile(this, "$packageName.provider", pdfFile)
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "application/pdf"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            val intent = Intent(this, PdfViewerActivity::class.java).apply {
+                putExtra("PDF_PATH", pdfFile.absolutePath)
+                putExtra("GUEST_PHONE", deudor.telefono)
+                putExtra("GUEST_NAME", deudor.nombre)
             }
-            startActivity(Intent.createChooser(intent, "Enviar Estado de Cuenta"))
+            startActivity(intent)
         } else {
             Toast.makeText(this, "Error al generar PDF", Toast.LENGTH_SHORT).show()
         }
