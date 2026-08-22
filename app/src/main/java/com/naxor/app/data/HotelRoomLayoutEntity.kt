@@ -8,7 +8,8 @@ import java.util.UUID
 data class HotelRoomLayoutEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val roomId: String? = null, // ID de la habitación vinculada, null si es solo pared
-    val type: String, // ROOM, WALL
+    val floorId: Int = 1, // Piso al que pertenece
+    val type: String, // ROOM, WALL, DOOR
     var x: Float,
     var y: Float,
     var width: Float,

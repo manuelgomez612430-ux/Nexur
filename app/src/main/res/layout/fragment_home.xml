@@ -1,0 +1,528 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface">
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineLeftRoot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.06" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineRightRoot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.94" />
+
+    <!-- CONTENIDO PRINCIPAL CON SCROLL -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollMainContent"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/layoutVentaActions">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layoutMainContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- FONDO DE CABECERA PREMIUM INTEGRADO -->
+            <View
+                android:id="@+id/topHeaderBackground"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:background="#6B21A8"
+                app:layout_constraintBottom_toBottomOf="@id/cardDashboard"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <!-- GUÍAS PORCENTUALES -->
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guidelineLeft"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.06" />
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guidelineRight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.94" />
+
+            <!-- HEADER -->
+            <LinearLayout
+                android:id="@+id/headerTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                app:layout_constraintStart_toStartOf="@id/guidelineLeft"
+                app:layout_constraintEnd_toEndOf="@id/guidelineRight"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardLogoHome"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="4dp"
+                    app:strokeWidth="0dp">
+
+                    <ImageView
+                        android:id="@+id/ivLogoHome"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:padding="8dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/logo_naxor_icon" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Naxor le da la bienvenida a la gestión inteligente de"
+                        android:textSize="10sp"
+                        android:textColor="@color/white"
+                        android:alpha="0.8"
+                        android:maxLines="2" />
+
+                    <TextView
+                        android:id="@+id/tvMainBusinessName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Mi Negocio"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        app:autoSizeTextType="uniform"
+                        app:autoSizeMinTextSize="14sp"
+                        app:autoSizeMaxTextSize="18sp"
+                        android:maxLines="1"
+                        android:textColor="@color/white" />
+                </LinearLayout>
+
+                <FrameLayout
+                    android:id="@+id/btnMailboxHome"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless">
+
+                    <ImageView
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:layout_gravity="center"
+                        android:src="@android:drawable/ic_dialog_email"
+                        app:tint="@color/white" />
+
+                    <View
+                        android:id="@+id/viewMailboxBadge"
+                        android:layout_width="10dp"
+                        android:layout_height="10dp"
+                        android:layout_gravity="top|end"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/badge_dot"
+                        android:visibility="gone" />
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- DASHBOARD -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardDashboard"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                app:cardBackgroundColor="@color/purple_600"
+                app:cardElevation="8dp"
+                app:shapeAppearance="@style/ShapeAppearance.App.Card.TopRounded"
+                app:strokeWidth="1.5dp"
+                app:strokeColor="#80C026D3"
+                app:layout_constraintStart_toStartOf="@id/guidelineLeft"
+                app:layout_constraintEnd_toEndOf="@id/guidelineRight"
+                app:layout_constraintTop_toBottomOf="@id/headerTitle">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="65dp"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <!-- VENTAS -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="Venta total"
+                                android:textColor="@color/white"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvVentasHoyMain"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:text="S/ 0.00"
+                                android:textColor="@color/white"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                app:autoSizeMaxTextSize="16sp"
+                                app:autoSizeMinTextSize="10sp"
+                                app:autoSizeTextType="uniform" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="32dp"
+                            android:layout_gravity="center_vertical"
+                            android:alpha="0.1"
+                            android:background="@color/white" />
+
+                        <!-- UTILIDAD -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="Utilidad"
+                                android:textColor="@color/white"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvUtilidadHoyMain"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:text="S/ 0.00"
+                                android:textColor="@color/white"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                app:autoSizeMaxTextSize="16sp"
+                                app:autoSizeMinTextSize="10sp"
+                                app:autoSizeTextType="uniform" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="32dp"
+                            android:layout_gravity="center_vertical"
+                            android:alpha="0.1"
+                            android:background="@color/white" />
+
+                        <!-- GASTOS -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="Gasto total"
+                                android:textColor="@color/white"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvGastosHoyMain"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:text="- S/ 0.00"
+                                android:textColor="#FF8A80"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                app:autoSizeMaxTextSize="16sp"
+                                app:autoSizeMinTextSize="10sp"
+                                app:autoSizeTextType="uniform" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <ImageButton
+                        android:id="@+id/btnInfoDashboard"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="top|end"
+                        android:layout_marginTop="3dp"
+                        android:layout_marginEnd="3dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@android:drawable/ic_dialog_info"
+                        android:scaleType="fitCenter"
+                        android:padding="4dp"
+                        app:tint="@color/white"
+                        android:alpha="0.3" />
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SECCIÓN DIVIDIDA -->
+
+            <!-- ESPACIO EXTRA PARA ACCESIBILIDAD -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/layoutMainBody"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                app:layout_constraintEnd_toEndOf="@id/guidelineRight"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cardDashboard">
+
+                <!-- COLUMNA IZQUIERDA: HERRAMIENTAS -->
+                <LinearLayout
+                    android:id="@+id/headerTools"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    app:layout_constraintEnd_toStartOf="@+id/headerActivity"
+                    app:layout_constraintHorizontal_weight="1.2"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:letterSpacing="0.1"
+                        android:text="HERRAMIENTAS"
+                        android:textColor="@color/purple_600"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/containerQuickActionsWrapper"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:layout_marginEnd="16dp"
+                    app:layout_constraintBottom_toBottomOf="@+id/cardActivityPreview"
+                    app:layout_constraintEnd_toEndOf="@+id/headerTools"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/headerTools">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/containerQuickActions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:overScrollMode="never" />
+                </LinearLayout>
+
+                <!-- COLUMNA DERECHA: ACTIVIDAD -->
+                <LinearLayout
+                    android:id="@+id/headerActivity"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_weight="1.3"
+                    app:layout_constraintStart_toEndOf="@+id/headerTools"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:letterSpacing="0.1"
+                        android:text="ACTIVIDAD RECIENTE"
+                        android:textColor="@color/purple_600"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <ImageButton
+                        android:id="@+id/btnFilterActivityMain"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:alpha="0.8"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Filtrar actividad"
+                        android:padding="6dp"
+                        android:scaleType="fitCenter"
+                        android:src="@android:drawable/ic_menu_sort_by_size"
+                        app:tint="?attr/colorPrimary" />
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardActivityPreview"
+                    android:layout_width="0dp"
+                    android:layout_height="300dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/headerActivity"
+                    app:layout_constraintTop_toBottomOf="@id/headerActivity"
+                    app:strokeColor="?attr/colorOutlineVariant"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/rvRecentActivity"
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:overScrollMode="never" />
+
+                        <TextView
+                            android:id="@+id/tvEmptyRecentActivity"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="20dp"
+                            android:gravity="center"
+                            android:text="Sin actividad"
+                            android:textSize="12sp"
+                            android:alpha="0.5"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/btnViewAllActivity"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:alpha="0.8"
+                            android:gravity="center"
+                            android:text="Ver todo →"
+                            android:textColor="@color/vibrant_purple"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="20dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/layoutMainBody" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/layoutVentaActions"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="@color/purple_600"
+        app:cardElevation="8dp"
+        app:shapeAppearance="@style/ShapeAppearance.App.Card.TopRounded"
+        app:strokeWidth="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@id/guidelineLeftRoot"
+        app:layout_constraintEnd_toEndOf="@id/guidelineRightRoot">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- ÁREA: REALIZAR VENTA -->
+            <LinearLayout
+                android:id="@+id/btnIrVentas"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/ic_menu_add"
+                    app:tint="@android:color/white"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:id="@+id/tvRealizarVentaText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="REALIZAR VENTA"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="30dp"
+                android:background="@android:color/white"
+                android:alpha="0.3" />
+
+            <!-- ÁREA: ESCANEAR -->
+            <FrameLayout
+                android:id="@+id/btnScanVenta"
+                android:layout_width="80dp"
+                android:layout_height="match_parent"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:src="@android:drawable/ic_menu_camera"
+                    app:tint="@android:color/white" />
+            </FrameLayout>
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

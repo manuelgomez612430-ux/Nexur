@@ -85,6 +85,7 @@
         <activity android:name=".BusinessSelectionActivity" android:exported="false" android:theme="@style/Theme.Naxor" />
         <activity android:name=".HotelCheckInActivity" android:exported="false" android:label="Check-in" />
         <activity android:name=".HotelMapEditorActivity" android:exported="false" android:label="Editor de Plano" />
+        <activity android:name=".HotelManageRoomActivity" android:exported="false" android:label="Gestión de Habitación" />
         <activity android:name=".CustomersActivity" android:label="Mis Clientes VIP" />
         <activity android:name=".SalesHistoryActivity" android:label="Historial de Ventas" />
         <activity android:name=".MovementsActivity" android:label="Historial de Movimientos" />

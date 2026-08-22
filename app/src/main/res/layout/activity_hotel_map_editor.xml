@@ -3,238 +3,298 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white">
+    android:background="@color/slate_50">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarEditor"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/white"
-        app:elevation="0dp"
+        app:elevation="4dp"
         app:layout_constraintTop_toTopOf="parent">
-        <com.google.android.material.appbar.MaterialToolbar
+
+        <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbarEditor"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="Editor de Plano"
-            app:titleTextColor="@color/slate_900"
-            app:navigationIcon="@android:drawable/ic_menu_close_clear_cancel" />
+            app:navigationIcon="@android:drawable/ic_menu_close_clear_cancel">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingEnd="16dp">
+
+                <TextView
+                    android:id="@+id/txtToolbarTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Editor - Piso 1"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_900"
+                    android:textSize="15sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPrevFloor"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="48dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    app:icon="@android:drawable/arrow_down_float"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:cornerRadius="12dp"
+                    app:backgroundTint="@color/slate_100"
+                    app:tint="@color/slate_700"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnNextFloor"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="48dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    app:icon="@android:drawable/arrow_up_float"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:cornerRadius="12dp"
+                    app:backgroundTint="@color/slate_100"
+                    app:tint="@color/slate_700"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSave"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Guardar"
+                    android:textSize="12sp"
+                    app:cornerRadius="12dp"
+                    app:backgroundTint="@color/emerald_600"
+                    android:textColor="@color/white"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp" />
+            </LinearLayout>
+        </androidx.appcompat.widget.Toolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <com.naxor.app.util.HotelMapView
-        android:id="@+id/editorMapView"
-        android:layout_width="match_parent"
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardEditorFrame"
+        android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/slate_200"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/appBarEditor"
-        app:layout_constraintBottom_toTopOf="@id/cardTools" />
+        app:layout_constraintBottom_toTopOf="@id/cardTools">
 
+        <com.naxor.app.util.HotelMapView
+            android:id="@+id/editorMapView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Controles de Zoom Corregidos -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardZoomControls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="6dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/slate_200"
+        app:layout_constraintBottom_toTopOf="@id/cardTools"
+        app:layout_constraintEnd_toEndOf="@id/cardEditorFrame">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="4dp"
+            android:animateLayoutChanges="true">
+            <LinearLayout
+                android:id="@+id/layoutZoomActions"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnZoomOut"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="44dp"
+                    android:layout_height="40dp"
+                    android:text="-"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_700"
+                    android:padding="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnZoomIn"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="44dp"
+                    android:layout_height="40dp"
+                    android:text="+"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_700"
+                    android:padding="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp" />
+
+                <View android:layout_width="1dp" android:layout_height="20dp" android:background="@color/slate_200" android:layout_marginHorizontal="4dp" />
+            </LinearLayout>
+            <ImageButton android:id="@+id/btnResetZoom" android:layout_width="36dp" android:layout_height="36dp" android:src="@android:drawable/ic_menu_search" android:background="?attr/selectableItemBackgroundBorderless" app:tint="@color/slate_700" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Botón de Deshacer -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardUndo"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="12dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="6dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/slate_200"
+        app:layout_constraintBottom_toTopOf="@id/cardTools"
+        app:layout_constraintStart_toStartOf="@id/cardEditorFrame">
+        <ImageButton android:id="@+id/btnUndo" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@android:drawable/ic_menu_revert" android:background="?attr/selectableItemBackgroundBorderless" app:tint="@color/slate_700" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- PANEL DE HERRAMIENTAS -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardTools"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardCornerRadius="24dp"
-        app:cardElevation="12dp"
-        android:layout_margin="16dp"
+        app:cardElevation="8dp"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginBottom="12dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="8dp">
+            android:animateLayoutChanges="true">
 
-            <!-- ELEMENT CONTROLS (Thickness/Hollow/MoveAssist) -->
+            <RelativeLayout
+                android:id="@+id/headerTools"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:paddingHorizontal="16dp"
+                android:background="?attr/selectableItemBackground">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:text="Herramientas"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_700"
+                    android:textSize="12sp" />
+                <ImageView
+                    android:id="@+id/imgExpandIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:src="@android:drawable/arrow_down_float"
+                    app:tint="@color/slate_700" />
+            </RelativeLayout>
+
             <LinearLayout
-                android:id="@+id/layoutElementControls"
+                android:id="@+id/expandableContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
+                android:paddingBottom="8dp"
                 android:visibility="gone">
 
                 <LinearLayout
+                    android:id="@+id/layoutElementControls"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="16dp"
+                    android:visibility="gone">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Grosor" android:textSize="11sp" android:textStyle="bold" android:textColor="@color/slate_500" />
+                        <com.google.android.material.slider.Slider android:id="@+id/sliderThickness" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:valueFrom="2.0" android:valueTo="40.0" android:stepSize="2.0" app:labelBehavior="gone" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnToggleHollow" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Relleno" android:textSize="11sp" />
+                    </LinearLayout>
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnMoveAssist" style="@style/Widget.Material3.Button.TonalButton" android:layout_width="match_parent" android:layout_height="36dp" android:layout_marginBottom="8dp" android:text="Asistente de Movimiento" android:textSize="11sp" app:icon="@android:drawable/ic_menu_directions" app:iconSize="14dp" />
+                </LinearLayout>
+
+                <View android:id="@+id/divider" android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/slate_200" android:layout_marginHorizontal="16dp" android:layout_marginBottom="8dp" android:visibility="gone" />
+
+                <GridLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="4"
                     android:paddingHorizontal="8dp">
 
-                    <TextView
-                        android:id="@+id/txtThicknessLabel"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Grosor:"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
+                    <LinearLayout android:id="@+id/btnAddWall" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:gravity="center" android:padding="8dp" android:background="?attr/selectableItemBackground">
+                        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@android:drawable/ic_menu_edit" app:tint="@color/slate_700" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pared" android:textSize="10sp" />
+                    </LinearLayout>
 
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/sliderThickness"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:valueFrom="2.0"
-                        android:valueTo="40.0"
-                        android:stepSize="2.0" />
+                    <LinearLayout android:id="@+id/btnAddRoom" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:gravity="center" android:padding="8dp" android:background="?attr/selectableItemBackground">
+                        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@android:drawable/ic_input_add" app:tint="@color/slate_700" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Cuarto" android:textSize="10sp" />
+                    </LinearLayout>
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnToggleHollow"
-                        style="@style/Widget.Material3.Button.TextButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Relleno"
-                        android:textSize="12sp" />
-                </LinearLayout>
+                    <LinearLayout android:id="@+id/btnFlipSide" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:gravity="center" android:padding="8dp" android:visibility="gone" android:background="?attr/selectableItemBackground">
+                        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@android:drawable/ic_menu_share" android:scaleX="-1" app:tint="@color/sky_600" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Lado L/R" android:textSize="10sp" android:textColor="@color/sky_600"/>
+                    </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnMoveAssist"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="8dp"
-                    android:layout_marginBottom="4dp"
-                    android:text="Mover con precisión (Mantener)"
-                    app:icon="@android:drawable/ic_menu_directions"
-                    android:textSize="12sp"
-                    android:visibility="gone" />
-            </LinearLayout>
+                    <LinearLayout android:id="@+id/btnFlipOpening" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:gravity="center" android:padding="8dp" android:visibility="gone" android:background="?attr/selectableItemBackground">
+                        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@android:drawable/ic_menu_sort_by_size" android:rotation="90" app:tint="@color/sky_600" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Abrir In/Out" android:textSize="10sp" android:textColor="@color/sky_600"/>
+                    </LinearLayout>
 
-            <View
-                android:id="@+id/divider"
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/slate_200"
-                android:layout_marginVertical="4dp"
-                android:visibility="gone" />
+                    <LinearLayout android:id="@+id/btnAddDoor" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:gravity="center" android:padding="8dp" android:background="?attr/selectableItemBackground">
+                        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@android:drawable/ic_menu_revert" app:tint="@color/slate_700" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Puerta" android:textSize="10sp" />
+                    </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="64dp"
-                android:orientation="horizontal"
-                android:gravity="center">
+                    <LinearLayout android:id="@+id/btnRotate" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:gravity="center" android:padding="8dp" android:background="?attr/selectableItemBackground">
+                        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@android:drawable/ic_menu_rotate" app:tint="@color/slate_700" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Rotar" android:textSize="10sp" />
+                    </LinearLayout>
 
-                <LinearLayout
-                    android:id="@+id/btnAddWall"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:background="?attr/selectableItemBackground">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_edit"
-                        app:tint="@color/slate_700" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Pared"
-                        android:textColor="@color/slate_700"
-                        android:textSize="10sp" />
-                </LinearLayout>
+                    <LinearLayout android:id="@+id/btnDuplicate" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:gravity="center" android:padding="8dp" android:background="?attr/selectableItemBackground">
+                        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@android:drawable/ic_menu_add" app:tint="@color/slate_700" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Duplicar" android:textSize="10sp" />
+                    </LinearLayout>
 
-                <LinearLayout
-                    android:id="@+id/btnAddRoom"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:background="?attr/selectableItemBackground">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_input_add"
-                        app:tint="@color/slate_700" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Cuarto"
-                        android:textColor="@color/slate_700"
-                        android:textSize="10sp" />
-                </LinearLayout>
+                    <LinearLayout android:id="@+id/btnDelete" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:gravity="center" android:padding="8dp" android:background="?attr/selectableItemBackground">
+                        <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@android:drawable/ic_menu_delete" app:tint="@color/red_600" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Borrar" android:textColor="@color/red_600" android:textSize="10sp" />
+                    </LinearLayout>
 
-                <LinearLayout
-                    android:id="@+id/btnRotate"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:background="?attr/selectableItemBackground">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_rotate"
-                        app:tint="@color/slate_700" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Rotar"
-                        android:textColor="@color/slate_700"
-                        android:textSize="10sp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/btnAddDoor"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:background="?attr/selectableItemBackground">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_revert"
-                        app:tint="@color/slate_700" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Puerta"
-                        android:textColor="@color/slate_700"
-                        android:textSize="10sp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/btnDelete"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:background="?attr/selectableItemBackground">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_delete"
-                        app:tint="@color/red_600" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Borrar"
-                        android:textColor="@color/red_600"
-                        android:textSize="10sp" />
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSave"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Guardar"
-                    app:cornerRadius="16dp"
-                    app:backgroundTint="@color/emerald_600"
-                    android:layout_marginStart="8dp" />
-
+                </GridLayout>
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

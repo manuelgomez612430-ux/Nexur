@@ -11,6 +11,7 @@ data class HotelBookingEntity(
     val guestName: String,
     val guestDoc: String,
     val guestPhone: String,
+    val guestOrigin: String? = null, // De dónde viene
     val checkInDate: Long,
     val checkOutDate: Long,
     val arrivalTime: String? = null,

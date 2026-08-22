@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface HotelDao {
     // --- ROOMS ---
-    @Query("SELECT * FROM hotel_rooms WHERE isDeleted = 0")
+    @Query("SELECT * FROM hotel_rooms WHERE isDeleted = 0 ORDER BY floor ASC, CAST(number AS INTEGER) ASC, number ASC")
     fun getAllRooms(): Flow<List<HotelRoomEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -37,9 +37,34 @@ interface HotelDao {
     @Query("SELECT * FROM hotel_bookings WHERE checkInDate >= :startOfDay AND checkInDate <= :endOfDay")
     fun getArrivalsForDay(startOfDay: Long, endOfDay: Long): Flow<List<HotelBookingEntity>>
 
+    // --- CHARGES & PAYMENTS ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCharge(charge: HotelChargeEntity)
+
+    @Query("SELECT * FROM hotel_charges WHERE bookingId = :bookingId AND isDeleted = 0")
+    fun getChargesForBooking(bookingId: String): Flow<List<HotelChargeEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPayment(payment: HotelPaymentEntity)
+
+    @Query("SELECT * FROM hotel_payments WHERE bookingId = :bookingId AND isDeleted = 0")
+    fun getPaymentsForBooking(bookingId: String): Flow<List<HotelPaymentEntity>>
+
+    @Query("SELECT SUM(amount) FROM hotel_charges WHERE bookingId = :bookingId AND isDeleted = 0")
+    suspend fun getTotalCharges(bookingId: String): Double?
+
+    @Query("SELECT SUM(amount) FROM hotel_payments WHERE bookingId = :bookingId AND isDeleted = 0")
+    suspend fun getTotalPayments(bookingId: String): Double?
+
     // --- LAYOUTS ---
     @Query("SELECT * FROM hotel_room_layouts WHERE isDeleted = 0")
     fun getAllLayouts(): Flow<List<HotelRoomLayoutEntity>>
+
+    @Query("SELECT * FROM hotel_room_layouts WHERE isDeleted = 0 AND floorId = :floorId")
+    fun getLayoutsByFloor(floorId: Int): Flow<List<HotelRoomLayoutEntity>>
+
+    @Query("SELECT DISTINCT floorId FROM hotel_room_layouts WHERE isDeleted = 0 ORDER BY floorId ASC")
+    fun getAvailableFloors(): Flow<List<Int>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLayout(layout: HotelRoomLayoutEntity)

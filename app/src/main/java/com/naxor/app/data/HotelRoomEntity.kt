@@ -8,6 +8,7 @@ import java.util.UUID
 data class HotelRoomEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val number: String,
+    val floor: Int = 1, // Nuevo campo para separar por pisos
     val type: String, // SIMPLE, DOUBLE, MATRIMONIAL, SUITE
     var status: String = "FREE", // FREE, OCCUPIED, DIRTY, MAINTENANCE
     val baseRate: Double,

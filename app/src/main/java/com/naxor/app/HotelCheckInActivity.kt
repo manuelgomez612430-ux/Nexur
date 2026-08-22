@@ -38,6 +38,8 @@ class HotelCheckInActivity : AppCompatActivity() {
     private fun performCheckIn() {
         val name = binding.etGuestName.text.toString().trim()
         val doc = binding.etGuestDoc.text.toString().trim()
+        val phone = binding.etGuestPhone.text.toString().trim()
+        val origin = binding.etGuestOrigin.text.toString().trim()
         val days = binding.etStayDays.text.toString().toIntOrNull() ?: 1
         val deposit = binding.etDeposit.text.toString().toDoubleOrNull() ?: 0.0
 
@@ -55,7 +57,8 @@ class HotelCheckInActivity : AppCompatActivity() {
             roomId = roomId!!,
             guestName = name,
             guestDoc = doc,
-            guestPhone = "",
+            guestPhone = phone,
+            guestOrigin = origin,
             checkInDate = checkIn,
             checkOutDate = checkOut,
             totalAmount = baseRate * days,

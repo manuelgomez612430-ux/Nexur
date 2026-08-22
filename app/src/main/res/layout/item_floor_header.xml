@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="24dp"
+    android:paddingTop="20dp"
+    android:paddingBottom="8dp"
+    android:background="@color/slate_50">
+
+    <TextView
+        android:id="@+id/tvFloorHeader"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Piso 1"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@color/slate_900"
+        android:textAllCaps="true" />
+</LinearLayout>
