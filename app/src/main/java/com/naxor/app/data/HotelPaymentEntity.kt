@@ -9,6 +9,7 @@ data class HotelPaymentEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val bookingId: String,
     val amount: Double,
+    val nightsPaid: Int = 0, // Cuántas noches cubre este pago
     val timestamp: Long = System.currentTimeMillis(),
     var isSynced: Boolean = false,
     var isDeleted: Boolean = false

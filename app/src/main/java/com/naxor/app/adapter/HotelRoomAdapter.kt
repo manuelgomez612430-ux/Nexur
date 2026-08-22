@@ -50,9 +50,24 @@ class HotelRoomAdapter(
         } else if (holder is RoomViewHolder && item is RoomListItem.Room) {
             val room = item.entity
             with(holder.binding) {
+                // Lógica de Limpieza Diaria (Medianoche)
+                val cal = java.util.Calendar.getInstance()
+                cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                cal.set(java.util.Calendar.MINUTE, 0)
+                cal.set(java.util.Calendar.SECOND, 0)
+                cal.set(java.util.Calendar.MILLISECOND, 0)
+                val startOfToday = cal.timeInMillis
+                
+                val needsCleaning = room.lastCleaned < startOfToday
+
                 tvRoomNumber.text = "Habitación ${room.number}"
                 tvRoomType.text = room.type
                 tvRoomPrice.text = "S/ ${String.format(Locale.US, "%.2f", room.baseRate)}"
+
+                // Badge de Limpieza para Ocupadas
+                if (room.status == "OCCUPIED" && needsCleaning) {
+                    tvRoomNumber.text = "Hab. ${room.number} (⚠️ Limpieza)"
+                }
 
                 val iconRes = when(room.type.uppercase()) {
                     "SIMPLE" -> android.R.drawable.ic_menu_directions
@@ -83,10 +98,12 @@ class HotelRoomAdapter(
                         btnRoomAction.text = "Limpiar"
                     }
                     "MAINTENANCE" -> {
-                        chipRoomStatus.text = "MANTENIM."
-                        chipRoomStatus.setChipBackgroundColorResource(R.color.slate_400)
+                        chipRoomStatus.text = "LIMPIEZA"
+                        chipRoomStatus.setChipBackgroundColorResource(R.color.vibrant_purple)
                         chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
-                        btnRoomAction.text = "Habilitar"
+                        btnRoomAction.text = "Mantenimiento"
+                        btnRoomAction.setBackgroundColor(root.context.getColor(R.color.vibrant_purple))
+                        btnRoomAction.setTextColor(root.context.getColor(R.color.white))
                     }
                 }
                 btnRoomAction.setOnClickListener { onAction(room) }

@@ -185,6 +185,20 @@ class HotelRoomsFragment : Fragment() {
                 _binding?.let { b ->
                     allRooms = rooms
                     
+                    // Lógica de Medianoche: Auto-marcar como Mantenimiento si es nuevo día
+                    val cal = java.util.Calendar.getInstance()
+                    cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                    cal.set(java.util.Calendar.MINUTE, 0)
+                    cal.set(java.util.Calendar.SECOND, 0)
+                    cal.set(java.util.Calendar.MILLISECOND, 0)
+                    val startOfToday = cal.timeInMillis
+                    
+                    rooms.filter { it.status == "FREE" && it.lastCleaned < startOfToday }.forEach { room ->
+                        lifecycleScope.launch {
+                            database.hotelDao().updateRoomStatus(room.id, "MAINTENANCE")
+                        }
+                    }
+
                     // Agrupar habitaciones por piso para la lista
                     val groupedList = mutableListOf<com.naxor.app.adapter.RoomListItem>()
                     rooms.groupBy { it.floor }.toSortedMap().forEach { (floor, roomsInFloor) ->
@@ -306,19 +320,25 @@ class HotelRoomsFragment : Fragment() {
         }
 
         val options = when(room.status) {
-            "FREE" -> arrayOf("Check-in", "Mantenimiento", "Eliminar")
-            "DIRTY" -> arrayOf("Marcar Limpia", "Mantenimiento")
+            "FREE" -> arrayOf("Check-in", "Solicitar Limpieza (Manual)", "Eliminar")
+            "DIRTY" -> arrayOf("Limpieza Realizada", "Eliminar")
+            "MAINTENANCE" -> arrayOf("Check-in (Habilitar)", "Limpieza Realizada", "Eliminar")
             else -> arrayOf("Habilitar", "Eliminar")
         }
         AlertDialog.Builder(requireContext()).setTitle("Habitación ${room.number}").setItems(options) { _, w ->
             lifecycleScope.launch {
                 when (options[w]) {
-                    "Check-in" -> {
+                    "Check-in", "Check-in (Habilitar)" -> {
                         val i = Intent(requireContext(), com.naxor.app.HotelCheckInActivity::class.java)
                         i.putExtra("ROOM_ID", room.id); i.putExtra("ROOM_NUMBER", room.number); i.putExtra("BASE_RATE", room.baseRate)
                         startActivity(i)
                     }
-                    "Marcar Limpia", "Habilitar" -> database.hotelDao().updateRoomStatus(room.id, "FREE")
+                    "Solicitar Limpieza (Manual)" -> {
+                        database.hotelDao().updateRoom(room.copy(status = "MAINTENANCE", lastCleaned = 0L))
+                    }
+                    "Limpieza Realizada", "Habilitar" -> {
+                        database.hotelDao().updateRoom(room.copy(status = "FREE", lastCleaned = System.currentTimeMillis()))
+                    }
                     "Mantenimiento" -> database.hotelDao().updateRoomStatus(room.id, "MAINTENANCE")
                     "Eliminar" -> {
                         AlertDialog.Builder(requireContext())

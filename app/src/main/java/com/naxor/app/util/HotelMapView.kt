@@ -166,7 +166,12 @@ class HotelMapView @JvmOverloads constructor(
                 "ROOM" -> {
                     if (onlyStructure) {
                         val status = roomStatuses[element.roomId] ?: "FREE"
-                        roomPaint.color = Color.parseColor(when(status) { "OCCUPIED" -> "#DC2626"; "DIRTY" -> "#EA580C"; "MAINTENANCE" -> "#94A3B8"; else -> "#16A34A" })
+                        roomPaint.color = Color.parseColor(when(status) {
+                            "OCCUPIED" -> "#DC2626"
+                            "DIRTY" -> "#EA580C"
+                            "MAINTENANCE" -> "#9333EA" // Nuevo Morado
+                            else -> "#16A34A"
+                        })
                         canvas.drawRect(element.x, element.y, element.x + element.width, element.y + element.height, roomPaint)
                     }
                     if (onlyText) {

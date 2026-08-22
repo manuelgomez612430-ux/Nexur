@@ -12,10 +12,12 @@ data class HotelBookingEntity(
     val guestDoc: String,
     val guestPhone: String,
     val guestOrigin: String? = null, // De dónde viene
+    val guestNationality: String = "NACIONAL", // NATIONAL o FOREIGNER
     val checkInDate: Long,
     val checkOutDate: Long,
     val arrivalTime: String? = null,
     val deposit: Double = 0.0,
+    val initialNightsPaid: Int = 0, // Noches pagadas al momento del check-in
     val totalAmount: Double,
     var status: String = "CONFIRMED", // CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED
     val notes: String? = null,

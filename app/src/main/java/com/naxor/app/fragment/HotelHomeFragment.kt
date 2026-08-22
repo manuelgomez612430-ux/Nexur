@@ -45,7 +45,7 @@ class HotelHomeFragment : Fragment() {
 
     private fun setupListeners() {
         binding.cardRoomsMap.setOnClickListener { (activity as? MainActivity)?.navigateToStock() }
-        binding.toolGuests.setOnClickListener { startToolActivity(Intent(requireContext(), com.naxor.app.CustomersActivity::class.java)) }
+        binding.toolGuests.setOnClickListener { startToolActivity(Intent(requireContext(), com.naxor.app.HotelGuestHistoryActivity::class.java)) }
         binding.toolBookings.setOnClickListener { (activity as? MainActivity)?.navigateToMetricas() }
         binding.toolPayments.setOnClickListener { startToolActivity(Intent(requireContext(), com.naxor.app.BusinessDebtsActivity::class.java)) }
         

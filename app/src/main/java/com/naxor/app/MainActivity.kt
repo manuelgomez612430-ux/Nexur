@@ -456,7 +456,7 @@ class MainActivity : AppCompatActivity() {
             binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
             when (menuItem.itemId) {
                 // Hotel Specific
-                R.id.menu_hotel_guests -> { startToolActivity(Intent(this, CustomersActivity::class.java)); true }
+                R.id.menu_hotel_guests -> { startToolActivity(Intent(this, HotelGuestHistoryActivity::class.java)); true }
                 R.id.menu_hotel_bookings -> { navigateToMetricas(); true }
                 R.id.menu_hotel_payments -> { startToolActivity(Intent(this, BusinessDebtsActivity::class.java)); true }
                 R.id.menu_hotel_rooms_graph -> { navigateToStock(); true }

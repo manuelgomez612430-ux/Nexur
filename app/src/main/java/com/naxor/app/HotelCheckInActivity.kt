@@ -40,6 +40,7 @@ class HotelCheckInActivity : AppCompatActivity() {
         val doc = binding.etGuestDoc.text.toString().trim()
         val phone = binding.etGuestPhone.text.toString().trim()
         val origin = binding.etGuestOrigin.text.toString().trim()
+        val nationality = if (binding.toggleNationality.checkedButtonId == R.id.btnForeigner) "FOREIGNER" else "NATIONAL"
         val days = binding.etStayDays.text.toString().toIntOrNull() ?: 1
         val deposit = binding.etDeposit.text.toString().toDoubleOrNull() ?: 0.0
 
@@ -53,14 +54,18 @@ class HotelCheckInActivity : AppCompatActivity() {
         cal.add(Calendar.DAY_OF_YEAR, days)
         val checkOut = cal.timeInMillis
 
+        val initialNightsPaid = if (binding.cbPayInitialNights.isChecked) days else 0
+
         val booking = HotelBookingEntity(
             roomId = roomId!!,
             guestName = name,
             guestDoc = doc,
             guestPhone = phone,
             guestOrigin = origin,
+            guestNationality = nationality,
             checkInDate = checkIn,
             checkOutDate = checkOut,
+            initialNightsPaid = initialNightsPaid,
             totalAmount = baseRate * days,
             deposit = deposit,
             status = "CHECKED_IN"
