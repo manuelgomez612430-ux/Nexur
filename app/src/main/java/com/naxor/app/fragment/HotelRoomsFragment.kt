@@ -28,7 +28,9 @@ import com.naxor.app.adapter.HotelRoomAdapter
 import com.naxor.app.databinding.FragmentHotelRoomsBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 class HotelRoomsFragment : Fragment() {
 
@@ -80,8 +82,11 @@ class HotelRoomsFragment : Fragment() {
         
         binding.mapView.isEditMode = false 
         binding.mapView.onRoomClicked = { roomId ->
-            val room = allRooms.find { it.id == roomId }
-            room?.let { showRoomActionDialog(it) }
+            viewLifecycleOwner.lifecycleScope.launch {
+                val room = database.hotelDao().getRoomById(roomId)
+                val reports = database.hotelDao().getPendingMaintenanceForRoom(roomId).first()
+                room?.let { showRoomActionDialog(it, reports.isNotEmpty()) }
+            }
         }
     }
 
@@ -103,12 +108,6 @@ class HotelRoomsFragment : Fragment() {
     private fun setupToolbar() {
         binding.toolbarRooms.setNavigationIcon(android.R.drawable.ic_menu_sort_by_size)
         binding.toolbarRooms.setNavigationOnClickListener { (activity as? MainActivity)?.openSideMenu() }
-    }
-
-    private fun setupRecyclerView() {
-        adapter = HotelRoomAdapter { room -> showRoomActionDialog(room) }
-        binding.rvRooms.layoutManager = LinearLayoutManager(requireContext())
-        binding.rvRooms.adapter = adapter
     }
 
     private fun observeLayouts() {
@@ -184,10 +183,11 @@ class HotelRoomsFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             combine(
                 database.hotelDao().getAllRooms(),
-                database.hotelDao().getAllMaintenanceReports()
-            ) { rooms, maintenance ->
-                Pair(rooms, maintenance)
-            }.collectLatest { (rooms, maintenance) ->
+                database.hotelDao().getAllMaintenanceReports(),
+                database.hotelDao().getAllBookings()
+            ) { rooms, maintenance, bookings ->
+                Triple(rooms, maintenance, bookings)
+            }.collectLatest { (rooms, maintenance, bookings) ->
                 _binding?.let { b ->
                     allRooms = rooms
                     
@@ -204,16 +204,18 @@ class HotelRoomsFragment : Fragment() {
                         }
                     }
 
-                    // Preparar lista con flags de mantenimiento
+                    // Preparar mapas de estado
                     val pendingMaintMap = maintenance.filter { it.status == "PENDING" }.groupBy { it.roomId }
+                    val reservationsMap = bookings.filter { it.status == "CONFIRMED" }.groupBy { it.roomId }
 
                     val groupedList = mutableListOf<com.naxor.app.adapter.RoomListType>()
                     rooms.groupBy { it.floor }.toSortedMap().forEach { (floor, roomsInFloor) ->
                         groupedList.add(com.naxor.app.adapter.RoomListType.Header(floor))
                         roomsInFloor.forEach { room ->
                             val hasFailure = pendingMaintMap.containsKey(room.id)
+                            val hasRes = reservationsMap.containsKey(room.id)
                             groupedList.add(com.naxor.app.adapter.RoomListType.Room(
-                                com.naxor.app.adapter.RoomListItem(room, hasFailure)
+                                com.naxor.app.adapter.RoomListItem(room, hasFailure, hasRes)
                             ))
                         }
                     }
@@ -224,8 +226,9 @@ class HotelRoomsFragment : Fragment() {
                     b.mapView.roomStatuses = statusMap
                     b.mapView.roomNames = nameMap
                     
-                    // Pasar habitaciones con fallas al mapa
+                    // Pasar datos extra al mapa
                     b.mapView.roomsWithFailures = pendingMaintMap.keys
+                    b.mapView.roomsReserved = reservationsMap.keys
                     
                     b.mapView.invalidate()
                 }
@@ -326,51 +329,96 @@ class HotelRoomsFragment : Fragment() {
             .show()
     }
 
-    private fun showRoomActionDialog(room: HotelRoomEntity) {
-        if (room.status == "OCCUPIED") {
-            val intent = Intent(requireContext(), com.naxor.app.HotelManageRoomActivity::class.java)
-            intent.putExtra("ROOM_ID", room.id)
-            intent.putExtra("ROOM_NUMBER", room.number)
-            startActivity(intent)
-            return
-        }
-
-        val options = when(room.status) {
-            "FREE" -> arrayOf("Check-in", "Solicitar Limpieza (Manual)", "Eliminar")
-            "DIRTY" -> arrayOf("Limpieza Realizada", "Eliminar")
-            "MAINTENANCE" -> arrayOf("Check-in (Habilitar)", "Limpieza Realizada", "Eliminar")
-            else -> arrayOf("Habilitar", "Eliminar")
-        }
-        AlertDialog.Builder(requireContext()).setTitle("Habitación ${room.number}").setItems(options) { _, w ->
-            lifecycleScope.launch {
-                when (options[w]) {
-                    "Check-in", "Check-in (Habilitar)" -> {
-                        val i = Intent(requireContext(), com.naxor.app.HotelCheckInActivity::class.java)
-                        i.putExtra("ROOM_ID", room.id); i.putExtra("ROOM_NUMBER", room.number); i.putExtra("BASE_RATE", room.baseRate)
-                        startActivity(i)
-                    }
-                    "Solicitar Limpieza (Manual)" -> {
-                        database.hotelDao().updateRoom(room.copy(status = "MAINTENANCE", lastCleaned = 0L))
-                    }
-                    "Limpieza Realizada", "Habilitar" -> {
-                        database.hotelDao().updateRoom(room.copy(status = "FREE", lastCleaned = System.currentTimeMillis()))
-                    }
-                    "Mantenimiento" -> database.hotelDao().updateRoomStatus(room.id, "MAINTENANCE")
-                    "Eliminar" -> {
-                        AlertDialog.Builder(requireContext())
-                            .setTitle("¿Eliminar Habitación?")
-                            .setMessage("Esta acción ocultará la habitación de la lista y el mapa.")
-                            .setPositiveButton("Eliminar") { _, _ ->
-                                lifecycleScope.launch {
-                                    database.hotelDao().updateRoom(room.copy(isDeleted = true))
-                                }
-                            }
-                            .setNegativeButton("Cancelar", null)
-                            .show()
+    private fun setupRecyclerView() {
+        adapter = HotelRoomAdapter(
+            onAction = { room ->
+                lifecycleScope.launch {
+                    when (room.status) {
+                        "OCCUPIED" -> {
+                            val intent = Intent(requireContext(), com.naxor.app.HotelManageRoomActivity::class.java)
+                            intent.putExtra("ROOM_ID", room.id); intent.putExtra("ROOM_NUMBER", room.number)
+                            startActivity(intent)
+                        }
+                        "FREE", "DIRTY", "MAINTENANCE" -> {
+                            val i = Intent(requireContext(), com.naxor.app.HotelCheckInActivity::class.java)
+                            i.putExtra("ROOM_ID", room.id); i.putExtra("ROOM_NUMBER", room.number); i.putExtra("BASE_RATE", room.baseRate)
+                            startActivity(i)
+                        }
                     }
                 }
-            }
-        }.show()
+            },
+            onSecondAction = { room ->
+                lifecycleScope.launch {
+                    val newStatus = if (room.status == "OCCUPIED") "OCCUPIED" else "FREE"
+                    database.hotelDao().updateRoom(room.copy(status = newStatus, lastCleaned = System.currentTimeMillis()))
+                    Toast.makeText(requireContext(), "Aseo registrado correctamente ✨", Toast.LENGTH_SHORT).show()
+                }
+            },
+            onThirdAction = { room ->
+                lifecycleScope.launch {
+                    val reports = database.hotelDao().getPendingMaintenanceForRoom(room.id).first()
+                    reports.forEach { report -> 
+                        database.hotelDao().updateMaintenanceReport(report.copy(status = "FIXED")) 
+                    }
+                    Toast.makeText(requireContext(), "Reparación completada ✅", Toast.LENGTH_SHORT).show()
+                }
+            },
+            onCardClick = { room, hasFailure -> showRoomActionDialog(room, hasFailure) }
+        )
+        binding.rvRooms.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvRooms.adapter = adapter
+    }
+
+    private fun showRoomActionDialog(room: HotelRoomEntity, hasPendingFailure: Boolean) {
+        val options = mutableListOf<String>()
+        
+        val cal = java.util.Calendar.getInstance()
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 0); cal.set(java.util.Calendar.MINUTE, 0); cal.set(java.util.Calendar.SECOND, 0); cal.set(java.util.Calendar.MILLISECOND, 0)
+        val needsCleaning = room.lastCleaned < cal.timeInMillis
+
+        if (needsCleaning || room.status == "DIRTY" || room.status == "MAINTENANCE") {
+            options.add("Limpieza Realizada")
+        } else {
+            options.add("Solicitar Aseo (Manual)")
+        }
+
+        if (hasPendingFailure) {
+            options.add("Marcar como Reparada ✅")
+        } else {
+            options.add("Reportar Falla 🛠️")
+        }
+
+        options.add("Eliminar Habitación")
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Opciones: Habitación ${room.number}")
+            .setItems(options.toTypedArray()) { _, w ->
+                lifecycleScope.launch {
+                    when (options[w]) {
+                        "Limpieza Realizada" -> {
+                            database.hotelDao().updateRoom(room.copy(status = if(room.status == "OCCUPIED") "OCCUPIED" else "FREE", lastCleaned = System.currentTimeMillis()))
+                        }
+                        "Solicitar Aseo (Manual)" -> {
+                            database.hotelDao().updateRoom(room.copy(lastCleaned = 0L))
+                        }
+                    "Marcar como Reparada ✅" -> {
+                        val reports = database.hotelDao().getPendingMaintenanceForRoom(room.id).first()
+                        reports.forEach { report -> 
+                            database.hotelDao().updateMaintenanceReport(report.copy(status = "FIXED")) 
+                        }
+                        Toast.makeText(requireContext(), "Falla reparada", Toast.LENGTH_SHORT).show()
+                    }
+                    "Reportar Falla 🛠️" -> {
+                        val intent = Intent(requireContext(), com.naxor.app.HotelMaintenanceActivity::class.java)
+                        intent.putExtra("REPORT_ROOM_ID", room.id)
+                        startActivity(intent)
+                    }
+                        "Eliminar Habitación" -> {
+                            AlertDialog.Builder(requireContext()).setTitle("¿Eliminar?").setPositiveButton("Sí") { _,_ -> lifecycleScope.launch { database.hotelDao().updateRoom(room.copy(isDeleted = true)) } }.setNegativeButton("No", null).show()
+                        }
+                    }
+                }
+            }.show()
     }
 
     override fun onDestroyView() { super.onDestroyView(); _binding = null }

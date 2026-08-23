@@ -86,6 +86,7 @@
         <activity android:name=".HotelCheckInActivity" android:exported="false" android:label="Check-in" />
         <activity android:name=".HotelMapEditorActivity" android:exported="false" android:label="Editor de Plano" />
         <activity android:name=".HotelManageRoomActivity" android:exported="false" android:label="Gestión de Habitación" />
+        <activity android:name=".HotelBookingsActivity" android:exported="false" android:label="Reservas" />
         <activity android:name=".HotelGuestHistoryActivity" android:exported="false" android:label="Historial de Huéspedes" />
         <activity android:name=".HotelMaintenanceActivity" android:exported="false" android:label="Fallas y Mantenimiento" />
         <activity android:name=".PdfViewerActivity" android:exported="false" android:label="Vista Previa PDF" />

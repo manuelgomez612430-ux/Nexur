@@ -44,6 +44,8 @@ class HotelManageRoomActivity : AppCompatActivity() {
         loadData()
         setupListeners()
         setupPhoneInteractivity()
+        
+        roomId?.let { updateCleaningButtonUI(it) }
     }
 
     private fun setupPhoneInteractivity() {
@@ -138,16 +140,52 @@ class HotelManageRoomActivity : AppCompatActivity() {
         binding.btnAddCharge.setOnClickListener { showAddChargeDialog() }
         binding.btnRegisterPayment.setOnClickListener { showAddPaymentDialog() }
         binding.btnExtendStay.setOnClickListener { showExtendStayDialog() }
-        binding.btnRequestCleaning.setOnClickListener { markRoomForCleaning() }
+        binding.btnRequestCleaning.setOnClickListener { toggleRoomCleaningStatus() }
         binding.btnCheckOut.setOnClickListener { performCheckOut() }
     }
 
-    private fun markRoomForCleaning() {
+    private fun toggleRoomCleaningStatus() {
         val booking = activeBooking ?: return
         lifecycleScope.launch {
             val room = database.hotelDao().getRoomById(booking.roomId) ?: return@launch
-            database.hotelDao().updateRoom(room.copy(lastCleaned = 0L))
-            Toast.makeText(this@HotelManageRoomActivity, "Solicitud de limpieza registrada", Toast.LENGTH_SHORT).show()
+            
+            val cal = java.util.Calendar.getInstance()
+            cal.set(java.util.Calendar.HOUR_OF_DAY, 0); cal.set(java.util.Calendar.MINUTE, 0); cal.set(java.util.Calendar.SECOND, 0); cal.set(java.util.Calendar.MILLISECOND, 0)
+            val startOfToday = cal.timeInMillis
+            
+            val currentlyNeedsCleaning = room.lastCleaned < startOfToday
+
+            if (currentlyNeedsCleaning) {
+                database.hotelDao().updateRoom(room.copy(lastCleaned = System.currentTimeMillis()))
+                Toast.makeText(this@HotelManageRoomActivity, "Habitación marcada como LIMPIA ✨", Toast.LENGTH_SHORT).show()
+            } else {
+                database.hotelDao().updateRoom(room.copy(lastCleaned = 0L))
+                Toast.makeText(this@HotelManageRoomActivity, "Solicitud de ASEO registrada 🧹", Toast.LENGTH_SHORT).show()
+            }
+            updateCleaningButtonUI(room.id)
+        }
+    }
+
+    private fun updateCleaningButtonUI(roomId: String) {
+        lifecycleScope.launch {
+            val room = database.hotelDao().getRoomById(roomId) ?: return@launch
+            val cal = java.util.Calendar.getInstance()
+            cal.set(java.util.Calendar.HOUR_OF_DAY, 0); cal.set(java.util.Calendar.MINUTE, 0); cal.set(java.util.Calendar.SECOND, 0); cal.set(java.util.Calendar.MILLISECOND, 0)
+            val startOfToday = cal.timeInMillis
+            
+            val needsCleaning = room.lastCleaned < startOfToday
+            
+            if (needsCleaning) {
+                binding.btnRequestCleaning.text = "Limpiar"
+                binding.btnRequestCleaning.setIconResource(android.R.drawable.ic_menu_delete)
+                binding.btnRequestCleaning.setTextColor(getColor(R.color.orange_600))
+                binding.btnRequestCleaning.setIconTintResource(R.color.orange_600)
+            } else {
+                binding.btnRequestCleaning.text = "Limpia"
+                binding.btnRequestCleaning.setIconResource(android.R.drawable.checkbox_on_background)
+                binding.btnRequestCleaning.setTextColor(getColor(R.color.emerald_600))
+                binding.btnRequestCleaning.setIconTintResource(R.color.emerald_600)
+            }
         }
     }
 

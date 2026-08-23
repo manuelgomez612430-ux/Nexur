@@ -107,6 +107,32 @@
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnThirdAction"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Reparado"
+                android:visibility="gone"
+                app:cornerRadius="12dp"
+                android:paddingHorizontal="12dp"
+                android:layout_marginEnd="8dp"
+                app:backgroundTint="@color/slate_100"
+                android:textColor="@color/sky_600" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSecondAction"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Aseado"
+                android:visibility="gone"
+                app:cornerRadius="12dp"
+                android:paddingHorizontal="16dp"
+                android:layout_marginEnd="8dp"
+                app:backgroundTint="@color/orange_50"
+                android:textColor="@color/orange_600" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRoomAction"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="wrap_content"

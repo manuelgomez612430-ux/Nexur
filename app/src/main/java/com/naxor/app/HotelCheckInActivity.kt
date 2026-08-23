@@ -27,6 +27,10 @@ class HotelCheckInActivity : AppCompatActivity() {
         roomNumber = intent.getStringExtra("ROOM_NUMBER")
         baseRate = intent.getDoubleExtra("BASE_RATE", 0.0)
 
+        // Pre-llenar si viene de una reserva
+        intent.getStringExtra("GUEST_NAME")?.let { binding.etGuestName.setText(it) }
+        intent.getStringExtra("GUEST_DOC")?.let { binding.etGuestDoc.setText(it) }
+
         binding.tvRoomInfo.text = "Habitación: $roomNumber"
         binding.toolbarCheckIn.setNavigationOnClickListener { finish() }
 

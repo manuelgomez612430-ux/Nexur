@@ -24,6 +24,7 @@
     <color name="purple_700">#6D28D9</color>
     <color name="purple_800">#5B21B6</color>
     <color name="green_600">#16A34A</color>
+    <color name="orange_50">#FFF7ED</color>
     <color name="orange_600">#EA580C</color>
 
     <!-- Emerald Palette -->
@@ -37,6 +38,7 @@
     <color name="midnight_purple">#0F051D</color>
     <color name="dark_purple_card">#2A1045</color>
     <color name="vibrant_purple">#9333EA</color>
+    <color name="vibrant_purple_light">#F5F3FF</color>
     <color name="naxor_magenta">#C026D3</color>
     <color name="purple_glow">#4C1D95</color>
     <color name="glass_white">#1AFFFFFF</color>

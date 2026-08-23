@@ -1,6 +1,7 @@
 package com.naxor.app.adapter
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -14,6 +15,7 @@ import java.util.Locale
 data class RoomListItem(
     val entity: HotelRoomEntity,
     val hasPendingFailure: Boolean = false,
+    val hasReservation: Boolean = false,
     val failureDescription: String? = null
 )
 
@@ -23,7 +25,10 @@ sealed class RoomListType {
 }
 
 class HotelRoomAdapter(
-    private val onAction: (HotelRoomEntity) -> Unit
+    private val onAction: (HotelRoomEntity) -> Unit,
+    private val onSecondAction: ((HotelRoomEntity) -> Unit)? = null,
+    private val onThirdAction: ((HotelRoomEntity) -> Unit)? = null,
+    private val onCardClick: (HotelRoomEntity, Boolean) -> Unit // Entidad y si tiene falla
 ) : ListAdapter<RoomListType, RecyclerView.ViewHolder>(DiffCallback) {
 
     private companion object {
@@ -62,20 +67,25 @@ class HotelRoomAdapter(
                 val startOfToday = cal.timeInMillis
                 val needsCleaning = room.lastCleaned < startOfToday
 
-                tvRoomNumber.text = "Habitación ${room.number}"
-                tvRoomType.text = room.type
-                tvRoomPrice.text = "S/ ${String.format(Locale.US, "%.2f", room.baseRate)}"
+                // --- Lógica Unificada de Alertas en el Título ---
+                val statusText = StringBuilder("Habitación ${room.number}")
+                var titleColor = root.context.getColor(R.color.slate_900)
 
                 if (roomData.hasPendingFailure) {
-                    tvRoomNumber.text = "Hab. ${room.number} 🛠️ (!)"
-                    tvRoomNumber.setTextColor(root.context.getColor(R.color.orange_600))
-                } else {
-                    tvRoomNumber.setTextColor(root.context.getColor(R.color.slate_900))
+                    // Prioridad Máxima: Falla Técnica (Crítico - Rojo)
+                    statusText.append(" 🛠️ (!)")
+                    titleColor = root.context.getColor(R.color.red_600)
+                } else if (needsCleaning || room.status == "DIRTY" || room.status == "MAINTENANCE") {
+                    // Prioridad 2: Limpieza/Aseo Pendiente (Advertencia - Naranja)
+                    statusText.append(" 🧹 (!)")
+                    titleColor = root.context.getColor(R.color.orange_600)
+                } else if (room.status == "OCCUPIED") {
+                    // Si está ocupada y limpia: Color Verde sin brillitos
+                    titleColor = root.context.getColor(R.color.emerald_600)
                 }
 
-                if (room.status == "OCCUPIED" && needsCleaning) {
-                    tvRoomNumber.append(" (⚠️ Aseo)")
-                }
+                tvRoomNumber.text = statusText.toString()
+                tvRoomNumber.setTextColor(titleColor)
 
                 val iconRes = when(room.type.uppercase()) {
                     "SIMPLE" -> android.R.drawable.ic_menu_directions
@@ -86,30 +96,82 @@ class HotelRoomAdapter(
                 }
                 ivRoomIcon.setImageResource(iconRes)
 
+                // Botón Reparado (🛠️)
+                if (roomData.hasPendingFailure) {
+                    btnThirdAction.text = "Reparado"
+                    btnThirdAction.visibility = View.VISIBLE
+                    btnThirdAction.setOnClickListener { onThirdAction?.invoke(room) }
+                } else {
+                    btnThirdAction.visibility = View.GONE
+                }
+
                 when (room.status) {
                     "FREE" -> {
-                        chipRoomStatus.text = "LIBRE"; chipRoomStatus.setChipBackgroundColorResource(R.color.emerald_50)
-                        chipRoomStatus.setTextColor(root.context.getColor(R.color.emerald_600))
+                        if (roomData.hasReservation) {
+                            chipRoomStatus.text = "RESERVADA"
+                            chipRoomStatus.setChipBackgroundColorResource(R.color.sky_600)
+                            chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
+                        } else {
+                            chipRoomStatus.text = "LIBRE"
+                            chipRoomStatus.setChipBackgroundColorResource(R.color.emerald_50)
+                            chipRoomStatus.setTextColor(root.context.getColor(R.color.emerald_600))
+                        }
                         btnRoomAction.text = "Check-in"
+                        btnRoomAction.setBackgroundColor(root.context.getColor(R.color.emerald_50))
+                        btnRoomAction.setTextColor(root.context.getColor(R.color.emerald_600))
+                        
+                        if (needsCleaning) {
+                            btnSecondAction.text = "Asear"
+                            btnSecondAction.visibility = View.VISIBLE
+                            btnSecondAction.setBackgroundColor(root.context.getColor(R.color.orange_600))
+                            btnSecondAction.setTextColor(root.context.getColor(R.color.white))
+                            btnSecondAction.setOnClickListener { onSecondAction?.invoke(room) }
+                        } else {
+                            btnSecondAction.visibility = View.GONE
+                        }
                     }
                     "OCCUPIED" -> {
                         chipRoomStatus.text = "OCUPADA"; chipRoomStatus.setChipBackgroundColorResource(R.color.red_600)
                         chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
+                        
+                        // Botón Gestionar en MORADO
                         btnRoomAction.text = "Gestionar"
-                    }
-                    "DIRTY" -> {
-                        chipRoomStatus.text = "SUCIA"; chipRoomStatus.setChipBackgroundColorResource(R.color.orange_600)
-                        chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
-                        btnRoomAction.text = "Limpiar"
-                    }
-                    "MAINTENANCE" -> {
-                        chipRoomStatus.text = "LIMPIEZA"; chipRoomStatus.setChipBackgroundColorResource(R.color.vibrant_purple)
-                        chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
-                        btnRoomAction.text = "Mantenimiento"; btnRoomAction.setBackgroundColor(root.context.getColor(R.color.vibrant_purple))
+                        btnRoomAction.setBackgroundColor(root.context.getColor(R.color.vibrant_purple))
                         btnRoomAction.setTextColor(root.context.getColor(R.color.white))
+                        
+                        if (needsCleaning) {
+                            btnSecondAction.text = "Aseado"
+                            btnSecondAction.visibility = View.VISIBLE
+                            btnSecondAction.setBackgroundColor(root.context.getColor(R.color.orange_600))
+                            btnSecondAction.setTextColor(root.context.getColor(R.color.white))
+                            btnSecondAction.setOnClickListener { onSecondAction?.invoke(room) }
+                        } else {
+                            btnSecondAction.visibility = View.GONE
+                        }
+                    }
+                    "DIRTY", "MAINTENANCE" -> {
+                        val statusLabel = if(room.status == "DIRTY") "SUCIA" else "POR ASEAR"
+                        val statusColor = if(room.status == "DIRTY") R.color.orange_600 else R.color.vibrant_purple
+                        
+                        chipRoomStatus.text = statusLabel
+                        chipRoomStatus.setChipBackgroundColorResource(statusColor)
+                        chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
+                        
+                        // Check-in se mantiene visible
+                        btnRoomAction.text = "Check-in"
+                        btnRoomAction.setBackgroundColor(root.context.getColor(R.color.emerald_50))
+                        btnRoomAction.setTextColor(root.context.getColor(R.color.emerald_600))
+
+                        // Botón Aseado al costado en NARANJA
+                        btnSecondAction.text = "Aseado"
+                        btnSecondAction.visibility = View.VISIBLE
+                        btnSecondAction.setBackgroundColor(root.context.getColor(R.color.orange_600))
+                        btnSecondAction.setTextColor(root.context.getColor(R.color.white))
+                        btnSecondAction.setOnClickListener { onSecondAction?.invoke(room) }
                     }
                 }
                 btnRoomAction.setOnClickListener { onAction(room) }
+                root.setOnClickListener { onCardClick(room, roomData.hasPendingFailure) }
             }
         }
     }

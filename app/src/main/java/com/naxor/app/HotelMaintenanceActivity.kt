@@ -37,11 +37,50 @@ class HotelMaintenanceActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.toolbarMaintenance.setNavigationOnClickListener { finish() }
+        setupToolbarMenu()
         
         setupRecyclerView()
         loadData()
         
         binding.fabAddReport.setOnClickListener { showAddReportDialog() }
+
+        // Manejar reporte automático si viene de la lista de habitaciones
+        val autoRoomId = intent.getStringExtra("REPORT_ROOM_ID")
+        if (autoRoomId != null) {
+            lifecycleScope.launch {
+                // Esperar a que se carguen las habitaciones
+                while (allRooms.isEmpty()) { kotlinx.coroutines.delay(100) }
+                val targetRoom = allRooms.find { it.id == autoRoomId }
+                targetRoom?.let { showAddReportDialog(it) }
+            }
+        }
+    }
+
+    private fun setupToolbarMenu() {
+        binding.toolbarMaintenance.inflateMenu(R.menu.menu_hotel_maintenance)
+        binding.toolbarMaintenance.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_delete_all -> {
+                    showDeleteAllConfirmation()
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun showDeleteAllConfirmation() {
+        AlertDialog.Builder(this)
+            .setTitle("¿Borrar todo el historial?")
+            .setMessage("Esta acción eliminará todos los reportes registrados. No se puede deshacer.")
+            .setPositiveButton("Borrar Todo") { _, _ ->
+                lifecycleScope.launch {
+                    database.hotelDao().deleteAllMaintenanceReports()
+                    Toast.makeText(this@HotelMaintenanceActivity, "Historial eliminado", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun setupRecyclerView() {
@@ -82,7 +121,7 @@ class HotelMaintenanceActivity : AppCompatActivity() {
         }
     }
 
-    private fun showAddReportDialog() {
+    private fun showAddReportDialog(preSelectedRoom: HotelRoomEntity? = null) {
         val builder = AlertDialog.Builder(this)
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -92,6 +131,11 @@ class HotelMaintenanceActivity : AppCompatActivity() {
         val spinnerRoom = Spinner(this)
         val roomNumbers = allRooms.map { "Hab. ${it.number}" }.toTypedArray()
         spinnerRoom.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roomNumbers)
+        
+        preSelectedRoom?.let { room ->
+            val index = allRooms.indexOfFirst { it.id == room.id }
+            if (index >= 0) spinnerRoom.setSelection(index)
+        }
 
         val etDesc = EditText(this).apply { hint = "Descripción de la falla o defecto" }
         
@@ -106,13 +150,13 @@ class HotelMaintenanceActivity : AppCompatActivity() {
             visibility = View.GONE
         }
 
-        layout.addView(TextView(this).apply { text = "Selecciona Habitación:" })
+        layout.addView(TextView(this).apply { text = "Habitación:" })
         layout.addView(spinnerRoom)
         layout.addView(etDesc)
         layout.addView(btnPhoto)
         layout.addView(ivPreview)
 
-        builder.setTitle("Reportar Falla")
+        builder.setTitle(if (preSelectedRoom != null) "Reportar Falla: Hab. ${preSelectedRoom.number}" else "Reportar Falla")
             .setView(layout)
             .setPositiveButton("Enviar Reporte") { _, _ ->
                 val selectedRoomIndex = spinnerRoom.selectedItemPosition
@@ -156,7 +200,6 @@ class HotelMaintenanceActivity : AppCompatActivity() {
     ) : RecyclerView.Adapter<MaintenanceAdapter.ViewHolder>() {
 
         private var items = emptyList<HotelMaintenanceEntity>()
-        private val roomsMap = allRooms.associateBy { it.id }
 
         fun submitList(newItems: List<HotelMaintenanceEntity>) {
             items = newItems
@@ -171,6 +214,7 @@ class HotelMaintenanceActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
+            val roomsMap = allRooms.associateBy { it.id }
             val room = roomsMap[item.roomId]
             
             with(holder.binding) {

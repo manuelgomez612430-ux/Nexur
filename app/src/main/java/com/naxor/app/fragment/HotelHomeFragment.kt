@@ -46,11 +46,11 @@ class HotelHomeFragment : Fragment() {
     private fun setupListeners() {
         binding.cardRoomsMap.setOnClickListener { (activity as? MainActivity)?.navigateToStock() }
         binding.toolGuests.setOnClickListener { startToolActivity(Intent(requireContext(), com.naxor.app.HotelGuestHistoryActivity::class.java)) }
-        binding.toolBookings.setOnClickListener { (activity as? MainActivity)?.navigateToMetricas() }
+        binding.toolBookings.setOnClickListener { startToolActivity(Intent(requireContext(), com.naxor.app.HotelBookingsActivity::class.java)) }
         binding.toolPayments.setOnClickListener { startToolActivity(Intent(requireContext(), com.naxor.app.BusinessDebtsActivity::class.java)) }
         
         binding.toolMaintenance.setOnClickListener { 
-            Toast.makeText(requireContext(), "Control de Fallas y Mantenimiento", Toast.LENGTH_SHORT).show()
+            startToolActivity(Intent(requireContext(), com.naxor.app.HotelMaintenanceActivity::class.java))
         }
         binding.toolInventory.setOnClickListener { 
             Toast.makeText(requireContext(), "Inventario de Herramientas", Toast.LENGTH_SHORT).show()

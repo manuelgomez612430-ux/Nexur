@@ -69,6 +69,9 @@ interface HotelDao {
     @Update
     suspend fun updateMaintenanceReport(report: HotelMaintenanceEntity)
 
+    @Query("UPDATE hotel_maintenance SET isDeleted = 1")
+    suspend fun deleteAllMaintenanceReports()
+
     // --- LAYOUTS ---
     @Query("SELECT * FROM hotel_room_layouts WHERE isDeleted = 0")
     fun getAllLayouts(): Flow<List<HotelRoomLayoutEntity>>

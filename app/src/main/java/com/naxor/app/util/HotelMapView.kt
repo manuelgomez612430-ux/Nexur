@@ -95,6 +95,7 @@ class HotelMapView @JvmOverloads constructor(
     var roomStatuses = mapOf<String, String>()
     var roomNames = mapOf<String, String>()
     var roomsWithFailures = setOf<String>() // IDs de habitaciones con fallas pendientes
+    var roomsReserved = setOf<String>() // IDs de habitaciones con reserva confirmada
     var onDuplicateRequested: ((HotelRoomLayoutEntity) -> Unit)? = null
     var onHistorySaveRequested: (() -> Unit)? = null
 
@@ -185,11 +186,14 @@ class HotelMapView @JvmOverloads constructor(
                 "ROOM" -> {
                     if (onlyStructure) {
                         val status = roomStatuses[element.roomId] ?: "FREE"
-                        roomPaint.color = Color.parseColor(when(status) {
-                            "OCCUPIED" -> "#DC2626"
-                            "DIRTY" -> "#EA580C"
-                            "MAINTENANCE" -> "#9333EA" // Nuevo Morado
-                            else -> "#16A34A"
+                        val isReserved = roomsReserved.contains(element.roomId)
+                        
+                        roomPaint.color = Color.parseColor(when {
+                            status == "OCCUPIED" -> "#DC2626"    // Rojo
+                            status == "DIRTY" -> "#EA580C"       // Naranja
+                            status == "MAINTENANCE" -> "#9333EA" // Morado
+                            isReserved -> "#0284C7"              // Azul (Reserva)
+                            else -> "#16A34A"                   // Verde (Libre)
                         })
                         canvas.drawRect(element.x, element.y, element.x + element.width, element.y + element.height, roomPaint)
                     }
