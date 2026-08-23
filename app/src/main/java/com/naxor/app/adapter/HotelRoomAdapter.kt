@@ -11,14 +11,20 @@ import com.naxor.app.databinding.ItemFloorHeaderBinding
 import com.naxor.app.databinding.ItemHotelRoomBinding
 import java.util.Locale
 
-sealed class RoomListItem {
-    data class Header(val floor: Int) : RoomListItem()
-    data class Room(val entity: HotelRoomEntity) : RoomListItem()
+data class RoomListItem(
+    val entity: HotelRoomEntity,
+    val hasPendingFailure: Boolean = false,
+    val failureDescription: String? = null
+)
+
+sealed class RoomListType {
+    data class Header(val floor: Int) : RoomListType()
+    data class Room(val data: RoomListItem) : RoomListType()
 }
 
 class HotelRoomAdapter(
     private val onAction: (HotelRoomEntity) -> Unit
-) : ListAdapter<RoomListItem, RecyclerView.ViewHolder>(DiffCallback) {
+) : ListAdapter<RoomListType, RecyclerView.ViewHolder>(DiffCallback) {
 
     private companion object {
         const val TYPE_HEADER = 0
@@ -30,8 +36,8 @@ class HotelRoomAdapter(
 
     override fun getItemViewType(position: Int): Int {
         return when (getItem(position)) {
-            is RoomListItem.Header -> TYPE_HEADER
-            is RoomListItem.Room -> TYPE_ROOM
+            is RoomListType.Header -> TYPE_HEADER
+            is RoomListType.Room -> TYPE_ROOM
         }
     }
 
@@ -45,28 +51,30 @@ class HotelRoomAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val item = getItem(position)
-        if (holder is HeaderViewHolder && item is RoomListItem.Header) {
+        if (holder is HeaderViewHolder && item is RoomListType.Header) {
             holder.binding.tvFloorHeader.text = "PISO ${item.floor}"
-        } else if (holder is RoomViewHolder && item is RoomListItem.Room) {
-            val room = item.entity
+        } else if (holder is RoomViewHolder && item is RoomListType.Room) {
+            val roomData = item.data
+            val room = roomData.entity
             with(holder.binding) {
-                // Lógica de Limpieza Diaria (Medianoche)
                 val cal = java.util.Calendar.getInstance()
-                cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
-                cal.set(java.util.Calendar.MINUTE, 0)
-                cal.set(java.util.Calendar.SECOND, 0)
-                cal.set(java.util.Calendar.MILLISECOND, 0)
+                cal.set(java.util.Calendar.HOUR_OF_DAY, 0); cal.set(java.util.Calendar.MINUTE, 0); cal.set(java.util.Calendar.SECOND, 0); cal.set(java.util.Calendar.MILLISECOND, 0)
                 val startOfToday = cal.timeInMillis
-                
                 val needsCleaning = room.lastCleaned < startOfToday
 
                 tvRoomNumber.text = "Habitación ${room.number}"
                 tvRoomType.text = room.type
                 tvRoomPrice.text = "S/ ${String.format(Locale.US, "%.2f", room.baseRate)}"
 
-                // Badge de Limpieza para Ocupadas
+                if (roomData.hasPendingFailure) {
+                    tvRoomNumber.text = "Hab. ${room.number} 🛠️ (!)"
+                    tvRoomNumber.setTextColor(root.context.getColor(R.color.orange_600))
+                } else {
+                    tvRoomNumber.setTextColor(root.context.getColor(R.color.slate_900))
+                }
+
                 if (room.status == "OCCUPIED" && needsCleaning) {
-                    tvRoomNumber.text = "Hab. ${room.number} (⚠️ Limpieza)"
+                    tvRoomNumber.append(" (⚠️ Aseo)")
                 }
 
                 val iconRes = when(room.type.uppercase()) {
@@ -80,29 +88,24 @@ class HotelRoomAdapter(
 
                 when (room.status) {
                     "FREE" -> {
-                        chipRoomStatus.text = "LIBRE"
-                        chipRoomStatus.setChipBackgroundColorResource(R.color.emerald_50)
+                        chipRoomStatus.text = "LIBRE"; chipRoomStatus.setChipBackgroundColorResource(R.color.emerald_50)
                         chipRoomStatus.setTextColor(root.context.getColor(R.color.emerald_600))
                         btnRoomAction.text = "Check-in"
                     }
                     "OCCUPIED" -> {
-                        chipRoomStatus.text = "OCUPADA"
-                        chipRoomStatus.setChipBackgroundColorResource(R.color.red_600)
+                        chipRoomStatus.text = "OCUPADA"; chipRoomStatus.setChipBackgroundColorResource(R.color.red_600)
                         chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
                         btnRoomAction.text = "Gestionar"
                     }
                     "DIRTY" -> {
-                        chipRoomStatus.text = "SUCIA"
-                        chipRoomStatus.setChipBackgroundColorResource(R.color.orange_600)
+                        chipRoomStatus.text = "SUCIA"; chipRoomStatus.setChipBackgroundColorResource(R.color.orange_600)
                         chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
                         btnRoomAction.text = "Limpiar"
                     }
                     "MAINTENANCE" -> {
-                        chipRoomStatus.text = "LIMPIEZA"
-                        chipRoomStatus.setChipBackgroundColorResource(R.color.vibrant_purple)
+                        chipRoomStatus.text = "LIMPIEZA"; chipRoomStatus.setChipBackgroundColorResource(R.color.vibrant_purple)
                         chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
-                        btnRoomAction.text = "Mantenimiento"
-                        btnRoomAction.setBackgroundColor(root.context.getColor(R.color.vibrant_purple))
+                        btnRoomAction.text = "Mantenimiento"; btnRoomAction.setBackgroundColor(root.context.getColor(R.color.vibrant_purple))
                         btnRoomAction.setTextColor(root.context.getColor(R.color.white))
                     }
                 }
@@ -111,14 +114,12 @@ class HotelRoomAdapter(
         }
     }
 
-    object DiffCallback : DiffUtil.ItemCallback<RoomListItem>() {
-        override fun areItemsTheSame(oldItem: RoomListItem, newItem: RoomListItem): Boolean {
-            return if (oldItem is RoomListItem.Header && newItem is RoomListItem.Header) {
-                oldItem.floor == newItem.floor
-            } else if (oldItem is RoomListItem.Room && newItem is RoomListItem.Room) {
-                oldItem.entity.id == newItem.entity.id
-            } else false
+    object DiffCallback : DiffUtil.ItemCallback<RoomListType>() {
+        override fun areItemsTheSame(oldItem: RoomListType, newItem: RoomListType): Boolean {
+            return if (oldItem is RoomListType.Header && newItem is RoomListType.Header) oldItem.floor == newItem.floor
+            else if (oldItem is RoomListType.Room && newItem is RoomListType.Room) oldItem.data.entity.id == newItem.data.entity.id
+            else false
         }
-        override fun areContentsTheSame(oldItem: RoomListItem, newItem: RoomListItem) = oldItem == newItem
+        override fun areContentsTheSame(oldItem: RoomListType, newItem: RoomListType) = oldItem == newItem
     }
 }

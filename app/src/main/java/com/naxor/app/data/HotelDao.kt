@@ -56,6 +56,19 @@ interface HotelDao {
     @Query("SELECT SUM(amount) FROM hotel_payments WHERE bookingId = :bookingId AND isDeleted = 0")
     suspend fun getTotalPayments(bookingId: String): Double?
 
+    // --- MAINTENANCE ---
+    @Query("SELECT * FROM hotel_maintenance WHERE isDeleted = 0")
+    fun getAllMaintenanceReports(): Flow<List<HotelMaintenanceEntity>>
+
+    @Query("SELECT * FROM hotel_maintenance WHERE roomId = :roomId AND status = 'PENDING' AND isDeleted = 0")
+    fun getPendingMaintenanceForRoom(roomId: String): Flow<List<HotelMaintenanceEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMaintenanceReport(report: HotelMaintenanceEntity)
+
+    @Update
+    suspend fun updateMaintenanceReport(report: HotelMaintenanceEntity)
+
     // --- LAYOUTS ---
     @Query("SELECT * FROM hotel_room_layouts WHERE isDeleted = 0")
     fun getAllLayouts(): Flow<List<HotelRoomLayoutEntity>>

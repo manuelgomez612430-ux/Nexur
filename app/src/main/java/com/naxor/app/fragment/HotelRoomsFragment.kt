@@ -27,6 +27,7 @@ import com.naxor.app.data.HotelRoomEntity
 import com.naxor.app.adapter.HotelRoomAdapter
 import com.naxor.app.databinding.FragmentHotelRoomsBinding
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 class HotelRoomsFragment : Fragment() {
@@ -181,11 +182,15 @@ class HotelRoomsFragment : Fragment() {
 
     private fun observeRooms() {
         viewLifecycleOwner.lifecycleScope.launch {
-            database.hotelDao().getAllRooms().collectLatest { rooms ->
+            combine(
+                database.hotelDao().getAllRooms(),
+                database.hotelDao().getAllMaintenanceReports()
+            ) { rooms, maintenance ->
+                Pair(rooms, maintenance)
+            }.collectLatest { (rooms, maintenance) ->
                 _binding?.let { b ->
                     allRooms = rooms
                     
-                    // Lógica de Medianoche: Auto-marcar como Mantenimiento si es nuevo día
                     val cal = java.util.Calendar.getInstance()
                     cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
                     cal.set(java.util.Calendar.MINUTE, 0)
@@ -199,11 +204,18 @@ class HotelRoomsFragment : Fragment() {
                         }
                     }
 
-                    // Agrupar habitaciones por piso para la lista
-                    val groupedList = mutableListOf<com.naxor.app.adapter.RoomListItem>()
+                    // Preparar lista con flags de mantenimiento
+                    val pendingMaintMap = maintenance.filter { it.status == "PENDING" }.groupBy { it.roomId }
+
+                    val groupedList = mutableListOf<com.naxor.app.adapter.RoomListType>()
                     rooms.groupBy { it.floor }.toSortedMap().forEach { (floor, roomsInFloor) ->
-                        groupedList.add(com.naxor.app.adapter.RoomListItem.Header(floor))
-                        roomsInFloor.forEach { groupedList.add(com.naxor.app.adapter.RoomListItem.Room(it)) }
+                        groupedList.add(com.naxor.app.adapter.RoomListType.Header(floor))
+                        roomsInFloor.forEach { room ->
+                            val hasFailure = pendingMaintMap.containsKey(room.id)
+                            groupedList.add(com.naxor.app.adapter.RoomListType.Room(
+                                com.naxor.app.adapter.RoomListItem(room, hasFailure)
+                            ))
+                        }
                     }
                     adapter.submitList(groupedList)
                     
@@ -211,6 +223,10 @@ class HotelRoomsFragment : Fragment() {
                     val nameMap = rooms.associate { it.id to it.number }
                     b.mapView.roomStatuses = statusMap
                     b.mapView.roomNames = nameMap
+                    
+                    // Pasar habitaciones con fallas al mapa
+                    b.mapView.roomsWithFailures = pendingMaintMap.keys
+                    
                     b.mapView.invalidate()
                 }
             }

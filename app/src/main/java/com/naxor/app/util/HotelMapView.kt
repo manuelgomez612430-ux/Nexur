@@ -94,6 +94,7 @@ class HotelMapView @JvmOverloads constructor(
 
     var roomStatuses = mapOf<String, String>()
     var roomNames = mapOf<String, String>()
+    var roomsWithFailures = setOf<String>() // IDs de habitaciones con fallas pendientes
     var onDuplicateRequested: ((HotelRoomLayoutEntity) -> Unit)? = null
     var onHistorySaveRequested: (() -> Unit)? = null
 
@@ -127,6 +128,12 @@ class HotelMapView @JvmOverloads constructor(
         drawLayer(canvas, "ROOM", onlyStructure = true)
         drawLayer(canvas, "WALL", onlyStructure = true)
         drawLayer(canvas, "DOOR", onlyStructure = true)
+        
+        // Dibujar iconos de falla sobre habitaciones
+        if (!isEditMode) {
+            drawMaintenanceBadges(canvas)
+        }
+
         drawLayer(canvas, "ROOM", onlyText = true)
 
         if (isEditMode) {
@@ -140,6 +147,18 @@ class HotelMapView @JvmOverloads constructor(
             snapY?.let { canvas.drawLine(-5000f, it, 5000f, it, snapPaint) }
         }
         canvas.restore()
+    }
+
+    private fun drawMaintenanceBadges(canvas: Canvas) {
+        val badgePaint = Paint().apply { color = Color.parseColor("#F59E0B"); style = Paint.Style.FILL } // Ambar
+        val iconPaint = Paint().apply { color = Color.WHITE; textSize = 40f; isFakeBoldText = true; textAlign = Paint.Align.CENTER }
+        
+        layoutElements.filter { it.type == "ROOM" && roomsWithFailures.contains(it.roomId) }.forEach { element ->
+            val cX = element.x + element.width / 2
+            val badgeY = element.y + 35f
+            canvas.drawCircle(cX + element.width/2 - 30f, badgeY, 25f, badgePaint)
+            canvas.drawText("!", cX + element.width/2 - 30f, badgeY + 14f, iconPaint)
+        }
     }
 
     private fun drawGrid(canvas: Canvas) {
