@@ -26,18 +26,20 @@
             <!-- Avatar / Inicial -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardAvatar"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                app:cardCornerRadius="22dp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                app:cardCornerRadius="25dp"
                 app:cardElevation="0dp"
-                app:cardBackgroundColor="?attr/colorSurfaceContainer">
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                app:cardBackgroundColor="#F1F5F9">
+                <TextView
+                    android:id="@+id/tvDeudorInicial"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:src="@android:drawable/ic_menu_my_calendar"
-                    app:tint="?attr/colorPrimary"
-                    android:alpha="0.6" />
+                    android:text="A"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/purple_600" />
             </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
@@ -45,7 +47,7 @@
                 android:layout_height="wrap_content"
                 android:layout_toEndOf="@id/cardAvatar"
                 android:layout_toStartOf="@+id/layoutMontoItem"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="16dp"
                 android:orientation="vertical">
 
                 <TextView
@@ -53,32 +55,38 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Nombre del Cliente"
-                    android:textSize="16sp"
+                    android:textSize="17sp"
                     android:textStyle="bold"
-                    android:textColor="?attr/colorOnSurface" />
+                    android:textColor="@color/slate_900" />
 
                 <TextView
                     android:id="@+id/tvDeudorTelefono"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
                     android:text="999 999 999"
-                    android:textSize="12sp"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:alpha="0.7" />
-            </LinearLayout>
+                    android:textSize="13sp"
+                    android:textColor="@color/slate_500" />
 
-            <ImageButton
-                android:id="@+id/btnEditDebtor"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_toEndOf="@id/cardAvatar"
-                android:layout_alignParentTop="true"
-                android:layout_marginStart="160dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_edit"
-                app:tint="?attr/colorOnSurfaceVariant"
-                android:alpha="0.5"
-                android:contentDescription="Editar" />
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardStatusBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    app:cardElevation="0dp"
+                    app:cardCornerRadius="4dp">
+                    <TextView
+                        android:id="@+id/tvStatusBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="2dp"
+                        android:text="AL DÍA"
+                        android:textSize="9sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/white" />
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
 
             <!-- Monto resaltado -->
             <LinearLayout
@@ -93,53 +101,61 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="S/ 0.00"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
                     android:textStyle="bold"
-                    android:textColor="@color/red_600" />
+                    android:textColor="@color/slate_900" />
                 <TextView
                     android:id="@+id/tvFechaCobro"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Hoy"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorPrimary" />
+                    android:text="Vence: Hoy"
+                    android:textSize="11sp"
+                    android:textColor="@color/slate_400" />
             </LinearLayout>
         </RelativeLayout>
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="?attr/colorOutlineVariant"
-            android:layout_marginHorizontal="16dp"
-            android:alpha="0.5" />
+            android:background="@color/slate_100"
+            android:layout_marginHorizontal="16dp" />
 
         <!-- BARRA DE ACCIONES INFERIOR -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="56dp"
             android:orientation="horizontal"
-            android:paddingHorizontal="8dp"
+            android:paddingHorizontal="12dp"
             android:gravity="center_vertical">
 
             <ImageButton
-                android:id="@+id/btnCobrarWhatsApp"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:id="@+id/btnEditDebtor"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_send"
-                app:tint="#25D366"
-                android:contentDescription="WhatsApp" />
+                android:src="@android:drawable/ic_menu_edit"
+                app:tint="@color/slate_400"
+                android:contentDescription="Editar" />
 
             <ImageButton
                 android:id="@+id/btnGeneratePdf"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="8dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@android:drawable/ic_menu_save"
-                app:tint="?attr/colorOnSurfaceVariant"
-                android:alpha="0.6"
+                app:tint="@color/slate_400"
                 android:contentDescription="PDF" />
+
+            <ImageButton
+                android:id="@+id/btnCobrarWhatsApp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_send"
+                app:tint="@color/green_600"
+                android:contentDescription="WhatsApp" />
 
             <View
                 android:layout_width="0dp"
@@ -148,26 +164,25 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPagarDeuda"
-                style="@style/Widget.Material3.Button.TextButton"
+                style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="PAGAR"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="#059669"
-                app:rippleColor="#10059669" />
+                android:text="Pagar"
+                android:textSize="11sp"
+                android:textColor="@color/green_600"
+                app:icon="@android:drawable/checkbox_on_background"
+                app:iconSize="14dp"
+                app:iconTint="@color/green_600" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAumentarDeuda"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="FIAR (+)"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="?attr/colorPrimary"
-                app:rippleColor="?attr/colorPrimaryContainer" />
+                android:layout_marginStart="4dp"
+                android:text="Fiar (+)"
+                android:textSize="11sp"
+                android:textColor="@color/purple_600" />
         </LinearLayout>
-
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

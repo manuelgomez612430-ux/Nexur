@@ -44,14 +44,16 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfigs.findByName("release")?.let {
-                signingConfig = it
+            
+            val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "naxor.jks"
+            if (file(keystorePath).exists()) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
         debug {
-            // Usar la firma de release solo si está disponible, de lo contrario usará la de debug por defecto
-            signingConfigs.findByName("release")?.let {
-                signingConfig = it
+            val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "naxor.jks"
+            if (file(keystorePath).exists()) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }

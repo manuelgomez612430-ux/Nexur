@@ -168,6 +168,7 @@ class HomeFragment : Fragment() {
         val prefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
         homeBinding.tvMainBusinessName.text = prefs.getString("business_name", "Mi Negocio")
         val currency = prefs.getString("currency_symbol", "S/")
+        val capital = prefs.getFloat("business_capital", 0f)
 
         lifecycleScope.launch {
             try {
@@ -192,6 +193,7 @@ class HomeFragment : Fragment() {
                         homeBinding.tvVentasHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", totalSales)}"
                         homeBinding.tvUtilidadHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", totalProfit)}"
                         homeBinding.tvGastosHoyMain.text = "- $currency ${String.format(Locale.getDefault(), "%.2f", totalExpenses)}"
+                        homeBinding.tvCapitalMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", capital)}"
                     }
                 }
             } catch (e: Exception) {

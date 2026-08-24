@@ -18,6 +18,7 @@ object GeminiHelper {
         gastos: Double,
         deudores: Double,
         deudas: Double,
+        capital: Double,
         periodo: String
     ): String = withContext(Dispatchers.IO) {
         val prompt = """
@@ -25,6 +26,7 @@ object GeminiHelper {
             Analiza los siguientes datos de su negocio para el periodo: $periodo.
             
             DATOS:
+            - Capital Total de Inversión: S/ $capital
             - Ventas Totales: S/ $ventas
             - Utilidad (Ganancia bruta): S/ $utilidad
             - Gastos Operativos: S/ $gastos
@@ -33,10 +35,11 @@ object GeminiHelper {
             
             INSTRUCCIONES:
             Proporciona un análisis MUY breve (máximo 4 párrafos cortos) que incluya:
-            1. Una felicitación o advertencia según la utilidad vs gastos.
-            2. Un dato o idea específica para mejorar las ventas o reducir gastos basado en estos números.
-            3. Una recomendación sobre el balance de deudas vs deudores.
-            4. Un tono motivador y profesional.
+            1. Una evaluación de la rentabilidad basándote en la Utilidad vs el Capital de inversión.
+            2. Una felicitación o advertencia según la utilidad neta (utilidad - gastos).
+            3. Un dato o idea específica para mejorar las ventas o reducir gastos basado en estos números.
+            4. Una recomendación sobre el balance de deudas vs deudores.
+            5. Considera los gastos futuros programados si los hubiera.
             
             Usa emojis sutiles. Sé directo y útil.
         """.trimIndent()

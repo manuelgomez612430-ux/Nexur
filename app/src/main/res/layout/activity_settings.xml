@@ -167,6 +167,21 @@
                             android:maxLength="3" />
                     </com.google.android.material.textfield.TextInputLayout>
 
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Capital Total del Negocio"
+                        app:startIconDrawable="@android:drawable/ic_menu_save"
+                        android:layout_marginBottom="16dp"
+                        app:helperText="Dinero total invertido/disponible">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etBusinessCapital"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

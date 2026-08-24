@@ -25,7 +25,8 @@ import com.naxor.app.databinding.ItemGastoBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.Locale
+import java.text.SimpleDateFormat
+import java.util.*
 
 class GastosActivity : AppCompatActivity() {
 
@@ -237,6 +238,22 @@ class GastosActivity : AppCompatActivity() {
             }
         }
 
+        var selectedScheduledDate = 0L
+        db.switchFutureExpense.setOnCheckedChangeListener { _, isChecked ->
+            db.btnExpenseDate.visibility = if (isChecked) View.VISIBLE else View.GONE
+        }
+        
+        db.btnExpenseDate.setOnClickListener {
+            val cal = Calendar.getInstance()
+            android.app.DatePickerDialog(this, { _, y, m, d ->
+                val sel = Calendar.getInstance()
+                sel.set(y, m, d, 9, 0, 0)
+                selectedScheduledDate = sel.timeInMillis
+                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                db.btnExpenseDate.text = "📅 Pago el: ${sdf.format(Date(selectedScheduledDate))}"
+            }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+        }
+
         db.btnCancelExpense.setOnClickListener { dialog.dismiss() }
         
         db.btnSaveExpense.setOnClickListener {
@@ -246,22 +263,26 @@ class GastosActivity : AppCompatActivity() {
             
             if (concepto.isNotBlank() && monto > 0 && categoria.isNotBlank()) {
                 lifecycleScope.launch(Dispatchers.IO) {
+                    val isPaid = !db.switchFutureExpense.isChecked
                     val newExpense = ExpenseEntity(
                         concepto = concepto,
                         monto = monto,
                         categoria = categoria,
-                        isSynced = false
+                        isSynced = false,
+                        fechaProgramada = selectedScheduledDate,
+                        isPaid = isPaid,
+                        fecha = if (isPaid) System.currentTimeMillis() else selectedScheduledDate
                     )
                     database.expenseDao().insert(newExpense)
 
                     // REGISTRAR EN HISTORIAL
                     val log = MovementLogEntity(
-                        type = "EXPENSE",
-                        title = "Gasto Registrado",
+                        type = if (isPaid) "EXPENSE" else "FUTURE_EXPENSE",
+                        title = if (isPaid) "Gasto Registrado" else "Gasto Programado",
                         description = "${newExpense.categoria}: ${newExpense.concepto}",
                         value = "- S/ ${String.format(Locale.getDefault(), "%.2f", newExpense.monto)}",
-                        colorHex = "#DC2626",
-                        iconRes = android.R.drawable.ic_menu_send
+                        colorHex = if (isPaid) "#DC2626" else "#F59E0B",
+                        iconRes = if (isPaid) android.R.drawable.ic_menu_send else android.R.drawable.ic_menu_my_calendar
                     )
                     database.movementLogDao().insert(log)
                     SyncManager(this@GastosActivity).syncLogToCloud(log)
@@ -317,6 +338,38 @@ class GastosActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun showMarkAsPaidDialog(expense: ExpenseEntity) {
+        AlertDialog.Builder(this)
+            .setTitle("Confirmar Pago")
+            .setMessage("¿Deseas marcar '${expense.concepto}' como PAGADO?")
+            .setPositiveButton("Sí, Pagado") { _, _ ->
+                lifecycleScope.launch(Dispatchers.IO) {
+                    expense.isPaid = true
+                    expense.fecha = System.currentTimeMillis()
+                    expense.isSynced = false
+                    database.expenseDao().update(expense)
+                    
+                    val log = MovementLogEntity(
+                        type = "EXPENSE_PAID",
+                        title = "Gasto Pagado",
+                        description = expense.concepto,
+                        value = "- S/ ${String.format(Locale.getDefault(), "%.2f", expense.monto)}",
+                        colorHex = "#DC2626",
+                        iconRes = android.R.drawable.checkbox_on_background
+                    )
+                    database.movementLogDao().insert(log)
+                    
+                    SyncManager(this@GastosActivity).syncExpenseToCloud(expense)
+                    SyncManager(this@GastosActivity).syncLogToCloud(log)
+                    SyncManager(this@GastosActivity).scheduleOfflineSync()
+                    
+                    withContext(Dispatchers.Main) { loadExpenses() }
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         voiceHelper.destroy()
@@ -337,6 +390,23 @@ class GastosActivity : AppCompatActivity() {
             holder.b.tvGastoConcepto.text = e.concepto
             holder.b.tvGastoCategoria.text = e.categoria
             holder.b.tvGastoMonto.text = String.format(Locale.getDefault(), "- S/ %.2f", e.monto)
+            
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            holder.b.tvGastoFecha.text = sdf.format(Date(e.fecha))
+
+            if (!e.isPaid) {
+                holder.b.cardGastoStatus.visibility = View.VISIBLE
+                holder.b.tvGastoStatus.text = "PENDIENTE"
+                holder.b.tvGastoMonto.setTextColor(Color.parseColor("#EA580C"))
+            } else {
+                holder.b.cardGastoStatus.visibility = View.GONE
+                holder.b.tvGastoMonto.setTextColor(androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.red_600))
+            }
+
+            holder.b.root.setOnClickListener {
+                if (!e.isPaid) showMarkAsPaidDialog(e)
+            }
+
             holder.b.root.setOnLongClickListener {
                 onDelete(e)
                 true

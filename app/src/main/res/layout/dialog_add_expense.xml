@@ -64,7 +64,7 @@
             android:layout_height="wrap_content"
             android:hint="Categoría"
             app:startIconDrawable="@android:drawable/ic_menu_agenda"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="16dp"
             app:endIconMode="custom"
             app:endIconDrawable="@android:drawable/arrow_down_float">
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -76,6 +76,23 @@
                 android:textSize="16sp"
                 android:completionThreshold="1" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchFutureExpense"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Programar pago futuro"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnExpenseDate"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📅 Seleccionar fecha de pago"
+            android:visibility="gone"
+            app:icon="@android:drawable/ic_menu_my_calendar"
+            android:layout_marginBottom="24dp" />
 
         <LinearLayout
             android:layout_width="match_parent"

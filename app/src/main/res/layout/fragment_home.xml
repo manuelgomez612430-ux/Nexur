@@ -280,6 +280,44 @@
                                 app:autoSizeMinTextSize="10sp"
                                 app:autoSizeTextType="uniform" />
                         </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="32dp"
+                            android:layout_gravity="center_vertical"
+                            android:alpha="0.1"
+                            android:background="@color/white" />
+
+                        <!-- CAPITAL -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="Capital"
+                                android:textColor="@color/white"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvCapitalMain"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:text="S/ 0.00"
+                                android:textColor="@color/white"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                app:autoSizeMaxTextSize="16sp"
+                                app:autoSizeMinTextSize="10sp"
+                                app:autoSizeTextType="uniform" />
+                        </LinearLayout>
                     </LinearLayout>
 
                     <ImageButton

@@ -25,7 +25,7 @@
         android:id="@+id/topHeaderBackgroundDeudores"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:background="#6B21A8"
+        android:background="@drawable/bg_header_purple_gradient"
         app:layout_constraintBottom_toBottomOf="@id/cardTotalDeuda"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -63,14 +63,15 @@
                     app:tint="@android:color/white" />
             </com.google.android.material.card.MaterialCardView>
 
-            <ImageButton
-                android:id="@+id/btnSyncIndicator"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_toStartOf="@id/btnHelpDeudores"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/stat_notify_sync"
-                app:tint="@android:color/white" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="CONTROL DE DEUDAS"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1" />
 
             <ImageButton
                 android:id="@+id/btnHelpDeudores"
@@ -81,15 +82,6 @@
                 android:src="@android:drawable/ic_menu_help"
                 app:tint="@android:color/white" />
         </RelativeLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Control de Deudas"
-            android:textColor="@android:color/white"
-            android:textSize="24sp"
-            android:textStyle="bold" />
     </LinearLayout>
 
     <!-- CARD DE RESUMEN (ESTILO DASHBOARD) -->
@@ -98,97 +90,187 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        app:cardBackgroundColor="@color/purple_600"
+        app:cardBackgroundColor="@color/midnight_purple"
         app:cardElevation="8dp"
         app:layout_constraintEnd_toEndOf="@id/guidelineRight"
         app:layout_constraintStart_toStartOf="@id/guidelineLeft"
         app:layout_constraintTop_toBottomOf="@id/headerDeudores"
         app:shapeAppearance="@style/ShapeAppearance.App.Card.TopRounded"
-        app:strokeColor="#80C026D3"
-        app:strokeWidth="1.5dp">
+        app:strokeColor="@color/glass_border"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
             android:orientation="vertical"
             android:padding="20dp">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:alpha="0.7"
-                android:text="TOTAL POR COBRAR"
-                android:textColor="@android:color/white"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.1" />
+                android:orientation="horizontal"
+                android:gravity="bottom">
 
-            <TextView
-                android:id="@+id/tvTotalDeudaGlobal"
-                android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.7"
+                        android:text="TOTAL POR COBRAR"
+                        android:textColor="@android:color/white"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.1" />
+                    <TextView
+                        android:id="@+id/tvTotalDeudaGlobal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="S/ 0.00"
+                        android:textColor="@android:color/white"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="@color/red_700"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="0dp">
+                    <TextView
+                        android:id="@+id/tvMontoVencidoGlobal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="4dp"
+                        android:text="S/ 0.00 Vencido"
+                        android:textColor="@android:color/white"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="16dp"
+                android:background="@color/glass_border" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="S/ 0.00"
-                android:textColor="@android:color/white"
-                android:textSize="28sp"
-                android:textStyle="bold" />
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvCountDeudores"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="0 deudores activos"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:alpha="0.8" />
+
+                <ImageButton
+                    android:id="@+id/btnSyncIndicator"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/stat_notify_sync"
+                    app:tint="@android:color/white"
+                    android:alpha="0.6" />
+            </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- FILTROS Y ACCIONES GRUPALES -->
+    <!-- BARRA DE BÚSQUEDA Y FILTROS -->
     <LinearLayout
-        android:id="@+id/layoutDeudoresFilters"
-        android:layout_width="match_parent"
+        android:id="@+id/layoutSearchDeudores"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="12dp"
-        android:gravity="center_vertical"
+        android:layout_marginTop="16dp"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="@id/guidelineRight"
+        app:layout_constraintStart_toStartOf="@id/guidelineLeft"
         app:layout_constraintTop_toBottomOf="@id/cardTotalDeuda">
 
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/chipGroupDebtorFilters"
-            android:layout_width="0dp"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilSearchDeudor"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            app:singleSelection="true"
-            app:selectionRequired="true">
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipFilterAll"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Todos"
-                android:checked="true" />
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipFilterOverdue"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Vencidos ⚠️" />
-        </com.google.android.material.chip.ChipGroup>
+            android:hint="Buscar cliente..."
+            app:startIconDrawable="@android:drawable/ic_menu_search"
+            app:endIconMode="clear_text"
+            app:boxCornerRadiusTopStart="16dp"
+            app:boxCornerRadiusTopEnd="16dp"
+            app:boxCornerRadiusBottomStart="16dp"
+            app:boxCornerRadiusBottomEnd="16dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnMassReminder"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="wrap_content"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSearchDeudor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPersonName"
+                android:textSize="14sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Recordar a todos"
-            android:textSize="11sp"
-            android:visibility="gone"
-            app:icon="@android:drawable/ic_menu_send"
-            app:iconSize="16dp" />
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupDebtorFilters"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipFilterAll"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Todos"
+                    android:checked="true" />
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipFilterOverdue"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Vencidos" />
+            </com.google.android.material.chip.ChipGroup>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMassReminder"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Avisar a todos"
+                android:textSize="10sp"
+                android:visibility="gone"
+                app:icon="@android:drawable/ic_menu_send"
+                app:iconSize="14dp" />
+        </LinearLayout>
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvDeudores"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginTop="8dp"
         android:clipToPadding="false"
         android:paddingBottom="100dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/layoutDeudoresFilters" />
+        app:layout_constraintTop_toBottomOf="@id/layoutSearchDeudores" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddDeudor"
@@ -212,7 +294,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/layoutDeudoresFilters">
+        app:layout_constraintTop_toBottomOf="@id/layoutSearchDeudores">
 
         <ImageView
             android:layout_width="100dp"

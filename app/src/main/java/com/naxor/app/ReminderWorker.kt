@@ -33,7 +33,14 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
         val pendingBusinessDebts = database.businessDebtDao().getUpcomingPayments(timeLimit)
         if (pendingBusinessDebts.isNotEmpty()) {
             val totalAmount = pendingBusinessDebts.sumOf { it.montoTotal - it.montoPagado }
-            showReminderNotification(pendingBusinessDebts.size, totalAmount, "PAGAR", 2003)
+            showReminderNotification(pendingBusinessDebts.size, totalAmount, "PAGAR_BIZ", 2003)
+        }
+
+        // Consultar gastos programados para hoy
+        val pendingExpenses = database.expenseDao().getPendingExpenses(timeLimit)
+        if (pendingExpenses.isNotEmpty()) {
+            val totalAmount = pendingExpenses.sumOf { it.monto }
+            showReminderNotification(pendingExpenses.size, totalAmount, "PAGAR_GASTO", 2004)
         }
         
         return Result.success()
@@ -48,7 +55,11 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
             notificationManager.createNotificationChannel(channel)
         }
 
-        val activityClass = if (type == "COBRAR") DeudoresActivity::class.java else BusinessDebtsActivity::class.java
+        val activityClass = when(type) {
+            "COBRAR" -> DeudoresActivity::class.java
+            "PAGAR_BIZ" -> BusinessDebtsActivity::class.java
+            else -> GastosActivity::class.java
+        }
         val intent = android.content.Intent(context, activityClass).apply {
             flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
         }

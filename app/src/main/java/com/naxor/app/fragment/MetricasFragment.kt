@@ -336,12 +336,13 @@ class MetricasFragment : Fragment() {
 
     private fun generateAiAnalysis(v: Double, u: Double, g: Double, dr: Double, dp: Double) {
         val range = binding.tvCurrentFilterRange.text.toString().replace("Mostrando: ", "")
+        val capital = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE).getFloat("business_capital", 0f).toDouble()
         
         binding.progressAiAnalysis.visibility = View.VISIBLE
         binding.tvAiAnalysisContent.alpha = 0.5f
 
         lifecycleScope.launch {
-            val analysis = GeminiHelper.getBusinessAnalysis(v, u, g, dr, dp, range)
+            val analysis = GeminiHelper.getBusinessAnalysis(v, u, g, dr, dp, capital, range)
             withContext(Dispatchers.Main) {
                 if (_binding != null) {
                     binding.tvAiAnalysisContent.text = analysis

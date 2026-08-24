@@ -12,5 +12,7 @@ data class ExpenseEntity(
     var fecha: Long = System.currentTimeMillis(),
     val esFijo: Boolean = false,
     var isSynced: Boolean = false,
-    var isDeleted: Boolean = false
+    var isDeleted: Boolean = false,
+    var fechaProgramada: Long = 0L,
+    var isPaid: Boolean = true
 )

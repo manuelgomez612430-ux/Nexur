@@ -34,6 +34,7 @@ class DeudoresActivity : AppCompatActivity() {
     private lateinit var adapter: DeudoresAdapter
     private var allDebtorsList: List<DebtorEntity> = emptyList()
     private var isFilterOverdue = false
+    private var currentSearchQuery = ""
 
     // Temp references for dialog
     private var currentEtNombre: EditText? = null
@@ -226,15 +227,29 @@ class DeudoresActivity : AppCompatActivity() {
         binding.btnMassReminder.setOnClickListener {
             sendMassReminders()
         }
+
+        binding.etSearchDeudor.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                currentSearchQuery = s?.toString()?.lowercase() ?: ""
+                applyFilters()
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
     }
 
     private fun applyFilters() {
-        val filtered = if (isFilterOverdue) {
+        var filtered = allDebtorsList.filter { !it.isDeleted }
+        
+        if (isFilterOverdue) {
             val now = Calendar.getInstance().timeInMillis
-            allDebtorsList.filter { it.fechaCobro in 1..now && !it.isDeleted }
-        } else {
-            allDebtorsList
+            filtered = filtered.filter { it.fechaCobro in 1..now }
         }
+        
+        if (currentSearchQuery.isNotEmpty()) {
+            filtered = filtered.filter { it.nombre.lowercase().contains(currentSearchQuery) }
+        }
+
         adapter.submitList(filtered)
         binding.layoutEmptyDeudores.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
         binding.btnMassReminder.visibility = if (isFilterOverdue && filtered.isNotEmpty()) View.VISIBLE else View.GONE
@@ -294,8 +309,14 @@ class DeudoresActivity : AppCompatActivity() {
             allDebtorsList = list
             applyFilters()
             
-            val total = list.sumOf { it.deudaTotal }
+            val total = list.filter { !it.isDeleted }.sumOf { it.deudaTotal }
+            val now = Calendar.getInstance().timeInMillis
+            val vencido = list.filter { !it.isDeleted && it.fechaCobro in 1..now }.sumOf { it.deudaTotal }
+            val count = list.count { !it.isDeleted }
+
             binding.tvTotalDeudaGlobal.text = String.format(Locale.getDefault(), "S/ %.2f", total)
+            binding.tvMontoVencidoGlobal.text = String.format(Locale.getDefault(), "S/ %.2f Vencido", vencido)
+            binding.tvCountDeudores.text = "$count deudores activos"
         }
     }
 
@@ -554,7 +575,18 @@ class DeudoresActivity : AppCompatActivity() {
     }
 
     private fun shareDebtorPdf(deudor: DebtorEntity) {
-        val pdfFile = DebtorPdfGenerator(this).generateDebtorReport(deudor)
+        val options = arrayOf("Formato Personal (Amistoso)", "Formato Empresarial (Profesional)")
+        AlertDialog.Builder(this)
+            .setTitle("Selecciona el formato del PDF")
+            .setItems(options) { _, which ->
+                val isProfessional = which == 1
+                generateAndShowPdf(deudor, isProfessional)
+            }
+            .show()
+    }
+
+    private fun generateAndShowPdf(deudor: DebtorEntity, isProfessional: Boolean) {
+        val pdfFile = DebtorPdfGenerator(this).generateDebtorReport(deudor, isProfessional)
         if (pdfFile != null && pdfFile.exists()) {
             val intent = Intent(this, PdfViewerActivity::class.java).apply {
                 putExtra("PDF_PATH", pdfFile.absolutePath)
@@ -594,20 +626,36 @@ class DeudoresActivity : AppCompatActivity() {
             holder.binding.tvDeudorNombre.text = d.nombre
             holder.binding.tvDeudorTelefono.text = if(d.telefono.isBlank()) "Sin número" else d.telefono
             holder.binding.tvDeudorMonto.text = String.format("S/ %.2f", d.deudaTotal)
+            holder.binding.tvDeudorInicial.text = if(d.nombre.isNotEmpty()) d.nombre[0].uppercaseChar().toString() else "?"
             
+            // Asignar color dinámico al avatar basado en el nombre
+            val colors = listOf("#FEE2E2", "#FFEDD5", "#FEF9C3", "#DCFCE7", "#DBEAFE", "#EDE9FE", "#FAE8FF")
+            val colorIndex = Math.abs(d.nombre.hashCode()) % colors.size
+            holder.binding.cardAvatar.setCardBackgroundColor(android.graphics.Color.parseColor(colors[colorIndex]))
+            
+            val now = Calendar.getInstance().timeInMillis
+            val isOverdue = d.fechaCobro in 1..now
+            
+            if (isOverdue) {
+                holder.binding.cardStatusBadge.setCardBackgroundColor(android.graphics.Color.parseColor("#EF4444")) // Rojo soft
+                holder.binding.tvStatusBadge.text = "VENCIDO"
+            } else {
+                holder.binding.cardStatusBadge.setCardBackgroundColor(android.graphics.Color.parseColor("#10B981")) // Verde soft
+                holder.binding.tvStatusBadge.text = "AL DÍA"
+            }
+
             if (d.fechaCobro > 0) {
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                holder.binding.tvFechaCobro.text = "Cobrar: ${sdf.format(Date(d.fechaCobro))}"
+                holder.binding.tvFechaCobro.text = "Vence: ${sdf.format(Date(d.fechaCobro))}"
                 holder.binding.tvFechaCobro.visibility = View.VISIBLE
-                val cal = Calendar.getInstance()
-                cal.set(Calendar.HOUR_OF_DAY, 23)
-                if (d.fechaCobro <= cal.timeInMillis) {
+                if (isOverdue) {
                     holder.binding.tvFechaCobro.setTextColor(android.graphics.Color.RED)
                 } else {
-                    holder.binding.tvFechaCobro.setTextColor(ContextCompat.getColor(holder.itemView.context, R.color.purple_600))
+                    holder.binding.tvFechaCobro.setTextColor(ContextCompat.getColor(holder.itemView.context, R.color.slate_400))
                 }
             } else {
                 holder.binding.tvFechaCobro.visibility = View.GONE
+                holder.binding.cardStatusBadge.visibility = View.GONE
             }
             
             holder.binding.btnPagarDeuda.setOnClickListener { onPagar(d) }

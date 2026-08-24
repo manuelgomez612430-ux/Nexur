@@ -45,6 +45,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.etBusinessPhone.setText(prefs.getString("business_phone", ""))
         binding.etBusinessRuc.setText(prefs.getString("business_ruc", ""))
         binding.etCurrencySymbol.setText(prefs.getString("currency_symbol", "S/"))
+        binding.etBusinessCapital.setText(prefs.getFloat("business_capital", 0f).toString())
         binding.etSecurityPin.setText(prefs.getString("user_pin", ""))
         binding.etApiToken.setText(prefs.getString("api_token", ""))
 
@@ -113,6 +114,7 @@ class SettingsActivity : AppCompatActivity() {
         val phone = binding.etBusinessPhone.text.toString().trim()
         val ruc = binding.etBusinessRuc.text.toString().trim()
         val currency = binding.etCurrencySymbol.text.toString().trim()
+        val capital = binding.etBusinessCapital.text.toString().toFloatOrNull() ?: 0f
         val pin = binding.etSecurityPin.text.toString().trim()
         val token = binding.etApiToken.text.toString().trim()
         
@@ -146,6 +148,7 @@ class SettingsActivity : AppCompatActivity() {
                 putString("business_phone", phone)
                 putString("business_ruc", ruc)
                 putString("currency_symbol", currency)
+                putFloat("business_capital", capital)
                 putString("user_pin", pin)
                 putString("api_token", token)
                 putString("business_type", newType)
