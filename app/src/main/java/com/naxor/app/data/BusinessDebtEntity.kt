@@ -14,6 +14,10 @@ data class BusinessDebtEntity(
     var fechaVencimiento: Long = 0L,
     val categoria: String = "VARIOS", // PRESTAMO, MERCADERIA, SERVICIOS
     var isPaid: Boolean = false,
+    var recurrencia: String = "NONE", // NONE, DAILY, MONTHLY
+    var diaRecurrencia: Int = 0, // Para MONTHLY: 1-31
+    var montoCuota: Double = 0.0, // Cuánto se paga en cada fecha
+    var proximoPago: Long = 0L, // Fecha calculada del siguiente cobro
     var timestamp: Long = System.currentTimeMillis(),
     var isSynced: Boolean = false,
     var isDeleted: Boolean = false

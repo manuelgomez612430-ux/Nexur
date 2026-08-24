@@ -19,7 +19,7 @@ interface BusinessDebtDao {
     @Query("SELECT * FROM business_debts WHERE isSynced = 0")
     suspend fun getUnsynced(): List<BusinessDebtEntity>
 
-    @Query("SELECT * FROM business_debts WHERE isDeleted = 0 AND fechaVencimiento > 0 AND fechaVencimiento <= :timeLimit AND isPaid = 0")
+    @Query("SELECT * FROM business_debts WHERE isDeleted = 0 AND isPaid = 0 AND ((fechaVencimiento > 0 AND fechaVencimiento <= :timeLimit) OR (proximoPago > 0 AND proximoPago <= :timeLimit))")
     suspend fun getUpcomingPayments(timeLimit: Long): List<BusinessDebtEntity>
 
     @Query("SELECT SUM(montoTotal - montoPagado) FROM business_debts WHERE isDeleted = 0 AND isPaid = 0")

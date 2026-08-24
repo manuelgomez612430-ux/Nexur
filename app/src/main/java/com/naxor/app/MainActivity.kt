@@ -738,13 +738,13 @@ class MainActivity : AppCompatActivity() {
 
     fun showActionsConfigDialog() {
         val actionNames = arrayOf(
-            "💸 Gastos", "💰 Caja", "👥 Deudores", "🚚 Proveedores", 
+            "💸 Gastos", "💰 Caja", "👥 Deudores", "💸 Mis Cuentas", "🚚 Proveedores", 
             "👤 Clientes", "📖 Catálogo", "🔄 Sincronizar", "📬 Buzón", 
             "🛒 Lista Compras", "⚖️ Asignador Precios", "📜 Historial Ventas", 
             "🕒 Historial Cálculos", "💡 Instrucciones"
         )
         val actionIds = arrayOf(
-            "gastos", "caja", "fiados", "proveedores", 
+            "gastos", "caja", "fiados", "business_debts", "proveedores", 
             "clientes", "catalogo", "sync", "mailbox", 
             "lista_compras", "asignador", "sales_history", 
             "view_history", "instructions"

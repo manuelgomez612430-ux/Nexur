@@ -53,6 +53,16 @@
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:textColor="#F43F5E" />
+
+            <TextView
+                android:id="@+id/tvDebtRecurrenceBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="🔄 Mensual (Día 15)"
+                android:textSize="10sp"
+                android:textColor="@color/purple_600"
+                android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout

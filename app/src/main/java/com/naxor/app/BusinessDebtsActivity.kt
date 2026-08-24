@@ -17,6 +17,7 @@ import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.BusinessDebtEntity
 import com.naxor.app.data.MovementLogEntity
 import com.naxor.app.databinding.ActivityBusinessDebtsBinding
+import com.naxor.app.databinding.DialogAddBusinessDebtBinding
 import com.naxor.app.databinding.ItemBusinessDebtBinding
 import com.naxor.app.util.BusinessDebtPdfGenerator
 import kotlinx.coroutines.Dispatchers
@@ -62,59 +63,74 @@ class BusinessDebtsActivity : AppCompatActivity() {
     }
 
     private fun loadDebts() {
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val currency = prefs.getString("currency_symbol", "S/")
+        
         lifecycleScope.launch(Dispatchers.IO) {
             val debts = database.businessDebtDao().getPendingDebts()
             val total = database.businessDebtDao().getTotalOwed() ?: 0.0
             
             withContext(Dispatchers.Main) {
                 adapter.submitList(debts)
-                binding.tvTotalOwed.text = String.format(Locale.getDefault(), "S/ %.2f", total)
+                binding.tvTotalOwed.text = String.format(Locale.getDefault(), "$currency %.2f", total)
                 binding.layoutEmptyDebts.visibility = if (debts.isEmpty()) View.VISIBLE else View.GONE
             }
         }
     }
 
     private fun showAddDebtDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Nueva Deuda del Negocio")
+        val db = DialogAddBusinessDebtBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this, R.style.Theme_Naxor_Dialog).setView(db.root).create()
         
-        val layout = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(50, 40, 50, 10)
-        }
-        
-        val etAcreedor = EditText(this).apply { hint = "Acreedor (Banco/Proveedor/Persona)" }
-        val etConcepto = EditText(this).apply { hint = "Concepto (Mercadería, Préstamo, etc.)" }
-        val etMonto = EditText(this).apply { hint = "Monto de la deuda"; inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
-        
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val currency = prefs.getString("currency_symbol", "S/")
+        db.layoutDebtMontoTotal.prefixText = currency
+        db.layoutDebtMontoCuota.prefixText = currency
+
         var selectedDate = 0L
-        val btnDate = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
-            text = "📅 Programar Fecha de Pago"
-            setOnClickListener {
-                val cal = Calendar.getInstance()
-                android.app.DatePickerDialog(this@BusinessDebtsActivity, { _, y, m, d ->
-                    val sel = Calendar.getInstance()
-                    sel.set(y, m, d)
-                    selectedDate = sel.timeInMillis
-                    text = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(selectedDate))
-                }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+        db.btnDebtDatePicker.setOnClickListener {
+            val cal = Calendar.getInstance()
+            android.app.DatePickerDialog(this, { _, y, m, d ->
+                val sel = Calendar.getInstance()
+                sel.set(y, m, d, 9, 0, 0)
+                selectedDate = sel.timeInMillis
+                db.btnDebtDatePicker.text = "📅 Pagar el: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(selectedDate))}"
+            }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+        }
+
+        db.toggleDebtRecurrence.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                db.layoutDebtMonthlyDay.visibility = if (checkedId == R.id.btnRecurrenceMonthly) View.VISIBLE else View.GONE
+                db.btnDebtDatePicker.visibility = if (checkedId == R.id.btnRecurrenceNone) View.VISIBLE else View.GONE
             }
         }
 
-        layout.addView(etAcreedor)
-        layout.addView(etConcepto)
-        layout.addView(etMonto)
-        layout.addView(btnDate)
-        builder.setView(layout)
-
-        builder.setPositiveButton("Guardar") { _, _ ->
-            val acreedor = etAcreedor.text.toString()
-            val concepto = etConcepto.text.toString()
-            val monto = etMonto.text.toString().toDoubleOrNull() ?: 0.0
+        db.btnCancelDebt.setOnClickListener { dialog.dismiss() }
+        db.btnSaveDebt.setOnClickListener {
+            val acreedor = db.etDebtAcreedor.text.toString().trim()
+            val concepto = db.etDebtConcepto.text.toString().trim()
+            val montoTotal = db.etDebtMontoTotal.text.toString().toDoubleOrNull() ?: 0.0
+            val montoCuota = db.etDebtMontoCuota.text.toString().toDoubleOrNull() ?: 0.0
             
-            if (acreedor.isNotBlank() && monto > 0) {
+            if (acreedor.isNotBlank() && montoTotal > 0) {
+                val recurrencia = when(db.toggleDebtRecurrence.checkedButtonId) {
+                    R.id.btnRecurrenceDaily -> "DAILY"
+                    R.id.btnRecurrenceMonthly -> "MONTHLY"
+                    else -> "NONE"
+                }
+                val diaRecurrencia = db.etDebtMonthlyDay.text.toString().toIntOrNull() ?: 0
+                
                 lifecycleScope.launch(Dispatchers.IO) {
-                    val debt = BusinessDebtEntity(acreedor = acreedor, concepto = concepto, montoTotal = monto, fechaVencimiento = selectedDate)
+                    val debt = BusinessDebtEntity(
+                        acreedor = acreedor,
+                        concepto = concepto,
+                        montoTotal = montoTotal,
+                        montoCuota = montoCuota,
+                        fechaVencimiento = if (recurrencia == "NONE") selectedDate else 0L,
+                        recurrencia = recurrencia,
+                        diaRecurrencia = diaRecurrencia,
+                        proximoPago = calculateNextPayment(recurrencia, diaRecurrencia)
+                    )
                     database.businessDebtDao().insert(debt)
                     SyncManager(this@BusinessDebtsActivity).syncBusinessDebtToCloud(debt)
                     
@@ -122,26 +138,74 @@ class BusinessDebtsActivity : AppCompatActivity() {
                         type = "BUSINESS_DEBT_ADDED",
                         title = "Deuda Contraída",
                         description = "Acreedor: $acreedor ($concepto)",
-                        value = "S/ ${String.format(Locale.getDefault(), "%.2f", monto)}",
+                        value = "S/ ${String.format(Locale.getDefault(), "%.2f", montoTotal)}",
                         colorHex = "#475569",
                         iconRes = android.R.drawable.ic_menu_edit
                     )
                     database.movementLogDao().insert(log)
                     
-                    withContext(Dispatchers.Main) { loadDebts() }
+                    withContext(Dispatchers.Main) { 
+                        loadDebts()
+                        dialog.dismiss()
+                    }
                 }
+            } else {
+                Toast.makeText(this, "Completa Acreedor y Monto Total", Toast.LENGTH_SHORT).show()
             }
         }
-        builder.setNegativeButton("Cancelar", null).show()
+        
+        dialog.show()
+        dialog.window?.let {
+            val width = (resources.displayMetrics.widthPixels * 0.95).toInt()
+            it.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+            it.setBackgroundDrawableResource(android.R.color.transparent)
+        }
+    }
+
+    private fun calculateNextPayment(recurrencia: String, dia: Int): Long {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 9)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        
+        when(recurrencia) {
+            "DAILY" -> {
+                cal.add(Calendar.DAY_OF_YEAR, 1)
+            }
+            "MONTHLY" -> {
+                if (dia > 0) {
+                    val currentDay = cal.get(Calendar.DAY_OF_MONTH)
+                    if (currentDay >= dia) {
+                        cal.add(Calendar.MONTH, 1)
+                    }
+                    val maxDay = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+                    cal.set(Calendar.DAY_OF_MONTH, Math.min(dia, maxDay))
+                } else {
+                    cal.add(Calendar.MONTH, 1)
+                }
+            }
+            else -> return 0L
+        }
+        return cal.timeInMillis
     }
 
     private fun showPaymentDialog(debt: BusinessDebtEntity) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Pagar a ${debt.acreedor}")
         val remaining = debt.montoTotal - debt.montoPagado
-        builder.setMessage("Saldo pendiente: S/ ${String.format(Locale.getDefault(), "%.2f", remaining)}")
+        
+        val message = StringBuilder("Saldo pendiente: S/ ${String.format(Locale.getDefault(), "%.2f", remaining)}")
+        if (debt.montoCuota > 0) {
+            message.append("\nCuota sugerida: S/ ${String.format(Locale.getDefault(), "%.2f", debt.montoCuota)}")
+        }
+        builder.setMessage(message.toString())
 
-        val etMonto = EditText(this).apply { hint = "Monto a pagar"; inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
+        val etMonto = EditText(this).apply { 
+            hint = "Monto a pagar"
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+            if (debt.montoCuota > 0) setText(debt.montoCuota.toString())
+            else if (remaining > 0) setText(remaining.toString())
+        }
         builder.setView(etMonto)
 
         builder.setPositiveButton("Registrar Pago") { _, _ ->
@@ -151,12 +215,17 @@ class BusinessDebtsActivity : AppCompatActivity() {
                     debt.montoPagado += pago
                     if (debt.montoPagado >= debt.montoTotal) {
                         debt.isPaid = true
+                        debt.recurrencia = "NONE" // Deja de ser recurrente si ya se pagó el total
+                    } else if (debt.recurrencia != "NONE") {
+                        // Si es recurrente y se hizo un pago, calculamos la siguiente fecha
+                        debt.proximoPago = calculateNextPayment(debt.recurrencia, debt.diaRecurrencia)
                     }
+                    
                     database.businessDebtDao().update(debt)
                     SyncManager(this@BusinessDebtsActivity).syncBusinessDebtToCloud(debt)
                     
                     val log = MovementLogEntity(
-                        type = "EXPENSE", // Los pagos de deudas cuentan como gastos
+                        type = "EXPENSE",
                         title = "Pago Realizado",
                         description = "Acreedor: ${debt.acreedor}",
                         value = "- S/ ${String.format(Locale.getDefault(), "%.2f", pago)}",
@@ -174,6 +243,7 @@ class BusinessDebtsActivity : AppCompatActivity() {
                 val montoLiquidado = debt.montoTotal - debt.montoPagado
                 debt.montoPagado = debt.montoTotal
                 debt.isPaid = true
+                debt.recurrencia = "NONE"
                 database.businessDebtDao().update(debt)
                 SyncManager(this@BusinessDebtsActivity).syncBusinessDebtToCloud(debt)
                 
@@ -219,17 +289,37 @@ class BusinessDebtsActivity : AppCompatActivity() {
         }
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val d = list[position]
+            val currency = holder.itemView.context.getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("currency_symbol", "S/")
+            
             holder.b.tvDebtCreditor.text = d.acreedor
             holder.b.tvDebtConcept.text = d.concepto
-            holder.b.tvDebtAmount.text = String.format("S/ %.2f", d.montoTotal - d.montoPagado)
+            holder.b.tvDebtAmount.text = String.format("$currency %.2f", d.montoTotal - d.montoPagado)
             
-            if (d.fechaVencimiento > 0) {
-                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                holder.b.tvDebtDueDate.text = "Pagar el: ${sdf.format(Date(d.fechaVencimiento))}"
-                holder.b.tvDebtDueDate.visibility = View.VISIBLE
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            
+            if (d.recurrencia != "NONE") {
+                holder.b.tvDebtRecurrenceBadge.visibility = View.VISIBLE
+                val recText = when(d.recurrencia) {
+                    "DAILY" -> "🔄 Pago Diario"
+                    "MONTHLY" -> "🔄 Mensual (Día ${d.diaRecurrencia})"
+                    else -> ""
+                }
+                holder.b.tvDebtRecurrenceBadge.text = recText
+                if (d.proximoPago > 0) {
+                    holder.b.tvDebtDueDate.text = "Siguiente pago: ${sdf.format(Date(d.proximoPago))}"
+                } else {
+                    holder.b.tvDebtDueDate.text = "Pendiente de programar"
+                }
             } else {
-                holder.b.tvDebtDueDate.visibility = View.GONE
+                holder.b.tvDebtRecurrenceBadge.visibility = View.GONE
+                if (d.fechaVencimiento > 0) {
+                    holder.b.tvDebtDueDate.text = "Pagar el: ${sdf.format(Date(d.fechaVencimiento))}"
+                    holder.b.tvDebtDueDate.visibility = View.VISIBLE
+                } else {
+                    holder.b.tvDebtDueDate.visibility = View.GONE
+                }
             }
+            
             holder.b.btnRegisterPayment.setOnClickListener { onPay(d) }
             holder.b.btnDebtPdf.setOnClickListener { onPdf(d) }
         }
