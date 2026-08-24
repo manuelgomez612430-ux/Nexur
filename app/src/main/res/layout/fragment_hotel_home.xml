@@ -8,7 +8,7 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/purple_800"
+        android:background="@color/white"
         app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
@@ -16,34 +16,9 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="Nexur Hotel"
-            app:titleTextColor="@color/white"
+            app:titleTextColor="@color/slate_900"
             app:navigationIcon="@android:drawable/ic_menu_sort_by_size"
-            app:navigationIconTint="@color/white" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="24dp"
-            android:paddingBottom="32dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Gestión de Alojamiento"
-                android:textColor="@color/white"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvHotelDate"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Resumen Operativo de Hoy"
-                android:textColor="#B0FFFFFF"
-                android:textSize="14sp"
-                android:layout_marginTop="4dp" />
-        </LinearLayout>
+            app:navigationIconTint="@color/slate_900" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -57,23 +32,137 @@
             android:orientation="vertical"
             android:padding="20dp">
 
-            <!-- SECCIÓN: ESTADO GRÁFICO (VISTA RÁPIDA) -->
+            <!-- BIENVENIDA Y FECHA -->
             <TextView
+                android:id="@+id/tvWelcome"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="ESTADO DE HABITACIONES"
+                android:text="¡Hola, Recepción! 👋"
+                android:textSize="24sp"
                 android:textStyle="bold"
-                android:textColor="@color/slate_500"
-                android:textSize="11sp"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="12dp" />
+                android:textColor="@color/slate_900" />
 
+            <TextView
+                android:id="@+id/tvHotelDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Domingo, 23 de Agosto"
+                android:textSize="14sp"
+                android:textColor="@color/slate_500"
+                android:layout_marginTop="4dp" />
+
+            <!-- PANEL DE ESTADÍSTICAS RÁPIDAS -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="24dp"
+                android:baselineAligned="false">
+
+                <!-- Ocupación -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/red_600">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:id="@+id/tvStatOccupied"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="8"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/white" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ocupadas"
+                            android:textSize="11sp"
+                            android:textColor="#B0FFFFFF"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Disponibles -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="6dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/emerald_600">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:id="@+id/tvStatFree"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="12"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/white" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Disponibles"
+                            android:textSize="11sp"
+                            android:textColor="#B0FFFFFF"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Reservas -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/sky_600">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:id="@+id/tvStatReserved"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="3"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/white" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Reservas"
+                            android:textSize="11sp"
+                            android:textColor="#B0FFFFFF"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- ACCESO PRINCIPAL AL MAPA -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardRoomsMap"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardCornerRadius="20dp"
+                android:layout_marginTop="24dp"
+                app:cardCornerRadius="24dp"
                 app:cardElevation="2dp"
                 app:strokeWidth="0dp"
                 android:clickable="true"
@@ -83,12 +172,21 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:padding="20dp"
-                    android:gravity="center_vertical">
-                    <ImageView
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        android:src="@android:drawable/ic_menu_sort_by_size"
-                        app:tint="@color/purple_600" />
+                    android:gravity="center_vertical"
+                    android:background="@color/white">
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="@color/purple_800">
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="center"
+                            android:src="@android:drawable/ic_menu_sort_by_size"
+                            app:tint="@color/white" />
+                    </com.google.android.material.card.MaterialCardView>
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -98,37 +196,38 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Mapa de Disponibilidad"
+                            android:text="Mapa del Hotel"
                             android:textStyle="bold"
-                            android:textSize="16sp"
+                            android:textSize="18sp"
                             android:textColor="@color/slate_900" />
                         <TextView
                             android:id="@+id/tvRoomsSummary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Ver habitaciones gráficamente"
-                            android:textSize="12sp"
+                            android:text="Ver disponibilidad gráfica"
+                            android:textSize="13sp"
                             android:textColor="@color/slate_500" />
                     </LinearLayout>
                     <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:src="@android:drawable/ic_menu_revert"
                         android:rotation="180"
                         app:tint="@color/slate_300" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- GRILLA DE HERRAMIENTAS ESPECÍFICAS -->
+            <!-- ACCIONES OPERATIVAS -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="PANEL DE CONTROL"
+                android:text="HERRAMIENTAS DE GESTIÓN"
                 android:textStyle="bold"
-                android:textColor="@color/slate_500"
+                android:textColor="@color/slate_400"
                 android:textSize="11sp"
                 android:letterSpacing="0.1"
-                android:layout_marginBottom="12dp" />
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="16dp" />
 
             <GridLayout
                 android:layout_width="match_parent"
@@ -136,20 +235,20 @@
                 android:columnCount="2"
                 android:alignmentMode="alignMargins">
 
-                <!-- Control Clientes -->
+                <!-- Historial -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/toolGuests"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:layout_margin="6dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp">
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="1dp">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp"
+                        android:padding="20dp"
                         android:gravity="center">
                         <ImageView
                             android:layout_width="32dp"
@@ -159,11 +258,11 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Historial Huéspedes"
-                            android:textSize="12sp"
+                            android:text="Historial"
+                            android:textSize="13sp"
                             android:textStyle="bold"
-                            android:layout_marginTop="8dp"
-                            android:textAlignment="center" />
+                            android:layout_marginTop="12dp"
+                            android:textColor="@color/slate_800" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -174,13 +273,13 @@
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:layout_margin="6dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp">
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="1dp">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp"
+                        android:padding="20dp"
                         android:gravity="center">
                         <ImageView
                             android:layout_width="32dp"
@@ -190,40 +289,11 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Control Reservas"
-                            android:textSize="12sp"
+                            android:text="Reservas"
+                            android:textSize="13sp"
                             android:textStyle="bold"
-                            android:layout_marginTop="8dp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Compromisos Pago -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/toolPayments"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="6dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp"
-                        android:gravity="center">
-                        <ImageView
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:src="@android:drawable/ic_menu_save"
-                            app:tint="@color/red_600" />
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Compromisos Pago"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="8dp" />
+                            android:layout_marginTop="12dp"
+                            android:textColor="@color/slate_800" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -234,13 +304,13 @@
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:layout_margin="6dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp">
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="1dp">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp"
+                        android:padding="20dp"
                         android:gravity="center">
                         <ImageView
                             android:layout_width="32dp"
@@ -250,74 +320,57 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Fallas y Mant."
-                            android:textSize="12sp"
+                            android:text="Averías"
+                            android:textSize="13sp"
                             android:textStyle="bold"
-                            android:layout_marginTop="8dp" />
+                            android:layout_marginTop="12dp"
+                            android:textColor="@color/slate_800" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Inventario Herramientas -->
+                <!-- Pagos Pendientes -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/toolInventory"
+                    android:id="@+id/toolPayments"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:layout_margin="6dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp">
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="1dp">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp"
+                        android:padding="20dp"
                         android:gravity="center">
                         <ImageView
                             android:layout_width="32dp"
                             android:layout_height="32dp"
-                            android:src="@android:drawable/ic_menu_agenda"
-                            app:tint="@color/slate_600" />
+                            android:src="@android:drawable/ic_menu_save"
+                            app:tint="@color/red_600" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Inv. Herramientas"
-                            android:textSize="12sp"
+                            android:text="Pagos"
+                            android:textSize="13sp"
                             android:textStyle="bold"
-                            android:layout_marginTop="8dp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Guía Ciudad -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/toolCityGuide"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="6dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="2dp">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp"
-                        android:gravity="center">
-                        <ImageView
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:src="@android:drawable/ic_menu_directions"
-                            app:tint="@color/purple_700" />
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Carta Digital"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="8dp" />
+                            android:layout_marginTop="12dp"
+                            android:textColor="@color/slate_800" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
             </GridLayout>
+
+            <!-- FOOTER INFO -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Nexur v1.3 - Gestión Hotelera"
+                android:textAlignment="center"
+                android:textSize="10sp"
+                android:textColor="@color/slate_300"
+                android:layout_marginTop="40dp"
+                android:layout_marginBottom="20dp" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

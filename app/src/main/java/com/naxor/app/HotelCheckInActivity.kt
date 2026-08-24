@@ -9,11 +9,13 @@ import com.naxor.app.data.HotelBookingEntity
 import com.naxor.app.databinding.ActivityHotelCheckinBinding
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import java.util.UUID
 
 class HotelCheckInActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityHotelCheckinBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
+    private var bookingId: String? = null
     private var roomId: String? = null
     private var roomNumber: String? = null
     private var baseRate: Double = 0.0
@@ -23,6 +25,7 @@ class HotelCheckInActivity : AppCompatActivity() {
         binding = ActivityHotelCheckinBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        bookingId = intent.getStringExtra("BOOKING_ID")
         roomId = intent.getStringExtra("ROOM_ID")
         roomNumber = intent.getStringExtra("ROOM_NUMBER")
         baseRate = intent.getDoubleExtra("BASE_RATE", 0.0)
@@ -30,6 +33,8 @@ class HotelCheckInActivity : AppCompatActivity() {
         // Pre-llenar si viene de una reserva
         intent.getStringExtra("GUEST_NAME")?.let { binding.etGuestName.setText(it) }
         intent.getStringExtra("GUEST_DOC")?.let { binding.etGuestDoc.setText(it) }
+        intent.getStringExtra("GUEST_PHONE")?.let { binding.etGuestPhone.setText(it) }
+        intent.getStringExtra("GUEST_ORIGIN")?.let { binding.etGuestOrigin.setText(it) }
 
         binding.tvRoomInfo.text = "Habitación: $roomNumber"
         binding.toolbarCheckIn.setNavigationOnClickListener { finish() }
@@ -61,6 +66,7 @@ class HotelCheckInActivity : AppCompatActivity() {
         val initialNightsPaid = if (binding.cbPayInitialNights.isChecked) days else 0
 
         val booking = HotelBookingEntity(
+            id = bookingId ?: UUID.randomUUID().toString(), // Reusar ID si es reserva
             roomId = roomId!!,
             guestName = name,
             guestDoc = doc,

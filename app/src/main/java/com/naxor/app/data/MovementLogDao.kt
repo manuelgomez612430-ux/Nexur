@@ -7,6 +7,9 @@ interface MovementLogDao {
     @Query("SELECT * FROM movement_logs ORDER BY timestamp DESC")
     suspend fun getAllLogs(): List<MovementLogEntity>
 
+    @Query("SELECT * FROM movement_logs ORDER BY timestamp DESC")
+    fun getAllLogsFlow(): kotlinx.coroutines.flow.Flow<List<MovementLogEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(log: MovementLogEntity)
 

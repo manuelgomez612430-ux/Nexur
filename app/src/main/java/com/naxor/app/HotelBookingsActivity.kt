@@ -73,6 +73,11 @@ class HotelBookingsActivity : AppCompatActivity() {
 
         val etGuest = EditText(this).apply { hint = "Nombre del Huésped" }
         val etDoc = EditText(this).apply { hint = "DNI / Documento" }
+        val etPhone = EditText(this).apply { 
+            hint = "Celular (Opcional)"
+            inputType = android.text.InputType.TYPE_CLASS_PHONE
+        }
+        val etOrigin = EditText(this).apply { hint = "Procedencia (Opcional)" }
         
         var selectedDate = System.currentTimeMillis()
         val btnDate = Button(this).apply {
@@ -93,6 +98,8 @@ class HotelBookingsActivity : AppCompatActivity() {
         layout.addView(spinnerRoom)
         layout.addView(etGuest)
         layout.addView(etDoc)
+        layout.addView(etPhone)
+        layout.addView(etOrigin)
         layout.addView(btnDate)
 
         builder.setTitle("Nueva Reserva")
@@ -101,19 +108,22 @@ class HotelBookingsActivity : AppCompatActivity() {
                 val room = allRooms[spinnerRoom.selectedItemPosition]
                 val guest = etGuest.text.toString()
                 val doc = etDoc.text.toString()
+                val phone = etPhone.text.toString()
+                val origin = etOrigin.text.toString()
                 if (guest.isNotEmpty()) {
-                    createBooking(room.id, guest, doc, selectedDate)
+                    createBooking(room.id, guest, doc, phone, origin, selectedDate)
                 }
             }.setNegativeButton("Cancelar", null).show()
     }
 
-    private fun createBooking(roomId: String, name: String, doc: String, date: Long) {
+    private fun createBooking(roomId: String, name: String, doc: String, phone: String, origin: String, date: Long) {
         lifecycleScope.launch {
             val booking = HotelBookingEntity(
                 roomId = roomId,
                 guestName = name,
                 guestDoc = doc,
-                guestPhone = "",
+                guestPhone = phone,
+                guestOrigin = origin,
                 checkInDate = date,
                 checkOutDate = date + (24 * 60 * 60 * 1000), // 1 noche por defecto
                 totalAmount = 0.0, // Se ajusta al check-in
@@ -132,11 +142,16 @@ class HotelBookingsActivity : AppCompatActivity() {
     }
 
     private fun performCheckInFromBooking(booking: HotelBookingEntity) {
-        // Enviar a la actividad de Check-in con los datos de la reserva
+        val room = allRooms.find { it.id == booking.roomId }
         val intent = android.content.Intent(this, HotelCheckInActivity::class.java).apply {
+            putExtra("BOOKING_ID", booking.id)
             putExtra("ROOM_ID", booking.roomId)
+            putExtra("ROOM_NUMBER", room?.number ?: "")
+            putExtra("BASE_RATE", room?.baseRate ?: 0.0)
             putExtra("GUEST_NAME", booking.guestName)
             putExtra("GUEST_DOC", booking.guestDoc)
+            putExtra("GUEST_PHONE", booking.guestPhone)
+            putExtra("GUEST_ORIGIN", booking.guestOrigin)
         }
         startActivity(intent)
         finish()

@@ -56,6 +56,12 @@ interface HotelDao {
     @Query("SELECT SUM(amount) FROM hotel_payments WHERE bookingId = :bookingId AND isDeleted = 0")
     suspend fun getTotalPayments(bookingId: String): Double?
 
+    @Query("SELECT * FROM hotel_payments WHERE isDeleted = 0")
+    fun getAllPaymentsFlow(): Flow<List<HotelPaymentEntity>>
+
+    @Query("SELECT * FROM hotel_charges WHERE isDeleted = 0")
+    fun getAllChargesFlow(): Flow<List<HotelChargeEntity>>
+
     // --- MAINTENANCE ---
     @Query("SELECT * FROM hotel_maintenance WHERE isDeleted = 0")
     fun getAllMaintenanceReports(): Flow<List<HotelMaintenanceEntity>>

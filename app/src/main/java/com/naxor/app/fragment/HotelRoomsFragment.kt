@@ -85,7 +85,9 @@ class HotelRoomsFragment : Fragment() {
             viewLifecycleOwner.lifecycleScope.launch {
                 val room = database.hotelDao().getRoomById(roomId)
                 val reports = database.hotelDao().getPendingMaintenanceForRoom(roomId).first()
-                room?.let { showRoomActionDialog(it, reports.isNotEmpty()) }
+                val bookings = database.hotelDao().getAllBookings().first()
+                val hasRes = bookings.any { it.roomId == roomId && it.status == "CONFIRMED" }
+                room?.let { showRoomActionDialog(it, reports.isNotEmpty(), hasRes) }
             }
         }
     }
@@ -363,15 +365,19 @@ class HotelRoomsFragment : Fragment() {
                     Toast.makeText(requireContext(), "Reparación completada ✅", Toast.LENGTH_SHORT).show()
                 }
             },
-            onCardClick = { room, hasFailure -> showRoomActionDialog(room, hasFailure) }
+            onCardClick = { room, hasFailure, hasRes -> showRoomActionDialog(room, hasFailure, hasRes) }
         )
         binding.rvRooms.layoutManager = LinearLayoutManager(requireContext())
         binding.rvRooms.adapter = adapter
     }
 
-    private fun showRoomActionDialog(room: HotelRoomEntity, hasPendingFailure: Boolean) {
+    private fun showRoomActionDialog(room: HotelRoomEntity, hasPendingFailure: Boolean, hasReservation: Boolean = false) {
         val options = mutableListOf<String>()
         
+        if (room.status == "FREE" && !hasReservation) {
+            options.add("Check-in Rápido")
+        }
+
         val cal = java.util.Calendar.getInstance()
         cal.set(java.util.Calendar.HOUR_OF_DAY, 0); cal.set(java.util.Calendar.MINUTE, 0); cal.set(java.util.Calendar.SECOND, 0); cal.set(java.util.Calendar.MILLISECOND, 0)
         val needsCleaning = room.lastCleaned < cal.timeInMillis
@@ -395,6 +401,11 @@ class HotelRoomsFragment : Fragment() {
             .setItems(options.toTypedArray()) { _, w ->
                 lifecycleScope.launch {
                     when (options[w]) {
+                        "Check-in Rápido" -> {
+                            val i = Intent(requireContext(), com.naxor.app.HotelCheckInActivity::class.java)
+                            i.putExtra("ROOM_ID", room.id); i.putExtra("ROOM_NUMBER", room.number); i.putExtra("BASE_RATE", room.baseRate)
+                            startActivity(i)
+                        }
                         "Limpieza Realizada" -> {
                             database.hotelDao().updateRoom(room.copy(status = if(room.status == "OCCUPIED") "OCCUPIED" else "FREE", lastCleaned = System.currentTimeMillis()))
                         }

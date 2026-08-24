@@ -363,7 +363,7 @@ class MainActivity : AppCompatActivity() {
                     else com.naxor.app.fragment.StockFragment()
                 }
                 "METRICAS" -> {
-                    if (businessType == "HOTEL") com.naxor.app.fragment.HotelCalendarFragment()
+                    if (businessType == "HOTEL") com.naxor.app.fragment.HotelMetricsFragment()
                     else com.naxor.app.fragment.MetricasFragment()
                 }
                 "SETTINGS" -> com.naxor.app.fragment.SettingsFragment()

@@ -28,7 +28,7 @@ class HotelRoomAdapter(
     private val onAction: (HotelRoomEntity) -> Unit,
     private val onSecondAction: ((HotelRoomEntity) -> Unit)? = null,
     private val onThirdAction: ((HotelRoomEntity) -> Unit)? = null,
-    private val onCardClick: (HotelRoomEntity, Boolean) -> Unit // Entidad y si tiene falla
+    private val onCardClick: (HotelRoomEntity, Boolean, Boolean) -> Unit // Entidad, falla, reserva
 ) : ListAdapter<RoomListType, RecyclerView.ViewHolder>(DiffCallback) {
 
     private companion object {
@@ -111,24 +111,24 @@ class HotelRoomAdapter(
                             chipRoomStatus.text = "RESERVADA"
                             chipRoomStatus.setChipBackgroundColorResource(R.color.sky_600)
                             chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
+                            
+                            // Bloquear Check-in desde la lista si hay reserva
+                            btnRoomAction.text = "Reservada"
+                            btnRoomAction.setBackgroundColor(root.context.getColor(R.color.slate_100))
+                            btnRoomAction.setTextColor(root.context.getColor(R.color.slate_400))
+                            btnRoomAction.isEnabled = false
                         } else {
                             chipRoomStatus.text = "LIBRE"
                             chipRoomStatus.setChipBackgroundColorResource(R.color.emerald_50)
                             chipRoomStatus.setTextColor(root.context.getColor(R.color.emerald_600))
+                            
+                            btnRoomAction.text = "Check-in"
+                            btnRoomAction.setBackgroundColor(root.context.getColor(R.color.emerald_50))
+                            btnRoomAction.setTextColor(root.context.getColor(R.color.emerald_600))
+                            btnRoomAction.isEnabled = true
                         }
-                        btnRoomAction.text = "Check-in"
-                        btnRoomAction.setBackgroundColor(root.context.getColor(R.color.emerald_50))
-                        btnRoomAction.setTextColor(root.context.getColor(R.color.emerald_600))
                         
-                        if (needsCleaning) {
-                            btnSecondAction.text = "Asear"
-                            btnSecondAction.visibility = View.VISIBLE
-                            btnSecondAction.setBackgroundColor(root.context.getColor(R.color.orange_600))
-                            btnSecondAction.setTextColor(root.context.getColor(R.color.white))
-                            btnSecondAction.setOnClickListener { onSecondAction?.invoke(room) }
-                        } else {
-                            btnSecondAction.visibility = View.GONE
-                        }
+                        btnSecondAction.visibility = if (needsCleaning) View.VISIBLE else View.GONE
                     }
                     "OCCUPIED" -> {
                         chipRoomStatus.text = "OCUPADA"; chipRoomStatus.setChipBackgroundColorResource(R.color.red_600)
@@ -171,7 +171,7 @@ class HotelRoomAdapter(
                     }
                 }
                 btnRoomAction.setOnClickListener { onAction(room) }
-                root.setOnClickListener { onCardClick(room, roomData.hasPendingFailure) }
+                root.setOnClickListener { onCardClick(room, roomData.hasPendingFailure, roomData.hasReservation) }
             }
         }
     }
