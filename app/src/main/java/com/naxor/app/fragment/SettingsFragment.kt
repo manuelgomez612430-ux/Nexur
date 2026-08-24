@@ -55,6 +55,10 @@ class SettingsFragment : Fragment() {
             checkUpdates()
         }
 
+        binding.cardSupportCreator.setOnClickListener {
+            startActivity(Intent(requireContext(), com.naxor.app.SupportCreatorActivity::class.java))
+        }
+
         binding.cardRestartTutorial.setOnClickListener {
             val main = activity as? com.naxor.app.MainActivity
             if (main != null) {

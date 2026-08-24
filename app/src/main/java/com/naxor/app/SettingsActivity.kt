@@ -36,6 +36,9 @@ class SettingsActivity : AppCompatActivity() {
         binding.toolbarSettings.setNavigationOnClickListener { finish() }
         binding.btnSaveSettings.setOnClickListener { saveSettings() }
         binding.cardBusinessLogo.setOnClickListener { pickImageLauncher.launch("image/*") }
+        binding.btnSupportCreator.setOnClickListener {
+            startActivity(Intent(this, SupportCreatorActivity::class.java))
+        }
     }
 
     private fun loadSettings() {
