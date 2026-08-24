@@ -42,8 +42,45 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
             val totalAmount = pendingExpenses.sumOf { it.monto }
             showReminderNotification(pendingExpenses.size, totalAmount, "PAGAR_GASTO", 2004)
         }
+
+        // Consultar herramientas que superaron su tiempo de uso
+        val activeTools = database.hotelToolDao().getAllActiveToolsOnce()
+        val expiredTools = activeTools.filter { tool ->
+            if (tool.maxUsageMonths > 0) {
+                val diffMs = System.currentTimeMillis() - tool.registrationDate
+                val monthsInUse = (java.util.concurrent.TimeUnit.MILLISECONDS.toDays(diffMs) / 30).toInt()
+                monthsInUse >= tool.maxUsageMonths
+            } else false
+        }
+        
+        if (expiredTools.isNotEmpty()) {
+            showToolNotification(expiredTools.size)
+        }
         
         return Result.success()
+    }
+
+    private fun showToolNotification(count: Int) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = "tool_alerts"
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(channelId, "Alertas de Inventario", NotificationManager.IMPORTANCE_DEFAULT)
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val intent = android.content.Intent(context, HotelToolsActivity::class.java)
+        val pendingIntent = android.app.PendingIntent.getActivity(context, 3001, intent, android.app.PendingIntent.FLAG_IMMUTABLE)
+
+        val builder = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.logo_naxor_icon)
+            .setContentTitle("🛠️ Renovación de Herramientas")
+            .setContentText("Tienes $count herramientas que han superado su vida útil. Se recomienda revisarlas o cambiarlas.")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+
+        notificationManager.notify(3001, builder.build())
     }
 
     private fun showReminderNotification(count: Int, total: Double, type: String, notificationId: Int) {

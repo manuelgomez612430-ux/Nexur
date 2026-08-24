@@ -461,7 +461,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.menu_hotel_payments -> { startToolActivity(Intent(this, BusinessDebtsActivity::class.java)); true }
                 R.id.menu_hotel_rooms_graph -> { navigateToStock(); true }
                 R.id.menu_hotel_maintenance -> { startToolActivity(Intent(this, HotelMaintenanceActivity::class.java)); true }
-                R.id.menu_hotel_tools -> { Toast.makeText(this, "Inventario de Herramientas", Toast.LENGTH_SHORT).show(); true }
+                R.id.menu_hotel_tools -> { startToolActivity(Intent(this, HotelToolsActivity::class.java)); true }
                 R.id.menu_hotel_guide -> { Toast.makeText(this, "Guía de la Ciudad", Toast.LENGTH_SHORT).show(); true }
                 
                 // General

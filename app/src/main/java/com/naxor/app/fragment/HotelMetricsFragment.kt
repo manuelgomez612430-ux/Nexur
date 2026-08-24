@@ -13,8 +13,10 @@ import com.naxor.app.adapter.HotelMovementAdapter
 import com.naxor.app.adapter.HotelMovementItem
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.databinding.FragmentHotelMetricsBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 class HotelMetricsFragment : Fragment() {
@@ -56,65 +58,65 @@ class HotelMetricsFragment : Fragment() {
             val f4 = database.movementLogDao().getAllLogsFlow()
 
             combine(f1, f2, f3, f4) { p, b, c, l ->
-                calculateFinancials(p, b, c, l)
-            }.collect { items ->
-                adapter.submitList(items)
+                // Realizar cálculos en segundo plano si la lista es grande
+                processFinancialData(p, b, l)
+            }.collect { result ->
+                updateUI(result)
             }
         }
     }
 
-    private fun calculateFinancials(
+    data class FinancialResult(
+        val totalIncome: Double,
+        val totalExpense: Double,
+        val netProfit: Double,
+        val movements: List<HotelMovementItem>
+    )
+
+    private fun processFinancialData(
         payments: List<com.naxor.app.data.HotelPaymentEntity>,
         bookings: List<com.naxor.app.data.HotelBookingEntity>,
-        charges: List<com.naxor.app.data.HotelChargeEntity>,
         logs: List<com.naxor.app.data.MovementLogEntity>
-    ): List<HotelMovementItem> {
-        // 1. Ingresos por Estancias y Pagos
+    ): FinancialResult {
         val depositIncome = bookings.sumOf { it.deposit }
         val paymentIncome = payments.sumOf { it.amount }
         val totalIncome = depositIncome + paymentIncome
 
-        // 2. Egresos (De logs que sean tipo EXPENSE o similar)
         val hotelExpenses = logs.filter { it.type.contains("EXPENSE") || it.type.contains("GASTO") }
         val totalExpense = hotelExpenses.sumOf { 
-            // Extraer valor numérico del string "S/ 10.00"
             it.value.replace("S/", "").replace(",", "").trim().toDoubleOrNull() ?: 0.0
         }
 
         val netProfit = totalIncome - totalExpense
 
-        // Actualizar UI de Totales
-        _binding?.let { b ->
-            b.tvTotalIncome.text = "S/ ${String.format(Locale.US, "%.2f", totalIncome)}"
-            b.tvTotalExpense.text = "S/ ${String.format(Locale.US, "%.2f", totalExpense)}"
-            b.tvNetProfit.text = "S/ ${String.format(Locale.US, "%.2f", netProfit)}"
-            
-            if (netProfit < 0) b.tvNetProfit.setTextColor(requireContext().getColor(R.color.red_600))
-            else b.tvNetProfit.setTextColor(requireContext().getColor(R.color.emerald_600))
-        }
-
-        // 3. Crear lista de movimientos para el historial inferior
         val movements = mutableListOf<HotelMovementItem>()
-        
-        // Agregar Pagos
-        payments.forEach { 
-            movements.add(HotelMovementItem(it.id, "PAYMENT", "Pago Recibido", it.amount, it.timestamp)) 
-        }
-        
-        // Agregar Depósitos iniciales
+        payments.forEach { movements.add(HotelMovementItem(it.id, "PAYMENT", "Pago Recibido", it.amount, it.timestamp)) }
         bookings.forEach {
             if (it.deposit > 0) {
                 movements.add(HotelMovementItem(it.id + "_dep", "PAYMENT", "Anticipo: ${it.guestName}", it.deposit, it.timestamp))
             }
         }
-
-        // Agregar Gastos
         hotelExpenses.forEach {
             val amount = it.value.replace("S/", "").replace(",", "").trim().toDoubleOrNull() ?: 0.0
             movements.add(HotelMovementItem(it.id.toString(), "CHARGE", it.title, amount, it.timestamp))
         }
 
-        return movements.sortedByDescending { it.timestamp }
+        return FinancialResult(totalIncome, totalExpense, netProfit, movements.sortedByDescending { it.timestamp })
+    }
+
+    private fun updateUI(result: FinancialResult) {
+        _binding?.let { b ->
+            b.tvTotalIncome.text = "S/ ${String.format(Locale.US, "%.2f", result.totalIncome)}"
+            b.tvTotalExpense.text = "S/ ${String.format(Locale.US, "%.2f", result.totalExpense)}"
+            b.tvNetProfit.text = "S/ ${String.format(Locale.US, "%.2f", result.netProfit)}"
+            
+            context?.let { ctx ->
+                if (result.netProfit < 0) b.tvNetProfit.setTextColor(ctx.getColor(R.color.red_600))
+                else b.tvNetProfit.setTextColor(ctx.getColor(R.color.emerald_600))
+            }
+            
+            adapter.submitList(result.movements)
+        }
     }
 
     override fun onDestroyView() {

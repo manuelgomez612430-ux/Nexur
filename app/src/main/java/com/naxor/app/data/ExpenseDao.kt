@@ -34,6 +34,9 @@ interface ExpenseDao {
     @Query("SELECT SUM(monto) FROM expenses WHERE isPaid = 1 AND isDeleted = 0 AND fecha >= :startTime AND fecha <= :endTime")
     suspend fun getExpensesAmountInRange(startTime: Long, endTime: Long): Double?
 
+    @Query("SELECT * FROM expenses WHERE isPaid = 1 AND isDeleted = 0 AND fecha >= :startTime AND fecha <= :endTime ORDER BY fecha DESC")
+    suspend fun getExpensesInRange(startTime: Long, endTime: Long): List<ExpenseEntity>
+
     @Query("SELECT * FROM expenses WHERE isPaid = 0 AND isDeleted = 0 AND fechaProgramada <= :timeLimit ORDER BY fechaProgramada ASC")
     suspend fun getPendingExpenses(timeLimit: Long): List<ExpenseEntity>
 

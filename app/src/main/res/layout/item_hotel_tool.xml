@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/slate_100">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/tvToolName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nombre Herramienta"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/slate_900" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:text="ACTIVO"
+                android:textSize="10sp"
+                app:chipMinHeight="24dp"
+                app:chipBackgroundColor="@color/emerald_50"
+                android:textColor="@color/emerald_600" />
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/tvToolCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CÓDIGO: #T001"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/purple_600" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/slate_100"
+            android:layout_marginVertical="12dp" />
+
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="2">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="TIEMPO DE USO"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_400" />
+                <TextView
+                    android:id="@+id/tvUsageTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2 Meses"
+                    android:textSize="13sp"
+                    android:textColor="@color/slate_800" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:orientation="vertical"
+                android:gravity="end">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="VIDA ÚTIL RESTANTE"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_400" />
+                <TextView
+                    android:id="@+id/tvRemainingTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="4 Meses"
+                    android:textSize="13sp"
+                    android:textColor="@color/emerald_600" />
+            </LinearLayout>
+        </GridLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:layout_marginTop="8dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMarkRetired"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dar de baja"
+                android:textSize="12sp"
+                android:textColor="@color/slate_400" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRenew"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Renovar"
+                android:textSize="12sp"
+                app:cornerRadius="12dp"
+                app:backgroundTint="@color/sky_600"
+                android:textColor="@color/white" />
+        </LinearLayout>
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
