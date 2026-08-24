@@ -251,6 +251,7 @@ class HomeFragment : Fragment() {
             "gastos" to Triple("💸 GASTOS", "#E11D48") { (activity as? MainActivity)?.checkPinAndNavigate { startToolActivity(Intent(requireContext(), GastosActivity::class.java)) } },
             "caja" to Triple("💰 CAJA", "#F59E0B") { startToolActivity(Intent(requireContext(), CajaActivity::class.java)) },
             "fiados" to Triple("👥 DEUDORES", "#4F46E5") { startToolActivity(Intent(requireContext(), DeudoresActivity::class.java)) },
+            "business_debts" to Triple("💸 MIS CUENTAS", "#E11D48") { startToolActivity(Intent(requireContext(), BusinessDebtsActivity::class.java)) },
             "proveedores" to Triple("🚚 PROVEED.", "#0284C7") { startToolActivity(Intent(requireContext(), ProveedoresActivity::class.java)) },
             "clientes" to Triple("👤 CLIENTES", "#059669") { startToolActivity(Intent(requireContext(), CustomersActivity::class.java)) },
             "catalogo" to Triple("📖 CATÁLOGO", "#D946EF") { (activity as? MainActivity)?.generatePDFCatalog() },
