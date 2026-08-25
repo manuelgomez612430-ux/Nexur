@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/slate_50">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        app:elevation="0dp">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarLoanDetails"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Detalle del Préstamo"
+            app:navigationIcon="@android:drawable/ic_menu_revert" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@color/white">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+                    <TextView
+                        android:id="@+id/tvDetailClientName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Nombre Cliente"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_900" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEditClientInfo"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="✏️ Editar Información"
+                        android:textSize="11sp"
+                        android:textColor="@color/purple_600"
+                        android:padding="0dp"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp" />
+
+                    <TextView
+                        android:id="@+id/tvDetailLoanAmount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Préstamo de S/ 1000.00"
+                        android:textSize="14sp"
+                        android:textColor="@color/slate_500" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCallClient"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Llamar"
+                            android:layout_marginEnd="4dp"
+                            app:icon="@android:drawable/ic_menu_call"
+                            app:backgroundTint="@color/emerald_50"
+                            android:textColor="@color/emerald_600"
+                            app:iconTint="@color/emerald_600" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnViewClientLocation"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Ubicación"
+                            android:layout_marginStart="4dp"
+                            app:icon="@android:drawable/ic_menu_mylocation"
+                            app:backgroundTint="@color/sky_50"
+                            android:textColor="@color/sky_600"
+                            app:iconTint="@color/sky_600" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnShareLoanContract"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="📄 Compartir Contrato PDF"
+                        android:textSize="12sp"
+                        app:icon="@android:drawable/ic_menu_share" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLiquidateLoan"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="💰 Liquidar Préstamo Hoy"
+                        app:backgroundTint="@color/emerald_50"
+                        android:textColor="@color/emerald_600"
+                        app:icon="@android:drawable/checkbox_on_background" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRefinanceLoan"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="🔄 Refinanciar Deuda"
+                        app:backgroundTint="@color/orange_50"
+                        android:textColor="@color/orange_600"
+                        app:icon="@android:drawable/ic_menu_rotate" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CRONOGRAMA DE PAGOS"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_400"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="12dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvInstallments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+            <!-- SECCIÓN DE GARANTÍA -->
+            <TextView
+                android:id="@+id/tvLabelCollateral"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GARANTÍA REGISTRADA"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_400"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardCollateralDisplay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_100"
+                android:visibility="gone">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <ImageView
+                        android:id="@+id/ivCollateralPreview"
+                        android:layout_width="match_parent"
+                        android:layout_height="200dp"
+                        android:scaleType="centerCrop"
+                        android:layout_marginBottom="12dp" />
+                    <TextView
+                        android:id="@+id/tvCollateralDescDetail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Descripción de la prenda..."
+                        android:textColor="@color/slate_600"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="60dp" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

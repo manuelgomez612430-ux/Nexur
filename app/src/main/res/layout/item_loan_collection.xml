@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/tvCollClientName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nombre del Cliente"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/slate_900" />
+            <TextView
+                android:id="@+id/tvCollInstallmentInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cuota 5 de 24 | Vence hoy"
+                android:textSize="12sp"
+                android:textColor="@color/slate_500" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/tvCollAmount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="S/ 50.00"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:textColor="@color/emerald_600" />
+
+            <ImageButton
+                android:id="@+id/btnCollWhatsapp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@android:drawable/ic_menu_send"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                app:tint="@color/emerald_600"
+                android:contentDescription="WhatsApp" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -22,7 +22,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 5 // Sube esto cada vez que envíes una actualización
-        versionName = "1.4" // Nombre visual de la versión
+        versionName = "1.3" // Nombre visual de la versión
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
@@ -42,15 +42,21 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             
+            ndk {
+                abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a"))
+            }
+
             val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "naxor.jks"
             if (file(keystorePath).exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
         debug {
+            isMinifyEnabled = false
             val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "naxor.jks"
             if (file(keystorePath).exists()) {
                 signingConfig = signingConfigs.getByName("release")
@@ -84,22 +90,22 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
+    
+    // GMS Code Scanner (Ligero, usa Google Play Services)
     implementation(libs.google.scanner)
     implementation("com.google.android.gms:play-services-auth:21.2.0")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+    
+    // CameraX (Necesario solo para funciones específicas de cámara)
     implementation("androidx.camera:camera-core:1.4.0")
     implementation("androidx.camera:camera-camera2:1.4.0")
     implementation("androidx.camera:camera-lifecycle:1.4.0")
     implementation("androidx.camera:camera-view:1.4.0")
-    implementation(libs.google.scanner)
-    implementation(libs.google.textrecognition)
-    implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
     // Imágenes (Optimización)
     implementation(libs.glide)
     annotationProcessor(libs.glide.compiler)
 
-    // Room
-    
     // Gráficos
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 

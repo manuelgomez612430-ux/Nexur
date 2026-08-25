@@ -90,6 +90,10 @@
         <activity android:name=".HotelToolsActivity" android:exported="false" android:label="Inventario de Herramientas" />
         <activity android:name=".HotelGuestHistoryActivity" android:exported="false" android:label="Historial de Huéspedes" />
         <activity android:name=".HotelMaintenanceActivity" android:exported="false" android:label="Fallas y Mantenimiento" />
+        <activity android:name=".AddLoanActivity" android:exported="false" android:label="Nuevo Préstamo" />
+        <activity android:name=".LoansClientsActivity" android:exported="false" android:label="Mis Clientes" />
+        <activity android:name=".LoanDetailsActivity" android:exported="false" android:label="Detalle del Préstamo" />
+        <activity android:name=".LoansCollectionsActivity" android:exported="false" android:label="Cobros del Día" />
         <activity android:name=".PdfViewerActivity" android:exported="false" android:label="Vista Previa PDF" />
         <activity android:name=".SupportCreatorActivity" android:exported="false" android:theme="@style/Theme.Naxor" />
         <activity android:name=".FutureVisionActivity" android:exported="false" android:theme="@style/Theme.Naxor" />

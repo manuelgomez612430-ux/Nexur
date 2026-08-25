@@ -16,6 +16,7 @@
     <color name="slate_900">#0F172A</color>
 
     <!-- Accent Colors -->
+    <color name="sky_50">#F0F9FF</color>
     <color name="sky_600">#0284C7</color>
     <color name="red_600">#DC2626</color>
     <color name="red_700">#B91C1C</color>

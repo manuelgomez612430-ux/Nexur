@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="Gestión de Cartera">
+        <menu>
+            <item
+                android:id="@+id/menu_loans_clients"
+                android:icon="@android:drawable/ic_menu_my_calendar"
+                android:title="👥 Mis Clientes" />
+            <item
+                android:id="@+id/menu_loans_new"
+                android:icon="@android:drawable/ic_input_add"
+                android:title="💸 Registrar Nuevo Préstamo" />
+            <item
+                android:id="@+id/menu_loans_collections"
+                android:icon="@android:drawable/ic_menu_today"
+                android:title="📅 Cobros del Día" />
+        </menu>
+    </item>
+
+    <item android:title="Finanzas">
+        <menu>
+            <item
+                android:id="@+id/menu_loans_profit"
+                android:icon="@android:drawable/ic_menu_compass"
+                android:title="📈 Rendimiento e Intereses" />
+            <item
+                android:id="@+id/menu_loans_expenses"
+                android:icon="@android:drawable/ic_menu_send"
+                android:title="📉 Gastos Operativos" />
+        </menu>
+    </item>
+
+    <item android:title="Sistema">
+        <menu>
+            <item
+                android:id="@+id/menu_settings"
+                android:icon="@android:drawable/ic_menu_preferences"
+                android:title="Ajustes de mi Negocio" />
+            <item
+                android:id="@+id/menu_logout"
+                android:icon="@android:drawable/ic_menu_close_clear_cancel"
+                android:title="Cerrar Sesión" />
+        </menu>
+    </item>
+</menu>

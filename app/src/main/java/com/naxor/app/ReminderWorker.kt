@@ -43,6 +43,13 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
             showReminderNotification(pendingExpenses.size, totalAmount, "PAGAR_GASTO", 2004)
         }
 
+        // --- NUEVO: Consultar Cobros de Préstamos para hoy ---
+        val pendingLoans = database.loanDao().getPendingCollections(timeLimit)
+        if (pendingLoans.isNotEmpty()) {
+            val totalAmount = pendingLoans.sumOf { it.amount - it.amountPaid }
+            showLoanNotification(pendingLoans.size, totalAmount)
+        }
+
         // Consultar herramientas que superaron su tiempo de uso
         val activeTools = database.hotelToolDao().getAllActiveToolsOnce()
         val expiredTools = activeTools.filter { tool ->
@@ -58,6 +65,29 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
         }
         
         return Result.success()
+    }
+
+    private fun showLoanNotification(count: Int, total: Double) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = "loan_collections"
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(channelId, "Cobros de Préstamos", NotificationManager.IMPORTANCE_HIGH)
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val intent = android.content.Intent(context, LoansCollectionsActivity::class.java)
+        val pendingIntent = android.app.PendingIntent.getActivity(context, 4001, intent, android.app.PendingIntent.FLAG_IMMUTABLE)
+
+        val builder = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.logo_naxor_icon)
+            .setContentTitle("💰 Cobros de Préstamos")
+            .setContentText("Tienes $count cuotas por cobrar hoy. Total estimado: S/ ${String.format(Locale.getDefault(), "%.2f", total)}.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+
+        notificationManager.notify(4001, builder.build())
     }
 
     private fun showToolNotification(count: Int) {

@@ -117,16 +117,20 @@ class MainActivity : AppCompatActivity() {
         val stockItem = menu.findItem(R.id.nav_stock)
         
         stockItem?.let { item ->
-            if (businessType == "SERVICES" || businessType == "HOTEL") {
-                item.title = if (businessType == "HOTEL") "Habitaciones" else "Servicios"
-                item.setIcon(android.R.drawable.ic_menu_agenda)
+            if (businessType == "SERVICES" || businessType == "HOTEL" || businessType == "LOANS") {
+                item.title = when(businessType) {
+                    "HOTEL" -> "Habitaciones"
+                    "LOANS" -> "Clientes"
+                    else -> "Servicios"
+                }
+                item.setIcon(if (businessType == "LOANS") android.R.drawable.ic_menu_my_calendar else android.R.drawable.ic_menu_agenda)
                 
                 // --- 2. Side Drawer ---
                 binding.navigationViewMain.menu.clear()
-                if (businessType == "HOTEL") {
-                    binding.navigationViewMain.inflateMenu(R.menu.menu_hotel_drawer)
-                } else {
-                    binding.navigationViewMain.inflateMenu(R.menu.menu_main_drawer)
+                when(businessType) {
+                    "HOTEL" -> binding.navigationViewMain.inflateMenu(R.menu.menu_hotel_drawer)
+                    "LOANS" -> binding.navigationViewMain.inflateMenu(R.menu.menu_loans_drawer)
+                    else -> binding.navigationViewMain.inflateMenu(R.menu.menu_main_drawer)
                 }
             } else {
                 item.title = "Inventario"
@@ -354,7 +358,8 @@ class MainActivity : AppCompatActivity() {
         // Verificar si el fragmento existente es del tipo correcto para el rubro actual
         val isWrongType = target != null && when(tag) {
             "HOME" -> (businessType == "HOTEL" && target !is com.naxor.app.fragment.HotelHomeFragment) || 
-                      (businessType != "HOTEL" && target !is com.naxor.app.fragment.HomeFragment)
+                      (businessType == "LOANS" && target !is com.naxor.app.fragment.LoansHomeFragment) ||
+                      (businessType != "HOTEL" && businessType != "LOANS" && target !is com.naxor.app.fragment.HomeFragment)
             "STOCK" -> (businessType == "HOTEL" && target !is com.naxor.app.fragment.HotelRoomsFragment) || 
                        (businessType != "HOTEL" && target !is com.naxor.app.fragment.StockFragment)
             "METRICAS" -> (businessType == "HOTEL" && target !is com.naxor.app.fragment.HotelMetricsFragment) || 
@@ -370,8 +375,11 @@ class MainActivity : AppCompatActivity() {
             
             val newFrag = when(tag) {
                 "HOME" -> {
-                    if (businessType == "HOTEL") com.naxor.app.fragment.HotelHomeFragment()
-                    else com.naxor.app.fragment.HomeFragment()
+                    when(businessType) {
+                        "HOTEL" -> com.naxor.app.fragment.HotelHomeFragment()
+                        "LOANS" -> com.naxor.app.fragment.LoansHomeFragment()
+                        else -> com.naxor.app.fragment.HomeFragment()
+                    }
                 }
                 "STOCK" -> {
                     if (businessType == "HOTEL") com.naxor.app.fragment.HotelRoomsFragment()

@@ -58,14 +58,17 @@ class SettingsActivity : AppCompatActivity() {
                 binding.toggleBusinessType.check(R.id.btnTypeProducts)
                 binding.layoutHotelOption.visibility = android.view.View.GONE
             }
-            "SERVICES", "HOTEL" -> {
+            "SERVICES", "HOTEL", "LOANS" -> {
                 binding.toggleBusinessType.check(R.id.btnTypeServices)
                 binding.layoutHotelOption.visibility = android.view.View.VISIBLE
                 if (businessType == "HOTEL") {
-                    // Podríamos cambiar el color del botón para indicar selección
                     binding.btnSelectHotel.setBackgroundColor(getColor(R.color.purple_600))
                     binding.btnSelectHotel.setTextColor(getColor(R.color.white))
                     binding.btnSelectHotel.iconTint = android.content.res.ColorStateList.valueOf(getColor(R.color.white))
+                } else if (businessType == "LOANS") {
+                    binding.btnSelectLoans.setBackgroundColor(getColor(R.color.purple_600))
+                    binding.btnSelectLoans.setTextColor(getColor(R.color.white))
+                    binding.btnSelectLoans.iconTint = android.content.res.ColorStateList.valueOf(getColor(R.color.white))
                 }
             }
         }
@@ -76,24 +79,23 @@ class SettingsActivity : AppCompatActivity() {
                     binding.layoutHotelOption.visibility = android.view.View.VISIBLE
                 } else {
                     binding.layoutHotelOption.visibility = android.view.View.GONE
-                    // Resetear selección de hotel al cambiar a Productos
-                    binding.btnSelectHotel.setTag(R.id.btnSelectHotel, null)
-                    binding.btnSelectHotel.setBackgroundColor(getColor(android.R.color.transparent))
-                    binding.btnSelectHotel.setTextColor(getColor(R.color.slate_900))
-                    binding.btnSelectHotel.iconTint = android.content.res.ColorStateList.valueOf(getColor(R.color.purple_600))
+                    // Resetear selección al cambiar a Productos
+                    resetSpecialtyButtons()
                 }
                 binding.btnChangeSystem.visibility = android.view.View.VISIBLE
             }
         }
 
         binding.btnSelectHotel.setOnClickListener {
-            // Al seleccionar hotelería, marcamos internamente para el guardado
-            binding.btnSelectHotel.setTag(R.id.btnSelectHotel, "SELECTED")
-            binding.btnSelectHotel.setBackgroundColor(getColor(R.color.purple_600))
-            binding.btnSelectHotel.setTextColor(getColor(R.color.white))
-            binding.btnSelectHotel.iconTint = android.content.res.ColorStateList.valueOf(getColor(R.color.white))
-            binding.btnChangeSystem.visibility = android.view.View.VISIBLE
-            Toast.makeText(this, "Rubro Hotelero Seleccionado", Toast.LENGTH_SHORT).show()
+            selectSpecialty("HOTEL", binding.btnSelectHotel)
+        }
+
+        binding.btnSelectLoans.setOnClickListener {
+            selectSpecialty("LOANS", binding.btnSelectLoans)
+        }
+
+        binding.btnChangeSystem.setOnClickListener {
+            saveSettings()
         }
 
         binding.btnChangeSystem.setOnClickListener {
@@ -111,6 +113,26 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    private fun selectSpecialty(type: String, button: com.google.android.material.button.MaterialButton) {
+        resetSpecialtyButtons()
+        button.setTag(R.id.btnSelectHotel, "SELECTED") // Reusamos tag para validación
+        button.setBackgroundColor(getColor(R.color.purple_600))
+        button.setTextColor(getColor(R.color.white))
+        button.iconTint = android.content.res.ColorStateList.valueOf(getColor(R.color.white))
+        binding.btnChangeSystem.visibility = android.view.View.VISIBLE
+        Toast.makeText(this, "Rubro seleccionado: ${button.text}", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun resetSpecialtyButtons() {
+        val buttons = listOf(binding.btnSelectHotel, binding.btnSelectLoans)
+        buttons.forEach { btn ->
+            btn.setTag(R.id.btnSelectHotel, null)
+            btn.setBackgroundColor(getColor(android.R.color.transparent))
+            btn.setTextColor(getColor(R.color.slate_900))
+            btn.iconTint = android.content.res.ColorStateList.valueOf(getColor(R.color.purple_600))
+        }
+    }
+
     private fun saveSettings() {
         val name = binding.etBusinessName.text.toString().trim()
         val address = binding.etBusinessAddress.text.toString().trim()
@@ -122,16 +144,18 @@ class SettingsActivity : AppCompatActivity() {
         val token = binding.etApiToken.text.toString().trim()
         
         val isHotelSelected = binding.btnSelectHotel.getTag(R.id.btnSelectHotel) == "SELECTED"
+        val isLoansSelected = binding.btnSelectLoans.getTag(R.id.btnSelectHotel) == "SELECTED"
         
         // Validación: Si elige Servicios, debe elegir una especialidad
-        if (binding.toggleBusinessType.checkedButtonId == R.id.btnTypeServices && !isHotelSelected) {
-            Toast.makeText(this, "⚠️ Debes seleccionar una especialidad (ej: Hotelería)", Toast.LENGTH_LONG).show()
+        if (binding.toggleBusinessType.checkedButtonId == R.id.btnTypeServices && !isHotelSelected && !isLoansSelected) {
+            Toast.makeText(this, "⚠️ Debes seleccionar una especialidad (ej: Hotelería o Préstamos)", Toast.LENGTH_LONG).show()
             return
         }
 
         val newType = when {
             binding.toggleBusinessType.checkedButtonId == R.id.btnTypeProducts -> "PRODUCTS"
             isHotelSelected && binding.toggleBusinessType.checkedButtonId == R.id.btnTypeServices -> "HOTEL"
+            isLoansSelected && binding.toggleBusinessType.checkedButtonId == R.id.btnTypeServices -> "LOANS"
             else -> "SERVICES"
         }
 
