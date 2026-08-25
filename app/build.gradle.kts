@@ -21,8 +21,8 @@ android {
         applicationId = "com.naxor.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 4 // Sube esto cada vez que envíes una actualización
-        versionName = "1.3" // Nombre visual de la versión
+        versionCode = 5 // Sube esto cada vez que envíes una actualización
+        versionName = "1.4" // Nombre visual de la versión
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
@@ -67,6 +67,14 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
+    }
+
+    applicationVariants.all {
+        val variantName = name
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
+            output.outputFileName = "Naxor_v${defaultConfig.versionName}_${variantName}.apk"
+        }
     }
 }
 
