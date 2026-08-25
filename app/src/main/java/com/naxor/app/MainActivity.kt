@@ -346,12 +346,27 @@ class MainActivity : AppCompatActivity() {
             fm.findFragmentByTag(t)?.let { transaction.hide(it) }
         }
 
+        val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val businessType = prefs.getString("business_type", "PRODUCTS")
+
         val target = fm.findFragmentByTag(tag)
-        if (target != null) {
+        
+        // Verificar si el fragmento existente es del tipo correcto para el rubro actual
+        val isWrongType = target != null && when(tag) {
+            "HOME" -> (businessType == "HOTEL" && target !is com.naxor.app.fragment.HotelHomeFragment) || 
+                      (businessType != "HOTEL" && target !is com.naxor.app.fragment.HomeFragment)
+            "STOCK" -> (businessType == "HOTEL" && target !is com.naxor.app.fragment.HotelRoomsFragment) || 
+                       (businessType != "HOTEL" && target !is com.naxor.app.fragment.StockFragment)
+            "METRICAS" -> (businessType == "HOTEL" && target !is com.naxor.app.fragment.HotelMetricsFragment) || 
+                          (businessType != "HOTEL" && target !is com.naxor.app.fragment.MetricasFragment)
+            else -> false
+        }
+
+        if (target != null && !isWrongType) {
             transaction.show(target)
         } else {
-            val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
-            val businessType = prefs.getString("business_type", "PRODUCTS")
+            // Si es el tipo incorrecto, lo eliminamos para crear el nuevo
+            target?.let { transaction.remove(it) }
             
             val newFrag = when(tag) {
                 "HOME" -> {
@@ -740,8 +755,8 @@ class MainActivity : AppCompatActivity() {
         val actionNames = arrayOf(
             "💸 Gastos", "💰 Caja", "👥 Deudores", "💸 Mis Cuentas", "🚚 Proveedores", 
             "👤 Clientes", "📖 Catálogo", "🔄 Sincronizar", "📬 Buzón", 
-            "🛒 Lista Compras", "⚖️ Asignador Precios", "📜 Historial Ventas", 
-            "🕒 Historial Cálculos", "💡 Instrucciones"
+            "🛒 Compras", "⚖️ Precios", "📜 Ventas", 
+            "🕒 Cálculos", "💡 Ayuda"
         )
         val actionIds = arrayOf(
             "gastos", "caja", "fiados", "business_debts", "proveedores", 
@@ -751,8 +766,9 @@ class MainActivity : AppCompatActivity() {
         )
         
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val savedActions = prefs.getString("quick_actions_list", "stock,gastos,caja,fiados,proveedores") ?: ""
-        val tempSelection = if (savedActions.isEmpty()) mutableListOf<String>() else savedActions.split(",").toMutableSet().toMutableList()
+        val defaultActions = "gastos,caja,fiados,business_debts,proveedores"
+        val savedActions = prefs.getString("quick_actions_list", defaultActions) ?: defaultActions
+        val tempSelection = if (savedActions.isEmpty()) mutableListOf<String>() else savedActions.split(",").filter { it.isNotEmpty() }.toMutableList()
 
         val rv = RecyclerView(this).apply {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -775,6 +791,10 @@ class MainActivity : AppCompatActivity() {
             if (tempSelection.size == 5) {
                 prefs.edit().putString("quick_actions_list", tempSelection.joinToString(",")).apply()
                 navigateToInicio()
+                
+                // Forzar refresco inmediato si el fragmento de inicio está activo
+                (supportFragmentManager.findFragmentByTag("HOME") as? com.naxor.app.fragment.HomeFragment)?.refreshQuickActions()
+                
                 dialog.dismiss()
             } else {
                 Toast.makeText(this, "¡Atención! Debes seleccionar exactamente 5 herramientas para mantener la estética del menú.", Toast.LENGTH_LONG).show()

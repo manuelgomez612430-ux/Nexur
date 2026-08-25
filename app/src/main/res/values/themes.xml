@@ -130,4 +130,10 @@
         <item name="cornerSizeTopRight">32dp</item>
         <item name="cornerSizeBottomRight">0dp</item>
     </style>
+
+    <style name="Widget.App.Button.Toggle" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:textColor">@color/toggle_text_color</item>
+        <item name="backgroundTint">@color/toggle_background_color</item>
+        <item name="strokeColor">@color/purple_600</item>
+    </style>
 </resources>

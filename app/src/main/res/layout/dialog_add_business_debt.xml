@@ -26,7 +26,92 @@
                 android:textColor="@color/purple_600"
                 android:layout_marginBottom="24dp" />
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Programación de Pago"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_600"
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/toggleDebtRecurrence"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true"
+                app:checkedButton="@id/btnRecurrenceNone"
+                android:layout_marginBottom="16dp">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRecurrenceNone"
+                    style="@style/Widget.App.Button.Toggle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Una vez" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRecurrenceDaily"
+                    style="@style/Widget.App.Button.Toggle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Diario" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRecurrenceMonthly"
+                    style="@style/Widget.App.Button.Toggle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Mensual" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <!-- Sub-opciones de Mensual -->
+            <LinearLayout
+                android:id="@+id/layoutMonthlyType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:layout_marginBottom="24dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tipo de Pago Mensual"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_600"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleMonthlySubType"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:selectionRequired="true"
+                    app:checkedButton="@id/btnMonthlyPerson">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMonthlyPerson"
+                        style="@style/Widget.App.Button.Toggle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="👤 Persona"
+                        android:textSize="11sp" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMonthlyService"
+                        style="@style/Widget.App.Button.Toggle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="⚡ Servicio"
+                        android:textSize="11sp" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+            </LinearLayout>
+
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutDebtAcreedor"
                 style="?attr/textInputOutlinedStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -41,10 +126,10 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutDebtConcepto"
                 style="?attr/textInputOutlinedStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Concepto (Préstamo, Luz, Mercancía)"
                 app:startIconDrawable="@android:drawable/ic_menu_edit"
                 android:layout_marginBottom="16dp">
                 <com.google.android.material.textfield.TextInputEditText
@@ -93,45 +178,6 @@
                         android:inputType="numberDecimal" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Programación de Pago"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="@color/slate_600"
-                android:layout_marginBottom="8dp" />
-
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/toggleDebtRecurrence"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:singleSelection="true"
-                app:selectionRequired="true"
-                android:layout_marginBottom="16dp">
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnRecurrenceNone"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Una vez" />
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnRecurrenceDaily"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Diario" />
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnRecurrenceMonthly"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Mensual" />
-            </com.google.android.material.button.MaterialButtonToggleGroup>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDebtDatePicker"
