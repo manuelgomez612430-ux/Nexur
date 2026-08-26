@@ -118,7 +118,9 @@ class ProductAdapter(
                 Glide.with(context)
                     .load(item.photoPath)
                     .override(200, 200)
-                    .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL) // Cachear todo para velocidad
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .error(android.R.drawable.ic_menu_camera)
                     .transform(CenterCrop(), RoundedCorners(12))
                     .into(ivProdItemPhoto)
                 ivProdItemPhoto.alpha = 1.0f

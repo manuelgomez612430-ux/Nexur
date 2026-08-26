@@ -5,7 +5,7 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-@Database(entities = {CalculationEntity.class, ProductEntity.class, SaleEntity.class, DebtorEntity.class, DebtDetailEntity.class, ExpenseEntity.class, ProviderEntity.class, CustomerEntity.class, CashSessionEntity.class, PriceHistoryEntity.class, MovementLogEntity.class, BusinessDebtEntity.class, HotelRoomEntity.class, HotelBookingEntity.class, HotelRoomLayoutEntity.class, HotelChargeEntity.class, HotelPaymentEntity.class, HotelMaintenanceEntity.class, HotelToolEntity.class, LoanClientEntity.class, LoanEntity.class, LoanInstallmentEntity.class, LoanExpenseEntity.class}, version = 40, exportSchema = false)
+@Database(entities = {CalculationEntity.class, ProductEntity.class, SaleEntity.class, DebtorEntity.class, DebtDetailEntity.class, ExpenseEntity.class, ProviderEntity.class, CustomerEntity.class, CashSessionEntity.class, PriceHistoryEntity.class, MovementLogEntity.class, BusinessDebtEntity.class, HotelRoomEntity.class, HotelBookingEntity.class, HotelRoomLayoutEntity.class, HotelChargeEntity.class, HotelPaymentEntity.class, HotelMaintenanceEntity.class, HotelToolEntity.class, LoanClientEntity.class, LoanEntity.class, LoanInstallmentEntity.class, LoanExpenseEntity.class}, version = 41, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract CalculationDao calculationDao();
     public abstract ProductDao productDao();

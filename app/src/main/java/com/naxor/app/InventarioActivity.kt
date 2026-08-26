@@ -91,6 +91,9 @@ class InventarioActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         binding.rvInventario.layoutManager = LinearLayoutManager(this)
         binding.rvInventario.adapter = adapter
+        binding.rvInventario.setItemViewCacheSize(20)
+        binding.rvInventario.setHasFixedSize(true)
+        binding.rvInventario.itemAnimator = null // Desactivar animaciones para cambios instantáneos
     }
 
     private fun setupSyncIndicator() {

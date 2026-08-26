@@ -5,7 +5,11 @@ import androidx.room.Entity;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "products")
+@Entity(tableName = "products", indices = {
+    @androidx.room.Index("isDeleted"),
+    @androidx.room.Index("categoria"),
+    @androidx.room.Index("codigo")
+})
 public class ProductEntity {
     @PrimaryKey
     @NonNull
