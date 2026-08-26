@@ -5,6 +5,10 @@
         android:icon="@android:drawable/ic_menu_recent_history"
         android:title="Historial de Ventas" />
     <item
+        android:id="@+id/menu_clean_cart"
+        android:icon="@android:drawable/ic_menu_delete"
+        android:title="Vaciar Carrito" />
+    <item
         android:id="@+id/menu_reset_day"
         android:icon="@android:drawable/ic_menu_today"
         android:title="Reiniciar Día" />

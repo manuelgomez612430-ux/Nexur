@@ -23,6 +23,11 @@
         android:title="Borrar varios productos" />
 
     <item
+        android:id="@+id/menu_sort_options"
+        android:icon="@android:drawable/ic_menu_sort_by_size"
+        android:title="Ordenar listado" />
+
+    <item
         android:id="@+id/menu_settings_inventario"
         android:icon="@android:drawable/ic_menu_preferences"
         android:title="Configuración de Negocio" />

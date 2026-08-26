@@ -167,20 +167,36 @@
                             android:maxLength="3" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Capital Total del Negocio"
-                        app:startIconDrawable="@android:drawable/ic_menu_save"
-                        android:layout_marginBottom="16dp"
-                        app:helperText="Dinero total invertido/disponible">
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etBusinessCapital"
-                            android:layout_width="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp">
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
                             android:layout_height="wrap_content"
-                            android:inputType="numberDecimal" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                            android:hint="Capital Total del Negocio"
+                            app:startIconDrawable="@android:drawable/ic_menu_save"
+                            app:helperText="Dinero total invertido/disponible">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etBusinessCapital"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="numberDecimal" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <ImageButton
+                            android:id="@+id/btnInfoCapital"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@android:drawable/ic_dialog_info"
+                            app:tint="@color/slate_400" />
+                    </LinearLayout>
 
                     <TextView
                         android:layout_width="wrap_content"

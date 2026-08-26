@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.naxor.app.databinding.ActivitySettingsBinding
@@ -36,6 +37,12 @@ class SettingsActivity : AppCompatActivity() {
         binding.toolbarSettings.setNavigationOnClickListener { finish() }
         binding.btnSaveSettings.setOnClickListener { saveSettings() }
         binding.cardBusinessLogo.setOnClickListener { pickImageLauncher.launch("image/*") }
+        binding.btnInfoCapital.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("¿Qué es el Capital?")
+                .setMessage("Es el dinero total que has invertido en tu negocio o el dinero que tienes disponible para trabajar.")
+                .setPositiveButton("Entendido", null).show()
+        }
         binding.btnSupportCreator.setOnClickListener {
             startActivity(Intent(this, SupportCreatorActivity::class.java))
         }
