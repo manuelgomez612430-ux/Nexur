@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/slate_50"
+    android:background="?attr/colorSurface"
     android:fillViewport="true">
 
     <LinearLayout
@@ -20,7 +20,7 @@
             android:text="Configuración"
             android:textSize="28sp"
             android:textStyle="bold"
-            android:textColor="@color/slate_900"
+            android:textColor="?attr/colorOnSurface"
             android:layout_marginBottom="4dp" />
 
         <TextView
@@ -28,7 +28,7 @@
             android:layout_height="wrap_content"
             android:text="Gestiona tu cuenta y preferencias"
             android:textSize="14sp"
-            android:textColor="@color/slate_500"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:layout_marginBottom="24dp" />
 
         <!-- ACCOUNT SECTION -->
@@ -38,7 +38,7 @@
             android:layout_marginBottom="32dp"
             app:cardCornerRadius="20dp"
             app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/white"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
             app:strokeWidth="0dp">
 
             <LinearLayout
@@ -121,7 +121,7 @@
             android:layout_marginBottom="32dp"
             app:cardCornerRadius="20dp"
             app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/white"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
             app:strokeWidth="0dp">
 
             <LinearLayout
@@ -161,14 +161,14 @@
                             android:text="Perfil de Empresa"
                             android:textSize="15sp"
                             android:textStyle="bold"
-                            android:textColor="@color/slate_900" />
+                            android:textColor="?attr/colorOnSurface" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Nombre, RUC, logo y moneda"
                             android:textSize="12sp"
-                            android:textColor="@color/slate_500" />
+                            android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
 
                     <ImageView
@@ -216,14 +216,14 @@
                             android:text="Ajustes del Sistema"
                             android:textSize="15sp"
                             android:textStyle="bold"
-                            android:textColor="@color/slate_900" />
+                            android:textColor="?attr/colorOnSurface" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Idioma y preferencias de la app"
                             android:textSize="12sp"
-                            android:textColor="@color/slate_500" />
+                            android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
 
                     <ImageView
@@ -252,7 +252,7 @@
             android:layout_marginBottom="32dp"
             app:cardCornerRadius="20dp"
             app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/white"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
             app:strokeWidth="0dp">
 
             <LinearLayout
@@ -290,14 +290,14 @@
                             android:text="Guía de Inicio"
                             android:textSize="15sp"
                             android:textStyle="bold"
-                            android:textColor="@color/slate_900" />
+                            android:textColor="?attr/colorOnSurface" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Repetir el tour interactivo"
                             android:textSize="12sp"
-                            android:textColor="@color/slate_500" />
+                            android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -338,14 +338,14 @@
                             android:text="Apoyar al Creador"
                             android:textSize="15sp"
                             android:textStyle="bold"
-                            android:textColor="@color/slate_900" />
+                            android:textColor="?attr/colorOnSurface" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Ayúdanos a mantener Nexur gratuito"
+                            android:text="Ayúdame a mantener Nexur gratuito"
                             android:textSize="12sp"
-                            android:textColor="@color/slate_500" />
+                            android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -385,14 +385,14 @@
                             android:text="Versión de App"
                             android:textSize="15sp"
                             android:textStyle="bold"
-                            android:textColor="@color/slate_900" />
+                            android:textColor="?attr/colorOnSurface" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Buscar actualizaciones"
                             android:textSize="12sp"
-                            android:textColor="@color/slate_500" />
+                            android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>

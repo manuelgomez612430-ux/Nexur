@@ -1,6 +1,7 @@
 package com.naxor.app.fragment
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.GestureDetector
@@ -79,6 +80,10 @@ class MetricasFragment : Fragment() {
 
         binding.btnOpenMenuResumen.setOnClickListener {
             openDrawer()
+        }
+
+        binding.btnMailboxResumen.setOnClickListener {
+            startActivity(Intent(requireContext(), com.naxor.app.MailboxActivity::class.java))
         }
 
         binding.btnRefreshAiAnalysis.setOnClickListener {

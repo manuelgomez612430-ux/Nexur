@@ -1,5 +1,6 @@
 package com.naxor.app
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -33,6 +34,9 @@ class CajaActivity : AppCompatActivity() {
 
         binding.btnBackCaja.setOnClickListener { finish() }
         binding.btnHelpCaja.setOnClickListener { showHelpDialog() }
+        binding.btnMailboxCaja.setOnClickListener {
+            startActivity(Intent(this, MailboxActivity::class.java))
+        }
         setupNetworkMonitoring()
         setupSyncIndicator()
         checkSession()

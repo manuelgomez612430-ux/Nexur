@@ -19,12 +19,19 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
+        <!-- FONDO DE LA BARRA DE NAVEGACIÓN -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:background="?attr/colorSurfaceContainer"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
         <!-- BLOQUE INDICADOR DINÁMICO (MODERN HUB) -->
         <View
             android:id="@+id/navIndicatorCustom"
             android:layout_width="0dp"
             android:layout_height="72dp"
-            android:background="#6B21A8"
+            android:background="?attr/colorPrimary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintWidth_percent="0.25" />

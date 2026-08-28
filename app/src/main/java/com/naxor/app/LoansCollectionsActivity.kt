@@ -10,11 +10,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.naxor.app.data.AppDatabase
+import com.naxor.app.data.LoanClientEntity
+import com.naxor.app.data.LoanEntity
 import com.naxor.app.data.LoanInstallmentEntity
 import com.naxor.app.databinding.ActivityLoansCollectionsBinding
 import com.naxor.app.databinding.ItemLoanCollectionBinding
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.*
 
 class LoansCollectionsActivity : AppCompatActivity() {
@@ -63,11 +67,120 @@ class LoansCollectionsActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        adapter = CollectionsAdapter { installment ->
-            sendWhatsappReminder(installment)
-        }
+        adapter = CollectionsAdapter(
+            onWhatsapp = { installment -> sendWhatsappReminder(installment) },
+            onQuickPay = { installment -> showQuickPaymentDialog(installment) }
+        )
         binding.rvTodayCollections.layoutManager = LinearLayoutManager(this)
         binding.rvTodayCollections.adapter = adapter
+    }
+
+    private fun showQuickPaymentDialog(installment: LoanInstallmentEntity) {
+        lifecycleScope.launch {
+            val loan = database.loanDao().getLoanById(installment.loanId)
+            val client = loan?.let { database.loanDao().getClientById(it.clientId) }
+            
+            if (loan != null && client != null) {
+                val remainingInInstallment = installment.amount - installment.amountPaid
+                
+                // Calcular mora (si existe)
+                val now = System.currentTimeMillis()
+                var lateFee = 0.0
+                if (now > installment.dueDate) {
+                    val diffMs = now - installment.dueDate
+                    val daysLate = (java.util.concurrent.TimeUnit.MILLISECONDS.toDays(diffMs)).toInt()
+                    if (daysLate > loan.graceDays) {
+                        lateFee = (daysLate - loan.graceDays) * loan.lateFeeAmount
+                    }
+                }
+                
+                val totalToPayThisQuota = remainingInInstallment + lateFee
+
+                // Inflar el nuevo diseño premium
+                val dialogView = LayoutInflater.from(this@LoansCollectionsActivity).inflate(R.layout.dialog_loan_payment, null)
+                val tvClient = dialogView.findViewById<android.widget.TextView>(R.id.tvDialogClientName)
+                val tvInstallment = dialogView.findViewById<android.widget.TextView>(R.id.tvDialogInstallmentInfo)
+                val tvAmountDue = dialogView.findViewById<android.widget.TextView>(R.id.tvDialogAmountDue)
+                val tvLateFee = dialogView.findViewById<android.widget.TextView>(R.id.tvDialogLateFee)
+                val etAmount = dialogView.findViewById<android.widget.EditText>(R.id.etPaymentAmount)
+                val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelPayment)
+                val btnConfirm = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnConfirmPayment)
+
+                tvClient.text = "Cliente: ${client.name}"
+                tvInstallment.text = if (installment.amountPaid > 0) "SALDO RESTANTE" else "CUOTA #${installment.installmentNumber}"
+                tvAmountDue.text = "Saldo pendiente: S/ ${String.format(Locale.US, "%.2f", remainingInInstallment)}"
+                
+                if (lateFee > 0) {
+                    tvLateFee.visibility = android.view.View.VISIBLE
+                    tvLateFee.text = "⚠️ Mora por atraso: S/ ${String.format(Locale.US, "%.2f", lateFee)}"
+                }
+
+                etAmount.setText(String.format(Locale.US, "%.2f", totalToPayThisQuota))
+                etAmount.requestFocus()
+
+                val dialog = androidx.appcompat.app.AlertDialog.Builder(this@LoansCollectionsActivity)
+                    .setView(dialogView)
+                    .create()
+                
+                dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+                btnCancel.setOnClickListener { dialog.dismiss() }
+                btnConfirm.setOnClickListener {
+                    val amount = etAmount.text.toString().toDoubleOrNull() ?: 0.0
+                    if (amount > 0) {
+                        if (amount > totalToPayThisQuota + 0.01) {
+                            Toast.makeText(this@LoansCollectionsActivity, "⚠️ No puede cobrar más del saldo (Máx: S/ ${String.format(Locale.US, "%.2f", totalToPayThisQuota)})", Toast.LENGTH_SHORT).show()
+                        } else {
+                            processQuickPayment(installment, client, loan, amount)
+                            dialog.dismiss()
+                        }
+                    }
+                }
+                
+                dialog.show()
+            }
+        }
+    }
+
+    private fun processQuickPayment(installment: LoanInstallmentEntity, client: LoanClientEntity, loan: LoanEntity, amount: Double) {
+        lifecycleScope.launch {
+            val updated = installment.copy(
+                amountPaid = installment.amountPaid + amount,
+                status = if (installment.amountPaid + amount >= installment.amount - 0.01) "PAID" else "PARTIAL"
+            )
+            database.loanDao().updateInstallment(updated)
+            
+            // REGISTRAR EN HISTORIAL
+            database.loanDao().insertPayment(com.naxor.app.data.LoanPaymentEntity(
+                loanId = loan.id,
+                installmentId = installment.id,
+                amount = amount,
+                lateFeeAmount = 0.0
+            ))
+
+            // Lógica de finalización automática (Cobro rápido)
+            val allInsts = database.loanDao().getInstallmentsByLoanSync(loan.id)
+            val isFullyPaid = allInsts.all { 
+                if (it.id == installment.id) updated.status == "PAID" 
+                else it.status == "PAID" 
+            }
+            if (isFullyPaid) {
+                database.loanDao().updateLoan(loan.copy(status = "PAID"))
+            }
+
+            // Generar Recibo PDF
+            val receipt = com.naxor.app.util.LoanPdfGenerator(this@LoansCollectionsActivity).generatePaymentReceipt(client, loan, updated, amount)
+            receipt?.let { file ->
+                val uri = androidx.core.content.FileProvider.getUriForFile(this@LoansCollectionsActivity, "$packageName.provider", file)
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/pdf"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                startActivity(Intent.createChooser(intent, "Enviar Recibo"))
+            }
+            Toast.makeText(this@LoansCollectionsActivity, "Cobro registrado correctamente", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun setupSearch() {
@@ -127,7 +240,10 @@ class LoansCollectionsActivity : AppCompatActivity() {
         }
     }
 
-    inner class CollectionsAdapter(private val onWhatsapp: (LoanInstallmentEntity) -> Unit) : RecyclerView.Adapter<CollectionsAdapter.ViewHolder>() {
+    inner class CollectionsAdapter(
+        private val onWhatsapp: (LoanInstallmentEntity) -> Unit,
+        private val onQuickPay: (LoanInstallmentEntity) -> Unit
+    ) : RecyclerView.Adapter<CollectionsAdapter.ViewHolder>() {
         private var items = emptyList<LoanInstallmentEntity>()
         fun submitList(newItems: List<LoanInstallmentEntity>) { items = newItems; notifyDataSetChanged() }
         inner class ViewHolder(val b: ItemLoanCollectionBinding) : RecyclerView.ViewHolder(b.root)
@@ -140,11 +256,14 @@ class LoansCollectionsActivity : AppCompatActivity() {
                 val loan = database.loanDao().getLoanById(item.loanId)
                 val client = loan?.let { database.loanDao().getClientById(it.clientId) }
                 
-                with(holder.b) {
-                    tvCollClientName.text = client?.name ?: "Cargando..."
-                    tvCollInstallmentInfo.text = "Cuota ${item.installmentNumber} | Vence hoy"
-                    tvCollAmount.text = "S/ ${String.format(Locale.US, "%.2f", item.amount)}"
-                    btnCollWhatsapp.setOnClickListener { onWhatsapp(item) }
+                withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    with(holder.b) {
+                        tvCollClientName.text = client?.name ?: "Cargando..."
+                        tvCollInstallmentInfo.text = "Cuota ${item.installmentNumber} | Vence hoy"
+                        tvCollAmount.text = "S/ ${String.format(Locale.US, "%.2f", item.amount - item.amountPaid)}"
+                        btnCollWhatsapp.setOnClickListener { onWhatsapp(item) }
+                        btnQuickPay.setOnClickListener { onQuickPay(item) }
+                    }
                 }
             }
         }

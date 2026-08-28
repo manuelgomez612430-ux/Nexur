@@ -6,15 +6,15 @@
             <item
                 android:id="@+id/menu_loans_clients"
                 android:icon="@android:drawable/ic_menu_my_calendar"
-                android:title="👥 Mis Clientes" />
+                android:title="Mis Clientes" />
             <item
                 android:id="@+id/menu_loans_new"
                 android:icon="@android:drawable/ic_input_add"
-                android:title="💸 Registrar Nuevo Préstamo" />
+                android:title="Registrar Nuevo Préstamo" />
             <item
                 android:id="@+id/menu_loans_collections"
                 android:icon="@android:drawable/ic_menu_today"
-                android:title="📅 Cobros del Día" />
+                android:title="Cobros del Día" />
         </menu>
     </item>
 
@@ -23,11 +23,11 @@
             <item
                 android:id="@+id/menu_loans_profit"
                 android:icon="@android:drawable/ic_menu_compass"
-                android:title="📈 Rendimiento e Intereses" />
+                android:title="Rendimiento e Intereses" />
             <item
                 android:id="@+id/menu_loans_expenses"
                 android:icon="@android:drawable/ic_menu_send"
-                android:title="📉 Gastos Operativos" />
+                android:title="Gastos Operativos" />
         </menu>
     </item>
 

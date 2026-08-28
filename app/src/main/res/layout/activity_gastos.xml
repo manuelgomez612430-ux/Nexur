@@ -41,6 +41,16 @@
                     android:textColor="@android:color/white" />
 
                 <ImageButton
+                    android:id="@+id/btnMailboxGastos"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_toStartOf="@id/btnSyncIndicator"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_dialog_email"
+                    app:tint="@android:color/white"
+                    android:contentDescription="Buzón" />
+
+                <ImageButton
                     android:id="@+id/btnSyncIndicator"
                     android:layout_width="48dp"
                     android:layout_height="48dp"

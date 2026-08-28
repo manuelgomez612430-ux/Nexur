@@ -6,15 +6,15 @@
             <item
                 android:id="@+id/menu_hotel_guests"
                 android:icon="@android:drawable/ic_menu_my_calendar"
-                android:title="📜 Historial de Huéspedes" />
+                android:title="Historial de Huéspedes" />
             <item
                 android:id="@+id/menu_hotel_bookings"
                 android:icon="@android:drawable/ic_menu_today"
-                android:title="📅 Control de Reservas" />
+                android:title="Control de Reservas" />
             <item
                 android:id="@+id/menu_hotel_payments"
                 android:icon="@android:drawable/ic_menu_save"
-                android:title="💸 Compromisos de Pago" />
+                android:title="Compromisos de Pago" />
         </menu>
     </item>
 
@@ -23,19 +23,19 @@
             <item
                 android:id="@+id/menu_hotel_rooms_graph"
                 android:icon="@android:drawable/ic_menu_sort_by_size"
-                android:title="🏨 Disponibilidad Gráfica" />
+                android:title="Disponibilidad Gráfica" />
             <item
                 android:id="@+id/menu_hotel_maintenance"
                 android:icon="@android:drawable/ic_menu_manage"
-                android:title="🛠️ Fallas y Mantenimiento" />
+                android:title="Fallas y Mantenimiento" />
             <item
                 android:id="@+id/menu_hotel_tools"
                 android:icon="@android:drawable/ic_menu_agenda"
-                android:title="🧰 Inventario de Herramientas" />
+                android:title="Inventario de Herramientas" />
             <item
                 android:id="@+id/menu_hotel_guide"
                 android:icon="@android:drawable/ic_menu_directions"
-                android:title="🗺️ Guía Digital de la Ciudad" />
+                android:title="Guía Digital de la Ciudad" />
         </menu>
     </item>
 

@@ -11,8 +11,6 @@ data class LoanClientEntity(
     val doc: String,
     val phone: String,
     val address: String? = null,
-    val latitude: Double? = null,
-    val longitude: Double? = null,
     val score: Int = 100, // Score de puntualidad 0-100
     val photoPath: String? = null,
     val docPhotoPath: String? = null,
@@ -56,8 +54,20 @@ data class LoanInstallmentEntity(
 data class LoanExpenseEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val concept: String, // Gasolina, Cobrador, Moto, etc.
+    val category: String = "Otros", // NUEVO: Categoría seleccionable
     val amount: Double,
     val timestamp: Long = System.currentTimeMillis(),
     var isSynced: Boolean = false,
+    var isDeleted: Boolean = false
+)
+
+@Entity(tableName = "loan_payments")
+data class LoanPaymentEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val loanId: String,
+    val installmentId: String?, // Nulo si es un pago general
+    val amount: Double,
+    val lateFeeAmount: Double = 0.0,
+    val timestamp: Long = System.currentTimeMillis(),
     var isDeleted: Boolean = false
 )

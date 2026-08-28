@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.databinding.FragmentHotelHomeBinding
 import com.naxor.app.MainActivity
+import com.naxor.app.R
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -38,6 +39,13 @@ class HotelHomeFragment : Fragment() {
     private fun setupToolbar() {
         binding.toolbarHotel.setNavigationOnClickListener {
             (activity as? MainActivity)?.openSideMenu()
+        }
+        binding.toolbarHotel.inflateMenu(R.menu.menu_mailbox)
+        binding.toolbarHotel.setOnMenuItemClickListener {
+            if (it.itemId == R.id.action_mailbox) {
+                startActivity(Intent(requireContext(), com.naxor.app.MailboxActivity::class.java))
+                true
+            } else false
         }
     }
 

@@ -16,41 +16,44 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
     override suspend fun doWork(): Result {
         val database = AppDatabase.getDatabase(context)
         
-        // Consultar deudas que vencen hoy (hasta el final del día)
+        val now = Calendar.getInstance()
+        val hour = now.get(Calendar.HOUR_OF_DAY)
+        
         val cal = Calendar.getInstance()
         cal.set(Calendar.HOUR_OF_DAY, 23)
         cal.set(Calendar.MINUTE, 59)
         val timeLimit = cal.timeInMillis
         
+        // 1. Deudores
         val pendingDebtors = database.debtorDao().getPendingCollections(timeLimit)
-        
         if (pendingDebtors.isNotEmpty()) {
             val totalAmount = pendingDebtors.sumOf { it.deudaTotal }
             showReminderNotification(pendingDebtors.size, totalAmount, "COBRAR", 2002)
         }
 
-        // Consultar deudas propias por pagar hoy
+        // 2. Deudas Propias
         val pendingBusinessDebts = database.businessDebtDao().getUpcomingPayments(timeLimit)
         if (pendingBusinessDebts.isNotEmpty()) {
             val totalAmount = pendingBusinessDebts.sumOf { it.montoTotal - it.montoPagado }
             showReminderNotification(pendingBusinessDebts.size, totalAmount, "PAGAR_BIZ", 2003)
         }
 
-        // Consultar gastos programados para hoy
+        // 3. Gastos
         val pendingExpenses = database.expenseDao().getPendingExpenses(timeLimit)
         if (pendingExpenses.isNotEmpty()) {
             val totalAmount = pendingExpenses.sumOf { it.monto }
             showReminderNotification(pendingExpenses.size, totalAmount, "PAGAR_GASTO", 2004)
         }
 
-        // --- NUEVO: Consultar Cobros de Préstamos para hoy ---
+        // 4. Préstamos
         val pendingLoans = database.loanDao().getPendingCollections(timeLimit)
         if (pendingLoans.isNotEmpty()) {
             val totalAmount = pendingLoans.sumOf { it.amount - it.amountPaid }
-            showLoanNotification(pendingLoans.size, totalAmount)
+            if (hour == 8) showMorningSummary(pendingLoans.size, totalAmount)
+            else showLoanNotification(pendingLoans.size, totalAmount)
         }
 
-        // Consultar herramientas que superaron su tiempo de uso
+        // 5. Herramientas
         val activeTools = database.hotelToolDao().getAllActiveToolsOnce()
         val expiredTools = activeTools.filter { tool ->
             if (tool.maxUsageMonths > 0) {
@@ -59,12 +62,32 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
                 monthsInUse >= tool.maxUsageMonths
             } else false
         }
-        
-        if (expiredTools.isNotEmpty()) {
-            showToolNotification(expiredTools.size)
-        }
+        if (expiredTools.isNotEmpty()) showToolNotification(expiredTools.size)
         
         return Result.success()
+    }
+
+    private fun showMorningSummary(count: Int, total: Double) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = "morning_summary"
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(channelId, "Resumen Matutino", NotificationManager.IMPORTANCE_DEFAULT)
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val intent = android.content.Intent(context, LoansCollectionsActivity::class.java)
+        val pendingIntent = android.app.PendingIntent.getActivity(context, 5001, intent, android.app.PendingIntent.FLAG_IMMUTABLE)
+
+        val builder = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.logo_naxor_icon)
+            .setContentTitle("🌅 ¡Buen día! Resumen de hoy")
+            .setContentText("Hoy tienes $count cobros pendientes (S/ ${String.format(Locale.getDefault(), "%.2f", total)}).")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+
+        notificationManager.notify(5001, builder.build())
     }
 
     private fun showLoanNotification(count: Int, total: Double) {
@@ -82,7 +105,7 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.logo_naxor_icon)
             .setContentTitle("💰 Cobros de Préstamos")
-            .setContentText("Tienes $count cuotas por cobrar hoy. Total estimado: S/ ${String.format(Locale.getDefault(), "%.2f", total)}.")
+            .setContentText("Tienes $count cuotas por cobrar hoy. Total: S/ ${String.format(Locale.getDefault(), "%.2f", total)}.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
@@ -105,7 +128,7 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.logo_naxor_icon)
             .setContentTitle("🛠️ Renovación de Herramientas")
-            .setContentText("Tienes $count herramientas que han superado su vida útil. Se recomienda revisarlas o cambiarlas.")
+            .setContentText("Tienes $count herramientas con vida útil superada.")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
@@ -133,11 +156,7 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
         val pendingIntent = android.app.PendingIntent.getActivity(context, notificationId, intent, android.app.PendingIntent.FLAG_IMMUTABLE)
 
         val title = if (type == "COBRAR") "📅 ¡Hoy toca cobrar!" else "💸 ¡Hoy toca pagar!"
-        val content = if (type == "COBRAR") {
-            "Tienes $count clientes con pagos programados por un total de S/ ${String.format(Locale.getDefault(), "%.2f", total)}."
-        } else {
-            "Tienes $count compromisos de pago hoy por un total de S/ ${String.format(Locale.getDefault(), "%.2f", total)}."
-        }
+        val content = "Tienes $count compromisos hoy por un total de S/ ${String.format(Locale.getDefault(), "%.2f", total)}."
 
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.logo_naxor_icon)

@@ -137,6 +137,10 @@ class VentasActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.btnBackVentas.setOnClickListener { finish() }
         
+        binding.btnMailboxVentas.setOnClickListener {
+            startActivity(Intent(this, MailboxActivity::class.java))
+        }
+
         binding.btnOpenMenuVentas.setOnClickListener {
             binding.drawerLayoutVentas.openDrawer(GravityCompat.START)
         }

@@ -87,6 +87,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Aplicar modo oscuro guardado antes del super.onCreate
+        val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val isDark = appPrefs.getBoolean("dark_mode", false)
+        if (isDark) {
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES)
+        } else {
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO)
+        }
+        
         super.onCreate(savedInstanceState)
         
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -123,7 +132,25 @@ class MainActivity : AppCompatActivity() {
                     "LOANS" -> "Clientes"
                     else -> "Servicios"
                 }
-                item.setIcon(if (businessType == "LOANS") android.R.drawable.ic_menu_my_calendar else android.R.drawable.ic_menu_agenda)
+                
+                // Actualizar iconos según rubro (Estilo Premium)
+                when(businessType) {
+                    "LOANS" -> {
+                        menu.findItem(R.id.nav_inicio)?.setIcon(android.R.drawable.ic_menu_directions)
+                        item.setIcon(android.R.drawable.ic_menu_my_calendar)
+                        menu.findItem(R.id.nav_metricas)?.setIcon(android.R.drawable.ic_menu_compass)
+                        menu.findItem(R.id.nav_config)?.setIcon(android.R.drawable.ic_menu_manage)
+                        
+                        menu.findItem(R.id.nav_inicio)?.title = "Inicio"
+                        menu.findItem(R.id.nav_metricas)?.title = "Rendimiento"
+                    }
+                    "HOTEL" -> {
+                        item.setIcon(android.R.drawable.ic_menu_sort_by_size)
+                    }
+                    else -> {
+                        item.setIcon(android.R.drawable.ic_menu_agenda)
+                    }
+                }
                 
                 // --- 2. Side Drawer ---
                 binding.navigationViewMain.menu.clear()
@@ -194,6 +221,22 @@ class MainActivity : AppCompatActivity() {
         if (!shown) {
             startInteractiveTutorial()
         }
+    }
+
+    private fun showNewLoanOptions() {
+        val options = arrayOf("👤 Cliente existente", "🆕 Nuevo cliente")
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Registrar Préstamo")
+            .setItems(options) { _, which ->
+                if (which == 0) {
+                    val intent = Intent(this, com.naxor.app.LoansClientsActivity::class.java)
+                    intent.putExtra("PICK_MODE", true)
+                    startActivity(intent)
+                } else {
+                    startActivity(Intent(this, com.naxor.app.AddLoanActivity::class.java))
+                }
+            }
+            .show()
     }
 
     fun startInteractiveTutorial() {
@@ -303,6 +346,19 @@ class MainActivity : AppCompatActivity() {
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
         if (ev != null) globalGestureDetector.onTouchEvent(ev)
+        
+        if (ev?.action == MotionEvent.ACTION_DOWN) {
+            val v = currentFocus
+            if (v is android.widget.EditText) {
+                val outRect = android.graphics.Rect()
+                v.getGlobalVisibleRect(outRect)
+                if (!outRect.contains(ev.rawX.toInt(), ev.rawY.toInt())) {
+                    v.clearFocus()
+                    val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                    imm.hideSoftInputFromWindow(v.windowToken, 0)
+                }
+            }
+        }
         return super.dispatchTouchEvent(ev)
     }
 
@@ -361,9 +417,11 @@ class MainActivity : AppCompatActivity() {
                       (businessType == "LOANS" && target !is com.naxor.app.fragment.LoansHomeFragment) ||
                       (businessType != "HOTEL" && businessType != "LOANS" && target !is com.naxor.app.fragment.HomeFragment)
             "STOCK" -> (businessType == "HOTEL" && target !is com.naxor.app.fragment.HotelRoomsFragment) || 
-                       (businessType != "HOTEL" && target !is com.naxor.app.fragment.StockFragment)
+                       (businessType == "LOANS" && target !is com.naxor.app.fragment.LoansClientsFragment) ||
+                       (businessType != "HOTEL" && businessType != "LOANS" && target !is com.naxor.app.fragment.StockFragment)
             "METRICAS" -> (businessType == "HOTEL" && target !is com.naxor.app.fragment.HotelMetricsFragment) || 
-                          (businessType != "HOTEL" && target !is com.naxor.app.fragment.MetricasFragment)
+                          (businessType == "LOANS" && target !is com.naxor.app.fragment.LoansMetricsFragment) ||
+                          (businessType != "HOTEL" && businessType != "LOANS" && target !is com.naxor.app.fragment.MetricasFragment)
             else -> false
         }
 
@@ -382,12 +440,18 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 "STOCK" -> {
-                    if (businessType == "HOTEL") com.naxor.app.fragment.HotelRoomsFragment()
-                    else com.naxor.app.fragment.StockFragment()
+                    when(businessType) {
+                        "HOTEL" -> com.naxor.app.fragment.HotelRoomsFragment()
+                        "LOANS" -> com.naxor.app.fragment.LoansClientsFragment()
+                        else -> com.naxor.app.fragment.StockFragment()
+                    }
                 }
                 "METRICAS" -> {
-                    if (businessType == "HOTEL") com.naxor.app.fragment.HotelMetricsFragment()
-                    else com.naxor.app.fragment.MetricasFragment()
+                    when(businessType) {
+                        "HOTEL" -> com.naxor.app.fragment.HotelMetricsFragment()
+                        "LOANS" -> com.naxor.app.fragment.LoansMetricsFragment()
+                        else -> com.naxor.app.fragment.MetricasFragment()
+                    }
                 }
                 "SETTINGS" -> com.naxor.app.fragment.SettingsFragment()
                 else -> com.naxor.app.fragment.HomeFragment()
@@ -486,6 +550,13 @@ class MainActivity : AppCompatActivity() {
                 R.id.menu_hotel_maintenance -> { startToolActivity(Intent(this, HotelMaintenanceActivity::class.java)); true }
                 R.id.menu_hotel_tools -> { startToolActivity(Intent(this, HotelToolsActivity::class.java)); true }
                 R.id.menu_hotel_guide -> { Toast.makeText(this, "Guía de la Ciudad", Toast.LENGTH_SHORT).show(); true }
+                
+                // Loans Specific
+                R.id.menu_loans_clients -> { navigateToStock(); true }
+                R.id.menu_loans_new -> { showNewLoanOptions(); true }
+                R.id.menu_loans_collections -> { startToolActivity(Intent(this, LoansCollectionsActivity::class.java)); true }
+                R.id.menu_loans_profit -> { navigateToMetricas(); true }
+                R.id.menu_loans_expenses -> { startToolActivity(Intent(this, LoansExpensesActivity::class.java)); true }
                 
                 // General
                 R.id.menu_gastos -> { checkPinAndNavigate { startToolActivity(Intent(this, GastosActivity::class.java)) }; true }
@@ -591,7 +662,7 @@ class MainActivity : AppCompatActivity() {
     fun generatePDFCatalog() {
         val loadingDialog = AlertDialog.Builder(this)
             .setTitle("Generando Catálogo")
-            .setMessage("Por favor espera, estamos preparando tus productos con imágenes HD...")
+            .setMessage("Por favor espera, estoy preparando tus productos con imágenes HD...")
             .setCancelable(false)
             .create()
         loadingDialog.show()

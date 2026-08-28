@@ -1,7 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.Naxor" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <item name="colorPrimary">@color/purple_600</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/indigo_500</item>
+        <item name="colorSurface">@color/slate_900</item>
+        <item name="colorOnSurface">@color/slate_50</item>
+        <item name="colorOnSurfaceVariant">@color/slate_400</item>
+        <item name="colorSurfaceContainer">@color/slate_800</item>
+        <item name="android:windowBackground">@color/slate_900</item>
     </style>
 </resources>

@@ -38,6 +38,7 @@
             android:hint="Correo electrónico"
             android:layout_marginBottom="8dp"
             app:startIconDrawable="@android:drawable/ic_dialog_email"
+            app:endIconMode="clear_text"
             app:errorEnabled="false">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etLoginEmail"

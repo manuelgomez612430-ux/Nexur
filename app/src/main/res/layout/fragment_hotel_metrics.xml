@@ -15,7 +15,8 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="Rendimiento del Negocio"
-            app:titleTextColor="@color/slate_900" />
+            app:titleTextColor="@color/slate_900"
+            app:menu="@menu/menu_mailbox" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView

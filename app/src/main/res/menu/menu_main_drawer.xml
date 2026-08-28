@@ -14,27 +14,27 @@
             <item
                 android:id="@+id/menu_gastos"
                 android:icon="@android:drawable/ic_menu_send"
-                android:title="💸 Control de Gastos" />
+                android:title="Control de Gastos" />
             <item
                 android:id="@+id/menu_caja"
                 android:icon="@android:drawable/ic_menu_save"
-                android:title="💰 Arqueo de Caja" />
+                android:title="Arqueo de Caja" />
             <item
                 android:id="@+id/menu_fiados"
                 android:icon="@android:drawable/ic_menu_my_calendar"
-                android:title="👥 Control de Deudores" />
+                android:title="Control de Deudores" />
             <item
                 android:id="@+id/menu_business_debts"
                 android:icon="@android:drawable/ic_menu_edit"
-                android:title="💸 Mis Cuentas por Pagar" />
+                android:title="Mis Cuentas por Pagar" />
             <item
                 android:id="@+id/menu_proveedores"
                 android:icon="@android:drawable/ic_menu_directions"
-                android:title="🚚 Proveedores" />
+                android:title="Proveedores" />
             <item
                 android:id="@+id/menu_emitir_comprobante"
                 android:icon="@android:drawable/ic_menu_agenda"
-                android:title="🧾 Emitir Boleta / Factura" />
+                android:title="Emitir Boleta / Factura" />
         </menu>
     </item>
 

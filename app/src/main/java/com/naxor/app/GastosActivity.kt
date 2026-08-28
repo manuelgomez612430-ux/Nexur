@@ -168,6 +168,9 @@ class GastosActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.btnBackGastos.setOnClickListener { finish() }
         binding.btnHelpGastos.setOnClickListener { showHelpDialog() }
+        binding.btnMailboxGastos.setOnClickListener {
+            startActivity(Intent(this, MailboxActivity::class.java))
+        }
         binding.fabAddGasto.setOnClickListener { showAddExpenseDialog() }
     }
 

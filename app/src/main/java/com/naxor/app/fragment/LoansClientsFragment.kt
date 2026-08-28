@@ -1,71 +1,78 @@
-package com.naxor.app
+package com.naxor.app.fragment
 
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.naxor.app.MainActivity
+import com.naxor.app.R
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.LoanClientEntity
-import com.naxor.app.databinding.ActivityLoansClientsBinding
+import com.naxor.app.databinding.FragmentLoansClientsBinding
 import com.naxor.app.databinding.ItemLoanClientBinding
+import com.naxor.app.LoanDetailsActivity
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import java.util.*
 
-class LoansClientsActivity : AppCompatActivity() {
+class LoansClientsFragment : Fragment() {
 
-    private lateinit var binding: ActivityLoansClientsBinding
-    private val database by lazy { AppDatabase.getDatabase(this) }
+    private var _binding: FragmentLoansClientsBinding? = null
+    private val binding get() = _binding!!
+    private val database by lazy { AppDatabase.getDatabase(requireContext()) }
     private lateinit var adapter: ClientsAdapter
     private var currentFilter = "ACTIVE"
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityLoansClientsBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = FragmentLoansClientsBinding.inflate(inflater, container, false)
+        return binding.root
+    }
 
-        val pickMode = intent.getBooleanExtra("PICK_MODE", false)
-        if (pickMode) {
-            binding.toolbarClients.title = "Seleccionar Cliente"
-            binding.chipFilterAll.isChecked = true
-            currentFilter = "ALL"
-        } else {
-            binding.chipFilterActive.isChecked = true
-            currentFilter = "ACTIVE"
-        }
-
-        binding.toolbarClients.setNavigationOnClickListener { finish() }
-        setupRecyclerView(pickMode)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        setupToolbar()
+        setupRecyclerView()
         setupSearch()
         setupFilters()
+        
+        // Sincronizar UI con el filtro por defecto
+        binding.chipFilterActiveFrag.isChecked = true
         
         loadClients()
     }
 
+    private fun setupToolbar() {
+        binding.toolbarClientsFrag.setNavigationOnClickListener {
+            (activity as? MainActivity)?.openSideMenu()
+        }
+    }
+
     private fun setupFilters() {
-        binding.chipGroupFilters.setOnCheckedStateChangeListener { group, checkedIds ->
+        binding.chipGroupFiltersFrag.setOnCheckedStateChangeListener { _, checkedIds ->
             val firstId = if (checkedIds.isNotEmpty()) checkedIds[0] else -1
             currentFilter = when(firstId) {
-                R.id.chipFilterActive -> "ACTIVE"
-                R.id.chipFilterOverdue -> "OVERDUE"
-                R.id.chipFilterPaid -> "PAID"
+                R.id.chipFilterActiveFrag -> "ACTIVE"
+                R.id.chipFilterOverdueFrag -> "OVERDUE"
+                R.id.chipFilterPaidFrag -> "PAID"
                 else -> "ALL"
             }
-            loadClients(binding.etSearchClients.text.toString())
+            loadClients(binding.etSearchClientsFrag.text.toString())
         }
     }
 
     private fun setupSearch() {
-        binding.etSearchClients.addTextChangedListener(object : TextWatcher {
+        binding.etSearchClientsFrag.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 loadClients(s.toString())
@@ -73,7 +80,7 @@ class LoansClientsActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        val inputLayout = binding.etSearchClients.parent.parent as? com.google.android.material.textfield.TextInputLayout
+        val inputLayout = binding.etSearchClientsFrag.parent.parent as? com.google.android.material.textfield.TextInputLayout
         inputLayout?.setEndIconOnClickListener {
             startVoiceSearch()
         }
@@ -88,19 +95,19 @@ class LoansClientsActivity : AppCompatActivity() {
         try {
             voiceLauncher.launch(intent)
         } catch (e: Exception) {
-            Toast.makeText(this, "La búsqueda por voz no está disponible", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "La búsqueda por voz no está disponible", Toast.LENGTH_SHORT).show()
         }
     }
 
     private val voiceLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
             val spokenText = result.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.get(0)
-            binding.etSearchClients.setText(spokenText)
+            binding.etSearchClientsFrag.setText(spokenText)
         }
     }
 
     private fun loadClients(query: String = "") {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val flow = if (query.isEmpty()) database.loanDao().getAllClients() 
                        else database.loanDao().searchClients(query)
             
@@ -119,7 +126,6 @@ class LoansClientsActivity : AppCompatActivity() {
                         
                         if (balance > 0.01) {
                             hasRealDebt = true
-                            // Verificar si alguna cuota está vencida
                             val now = System.currentTimeMillis()
                             if (installments.any { it.status != "PAID" && it.dueDate < now }) {
                                 isMoroso = true
@@ -141,21 +147,14 @@ class LoansClientsActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupRecyclerView(pickMode: Boolean) {
+    private fun setupRecyclerView() {
         adapter = ClientsAdapter { client ->
-            if (pickMode) {
-                val intent = Intent(this, AddLoanActivity::class.java)
-                intent.putExtra("SELECTED_CLIENT_ID", client.id)
-                startActivity(intent)
-                finish()
-            } else {
-                val intent = Intent(this, LoanDetailsActivity::class.java)
-                intent.putExtra("CLIENT_ID", client.id)
-                startActivity(intent)
-            }
+            val intent = Intent(requireContext(), LoanDetailsActivity::class.java)
+            intent.putExtra("CLIENT_ID", client.id)
+            startActivity(intent)
         }
-        binding.rvLoanClients.layoutManager = LinearLayoutManager(this)
-        binding.rvLoanClients.adapter = adapter
+        binding.rvLoanClientsFrag.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvLoanClientsFrag.adapter = adapter
     }
 
     inner class ClientsAdapter(private val onClick: (LoanClientEntity) -> Unit) : RecyclerView.Adapter<ClientsAdapter.ViewHolder>() {
@@ -167,7 +166,7 @@ class LoansClientsActivity : AppCompatActivity() {
         }
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 val loans = database.loanDao().getLoansByClient(item.id).firstOrNull() ?: emptyList()
                 var totalOverdue = 0
                 var totalPaidOnTime = 0
@@ -187,23 +186,23 @@ class LoansClientsActivity : AppCompatActivity() {
                     else -> "⭐⭐⭐"
                 }
 
-                withContext(kotlinx.coroutines.Dispatchers.Main) {
+                withContext(Dispatchers.Main) {
                     with(holder.b) {
                         tvClientName.text = item.name
                         tvClientInitial.text = item.name.take(1).uppercase()
                         tvClientRating.text = stars
                         tvClientInfo.text = "DNI: ${item.doc} | 📱 ${item.phone}"
                         tvClientPendingBalance.text = "Deuda: S/ ${String.format(Locale.US, "%.2f", totalPendingBalance)}"
-                        tvClientPendingBalance.visibility = if (totalPendingBalance > 0) android.view.View.VISIBLE else android.view.View.GONE
+                        tvClientPendingBalance.visibility = if (totalPendingBalance > 0) View.VISIBLE else View.GONE
                         
                         if (totalOverdue >= 1) {
                             chipClientScore.text = "¡CON MORA! ⚡"
                             chipClientScore.setChipBackgroundColorResource(R.color.red_600)
-                            chipClientScore.setTextColor(getColor(R.color.white))
+                            chipClientScore.setTextColor(requireContext().getColor(R.color.white))
                         } else {
                             chipClientScore.text = "Al día ✅"
                             chipClientScore.setChipBackgroundColorResource(R.color.emerald_50)
-                            chipClientScore.setTextColor(getColor(R.color.emerald_600))
+                            chipClientScore.setTextColor(requireContext().getColor(R.color.emerald_600))
                         }
                         root.setOnClickListener { onClick(item) }
                     }
@@ -211,5 +210,10 @@ class LoansClientsActivity : AppCompatActivity() {
             }
         }
         override fun getItemCount() = items.size
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

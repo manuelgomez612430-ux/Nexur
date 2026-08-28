@@ -5,7 +5,8 @@
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
     app:cardCornerRadius="16dp"
-    app:cardElevation="2dp">
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -26,14 +27,14 @@
                 android:text="Nombre del Cliente"
                 android:textStyle="bold"
                 android:textSize="16sp"
-                android:textColor="@color/slate_900" />
+                android:textColor="?attr/colorOnSurface" />
             <TextView
                 android:id="@+id/tvCollInstallmentInfo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Cuota 5 de 24 | Vence hoy"
                 android:textSize="12sp"
-                android:textColor="@color/slate_500" />
+                android:textColor="?attr/colorOnSurfaceVariant" />
         </LinearLayout>
 
         <LinearLayout
@@ -50,14 +51,34 @@
                 android:textSize="18sp"
                 android:textColor="@color/emerald_600" />
 
-            <ImageButton
-                android:id="@+id/btnCollWhatsapp"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@android:drawable/ic_menu_send"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                app:tint="@color/emerald_600"
-                android:contentDescription="WhatsApp" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="8dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnQuickPay"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="PAGAR"
+                    android:textSize="10sp"
+                    app:cornerRadius="18dp"
+                    app:backgroundTint="@color/emerald_50"
+                    android:textColor="@color/emerald_600"
+                    android:layout_marginEnd="8dp" />
+
+                <ImageButton
+                    android:id="@+id/btnCollWhatsapp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_menu_send"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@color/emerald_600"
+                    android:contentDescription="WhatsApp" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

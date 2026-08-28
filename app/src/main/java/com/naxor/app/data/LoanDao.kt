@@ -41,6 +41,12 @@ interface LoanDao {
     @Query("SELECT * FROM loan_installments WHERE loanId = :loanId AND isDeleted = 0 ORDER BY installmentNumber ASC")
     fun getInstallmentsByLoan(loanId: String): Flow<List<LoanInstallmentEntity>>
 
+    @Query("SELECT * FROM loan_installments WHERE loanId = :loanId AND isDeleted = 0")
+    suspend fun getInstallmentsByLoanSync(loanId: String): List<LoanInstallmentEntity>
+
+    @Query("SELECT * FROM loans WHERE clientId = :clientId AND isDeleted = 0")
+    suspend fun getLoansByClientSync(clientId: String): List<LoanEntity>
+
     @Query("SELECT * FROM loan_installments WHERE isDeleted = 0 AND status != 'PAID' AND dueDate <= :timeLimit")
     suspend fun getPendingCollections(timeLimit: Long): List<LoanInstallmentEntity>
 
@@ -69,13 +75,35 @@ interface LoanDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExpense(expense: LoanExpenseEntity)
 
+    @Query("SELECT * FROM loan_expenses WHERE isDeleted = 0 AND timestamp >= :start AND timestamp <= :end")
+    fun getExpensesInRange(start: Long, end: Long): Flow<List<LoanExpenseEntity>>
+
     @Query("SELECT SUM(amount) FROM loan_expenses WHERE isDeleted = 0")
     fun getTotalExpensesFlow(): Flow<Double?>
+
+    // --- PAYMENTS ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPayment(payment: LoanPaymentEntity)
+
+    @Query("SELECT * FROM loan_payments WHERE loanId = :loanId AND isDeleted = 0 ORDER BY timestamp DESC")
+    fun getPaymentsByLoan(loanId: String): Flow<List<LoanPaymentEntity>>
+
+    @Query("SELECT * FROM loan_payments WHERE isDeleted = 0 AND timestamp >= :start AND timestamp <= :end")
+    fun getPaymentsInRange(start: Long, end: Long): Flow<List<LoanPaymentEntity>>
+
+    @Query("SELECT * FROM loan_payments WHERE isDeleted = 0")
+    fun getAllPaymentsFlowV2(): Flow<List<LoanPaymentEntity>>
 
     // --- STATS ---
     @Query("SELECT SUM(amount) FROM loans WHERE isDeleted = 0 AND status != 'PAID'")
     fun getCapitalInStreetFlow(): Flow<Double?>
 
+    @Query("SELECT * FROM loan_installments WHERE isDeleted = 0")
+    fun getAllInstallmentsFlow(): Flow<List<LoanInstallmentEntity>>
+
     @Query("SELECT SUM(amountPaid) FROM loan_installments WHERE isDeleted = 0")
     fun getTotalCollectedFlow(): Flow<Double?>
+
+    @Query("SELECT SUM(amount - amountPaid) FROM loan_installments WHERE isDeleted = 0")
+    fun getTotalOutstandingBalanceFlow(): Flow<Double?>
 }

@@ -88,31 +88,31 @@ class DebtorPdfGenerator(private val context: Context) {
         val messages = if (isProfessional) {
             listOf(
                 "Estimado(a) ${debtor.nombre},",
-                "En *${bName}* valoramos mucho su preferencia y confianza. Trabajamos día a día",
+                "En *${bName}* valoro mucho su preferencia y confianza. Trabajo día a día",
                 "para ofrecerle el mejor servicio y calidad que usted se merece.",
                 "",
-                "Le enviamos este documento como un recordatorio formal de su saldo pendiente.",
-                "Mantener sus cuentas al día nos permite seguir brindándole beneficios exclusivos",
+                "Le envío este documento como un recordatorio formal de su saldo pendiente.",
+                "Mantener sus cuentas al día me permite seguir brindándole beneficios exclusivos",
                 "y una atención de primera clase.",
                 "",
                 "💳 MÉTODOS DE PAGO DISPONIBLES:",
                 "- Transferencia bancaria o depósitos.",
-                "- Pagos directos en nuestras instalaciones.",
+                "- Pagos directos en mi local.",
                 "- Billeteras digitales (Yape/Plin) al número: $bPhone",
                 "",
-                "Si ya realizó el pago, por favor ignore este mensaje y envíenos el comprobante",
-                "para actualizar nuestro sistema. ¡Muchas gracias por su puntualidad!"
+                "Si ya realizó el pago, por favor ignore este mensaje y envíeme el comprobante",
+                "para actualizar mi sistema. ¡Muchas gracias por su puntualidad!"
             )
         } else {
             listOf(
                 "Hola ${debtor.nombre},",
                 "Espero que te encuentres muy bien.",
                 "",
-                "Te envío este pequeño recordatorio sobre el saldo pendiente que tenemos",
-                "registrado en nuestro sistema por el valor mencionado arriba.",
+                "Te envío este pequeño recordatorio sobre el saldo pendiente que tengo",
+                "registrado en mi sistema por el valor mencionado arriba.",
                 "",
                 "Agradecería mucho que pudieras ponerte al día en cuanto te sea posible.",
-                "Esto nos ayuda a seguir trabajando juntos de la mejor manera.",
+                "Esto me ayuda a seguir trabajando contigo de la mejor manera.",
                 "",
                 "💰 MEDIOS DE PAGO:",
                 "- En efectivo o transferencia.",

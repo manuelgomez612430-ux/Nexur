@@ -50,6 +50,22 @@ class LoginActivity : AppCompatActivity() {
         setupListeners()
     }
 
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent?): Boolean {
+        if (ev?.action == android.view.MotionEvent.ACTION_DOWN) {
+            val v = currentFocus
+            if (v is android.widget.EditText) {
+                val outRect = android.graphics.Rect()
+                v.getGlobalVisibleRect(outRect)
+                if (!outRect.contains(ev.rawX.toInt(), ev.rawY.toInt())) {
+                    v.clearFocus()
+                    val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                    imm.hideSoftInputFromWindow(v.windowToken, 0)
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
     private fun setupListeners() {
         binding.btnToggleLoginMode.setOnClickListener {
             isLoginMode = !isLoginMode
@@ -212,7 +228,7 @@ class LoginActivity : AppCompatActivity() {
     private fun sendWelcomeMessage(userId: String) {
         val welcomeMessage = hashMapOf(
             "title" to "¡Bienvenido a Naxor! 🚀",
-            "content" to "Estamos felices de tenerte aquí. Explora las herramientas de Inventario, Ventas y Rendimiento para potenciar tu negocio. Si tienes dudas, revisa la sección de Ayuda.",
+            "content" to "Estoy feliz de tenerte aquí. Explora las herramientas de Inventario, Ventas y Rendimiento para potenciar tu negocio. Si tienes dudas, revisa la sección de Ayuda.",
             "timestamp" to com.google.firebase.Timestamp.now()
         )
 

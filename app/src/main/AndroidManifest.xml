@@ -94,6 +94,8 @@
         <activity android:name=".LoansClientsActivity" android:exported="false" android:label="Mis Clientes" />
         <activity android:name=".LoanDetailsActivity" android:exported="false" android:label="Detalle del Préstamo" />
         <activity android:name=".LoansCollectionsActivity" android:exported="false" android:label="Cobros del Día" />
+        <activity android:name=".LoansExpensesActivity" android:exported="false" android:label="Mis Gastos" />
+        <activity android:name=".SystemSettingsActivity" android:exported="false" android:label="Ajustes del Sistema" />
         <activity android:name=".PdfViewerActivity" android:exported="false" android:label="Vista Previa PDF" />
         <activity android:name=".SupportCreatorActivity" android:exported="false" android:theme="@style/Theme.Naxor" />
         <activity android:name=".FutureVisionActivity" android:exported="false" android:theme="@style/Theme.Naxor" />

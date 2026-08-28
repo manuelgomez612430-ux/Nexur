@@ -63,6 +63,15 @@
             </com.google.android.material.card.MaterialCardView>
 
             <ImageButton
+                android:id="@+id/btnMailboxCaja"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_toStartOf="@id/btnSyncIndicator"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_dialog_email"
+                app:tint="@android:color/white" />
+
+            <ImageButton
                 android:id="@+id/btnSyncIndicator"
                 android:layout_width="40dp"
                 android:layout_height="40dp"

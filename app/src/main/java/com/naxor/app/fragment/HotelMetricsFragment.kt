@@ -43,6 +43,12 @@ class HotelMetricsFragment : Fragment() {
         binding.toolbarMetrics.setNavigationOnClickListener {
             (activity as? MainActivity)?.openSideMenu()
         }
+        binding.toolbarMetrics.setOnMenuItemClickListener {
+            if (it.itemId == R.id.action_mailbox) {
+                startActivity(android.content.Intent(requireContext(), com.naxor.app.MailboxActivity::class.java))
+                true
+            } else false
+        }
     }
 
     private fun setupRecyclerView() {

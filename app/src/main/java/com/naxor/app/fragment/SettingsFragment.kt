@@ -48,7 +48,7 @@ class SettingsFragment : Fragment() {
         }
 
         binding.cardSystemSettings.setOnClickListener {
-            Toast.makeText(requireContext(), "Configuración del Sistema (Próximamente)", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(requireContext(), com.naxor.app.SystemSettingsActivity::class.java))
         }
 
         binding.cardCheckUpdates.setOnClickListener {
