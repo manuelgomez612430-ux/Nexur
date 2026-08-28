@@ -44,7 +44,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Naxor nació con un objetivo claro: empoderar a los pequeños y grandes negocios ofreciendo herramientas profesionales de gestión de forma gratuita y accesible para todos. Quiero crecer junto a tu negocio."
+                android:text="GoMezMart tiene una misión clara: ser tu aliado tecnológico. No buscamos ser solo una app, sino una herramienta potente, intuitiva y accesible que te dé el control total de tu negocio sin complicaciones técnicas, creciendo junto a ti."
                 android:textSize="15sp"
                 android:textColor="@color/slate_700"
                 android:lineSpacingExtra="4dp" />
@@ -77,7 +77,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="16dp"
-                        android:text="Promesa Naxor: Nunca permitiré anuncios en el sistema. Tu enfoque debe estar en tu negocio, no en publicidad molesta."
+                        android:text="Promesa GoMezMart: Nunca permitiré anuncios en el sistema. Tu enfoque debe estar en tu negocio, no en publicidad molesta."
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="@color/emerald_700" />
@@ -89,7 +89,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
-                android:text="Seguridad y Calidad 💎"
+                android:text="Seguridad y Confianza 💎"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/slate_900" />
@@ -98,12 +98,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Para garantizar una SEGURIDAD ABSOLUTA de tus datos, una infraestructura 100% estable y servicios de primera calidad, se requiere de una inversión constante. Actualmente, el proyecto es desarrollado y financiado íntegramente por su creador."
+                android:text="Entiendo que tu información es lo más valioso. Por eso, GoMezMart es un sistema 100% seguro y blindado. Aunque como todo software puede tener pequeños errores en los que trabajo incansablemente para corregir, mi compromiso es ofrecerte una infraestructura robusta y estable de primera calidad.\n\nMantener este nivel de seguridad y estar a la vanguardia tecnológica requiere una inversión constante de tiempo y recursos, los cuales hoy asumo personalmente."
                 android:textSize="15sp"
                 android:textColor="@color/slate_600"
                 android:lineSpacingExtra="4dp" />
 
-            <!-- SECCIÓN 4: EL PLAN B -->
+            <!-- SECCIÓN 4: POR QUÉ LAS DONACIONES -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -117,7 +117,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Tu generosidad es mi incentivo. Si el apoyo de la comunidad a través de donaciones voluntarias crece y se mantiene, Naxor podrá seguir siendo gratuito para todos por mucho más tiempo.\n\nSolo en caso de que las donaciones no sean suficientes para mantener el proyecto sostenible y seguro, me veré obligado a recurrir al 'Plan B': integrar planes de suscripción con costos muy accesibles para contratar ayuda especializada dedicada al soporte y optimización constante."
+                android:text="Las donaciones son el motor que permite que GoMezMart siga siendo gratuito en su gran mayoría. Tu aporte ayuda a cubrir los costos de servidores y compensa el tiempo dedicado a crear nuevas funciones de alta calidad que otros bloquean tras pagos excesivos.\n\nEs un incentivo para que este proyecto siga vivo, se mantenga actualizado frente a la competencia y siempre esté a tu servicio."
                 android:textSize="15sp"
                 android:textColor="@color/slate_600"
                 android:lineSpacingExtra="4dp" />

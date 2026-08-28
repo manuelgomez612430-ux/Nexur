@@ -8,8 +8,9 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        app:elevation="0dp">
+        android:background="@color/purple_600"
+        app:elevation="0dp"
+        app:liftOnScroll="false">
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarSupport"
             android:layout_width="match_parent"
@@ -33,7 +34,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="¡Apoya el Futuro de Naxor! 🚀"
+                android:text="¡Apoya el Futuro de GoMezMart! 🚀"
                 android:textColor="@color/white"
                 android:textSize="24sp"
                 android:textStyle="bold"
@@ -43,7 +44,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:text="Naxor nació con el objetivo de empoderar a los pequeños negocios, ofreciendo herramientas profesionales de forma totalmente gratuita y abierta para todos."
+                android:text="GoMezMart nació con el sueño de crecer junto a tu negocio. Mi meta es ofrecerte una herramienta profesional, con una interfaz fluida y fácil de entender, que sea accesible para todos en la gran mayoría de sus funciones."
                 android:textColor="#E0FFFFFF"
                 android:textSize="15sp"
                 android:lineSpacingExtra="4dp"
@@ -53,18 +54,35 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Actualmente, el desarrollo y mantenimiento del sistema es financiado íntegramente por su creador. Tu apoyo voluntario me permite evitar anuncios molestos y seguir desbloqueando funciones premium para toda la comunidad."
+                android:text="Mantener este sistema seguro, estable y actualizado a la vanguardia tecnológica requiere una inversión constante de tiempo y recursos, los cuales hoy asumo personalmente para que tú puedas enfocarte en tu éxito."
                 android:textColor="#E0FFFFFF"
                 android:textSize="15sp"
                 android:lineSpacingExtra="4dp"
                 android:textAlignment="center" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnToggleYape"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:layout_marginTop="32dp"
+                android:text="💖 DONAR CON YAPE"
+                android:textStyle="bold"
+                android:textSize="15sp"
+                app:cornerRadius="20dp"
+                app:backgroundTint="@color/white"
+                android:textColor="@color/purple_800"
+                app:icon="@android:drawable/ic_menu_send"
+                app:iconTint="@color/purple_800" />
+
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardYapeContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
+                android:layout_marginTop="16dp"
                 app:cardCornerRadius="24dp"
-                app:cardElevation="8dp">
+                app:cardElevation="8dp"
+                android:visibility="gone">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -88,18 +106,56 @@
                         android:textStyle="bold"
                         android:textColor="@color/purple_800"
                         android:textSize="14sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnYapeDirect"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="16dp"
+                        android:text="Yapear Directamente"
+                        android:textStyle="bold"
+                        app:cornerRadius="16dp"
+                        app:backgroundTint="#8B5CF6"
+                        android:textColor="@color/white"
+                        app:icon="@android:drawable/ic_menu_send"
+                        app:iconTint="@color/white" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDownloadQr"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="⬇️ Descargar Código QR"
+                        android:textSize="12sp"
+                        android:textColor="@color/purple_800" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPaypal"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:layout_marginTop="16dp"
+                android:text="💳 DONAR CON PAYPAL"
+                android:textStyle="bold"
+                android:textSize="15sp"
+                app:cornerRadius="20dp"
+                app:backgroundTint="@color/white"
+                android:textColor="#003087"
+                app:icon="@android:drawable/ic_menu_send"
+                app:iconTint="#003087" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
-                android:text="Tu generosidad es mi mayor motivación para seguir construyendo la mejor herramienta para tu negocio y mantener Naxor como un sistema completamente gratuito para todos. ❤️"
+                android:text="Tu generosidad es mi mayor motivación para seguir arreglando cada detalle y ofrecerte una herramienta de alta calidad que compita con las más caras del mercado, pero manteniéndola abierta para ti. ❤️"
                 android:textColor="#B0FFFFFF"
                 android:textSize="13sp"
-                android:textAlignment="center"
-                android:fontStyle="italic" />
+                android:textAlignment="center" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnFutureInfo"
@@ -107,7 +163,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Más información sobre el futuro de Naxor"
+                android:text="Más información sobre el futuro de GoMezMart"
                 android:textColor="#D0FFFFFF"
                 android:textSize="12sp"
                 app:icon="@android:drawable/ic_menu_info_details"

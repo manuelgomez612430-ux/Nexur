@@ -54,7 +54,7 @@ class BusinessDebtPdfGenerator(private val context: Context) {
 
         // 4. Footer
         paint.textSize = 10f; paint.color = Color.GRAY
-        canvas.drawText("Documento de control interno generado por Naxor", 50f, 800f, paint)
+        canvas.drawText("Documento de control interno generado por GoMezMart", 50f, 800f, paint)
 
         doc.finishPage(page)
         val file = File(context.getExternalFilesDir(null), "Compromiso_Pago_${debt.acreedor.replace(" ", "_")}.pdf")

@@ -8,9 +8,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.view.GestureDetector
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
@@ -19,10 +17,10 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.core.view.GravityCompat
 import androidx.core.widget.addTextChangedListener
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.firebase.firestore.ListenerRegistration
 import com.bumptech.glide.Glide
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
@@ -40,6 +38,7 @@ import com.naxor.app.util.VoiceRecognitionHelper
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
 import java.util.*
 
 class StockFragment : Fragment() {
@@ -55,6 +54,9 @@ class StockFragment : Fragment() {
                 startActivity(intent)
             },
             onViewLabel = { product -> showProductLabel(product) },
+            onStockQuickChange = { product, delta -> 
+                handleStockQuickChange(product, delta)
+            },
             onSelectionChanged = { count -> updateMultiSelectUI(count) }
         )
     }
@@ -66,12 +68,14 @@ class StockFragment : Fragment() {
     private var isAscending: Boolean = true
     private var currentCategory: String = "Todos"
     private var currentSearchQuery: String = ""
+    private var filterLowStock: Boolean = false
     private var isEditorMode: Boolean = false
     private var isMultiSelectMode: Boolean = false
     private val voiceHelper by lazy { VoiceRecognitionHelper(requireContext()) }
     private var syncStatusText: String = "Sincronizado"
     private var lastUnsyncedCount: Int = 0
     private var isNetworkAvailable: Boolean = true
+    private var inventoryRegistration: ListenerRegistration? = null
 
     fun openDrawer() {
         if (_binding != null) {
@@ -95,7 +99,7 @@ class StockFragment : Fragment() {
         setupRecyclerView()
         setupListeners()
 
-        SyncManager(requireContext()).startRealtimeInventorySync { 
+        inventoryRegistration = SyncManager(requireContext()).startRealtimeInventorySync { 
             loadProducts()
         }
     }
@@ -103,16 +107,13 @@ class StockFragment : Fragment() {
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
         if (!hidden) {
-            // Solo recargar si la lista está vacía o si hubo cambios externos
-            if (lastLoadedList.isEmpty()) {
-                loadProducts()
-            }
+            loadProducts()
         }
     }
 
     override fun onResume() {
         super.onResume()
-        if (!isHidden && lastLoadedList.isEmpty()) {
+        if (!isHidden) {
             loadProducts()
         }
     }
@@ -123,8 +124,6 @@ class StockFragment : Fragment() {
             adapter = this@StockFragment.adapter
             setHasFixedSize(true)
             setItemViewCacheSize(20)
-            isDrawingCacheEnabled = true
-            drawingCacheQuality = View.DRAWING_CACHE_QUALITY_HIGH
         }
     }
 
@@ -155,11 +154,11 @@ class StockFragment : Fragment() {
                 syncStatusText = if (unsynced > 0) "Sincronizando ($unsynced pendientes)" else "Todo al día"
                 
                 if (unsynced > 0) {
-                    binding.btnSyncIndicator.setImageResource(android.R.drawable.ic_menu_upload)
-                    binding.btnSyncIndicator.imageTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#DC2626"))
+                    binding.btnSyncIndicator.setImageResource(android.R.drawable.stat_notify_sync)
+                    binding.btnSyncIndicator.imageTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
                 } else {
-                    binding.btnSyncIndicator.setImageResource(android.R.drawable.ic_menu_upload)
-                    binding.btnSyncIndicator.imageTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#10B981"))
+                    binding.btnSyncIndicator.setImageResource(android.R.drawable.stat_sys_download_done)
+                    binding.btnSyncIndicator.imageTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
                 }
 
                 if (showDialog) {
@@ -180,7 +179,7 @@ class StockFragment : Fragment() {
     }
 
     private fun setupListeners() {
-        binding.btnBackInventario.visibility = View.GONE // Ya tenemos navegación inferior
+        binding.btnBackInventario.visibility = View.GONE
         binding.btnHelpInventario.setOnClickListener { showHelpDialog() }
         binding.btnSyncIndicator.setOnClickListener { updateSyncIconState(true) }
         
@@ -206,19 +205,25 @@ class StockFragment : Fragment() {
             loadProducts() 
             val isExpanded = currentSearchQuery.isNotEmpty() || binding.etSearchInventario.hasFocus()
             binding.btnSearchClear.visibility = if (isExpanded) View.VISIBLE else View.GONE
-            updateControlsLayout(isExpanded)
         }
 
         binding.btnSearchClear.setOnClickListener {
             binding.etSearchInventario.setText("")
             binding.etSearchInventario.clearFocus()
             hideKeyboard()
-            updateControlsLayout(false)
+        }
+
+        binding.chipFilterAll.setOnClickListener {
+            filterLowStock = false
+            loadProducts()
+        }
+
+        binding.chipFilterLowStock.setOnClickListener {
+            filterLowStock = true
+            loadProducts()
         }
 
         binding.btnFilterCategory.setOnClickListener { showCategorySelector() }
-        binding.btnSortAttribute.setOnClickListener { showSortAttributeSelector() }
-        binding.btnSortOrder.setOnClickListener { toggleSortOrder() }
 
         binding.navigationViewInventario.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
@@ -226,6 +231,7 @@ class StockFragment : Fragment() {
                 R.id.menu_export_excel -> { Toast.makeText(requireContext(), "Exportando...", Toast.LENGTH_SHORT).show(); true }
                 R.id.menu_import_excel -> { Toast.makeText(requireContext(), "Importando...", Toast.LENGTH_SHORT).show(); true }
                 R.id.menu_multi_delete -> { toggleMultiSelectMode(true); true }
+                R.id.menu_sort_options -> { showSortAttributeSelector(); true }
                 R.id.menu_settings_inventario -> { startActivity(Intent(requireContext(), SettingsActivity::class.java)); true }
                 else -> false
             }.also { binding.drawerLayoutInventario.closeDrawer(GravityCompat.START) }
@@ -239,15 +245,11 @@ class StockFragment : Fragment() {
         binding.cardEditorBanner.visibility = if (enabled) View.VISIBLE else View.GONE
         
         if (isEditorMode) {
-            // Icono de X en color intenso (Magenta)
             binding.fabToggleEditor.setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
-            binding.fabToggleEditor.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#C026D3"))
-            binding.fabToggleEditor.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
+            binding.fabToggleEditor.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#C026D3"))
         } else {
-            // Icono de Lápiz original
             binding.fabToggleEditor.setImageResource(android.R.drawable.ic_menu_edit)
-            binding.fabToggleEditor.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F1F5F9"))
-            binding.fabToggleEditor.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#6B21A8"))
+            binding.fabToggleEditor.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#F1F5F9"))
         }
         
         loadProducts()
@@ -262,7 +264,7 @@ class StockFragment : Fragment() {
         if (enabled) {
             val tv = binding.cardEditorBanner.findViewById<TextView>(android.R.id.text1) ?: 
                      binding.cardEditorBanner.getChildAt(0).let { if(it is android.view.ViewGroup) it.getChildAt(1) as? TextView else null }
-            tv?.text = "Seleccione los productos que desea eliminar."
+            tv?.text = "Seleccione los productos para eliminar"
             binding.btnExitEditorMode.text = "CANCELAR"
             binding.fabToggleEditor.visibility = View.GONE
             binding.fabAddProducto.setImageResource(android.R.drawable.ic_menu_delete)
@@ -283,28 +285,40 @@ class StockFragment : Fragment() {
         if (isMultiSelectMode && count == 0) { toggleMultiSelectMode(false); return }
         val tv = binding.cardEditorBanner.findViewById<TextView>(android.R.id.text1) ?: 
                  binding.cardEditorBanner.getChildAt(0).let { if(it is android.view.ViewGroup) it.getChildAt(1) as? TextView else null }
-        tv?.text = "$count productos seleccionados"
+        tv?.text = "$count seleccionados"
     }
 
-    private fun updateControlsLayout(isExpanded: Boolean) {
-        // Lógica de UI para controles... simplificada para fragmento
-        binding.btnFilterCategory.text = if (currentCategory == "Todos") "Categoría" else currentCategory
+    private fun handleStockQuickChange(product: ProductEntity, delta: Int) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            product.stock += delta
+            if (product.stock < 0) product.stock = 0
+            product.isSynced = false
+            database.productDao().update(product)
+            SyncManager(requireContext()).syncProductToCloud(product)
+            
+            withContext(Dispatchers.Main) {
+                loadProducts()
+                Toast.makeText(requireContext(), "${product.nombre}: ${product.stock}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun loadProducts() {
+        val prefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val businessCurrency = prefs.getString("currency_symbol", "S/") ?: "S/"
+
         loadJob?.cancel()
         loadJob = lifecycleScope.launch(Dispatchers.IO) {
             try {
-                if (currentSearchQuery.isNotEmpty()) delay(150)
-                
                 val searchPattern = if (currentSearchQuery.isBlank()) "%%" else "%$currentSearchQuery%"
+                var dbList = database.productDao().getFilteredAndSorted(searchPattern, currentCategory)
                 
-                // 1. Obtener datos de la DB
-                val dbList = database.productDao().getFilteredAndSorted(
-                    searchPattern, 
-                    currentCategory
-                )
-                
+                val totalInversion = dbList.sumOf { it.precioCosto * it.stock }
+
+                if (filterLowStock) {
+                    dbList = dbList.filter { it.stock <= 5 && !it.isDeleted }
+                }
+
                 val fullList = when (currentSortAttribute) {
                     "STOCK" -> if (isAscending) dbList.sortedBy { it.stock } else dbList.sortedByDescending { it.stock }
                     "PRECIO" -> if (isAscending) dbList.sortedBy { it.precioVenta } else dbList.sortedByDescending { it.precioVenta }
@@ -317,21 +331,12 @@ class StockFragment : Fragment() {
 
                 if (!isActive) return@launch
 
-                // 2. Cálculos pesados en el hilo de fondo (IO) para no trabar el Main
-                val totalInversion = fullList.sumOf { it.precioCosto } 
-                val totalValorVenta = fullList.sumOf { it.stock * it.precioVenta }
-
                 withContext(Dispatchers.Main) {
                     if (_binding != null && isAdded) {
-                        // 3. Actualizar la lista en el adaptador
                         adapter.updateList(fullList)
                         lastLoadedList = fullList
                         
-                        // Forzar scroll al inicio
-                        binding.rvInventario.scrollToPosition(0)
-
-                        // 4. Actualizar header de forma segura
-                        updateDrawerHeader(totalValorVenta, totalInversion)
+                        updateDrawerHeader(totalInversion) // Simplificado
                         updateSyncIconState()
                     }
                 }
@@ -341,12 +346,11 @@ class StockFragment : Fragment() {
         }
     }
 
-    private fun updateDrawerHeader(v: Double, i: Double) {
+    private fun updateDrawerHeader(total: Double) {
         try {
             if (_binding != null && binding.navigationViewInventario.headerCount > 0) {
                 val h = binding.navigationViewInventario.getHeaderView(0)
-                h.findViewById<TextView>(R.id.tvDrawerValorTotal)?.text = String.format(Locale.getDefault(), "S/ %.2f", v)
-                h.findViewById<TextView>(R.id.tvDrawerInversionTotal)?.text = String.format(Locale.getDefault(), "S/ %.2f", i)
+                h.findViewById<TextView>(R.id.tvDrawerValorTotal)?.text = String.format(Locale.getDefault(), "S/ %.2f", total)
             }
         } catch (e: Exception) {}
     }
@@ -377,8 +381,8 @@ class StockFragment : Fragment() {
                             } else {
                                 AlertDialog.Builder(requireContext())
                                     .setTitle("No registrado ❌")
-                                    .setMessage("El código $code no existe en tu inventario.")
-                                    .setPositiveButton("Añadir Nuevo") { _, _ ->
+                                    .setMessage("El código $code no existe.")
+                                    .setPositiveButton("Añadir") { _, _ ->
                                         val intent = Intent(requireContext(), AddProductActivity::class.java)
                                         intent.putExtra("EXTRA_SCANNED_CODE", code)
                                         startActivity(intent)
@@ -397,8 +401,8 @@ class StockFragment : Fragment() {
         if (selected.isEmpty()) return
         
         AlertDialog.Builder(requireContext())
-            .setTitle("Eliminar Varios")
-            .setMessage("¿Borrar ${selected.size} productos seleccionados?")
+            .setTitle("Eliminar")
+            .setMessage("¿Borrar ${selected.size} productos?")
             .setPositiveButton("Eliminar") { _, _ ->
                 lifecycleScope.launch(Dispatchers.IO) {
                     val sm = SyncManager(requireContext())
@@ -411,7 +415,7 @@ class StockFragment : Fragment() {
                     sm.scheduleOfflineSync()
                     withContext(Dispatchers.Main) {
                         toggleMultiSelectMode(false)
-                        Toast.makeText(requireContext(), "Productos eliminados", Toast.LENGTH_SHORT).show()
+                        loadProducts()
                     }
                 }
             }
@@ -422,11 +426,11 @@ class StockFragment : Fragment() {
         lifecycleScope.launch {
             val categories = withContext(Dispatchers.IO) { 
                 val list = database.productDao().uniqueCategories.toMutableList()
-                list.add(0, "Todos")
+                if (!list.contains("Todos")) list.add(0, "Todos")
                 list.toTypedArray()
             }
             AlertDialog.Builder(requireContext())
-                .setTitle("Seleccionar Categoría")
+                .setTitle("Categoría")
                 .setItems(categories) { _, which ->
                     currentCategory = categories[which]
                     binding.btnFilterCategory.text = if (currentCategory == "Todos") "Categoría" else currentCategory
@@ -442,21 +446,19 @@ class StockFragment : Fragment() {
             .setTitle("Ordenar por")
             .setItems(options) { _, which ->
                 currentSortAttribute = values[which]
-                binding.btnSortAttribute.text = options[which]
                 loadProducts()
             }.show()
     }
 
     private fun toggleSortOrder() {
         isAscending = !isAscending
-        binding.btnSortOrder.setIconResource(if (isAscending) android.R.drawable.arrow_up_float else android.R.drawable.arrow_down_float)
         loadProducts()
     }
 
     private fun showHelpDialog() {
         AlertDialog.Builder(requireContext())
-            .setTitle("Guía de Gestión de Inventario")
-            .setMessage("Mantén tus existencias actualizadas para que Naxor pueda darte un análisis de rendimiento preciso.")
+            .setTitle("Inventario")
+            .setMessage("Mantén tus existencias actualizadas.")
             .setPositiveButton("Entendido", null).show()
     }
 
@@ -467,16 +469,13 @@ class StockFragment : Fragment() {
 
     private fun showProductLabel(p: ProductEntity) {
         val db = DialogViewLabelBinding.inflate(layoutInflater)
-        val d = AlertDialog.Builder(requireContext(), R.style.Theme_Naxor_Dialog).setView(db.root).create()
+        val d = AlertDialog.Builder(requireContext(), R.style.Theme_GoMezMart_Dialog).setView(db.root).create()
         db.tvLabelProdName.text = p.nombre
         db.tvLabelProdDesc.text = p.descripcion ?: "Sin descripción."
 
         if (!p.photoPath.isNullOrEmpty()) {
             try {
-                Glide.with(this)
-                    .load(p.photoPath)
-                    .placeholder(android.R.drawable.ic_menu_camera)
-                    .into(db.ivLabelProdPhoto)
+                Glide.with(this).load(p.photoPath).into(db.ivLabelProdPhoto)
                 db.ivLabelProdPhoto.alpha = 1.0f
             } catch (e: Exception) {}
         }
@@ -515,16 +514,9 @@ class StockFragment : Fragment() {
         }
 
         db.btnShareLabel.setOnClickListener { currentBitmap?.let { shareLabelBitmap(it, p.nombre) } }
-
-        val codes = p.codigo?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
-        db.tvLabelProdCode.text = if (codes.isNotEmpty()) codes.joinToString("\n") { "• $it" } else "---"
-        db.cbShowLinkedCodes.setOnCheckedChangeListener { _, isChecked ->
-            db.cardLinkedCodes.visibility = if (isChecked) View.VISIBLE else View.GONE
-        }
-
+        db.tvLabelProdCode.text = if (!p.codigo.isNullOrBlank()) p.codigo!!.replace(",", "\n• ") else "---"
         db.btnCloseLabel.setOnClickListener { d.dismiss() }
         d.show()
-
         d.window?.let {
             it.setLayout((resources.displayMetrics.widthPixels * 0.95).toInt(), android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
             it.setBackgroundDrawableResource(android.R.color.transparent)
@@ -540,13 +532,17 @@ class StockFragment : Fragment() {
                 type = "image/png"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) 
-            }, "Compartir Ficha"))
+            }, "Compartir"))
         } catch (e: Exception) {}
+    }
+
+    override fun onStop() {
+        super.onStop()
+        inventoryRegistration?.remove()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-        voiceHelper.destroy()
     }
 }

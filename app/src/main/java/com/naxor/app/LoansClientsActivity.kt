@@ -5,28 +5,35 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.ListenerRegistration
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.LoanClientEntity
+import com.naxor.app.data.LoanClientWithDebt
 import com.naxor.app.databinding.ActivityLoansClientsBinding
 import com.naxor.app.databinding.ItemLoanClientBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
 
-class LoansClientsActivity : AppCompatActivity() {
+class LoansClientsActivity : BaseActivity() {
 
     private lateinit var binding: ActivityLoansClientsBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
     private lateinit var adapter: ClientsAdapter
     private var currentFilter = "ACTIVE"
+    private var isNetworkAvailable = true
+    private var lastUnsyncedCount = 0
+    private var currentIsSyncing = false
+    private var syncStatusText = "Sincronizado"
+    private val registrations = mutableListOf<ListenerRegistration>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,8 +54,118 @@ class LoansClientsActivity : AppCompatActivity() {
         setupRecyclerView(pickMode)
         setupSearch()
         setupFilters()
+        setupSyncIndicator()
         
+        val sm = SyncManager(this)
+        sm.startRealtimeLoanClientsSync { loadClients(binding.etSearchClients.text.toString()) }?.let { registrations.add(it) }
+        sm.startRealtimeLoansSync { loadClients(binding.etSearchClients.text.toString()) }?.let { registrations.add(it) }
+        sm.startRealtimeInstallmentsSync { loadClients(binding.etSearchClients.text.toString()) }?.let { registrations.add(it) }
+        sm.startRealtimeLoanPaymentsSync { loadClients(binding.etSearchClients.text.toString()) }?.let { registrations.add(it) }
+
         loadClients()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        registrations.forEach { it.remove() }
+        registrations.clear()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::binding.isInitialized) {
+            loadClients(binding.etSearchClients.text.toString())
+        }
+    }
+
+    private fun setupSyncIndicator() {
+        // Monitorear Red
+        val cm = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val networkCallback = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                isNetworkAvailable = true
+                runOnUiThread { updateSyncIconState() }
+            }
+            override fun onLost(network: android.net.Network) {
+                isNetworkAvailable = false
+                runOnUiThread { updateSyncIconState() }
+            }
+        }
+        cm.registerDefaultNetworkCallback(networkCallback)
+
+        // Monitorear Cambios Locales
+        lifecycleScope.launch {
+            database.loanDao().getUnsyncedCount().collectLatest { count ->
+                lastUnsyncedCount = count
+                updateSyncIconState()
+            }
+        }
+
+        // Monitorear Trabajo de Sincronización
+        androidx.work.WorkManager.getInstance(this).getWorkInfosForUniqueWorkLiveData("offline_sync")
+            .observe(this) { infoList ->
+                val isSyncing = infoList != null && infoList.any { it.state == androidx.work.WorkInfo.State.RUNNING || it.state == androidx.work.WorkInfo.State.ENQUEUED }
+                updateSyncIconState(isSyncing)
+            }
+
+        binding.btnSyncIndicatorClients.setOnClickListener {
+            val networkStatus = if (isNetworkAvailable) "📡 Conectado" else "📵 Sin Internet"
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Sincronización de Cartera")
+                .setMessage("Estado: $syncStatusText\nRed: $networkStatus\n\nLos datos de tus clientes y préstamos se guardan automáticamente en la nube cuando tienes internet.")
+                .setPositiveButton("Sincronizar ahora") { _, _ -> forceSync() }
+                .setNegativeButton("Cerrar", null).show()
+        }
+    }
+
+    private fun forceSync() {
+        Toast.makeText(this, "Iniciando sincronización...", Toast.LENGTH_SHORT).show()
+        SyncManager(this).scheduleOfflineSync()
+    }
+
+    private fun updateSyncIconState(isSyncing: Boolean = currentIsSyncing) {
+        currentIsSyncing = isSyncing
+        val color: Int
+        val iconRes: Int
+        val animation: android.view.animation.Animation?
+        
+        when {
+            isSyncing && isNetworkAvailable -> {
+                syncStatusText = "Sincronizando..."
+                color = android.graphics.Color.parseColor("#3B82F6") // Azul (Sincronizando)
+                iconRes = android.R.drawable.stat_notify_sync
+                animation = android.view.animation.RotateAnimation(0f, 360f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f, android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f).apply {
+                    duration = 1000
+                    repeatCount = android.view.animation.Animation.INFINITE
+                    interpolator = android.view.animation.LinearInterpolator()
+                }
+            }
+            !isNetworkAvailable -> {
+                syncStatusText = if (lastUnsyncedCount > 0) "Sin internet ($lastUnsyncedCount pendientes)" else "Sin conexión (modo local)"
+                color = android.graphics.Color.parseColor("#DC2626") // Rojo (Error/Desconectado)
+                iconRes = android.R.drawable.ic_menu_upload
+                animation = null
+            }
+            lastUnsyncedCount > 0 -> {
+                syncStatusText = "Hay $lastUnsyncedCount cambios pendientes"
+                color = android.graphics.Color.parseColor("#3B82F6") // Azul (Datos por subir)
+                iconRes = android.R.drawable.stat_notify_sync
+                animation = null
+            }
+            else -> {
+                syncStatusText = "Datos a salvo en la nube"
+                color = android.graphics.Color.parseColor("#3B82F6") // Azul (Todo OK)
+                iconRes = android.R.drawable.stat_sys_download_done
+                animation = null
+            }
+        }
+
+        binding.btnSyncIndicatorClients.apply {
+            setImageResource(iconRes)
+            setColorFilter(color)
+            clearAnimation()
+            if (animation != null) startAnimation(animation)
+        }
     }
 
     private fun setupFilters() {
@@ -101,48 +218,31 @@ class LoansClientsActivity : AppCompatActivity() {
 
     private fun loadClients(query: String = "") {
         lifecycleScope.launch {
-            val flow = if (query.isEmpty()) database.loanDao().getAllClients() 
-                       else database.loanDao().searchClients(query)
+            val now = System.currentTimeMillis()
+            val flow = if (query.isEmpty()) database.loanDao().getAllClientsWithDebtFlow(now) 
+                       else database.loanDao().searchClientsWithDebtFlow(query, now)
             
-            flow.collectLatest { clients ->
-                val resultList = mutableListOf<LoanClientEntity>()
-                
-                clients.forEach { client ->
-                    val loans = database.loanDao().getLoansByClientSync(client.id)
-                    var hasRealDebt = false
-                    var hasAnyLoan = loans.isNotEmpty()
-                    var isMoroso = false
+            flow.collectLatest { clientsWithDebt ->
+                val resultList = clientsWithDebt.filter { item ->
+                    val hasRealDebt = item.totalDebt > 0.01
+                    val isMoroso = item.totalOverdueCount > 0
+                    val hasAnyLoan = item.totalDebt > 0 || item.totalPaidOnTimeCount > 0 // Simplificación
 
-                    loans.forEach { loan ->
-                        val installments = database.loanDao().getInstallmentsByLoanSync(loan.id)
-                        val balance = installments.sumOf { it.amount - it.amountPaid }
-                        
-                        if (balance > 0.01) {
-                            hasRealDebt = true
-                            // Verificar si alguna cuota está vencida
-                            val now = System.currentTimeMillis()
-                            if (installments.any { it.status != "PAID" && it.dueDate < now }) {
-                                isMoroso = true
-                            }
-                        }
-                    }
-                    
-                    val shouldInclude = when(currentFilter) {
+                    when(currentFilter) {
                         "ACTIVE" -> hasRealDebt
                         "OVERDUE" -> isMoroso
-                        "PAID" -> !hasRealDebt && hasAnyLoan
+                        "PAID" -> !hasRealDebt && (item.totalPaidOnTimeCount > 0)
                         else -> true
                     }
-                    if (shouldInclude) resultList.add(client)
                 }
-                
                 adapter.submitList(resultList)
             }
         }
     }
 
     private fun setupRecyclerView(pickMode: Boolean) {
-        adapter = ClientsAdapter { client ->
+        adapter = ClientsAdapter { clientWithDebt ->
+            val client = clientWithDebt.client
             if (pickMode) {
                 val intent = Intent(this, AddLoanActivity::class.java)
                 intent.putExtra("SELECTED_CLIENT_ID", client.id)
@@ -158,56 +258,50 @@ class LoansClientsActivity : AppCompatActivity() {
         binding.rvLoanClients.adapter = adapter
     }
 
-    inner class ClientsAdapter(private val onClick: (LoanClientEntity) -> Unit) : RecyclerView.Adapter<ClientsAdapter.ViewHolder>() {
-        private var items = emptyList<LoanClientEntity>()
-        fun submitList(newItems: List<LoanClientEntity>) { items = newItems; notifyDataSetChanged() }
+    inner class ClientsAdapter(private val onClick: (LoanClientWithDebt) -> Unit) : RecyclerView.Adapter<ClientsAdapter.ViewHolder>() {
+        private var items = emptyList<LoanClientWithDebt>()
+        fun submitList(newItems: List<LoanClientWithDebt>) { items = newItems; notifyDataSetChanged() }
+        
         inner class ViewHolder(val b: ItemLoanClientBinding) : RecyclerView.ViewHolder(b.root)
+        
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             return ViewHolder(ItemLoanClientBinding.inflate(LayoutInflater.from(parent.context), parent, false))
         }
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = items[position]
-            lifecycleScope.launch {
-                val loans = database.loanDao().getLoansByClient(item.id).firstOrNull() ?: emptyList()
-                var totalOverdue = 0
-                var totalPaidOnTime = 0
-                var totalPendingBalance = 0.0
-                loans.forEach { loan ->
-                    val installments = database.loanDao().getInstallmentsByLoan(loan.id).firstOrNull() ?: emptyList()
-                    totalOverdue += installments.count { it.status != "PAID" && it.dueDate < System.currentTimeMillis() }
-                    totalPaidOnTime += installments.count { it.status == "PAID" }
-                    totalPendingBalance += installments.sumOf { it.amount - it.amountPaid }
-                }
+            val itemWithDebt = items[position]
+            val item = itemWithDebt.client
+            val balance = itemWithDebt.totalDebt
+            
+            val stars = when {
+                itemWithDebt.totalOverdueCount > 5 -> "⭐"
+                itemWithDebt.totalOverdueCount > 2 -> "⭐⭐"
+                itemWithDebt.totalPaidOnTimeCount > 20 -> "⭐⭐⭐⭐⭐"
+                itemWithDebt.totalPaidOnTimeCount > 10 -> "⭐⭐⭐⭐"
+                else -> "⭐⭐⭐"
+            }
 
-                val stars = when {
-                    totalOverdue > 5 -> "⭐"
-                    totalOverdue > 2 -> "⭐⭐"
-                    totalPaidOnTime > 20 -> "⭐⭐⭐⭐⭐"
-                    totalPaidOnTime > 10 -> "⭐⭐⭐⭐"
-                    else -> "⭐⭐⭐"
+            with(holder.b) {
+                tvClientName.text = item.name
+                tvClientInitial.text = item.name.take(1).uppercase()
+                tvClientRating.text = stars
+                tvClientInfo.text = "DNI: ${item.doc} | 📱 ${item.phone}"
+                tvClientPendingBalance.text = "Deuda: S/ ${String.format(Locale.US, "%.2f", balance)}"
+                tvClientPendingBalance.visibility = if (balance > 0.01) View.VISIBLE else View.GONE
+                
+                if (itemWithDebt.totalOverdueCount >= 1) {
+                    chipClientScore.text = "¡CON MORA! ⚡"
+                    chipClientScore.setChipBackgroundColorResource(R.color.red_600)
+                    chipClientScore.setTextColor(getColor(R.color.white))
+                } else if (balance <= 0.01) {
+                    chipClientScore.text = "Finalizado ✅"
+                    chipClientScore.setChipBackgroundColorResource(R.color.slate_100)
+                    chipClientScore.setTextColor(getColor(R.color.slate_600))
+                } else {
+                    chipClientScore.text = "Al día ✅"
+                    chipClientScore.setChipBackgroundColorResource(R.color.emerald_50)
+                    chipClientScore.setTextColor(getColor(R.color.emerald_600))
                 }
-
-                withContext(kotlinx.coroutines.Dispatchers.Main) {
-                    with(holder.b) {
-                        tvClientName.text = item.name
-                        tvClientInitial.text = item.name.take(1).uppercase()
-                        tvClientRating.text = stars
-                        tvClientInfo.text = "DNI: ${item.doc} | 📱 ${item.phone}"
-                        tvClientPendingBalance.text = "Deuda: S/ ${String.format(Locale.US, "%.2f", totalPendingBalance)}"
-                        tvClientPendingBalance.visibility = if (totalPendingBalance > 0) android.view.View.VISIBLE else android.view.View.GONE
-                        
-                        if (totalOverdue >= 1) {
-                            chipClientScore.text = "¡CON MORA! ⚡"
-                            chipClientScore.setChipBackgroundColorResource(R.color.red_600)
-                            chipClientScore.setTextColor(getColor(R.color.white))
-                        } else {
-                            chipClientScore.text = "Al día ✅"
-                            chipClientScore.setChipBackgroundColorResource(R.color.emerald_50)
-                            chipClientScore.setTextColor(getColor(R.color.emerald_600))
-                        }
-                        root.setOnClickListener { onClick(item) }
-                    }
-                }
+                root.setOnClickListener { onClick(itemWithDebt) }
             }
         }
         override fun getItemCount() = items.size

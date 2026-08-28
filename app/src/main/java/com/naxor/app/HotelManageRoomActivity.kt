@@ -5,7 +5,6 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.naxor.app.adapter.HotelMovementAdapter
@@ -20,7 +19,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-class HotelManageRoomActivity : AppCompatActivity() {
+class HotelManageRoomActivity : BaseActivity() {
 
     private lateinit var binding: ActivityHotelManageRoomBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
@@ -156,10 +155,14 @@ class HotelManageRoomActivity : AppCompatActivity() {
             val currentlyNeedsCleaning = room.lastCleaned < startOfToday
 
             if (currentlyNeedsCleaning) {
-                database.hotelDao().updateRoom(room.copy(lastCleaned = System.currentTimeMillis()))
+                val updatedRoom = room.copy(lastCleaned = System.currentTimeMillis())
+                database.hotelDao().updateRoom(updatedRoom)
+                SyncManager(this@HotelManageRoomActivity).syncHotelRoomToCloud(updatedRoom)
                 Toast.makeText(this@HotelManageRoomActivity, "Habitación marcada como LIMPIA ✨", Toast.LENGTH_SHORT).show()
             } else {
-                database.hotelDao().updateRoom(room.copy(lastCleaned = 0L))
+                val updatedRoom = room.copy(lastCleaned = 0L)
+                database.hotelDao().updateRoom(updatedRoom)
+                SyncManager(this@HotelManageRoomActivity).syncHotelRoomToCloud(updatedRoom)
                 Toast.makeText(this@HotelManageRoomActivity, "Solicitud de ASEO registrada 🧹", Toast.LENGTH_SHORT).show()
             }
             updateCleaningButtonUI(room.id)
@@ -243,6 +246,7 @@ class HotelManageRoomActivity : AppCompatActivity() {
                             guestNationality = newNat
                         )
                         database.hotelDao().updateBooking(updatedBooking)
+                        SyncManager(this@HotelManageRoomActivity).syncHotelBookingToCloud(updatedBooking)
                         activeBooking = updatedBooking
                         binding.tvGuestName.text = newName
                         binding.tvGuestDoc.text = "Doc: $newDoc"
@@ -283,9 +287,14 @@ class HotelManageRoomActivity : AppCompatActivity() {
             val cal = java.util.Calendar.getInstance()
             cal.timeInMillis = booking.checkOutDate
             cal.add(java.util.Calendar.DAY_OF_YEAR, extraDays)
-            database.hotelDao().insertCharge(HotelChargeEntity(bookingId = booking.id, concept = "Extensión de estancia ($extraDays noches)", amount = extraChargeAmount))
+            val extraCharge = HotelChargeEntity(bookingId = booking.id, concept = "Extensión de estancia ($extraDays noches)", amount = extraChargeAmount)
+            database.hotelDao().insertCharge(extraCharge)
+            SyncManager(this@HotelManageRoomActivity).syncHotelChargeToCloud(extraCharge)
+            
             val updatedBooking = booking.copy(checkOutDate = cal.timeInMillis, totalAmount = booking.totalAmount + extraChargeAmount)
             database.hotelDao().updateBooking(updatedBooking)
+            SyncManager(this@HotelManageRoomActivity).syncHotelBookingToCloud(updatedBooking)
+            
             activeBooking = updatedBooking
             Toast.makeText(this@HotelManageRoomActivity, "Estancia extendida correctamente", Toast.LENGTH_SHORT).show()
         }
@@ -299,7 +308,13 @@ class HotelManageRoomActivity : AppCompatActivity() {
         layout.addView(etConcept); layout.addView(etAmount)
         AlertDialog.Builder(this).setTitle("Añadir Consumo").setView(layout).setPositiveButton("Añadir") { _, _ ->
             val concept = etConcept.text.toString(); val amount = etAmount.text.toString().toDoubleOrNull() ?: 0.0
-            if (concept.isNotEmpty() && amount > 0) { lifecycleScope.launch { database.hotelDao().insertCharge(HotelChargeEntity(bookingId = booking.id, concept = concept, amount = amount)) } }
+            if (concept.isNotEmpty() && amount > 0) { 
+                lifecycleScope.launch { 
+                    val charge = HotelChargeEntity(bookingId = booking.id, concept = concept, amount = amount)
+                    database.hotelDao().insertCharge(charge)
+                    SyncManager(this@HotelManageRoomActivity).syncHotelChargeToCloud(charge)
+                } 
+            }
         }.setNegativeButton("Cancelar", null).show()
     }
 
@@ -311,7 +326,13 @@ class HotelManageRoomActivity : AppCompatActivity() {
         layout.addView(etAmount); layout.addView(etNights)
         AlertDialog.Builder(this).setTitle("Registrar Pago").setView(layout).setPositiveButton("Pagar") { _, _ ->
             val amount = etAmount.text.toString().toDoubleOrNull() ?: 0.0; val nights = etNights.text.toString().toIntOrNull() ?: 0
-            if (amount > 0) { lifecycleScope.launch { database.hotelDao().insertPayment(HotelPaymentEntity(bookingId = booking.id, amount = amount, nightsPaid = nights)) } }
+            if (amount > 0) { 
+                lifecycleScope.launch { 
+                    val payment = HotelPaymentEntity(bookingId = booking.id, amount = amount, nightsPaid = nights)
+                    database.hotelDao().insertPayment(payment)
+                    SyncManager(this@HotelManageRoomActivity).syncHotelPaymentToCloud(payment)
+                } 
+            }
         }.setNegativeButton("Cancelar", null).show()
     }
 
@@ -350,7 +371,7 @@ class HotelManageRoomActivity : AppCompatActivity() {
     }
 
     private fun generateReceiptText(type: String, booking: HotelBookingEntity, charges: List<HotelChargeEntity>, payments: List<HotelPaymentEntity>): String {
-        val sb = StringBuilder(); sb.append("🏨 *NEXUR HOTEL - $type*\n----------------------------\n*Huésped:* ${booking.guestName}\n*Doc:* ${booking.guestDoc}\n----------------------------\n*Detalle:*\n- Estancia: S/ ${String.format(Locale.US, "%.2f", booking.totalAmount)}\n")
+        val sb = StringBuilder(); sb.append("🏨 *GOMEZMART HOTEL - $type*\n----------------------------\n*Huésped:* ${booking.guestName}\n*Doc:* ${booking.guestDoc}\n----------------------------\n*Detalle:*\n- Estancia: S/ ${String.format(Locale.US, "%.2f", booking.totalAmount)}\n")
         charges.forEach { sb.append("- ${it.concept}: S/ ${String.format(Locale.US, "%.2f", it.amount)}\n") }
         sb.append("----------------------------\n")
         val total = booking.totalAmount + charges.sumOf { it.amount }; sb.append("*TOTAL:* S/ ${String.format(Locale.US, "%.2f", total)}\n")
@@ -367,6 +388,17 @@ class HotelManageRoomActivity : AppCompatActivity() {
     }
 
     private fun finishCheckOut(booking: HotelBookingEntity) {
-        lifecycleScope.launch { database.hotelDao().updateRoomStatus(booking.roomId, "DIRTY"); database.hotelDao().updateBooking(booking.copy(status = "CHECKED_OUT")); Toast.makeText(this@HotelManageRoomActivity, "Check-out completado", Toast.LENGTH_SHORT).show(); finish() }
+        lifecycleScope.launch { 
+            database.hotelDao().updateRoomStatus(booking.roomId, "DIRTY")
+            val updatedBooking = booking.copy(status = "CHECKED_OUT")
+            database.hotelDao().updateBooking(updatedBooking)
+            
+            val syncManager = SyncManager(this@HotelManageRoomActivity)
+            syncManager.syncHotelBookingToCloud(updatedBooking)
+            database.hotelDao().getRoomById(booking.roomId)?.let { syncManager.syncHotelRoomToCloud(it) }
+            
+            Toast.makeText(this@HotelManageRoomActivity, "Check-out completado", Toast.LENGTH_SHORT).show()
+            finish() 
+        }
     }
 }

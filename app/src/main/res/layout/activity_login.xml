@@ -1,141 +1,234 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface">
+    android:background="@color/white">
 
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:paddingHorizontal="32dp"
-        android:paddingVertical="16dp"
-        android:gravity="center_horizontal">
+        android:fillViewport="true">
 
-        <ImageView
-            android:layout_width="150dp"
-            android:layout_height="150dp"
-            android:layout_gravity="center"
-            android:src="@drawable/logo_naxor_full"
-            android:scaleType="fitCenter"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="4dp" />
-
-        <TextView
-            android:id="@+id/tvLoginTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Bienvenido a tu gestión inteligente"
-            android:textSize="13sp"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:layout_marginBottom="16dp" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="?attr/textInputOutlinedStyle"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Correo electrónico"
-            android:layout_marginBottom="8dp"
-            app:startIconDrawable="@android:drawable/ic_dialog_email"
-            app:endIconMode="clear_text"
-            app:errorEnabled="false">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etLoginEmail"
+            android:animateLayoutChanges="true">
+
+            <!-- Fondo decorativo superior (Ajustado a la mitad del logo) -->
+            <View
+                android:id="@+id/viewHeaderBg"
+                android:layout_width="match_parent"
+                android:layout_height="130dp"
+                android:background="@color/purple_600"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardLogoContainer"
+                android:layout_width="160dp"
+                android:layout_height="160dp"
+                android:layout_marginTop="60dp"
+                app:cardCornerRadius="80dp"
+                app:cardElevation="8dp"
+                app:strokeWidth="0dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+                <ImageView
+                    android:id="@+id/ivLoginLogo"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="0dp"
+                    android:src="@drawable/logotipo_con_fondo_de_gomezmart"
+                    android:scaleType="centerCrop" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Card Informativa (Importancia de la cuenta) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardInfoLogin"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="32dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/purple_100"
+                app:cardBackgroundColor="@color/white"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cardLogoContainer">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="¡Tu negocio en la nube! ☁️"
+                        android:textColor="@color/purple_800"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textAlignment="center" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Crea una cuenta para acceder a la gestión avanzada, navegar y publicar en el mercado online, y colaborar con otros negocios en tiempo real."
+                        android:textColor="@color/purple_700"
+                        android:textSize="13sp"
+                        android:textAlignment="center"
+                        android:lineSpacingExtra="2dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Formulario -->
+            <LinearLayout
+                android:id="@+id/layoutForm"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textEmailAddress"
-                android:paddingVertical="12dp" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:orientation="vertical"
+                android:paddingHorizontal="32dp"
+                android:paddingTop="32dp"
+                android:paddingBottom="48dp"
+                app:layout_constraintTop_toBottomOf="@id/cardInfoLogin">
 
-        <com.google.android.material.textfield.TextInputLayout
-            style="?attr/textInputOutlinedStyle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Contraseña"
-            android:layout_marginBottom="8dp"
-            app:passwordToggleEnabled="true"
-            app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
-            app:errorEnabled="false">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etLoginPassword"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textPassword"
-                android:paddingVertical="12dp" />
-        </com.google.android.material.textfield.TextInputLayout>
+                <TextView
+                    android:id="@+id/tvLoginTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Acceso al Sistema"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_900"
+                    android:layout_marginBottom="24dp" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/layoutConfirmPassword"
-            style="?attr/textInputOutlinedStyle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Confirmar Contraseña"
-            android:layout_marginBottom="12dp"
-            android:visibility="gone"
-            app:passwordToggleEnabled="true"
-            app:startIconDrawable="@android:drawable/ic_lock_idle_lock">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etConfirmPassword"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textPassword"
-                android:paddingVertical="12dp" />
-        </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    style="?attr/textInputOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Correo electrónico"
+                    android:layout_marginBottom="12dp"
+                    app:startIconDrawable="@android:drawable/ic_dialog_email"
+                    app:cornerRadius="16dp"
+                    app:errorEnabled="false">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etLoginEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textEmailAddress" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnLoginAction"
-            android:layout_width="match_parent"
-            android:layout_height="54dp"
-            android:text="Iniciar Sesión"
-            android:textStyle="bold"
-            app:cornerRadius="12dp" />
+                <com.google.android.material.textfield.TextInputLayout
+                    style="?attr/textInputOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Contraseña"
+                    android:layout_marginBottom="12dp"
+                    app:passwordToggleEnabled="true"
+                    app:cornerRadius="16dp"
+                    app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
+                    app:errorEnabled="false">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etLoginPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnContinueGuest"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="match_parent"
-            android:layout_height="54dp"
-            android:layout_marginTop="8dp"
-            android:text="Modo Local"
-            android:textSize="13sp"
-            app:cornerRadius="12dp" />
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layoutConfirmPassword"
+                    style="?attr/textInputOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Confirmar Contraseña"
+                    android:layout_marginBottom="16dp"
+                    android:visibility="gone"
+                    app:passwordToggleEnabled="true"
+                    app:cornerRadius="16dp"
+                    app:startIconDrawable="@android:drawable/ic_lock_idle_lock">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etConfirmPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnToggleLoginMode"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="¿No tienes cuenta? Regístrate aquí"
-            android:textSize="12sp"
-            android:textAllCaps="false" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLoginAction"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:text="Iniciar Sesión"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="16dp"
+                    app:backgroundTint="@color/purple_600"
+                    android:elevation="4dp" />
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="?attr/colorOutlineVariant"
-            android:layout_marginVertical="8dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnToggleLoginMode"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="¿No tienes cuenta? Regístrate aquí"
+                    android:textSize="13sp"
+                    android:textColor="@color/purple_700"
+                    android:textAllCaps="false" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnGoogleSignIn"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="Continuar con Google"
-            android:textSize="15sp"
-            android:textColor="@color/slate_900"
-            android:textStyle="bold"
-            app:icon="@drawable/ic_google_round"
-            app:iconTint="@null"
-            app:iconSize="34dp"
-            app:iconGravity="textStart"
-            app:iconPadding="12dp"
-            app:strokeColor="@color/slate_200"
-            app:strokeWidth="1.2dp"
-            app:cornerRadius="16dp"
-            android:backgroundTint="@color/white"
-            android:elevation="2dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnForgotPassword"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="¿Olvidaste tu contraseña?"
+                    android:textSize="12sp"
+                    android:textColor="@color/slate_500"
+                    android:textAllCaps="false"
+                    android:visibility="visible" />
 
-    </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_marginVertical="24dp">
+                    <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" android:background="@color/slate_200" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" O continúa con " android:textColor="@color/slate_400" android:textSize="12sp" android:paddingHorizontal="16dp" />
+                    <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" android:background="@color/slate_200" />
+                </LinearLayout>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGoogleSignIn"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:text="Cuenta de Google"
+                    android:textSize="15sp"
+                    android:textColor="@color/slate_900"
+                    android:textStyle="bold"
+                    app:icon="@drawable/ic_google_round"
+                    app:iconTint="@null"
+                    app:iconSize="28dp"
+                    app:iconGravity="textStart"
+                    app:iconPadding="16dp"
+                    app:strokeColor="@color/slate_200"
+                    app:strokeWidth="1.2dp"
+                    app:cornerRadius="16dp"
+                    android:backgroundTint="@color/white" />
+
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <View android:id="@+id/btnContinueGuest" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

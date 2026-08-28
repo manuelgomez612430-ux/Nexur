@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp"
+    app:cardBackgroundColor="@color/white">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:id="@+id/tvTitleDialog"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nueva Habitación"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_900" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Configura los detalles de tu nuevo activo."
+                android:textSize="14sp"
+                android:textColor="@color/slate_500"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="24dp" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/checkBulk"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Creación Masiva (Múltiples habitaciones)"
+                android:textColor="@color/slate_700"
+                android:textSize="14sp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- FOTO DE LA HABITACIÓN -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardRoomPhoto"
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:layout_marginBottom="20dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_200"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/ivRoomPhoto"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerInside"
+                    android:padding="40dp"
+                    android:src="@android:drawable/ic_menu_camera"
+                    app:tint="@color/slate_400" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- MODO NORMAL (Fila única) -->
+            <LinearLayout
+                android:id="@+id/layoutRoomNormal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false"
+                android:weightSum="2"
+                android:layout_marginBottom="12dp">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layoutRoomNumber"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="N° Habitación"
+                    app:startIconDrawable="@android:drawable/ic_menu_agenda"
+                    android:layout_marginEnd="6dp"
+                    app:errorEnabled="true"
+                    app:helperTextEnabled="true">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etRoomNumber"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapCharacters" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Piso"
+                    android:layout_marginStart="6dp">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etRoomFloor"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:text="1" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <!-- MODO MASIVO (Aparece al dar check) -->
+            <LinearLayout
+                android:id="@+id/layoutRoomBulk"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:baselineAligned="false"
+                    android:weightSum="2"
+                    android:layout_marginBottom="12dp">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutRoomStart"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="N° Inicial"
+                        app:startIconDrawable="@android:drawable/ic_menu_agenda"
+                        android:layout_marginEnd="6dp"
+                        app:errorEnabled="true"
+                        app:helperTextEnabled="true">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etRoomStart"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutRoomEnd"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="N° Final"
+                        android:layout_marginStart="6dp"
+                        app:errorEnabled="true"
+                        app:helperTextEnabled="true">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etRoomEnd"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Piso donde se crearán"
+                    android:layout_marginBottom="12dp">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etRoomFloorBulk"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:text="1" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Tipo de Habitación"
+                android:layout_marginBottom="12dp">
+                <AutoCompleteTextView
+                    android:id="@+id/spinnerRoomType"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Precio por Noche"
+                app:startIconDrawable="@android:drawable/ic_menu_send"
+                android:layout_marginBottom="12dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etRoomPrice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DESCRIPCIONES"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_400"
+                android:layout_marginBottom="12dp"
+                android:letterSpacing="0.1" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Descripción Global (General)"
+                app:startIconDrawable="@android:drawable/ic_menu_agenda"
+                android:layout_marginBottom="12dp">
+                <AutoCompleteTextView
+                    android:id="@+id/etGlobalDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textLongMessage" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Descripción Específica (Solo esta hab.)"
+                app:startIconDrawable="@android:drawable/ic_menu_edit"
+                android:layout_marginBottom="24dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etSpecificDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="2" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="end">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancelRoom"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cancelar"
+                    android:textColor="@color/slate_500" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveRoom"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Guardar Habitación"
+                    app:cornerRadius="16dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</com.google.android.material.card.MaterialCardView>

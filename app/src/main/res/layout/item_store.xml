@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="2dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/slate_200"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            app:cardCornerRadius="36dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/slate_100">
+            <ImageView
+                android:id="@+id/ivStoreLogo"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/gomezmart_icon" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="16dp">
+
+            <TextView
+                android:id="@+id/tvStoreName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nombre de la Tienda"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_900" />
+
+            <TextView
+                android:id="@+id/tvStoreCategory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Categoría del rubro"
+                android:textSize="12sp"
+                android:textColor="@color/purple_600"
+                android:textStyle="bold"
+                android:textAllCaps="true"
+                android:layout_marginTop="2dp" />
+
+            <TextView
+                android:id="@+id/tvStoreAddress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📍 Dirección de la tienda"
+                android:textSize="13sp"
+                android:textColor="@color/slate_500"
+                android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_menu_directions"
+            app:tint="@color/slate_300" />
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

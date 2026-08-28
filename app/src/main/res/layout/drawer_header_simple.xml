@@ -1,20 +1,321 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="80dp"
-    android:background="?attr/colorPrimary"
-    android:gravity="center_vertical"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingHorizontal="24dp">
+    android:paddingBottom="16dp">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Bloque de Identidad (Fondo Morado) -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="SISTEMA COMERCIAL INTEGRAL"
-        android:textColor="@android:color/white"
-        android:textSize="11sp"
-        android:alpha="0.9"
-        android:textStyle="bold"
-        android:letterSpacing="0.1" />
+        android:background="@color/purple_600"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="48dp"
+        android:paddingBottom="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardDrawerLogo"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="4dp"
+                app:strokeWidth="0dp"
+                app:cardBackgroundColor="@color/white">
+                <ImageView
+                    android:id="@+id/ivDrawerLogo"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="4dp"
+                    android:src="@drawable/logotipo_de_gomezmart"
+                    android:scaleType="fitCenter"
+                    android:contentDescription="Logo" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:id="@+id/tvHeaderTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="16dp"
+                android:text="Mi Hospedaje"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:maxLines="2"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvHeaderLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_gravity="center_horizontal"
+            android:text="SISTEMA ACTIVO"
+            android:textColor="@android:color/white"
+            android:textSize="10sp"
+            android:alpha="0.7"
+            android:textStyle="bold"
+            android:letterSpacing="0.2" />
+    </LinearLayout>
+
+    <!-- Botón 1: Publicación de Servicio -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btnDrawerPublishService"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@color/purple_600"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🌐 Gestionar tienda online"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Botón 3: Cambiar de Sistema (UBICACIÓN ACTUALIZADA) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btnDrawerSwitchSystem"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@color/purple_600"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔄 Cambiar de Sistema"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Botón 2: Gestionar Colaboradores -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btnDrawerManageTeam"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@color/purple_600"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="👥 Gestionar Colaboradores"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Añade y controla los accesos de tu equipo de trabajo para una gestión compartida."
+                    android:textColor="@android:color/white"
+                    android:textSize="10sp"
+                    android:alpha="0.8" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDrawerSearchToCollab"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_gravity="center_horizontal"
+                    android:text="🤝 Colaborar con un negocio"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="8dp"
+                    app:cornerRadius="8dp"
+                    app:backgroundTint="@color/purple_100"
+                    app:iconSize="12dp" />
+            </LinearLayout>
+
+            <!-- Punto Rojo de Solicitud Nueva -->
+            <View
+                android:id="@+id/viewCollabBadgeDrawer"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="12dp"
+                android:background="@drawable/bg_circle_red"
+                android:visibility="gone" />
+        </FrameLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Botón 4: Ir al Mercado -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btnDrawerGoToMarket"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@color/purple_600"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🛒 Ir al Mercado GoMezMart"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Explora productos y servicios de otros negocios en la red local."
+                android:textColor="@android:color/white"
+                android:textSize="10sp"
+                android:alpha="0.8" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Botón 5: Mis Colaboraciones (NUEVO) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btnDrawerMyCollaborations"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@color/indigo_500"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/tvDrawerCollabTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🤝 Mis Colaboraciones"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvDrawerCollabDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Accede a los negocios donde eres parte del equipo."
+                android:textColor="@android:color/white"
+                android:textSize="10sp"
+                android:alpha="0.8" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Botón 6: Mi Cuenta (Solo para colaboradores) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btnDrawerCollabAccount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@color/slate_700"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="👤 Mi Cuenta"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Tus datos y permisos asignados."
+                android:textColor="@android:color/white"
+                android:textSize="10sp"
+                android:alpha="0.8" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
 </LinearLayout>

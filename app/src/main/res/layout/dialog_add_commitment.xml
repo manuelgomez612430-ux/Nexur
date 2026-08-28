@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/colorSurfaceContainer"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Nuevo Compromiso"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Anota y programa tus pagos pendientes"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="14sp" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:hint="¿Qué compromiso deseas anotar?"
+        app:startIconDrawable="@android:drawable/ic_menu_edit">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etCommitmentDesc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textCapSentences" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Monto Estimado"
+        app:prefixText="S/ "
+        app:prefixTextColor="?attr/colorPrimary">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etCommitmentAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Frecuencia del pago"
+        app:startIconDrawable="@android:drawable/ic_menu_sort_by_size">
+
+        <AutoCompleteTextView
+            android:id="@+id/autoCompleteCommitmentFreq"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCommitmentDate"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginTop="16dp"
+        android:text="📅 Seleccionar Fecha / Día"
+        android:textColor="?attr/colorPrimary"
+        app:backgroundTint="?attr/colorSurfaceContainerHigh"
+        app:cornerRadius="12dp"
+        app:icon="@android:drawable/ic_menu_my_calendar"
+        app:iconGravity="textStart"
+        app:iconTint="?attr/colorPrimary" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:gravity="end"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelCommitment"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancelar"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSaveCommitment"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Guardar"
+            android:textStyle="bold"
+            app:backgroundTint="?attr/colorPrimary"
+            app:cornerRadius="12dp"
+            app:icon="@android:drawable/ic_menu_save" />
+    </LinearLayout>
+
+</LinearLayout>

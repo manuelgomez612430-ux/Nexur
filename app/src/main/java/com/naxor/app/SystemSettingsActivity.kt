@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
@@ -15,7 +14,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.*
 
-class SystemSettingsActivity : AppCompatActivity() {
+class SystemSettingsActivity : BaseActivity() {
 
     private lateinit var binding: ActivitySystemSettingsBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
@@ -31,41 +30,120 @@ class SystemSettingsActivity : AppCompatActivity() {
         setupBackupAction()
         setupRestoreAction()
         setupAppearanceActions()
+        setupNotificationAction()
         setupFaqAction()
         setupSupportAction()
-        setupMaintenanceActions()
+        setupTutorialActions()
+        setupDangerZoneExpandable()
         setupClearDataActions()
     }
 
-    private fun setupMaintenanceActions() {
-        // Optimizar App
-        binding.cardOptimizeApp.setOnClickListener {
-            lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                try {
-                    database.openHelper.writableDatabase.execSQL("VACUUM")
-                    withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        Toast.makeText(this@SystemSettingsActivity, "¡Sistema optimizado y acelerado!", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: Exception) {
-                    withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        Toast.makeText(this@SystemSettingsActivity, "Error al optimizar", Toast.LENGTH_SHORT).show()
-                    }
+    private fun setupTutorialActions() {
+        // Reiniciar Tutoriales
+        binding.cardResetTutorials.setOnClickListener {
+            getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putBoolean("tutorial_shown_v5", false).apply()
+            Toast.makeText(this, "Las guías aparecerán al volver al inicio", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun setupDangerZoneExpandable() {
+        binding.cardHeaderDangerZone.setOnClickListener {
+            val isVisible = binding.layoutClearDataOptions.visibility == android.view.View.VISIBLE
+            binding.layoutClearDataOptions.visibility = if (isVisible) android.view.View.GONE else android.view.View.VISIBLE
+            binding.ivArrowDangerZone.animate()
+                .rotation(if (isVisible) 0f else 180f)
+                .setDuration(300)
+                .start()
+        }
+    }
+
+    private fun setupNotificationAction() {
+        binding.switchNotifications.isChecked = areNotificationsEnabled()
+        
+        binding.switchNotifications.setOnClickListener {
+            if (binding.switchNotifications.isChecked) {
+                requestNotificationPermission()
+            } else {
+                openAppNotificationSettings()
+            }
+        }
+    }
+
+    private fun areNotificationsEnabled(): Boolean {
+        return androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()
+    }
+
+    private fun requestNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val permission = android.Manifest.permission.POST_NOTIFICATIONS
+            
+            when {
+                androidx.core.content.ContextCompat.checkSelfPermission(this, permission) == android.content.pm.PackageManager.PERMISSION_GRANTED -> {
+                    Toast.makeText(this, "Las notificaciones ya están activas", Toast.LENGTH_SHORT).show()
+                    binding.switchNotifications.isChecked = true
+                }
+                else -> {
+                    // Pedir el permiso oficialmente al sistema
+                    androidx.core.app.ActivityCompat.requestPermissions(this, arrayOf(permission), 1001)
+                }
+            }
+        } else {
+            // En versiones anteriores a Android 13
+            if (!areNotificationsEnabled()) {
+                showSettingsRationale()
+            } else {
+                Toast.makeText(this, "Las notificaciones ya están activas", Toast.LENGTH_SHORT).show()
+                binding.switchNotifications.isChecked = true
+            }
+        }
+    }
+
+    private fun showSettingsRationale() {
+        AlertDialog.Builder(this)
+            .setTitle("Activar Notificaciones")
+            .setMessage("Para recibir alertas de cobro, debes permitir las notificaciones desde los ajustes de tu teléfono.")
+            .setPositiveButton("Ir a Ajustes") { _, _ -> openAppNotificationSettings() }
+            .setNegativeButton("Cancelar") { _, _ -> binding.switchNotifications.isChecked = false }
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun openAppNotificationSettings() {
+        val intent = Intent().apply {
+            when {
+                android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O -> {
+                    action = android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                    putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+                }
+                else -> {
+                    action = "android.settings.APP_NOTIFICATION_SETTINGS"
+                    putExtra("app_package", packageName)
+                    putExtra("app_uid", applicationInfo.uid)
                 }
             }
         }
+        startActivity(intent)
+    }
 
-        // Reiniciar Tutoriales
-        binding.cardResetTutorials.setOnClickListener {
-            getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putBoolean("tutorial_shown_v3", false).apply()
-            Toast.makeText(this, "Las guías aparecerán al volver al inicio", Toast.LENGTH_LONG).show()
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 1001) {
+            if (areNotificationsEnabled()) {
+                binding.switchNotifications.isChecked = true
+                Toast.makeText(this, "✅ Notificaciones activadas", Toast.LENGTH_SHORT).show()
+            } else {
+                // El permiso fue denegado o el diálogo no se mostró (denegación permanente).
+                // Mostramos un aviso propio para que el usuario sepa que DEBE ir a ajustes.
+                showSettingsRationale()
+            }
         }
+    }
 
-        // Mantener Pantalla Encendida
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        binding.switchKeepScreenOn.isChecked = prefs.getBoolean("keep_screen_on", false)
-        binding.switchKeepScreenOn.setOnCheckedChangeListener { _, checked ->
-            prefs.edit().putBoolean("keep_screen_on", checked).apply()
-            updateScreenOnFlag(checked)
+    override fun onResume() {
+        super.onResume()
+        // Actualizar el estado del switch al volver de los ajustes del sistema
+        if (::binding.isInitialized) {
+            binding.switchNotifications.isChecked = areNotificationsEnabled()
         }
     }
 
@@ -93,6 +171,14 @@ class SystemSettingsActivity : AppCompatActivity() {
         binding.cardClearHotel.setOnClickListener {
             showClearConfirmation("Hotelería") {
                 lifecycleScope.launch {
+                    val loading = AlertDialog.Builder(this@SystemSettingsActivity).setMessage("Borrando datos del Hotel...").setCancelable(false).show()
+                    
+                    // 1. Borrar en la nube
+                    val syncManager = com.naxor.app.SyncManager(this@SystemSettingsActivity)
+                    val hotelCollections = listOf("hotel_rooms", "hotel_bookings", "hotel_room_layouts", "hotel_charges", "hotel_payments", "hotel_maintenance")
+                    hotelCollections.forEach { syncManager.deleteCollectionFromCloud(it) }
+
+                    // 2. Borrar localmente
                     database.systemMaintenanceDao().clearHotelRooms()
                     database.systemMaintenanceDao().clearHotelBookings()
                     database.systemMaintenanceDao().clearHotelLayouts()
@@ -100,20 +186,106 @@ class SystemSettingsActivity : AppCompatActivity() {
                     database.systemMaintenanceDao().clearHotelPayments()
                     database.systemMaintenanceDao().clearHotelMaintenance()
                     database.systemMaintenanceDao().clearHotelTools()
-                    Toast.makeText(this@SystemSettingsActivity, "Datos de Hotelería borrados", Toast.LENGTH_SHORT).show()
+                    
+                    // 3. Limpiar configuraciones
+                    val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+                    prefs.edit().apply {
+                        val keysToRemove = listOf(
+                            "HOTEL_name", "HOTEL_ruc", "HOTEL_address", "HOTEL_phone", 
+                            "HOTEL_owner_name", "HOTEL_owner_dni", "HOTEL_show_owner", 
+                            "HOTEL_show_business", "HOTEL_show_address", "HOTEL_show_phone",
+                            "HOTEL_description", "HOTEL_cover_local", "HOTEL_logo_local",
+                            "HOTEL_category"
+                        )
+                        keysToRemove.forEach { remove(it) }
+                        
+                        if (prefs.getString("business_type", "") == "HOTEL") {
+                            putString("business_name", "")
+                            putString("business_address", "")
+                            putString("business_phone", "")
+                            putString("business_ruc", "")
+                            putString("business_description", "")
+                            putString("business_owner_name", "")
+                            putString("business_category", "")
+                            putFloat("business_capital", 0f)
+                            putBoolean("is_online_store", false)
+                        }
+                        apply()
+                    }
+                    
+                    // Sincronizar reseteo a la nube
+                    syncManager.syncBusinessSettingsToCloud()
+                    
+                    getSharedPreferences("HotelToolsPrefs", MODE_PRIVATE).edit().clear().apply()
+                    getSharedPreferences("HotelPrefs", MODE_PRIVATE).edit().clear().apply()
+                    
+                    loading.dismiss()
+                    Toast.makeText(this@SystemSettingsActivity, "Datos de Hotelería borrados ✅", Toast.LENGTH_SHORT).show()
+                    
+                    if (prefs.getString("business_type", "") == "HOTEL") {
+                        restartApp()
+                    }
                 }
             }
         }
 
         binding.cardClearProducts.setOnClickListener {
-            showClearConfirmation("Productos") {
+            showClearConfirmation("Productos y Ventas") {
                 lifecycleScope.launch {
+                    val loading = AlertDialog.Builder(this@SystemSettingsActivity).setMessage("Borrando inventario y ventas...").setCancelable(false).show()
+
+                    // 1. Borrar en la nube
+                    val syncManager = com.naxor.app.SyncManager(this@SystemSettingsActivity)
+                    val productCollections = listOf("inventory", "sales", "price_history", "debtors", "debt_details", "cash_sessions")
+                    productCollections.forEach { syncManager.deleteCollectionFromCloud(it) }
+
+                    // 2. Borrar localmente
                     database.systemMaintenanceDao().clearProducts()
                     database.systemMaintenanceDao().clearSales()
                     database.systemMaintenanceDao().clearPriceHistory()
                     database.systemMaintenanceDao().clearFiados()
                     database.systemMaintenanceDao().clearDebtDetails()
-                    Toast.makeText(this@SystemSettingsActivity, "Datos de Productos borrados", Toast.LENGTH_SHORT).show()
+                    database.systemMaintenanceDao().clearLogs()
+                    database.systemMaintenanceDao().clearCashSessions()
+                    
+                    // 3. Limpiar configuraciones
+                    val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+                    prefs.edit().apply {
+                        val rubros = listOf("PRODUCTS", "SERVICES")
+                        rubros.forEach { r ->
+                            val keys = listOf(
+                                "name", "ruc", "address", "phone", "owner_name", "owner_dni", 
+                                "show_owner", "show_business", "show_address", "show_phone",
+                                "description", "cover_local", "logo_local", "category"
+                            )
+                            keys.forEach { remove("${r}_$it") }
+                        }
+                        
+                        val current = prefs.getString("business_type", "")
+                        if (current == "PRODUCTS" || current == "SERVICES") {
+                            putString("business_name", "")
+                            putString("business_address", "")
+                            putString("business_phone", "")
+                            putString("business_ruc", "")
+                            putString("business_description", "")
+                            putString("business_owner_name", "")
+                            putString("business_category", "")
+                            putFloat("business_capital", 0f)
+                            putBoolean("is_online_store", false)
+                        }
+                        apply()
+                    }
+                    
+                    // Sincronizar reseteo a la nube
+                    syncManager.syncBusinessSettingsToCloud()
+                    
+                    loading.dismiss()
+                    Toast.makeText(this@SystemSettingsActivity, "Datos de Productos borrados ✅", Toast.LENGTH_SHORT).show()
+                    
+                    val current = prefs.getString("business_type", "")
+                    if (current == "PRODUCTS" || current == "SERVICES") {
+                        restartApp()
+                    }
                 }
             }
         }
@@ -121,14 +293,102 @@ class SystemSettingsActivity : AppCompatActivity() {
         binding.cardClearLoans.setOnClickListener {
             showClearConfirmation("Préstamos") {
                 lifecycleScope.launch {
+                    val loading = AlertDialog.Builder(this@SystemSettingsActivity).setMessage("Borrando cartera de préstamos...").setCancelable(false).show()
+
+                    // 1. Borrar en la nube
+                    val syncManager = com.naxor.app.SyncManager(this@SystemSettingsActivity)
+                    val loanCollections = listOf("loan_clients", "loans", "loan_installments", "loan_expenses_system", "loan_payments", "loan_budgets", "commitments")
+                    
+                    loanCollections.forEach { coll ->
+                        syncManager.deleteCollectionFromCloud(coll)
+                    }
+
+                    // 2. Borrar localmente
                     database.systemMaintenanceDao().clearLoanClients()
                     database.systemMaintenanceDao().clearLoans()
                     database.systemMaintenanceDao().clearLoanInstallments()
                     database.systemMaintenanceDao().clearLoanExpenses()
-                    Toast.makeText(this@SystemSettingsActivity, "Datos de Préstamos borrados", Toast.LENGTH_SHORT).show()
+                    database.systemMaintenanceDao().clearLoanPayments()
+                    database.systemMaintenanceDao().clearLoanBudgets()
+                    database.systemMaintenanceDao().clearCommitments()
+                    
+                    // 3. Limpiar configuraciones personales del rubro Préstamos
+                    val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+                    prefs.edit().apply {
+                        val keysToRemove = listOf(
+                            "LOANS_name", "LOANS_ruc", "LOANS_address", "LOANS_phone",
+                            "LOANS_owner_name", "LOANS_owner_dni", "LOANS_show_owner",
+                            "LOANS_show_business", "LOANS_show_address", "LOANS_show_phone",
+                            "LOANS_description", "LOANS_cover_local", "LOANS_logo_local",
+                            "LOANS_category"
+                        )
+                        keysToRemove.forEach { remove(it) }
+                        
+                        // Si el sistema actual es Préstamos, limpiar los campos globales visibles
+                        if (prefs.getString("business_type", "") == "LOANS") {
+                            putString("business_name", "")
+                            putString("business_address", "")
+                            putString("business_phone", "")
+                            putString("business_ruc", "")
+                            putString("business_description", "")
+                            putString("business_owner_name", "")
+                            putString("business_category", "")
+                            putFloat("business_capital", 0f)
+                            putBoolean("is_online_store", false)
+                        }
+                        apply()
+                    }
+                    
+                    // Sincronizar reseteo a la nube
+                    syncManager.syncBusinessSettingsToCloud()
+                    
+                    loading.dismiss()
+                    Toast.makeText(this@SystemSettingsActivity, "Datos y ajustes de Préstamos borrados ✅", Toast.LENGTH_SHORT).show()
+                    
+                    // IMPORTANTE: REINICIAR APP PARA LIMPIAR TODO EL ESTADO EN MEMORIA
+                    restartApp()
                 }
             }
         }
+
+        binding.cardClearEverything.setOnClickListener {
+            showClearEverythingConfirmation()
+        }
+    }
+
+    private fun showClearEverythingConfirmation() {
+        AlertDialog.Builder(this)
+            .setTitle("⚠️ ¡ATENCIÓN: BORRADO TOTAL!")
+            .setMessage("Esta acción eliminará ABSOLUTAMENTE TODOS los datos del sistema y de la NUBE (Productos, Préstamos, Hotel, Clientes y Configuraciones). ¿Estás seguro?")
+            .setPositiveButton("Sí, Borrar TODO") { _, _ ->
+                lifecycleScope.launch {
+                    val loading = AlertDialog.Builder(this@SystemSettingsActivity)
+                        .setMessage("Limpiando cuenta en la nube y local...")
+                        .setCancelable(false)
+                        .show()
+
+                    // 1. Borrar en la nube de forma asíncrona pero esperar el fin
+                    com.naxor.app.SyncManager(this@SystemSettingsActivity).deleteEverythingFromCloud {
+                        lifecycleScope.launch {
+                            // 2. Limpiar local
+                            com.naxor.app.util.SessionManager.clearSessionData(this@SystemSettingsActivity)
+                            
+                            loading.dismiss()
+                            Toast.makeText(this@SystemSettingsActivity, "Sistema reseteado a cero ✅", Toast.LENGTH_LONG).show()
+                            restartApp()
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun restartApp() {
+        val intent = Intent(this, MainActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        startActivity(intent)
+        finish()
     }
 
     private fun setupBackupAction() {
@@ -192,8 +452,14 @@ class SystemSettingsActivity : AppCompatActivity() {
     }
 
     private fun setupAppearanceActions() {
+        // Mantener Pantalla Encendida
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        
+        binding.switchKeepScreenOn.isChecked = prefs.getBoolean("keep_screen_on", false)
+        binding.switchKeepScreenOn.setOnCheckedChangeListener { _, checked ->
+            prefs.edit().putBoolean("keep_screen_on", checked).apply()
+            updateScreenOnFlag(checked)
+        }
+
         val savedSize = prefs.getFloat("font_scale", 1.0f)
         when(savedSize) {
             0.85f -> binding.toggleTextSize.check(R.id.btnTextSmall)
@@ -210,17 +476,6 @@ class SystemSettingsActivity : AppCompatActivity() {
                 }
                 prefs.edit().putFloat("font_scale", scale).apply()
                 Toast.makeText(this, "El tamaño cambiará al reiniciar la app", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        val isDark = prefs.getBoolean("dark_mode", false)
-        binding.switchDarkMode.isChecked = isDark
-        binding.switchDarkMode.setOnCheckedChangeListener { _, checked ->
-            prefs.edit().putBoolean("dark_mode", checked).apply()
-            if (checked) {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            } else {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
             }
         }
     }

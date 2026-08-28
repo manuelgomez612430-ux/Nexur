@@ -5,7 +5,7 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-@Database(entities = {CalculationEntity.class, ProductEntity.class, SaleEntity.class, DebtorEntity.class, DebtDetailEntity.class, ExpenseEntity.class, ProviderEntity.class, CustomerEntity.class, CashSessionEntity.class, PriceHistoryEntity.class, MovementLogEntity.class, BusinessDebtEntity.class, HotelRoomEntity.class, HotelBookingEntity.class, HotelRoomLayoutEntity.class, HotelChargeEntity.class, HotelPaymentEntity.class, HotelMaintenanceEntity.class, HotelToolEntity.class, LoanClientEntity.class, LoanEntity.class, LoanInstallmentEntity.class, LoanExpenseEntity.class, LoanPaymentEntity.class}, version = 44, exportSchema = false)
+@Database(entities = {CalculationEntity.class, ProductEntity.class, SaleEntity.class, DebtorEntity.class, DebtDetailEntity.class, ExpenseEntity.class, ProviderEntity.class, CustomerEntity.class, CashSessionEntity.class, PriceHistoryEntity.class, MovementLogEntity.class, BusinessDebtEntity.class, HotelRoomEntity.class, HotelBookingEntity.class, HotelRoomLayoutEntity.class, HotelChargeEntity.class, HotelPaymentEntity.class, HotelMaintenanceEntity.class, HotelToolEntity.class, LoanClientEntity.class, LoanEntity.class, LoanInstallmentEntity.class, LoanExpenseEntity.class, LoanPaymentEntity.class, LoanBudgetEntity.class, CommitmentEntity.class}, version = 55, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract CalculationDao calculationDao();
     public abstract ProductDao productDao();
@@ -21,6 +21,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract HotelDao hotelDao();
     public abstract HotelToolDao hotelToolDao();
     public abstract LoanDao loanDao();
+    public abstract CommitmentDao commitmentDao();
     public abstract SystemMaintenanceDao systemMaintenanceDao();
 
     private static volatile AppDatabase INSTANCE;
@@ -31,7 +32,7 @@ public abstract class AppDatabase extends RoomDatabase {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "asistente_comercial_db")
-                            .fallbackToDestructiveMigration() // Activado temporalmente para esta actualización masiva
+                            .fallbackToDestructiveMigration()
                             .build();
                 }
             }

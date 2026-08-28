@@ -23,39 +23,73 @@
         android:textColor="?attr/colorOnSurfaceVariant"
         android:layout_marginTop="4dp" />
 
-    <!-- MORA DIARIA -->
-    <com.google.android.material.textfield.TextInputLayout
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:hint="Monto de mora diaria"
-        app:startIconDrawable="@android:drawable/ic_menu_edit"
-        app:prefixText="S/ ">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etEditLateFee"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="numberDecimal"
-            android:textStyle="bold" />
-    </com.google.android.material.textfield.TextInputLayout>
-
+    <!-- PLAN DE PAGO -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Es el dinero que se cobrará por cada día de retraso."
-        android:textSize="11sp"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:layout_marginTop="4dp" />
+        android:text="Plan de Pago"
+        android:textStyle="bold"
+        android:textColor="@color/slate_600"
+        android:textSize="14sp"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="12dp" />
 
-    <!-- DÍAS DE GRACIA -->
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/toggleEditPlan"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:singleSelection="true"
+        app:selectionRequired="true"
+        android:layout_marginBottom="16dp">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEditFreqNone"
+            style="@style/Widget.App.Button.Toggle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Única"
+            android:textSize="10sp" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEditFreqDaily"
+            style="@style/Widget.App.Button.Toggle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Diario"
+            android:textSize="10sp" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEditFreqWeekly"
+            style="@style/Widget.App.Button.Toggle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Semanal"
+            android:textSize="10sp" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEditFreqMonthly"
+            style="@style/Widget.App.Button.Toggle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Mensual"
+            android:textSize="10sp" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnEditStartDate"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="📅 Cambiar Fecha de Inicio"
+        android:layout_marginBottom="16dp"
+        app:cornerRadius="12dp" />
+
+    <!-- DÍAS DE GRACIA (AHORA PRIMERO) -->
     <com.google.android.material.textfield.TextInputLayout
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="Días de gracia permitidos"
+        android:hint="Días de Gracia Permitidos"
         app:startIconDrawable="@android:drawable/ic_menu_my_calendar">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -68,7 +102,60 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Días que puede tardar sin que se le cobre mora."
+        android:text="Días de espera antes de aplicar mora."
+        android:textSize="11sp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:layout_marginTop="4dp" />
+
+    <!-- MORA DIARIA PORCENTAJE -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp"
+        android:baselineAligned="false">
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Mora (%)"
+            app:suffixText="%"
+            app:startIconDrawable="@android:drawable/ic_menu_edit">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etEditLateFeePercent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal"
+                android:textStyle="bold" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:hint="Monto Diario"
+            app:prefixText="S/ "
+            android:enabled="false">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etEditLateFeeAmountAuto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold" />
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvLateFeeRecommendation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Recomendado: 5% diario sobre la cuota."
         android:textSize="11sp"
         android:textColor="?attr/colorOnSurfaceVariant"
         android:layout_marginTop="4dp" />
@@ -81,10 +168,11 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDialogRescheduleDates"
-            style="@style/Widget.Material3.Button.TonalButton"
+            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="📅 Cambiar fechas de cuotas"
+            android:text="🗓️ Reprogramar cuotas individuales"
+            android:textColor="?attr/colorPrimary"
             app:cornerRadius="12dp" />
 
         <LinearLayout
@@ -92,7 +180,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="end"
-            android:layout_marginTop="16dp">
+            android:layout_marginTop="8dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDialogCancelTerms"

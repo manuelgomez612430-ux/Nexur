@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp"
+    app:cardBackgroundColor="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Registrar Activo"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/slate_900" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Controla la vida útil de tus suministros."
+            android:textSize="13sp"
+            android:textColor="@color/slate_500"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="20dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutToolCode"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Código Único (Ej: SAB-001)"
+            app:startIconDrawable="@android:drawable/ic_menu_agenda"
+            android:layout_marginBottom="16dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etToolCode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapCharacters" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nombre del Activo"
+            app:startIconDrawable="@android:drawable/ic_menu_edit"
+            android:layout_marginBottom="16dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etToolName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapWords" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="VIDA ÚTIL ESTIMADA"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/slate_400"
+            android:layout_marginBottom="12dp"
+            android:letterSpacing="0.1" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="8dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutToolMonths"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Meses"
+                android:layout_marginEnd="6dp"
+                app:startIconDrawable="@android:drawable/ic_menu_recent_history">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etToolMonths"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:text="0" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutToolDays"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Días"
+                android:layout_marginStart="6dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etToolDays"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:text="0" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvExpiryCalc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Vence el: --/--/---- (Vida útil: Ilimitada)"
+            android:textSize="12sp"
+            android:textColor="@color/purple_600"
+            android:layout_marginBottom="24dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCancelTool"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cancelar"
+                android:textColor="@color/slate_500" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveTool"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Registrar"
+                android:paddingHorizontal="24dp"
+                app:cornerRadius="16dp"
+                app:backgroundTint="@color/purple_600" />
+        </LinearLayout>
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

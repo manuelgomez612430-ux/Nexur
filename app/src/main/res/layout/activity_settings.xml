@@ -6,10 +6,12 @@
     android:layout_height="match_parent"
     android:background="@color/slate_50">
 
+    <!-- CABECERA PREMIUM REDISEÑADA -->
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/slate_50"
+        android:background="@color/purple_600"
         app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
@@ -17,25 +19,50 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@android:drawable/ic_menu_revert"
-            app:navigationIconTint="@color/slate_900">
+            app:navigationIconTint="@color/white">
 
-            <TextView
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveSettingsToolbar"
+                style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Perfil de Empresa"
-                android:textSize="18sp"
+                android:layout_gravity="end"
+                android:layout_marginEnd="16dp"
+                android:text="PUBLICAR"
+                android:textColor="@color/white"
+                android:textSize="12sp"
                 android:textStyle="bold"
-                android:textColor="@color/slate_900" />
-
-            <!-- Using a View as anchor for the back button in code if needed,
-                 but MaterialToolbar handles navigationIcon automatically -->
-            <View
-                android:id="@+id/btnBackSettings"
-                android:layout_width="1dp"
-                android:layout_height="1dp"
-                android:visibility="gone" />
-
+                app:backgroundTint="@color/vibrant_purple"
+                app:cornerRadius="16dp" />
         </com.google.android.material.appbar.MaterialToolbar>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:id="@+id/txtToolbarTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Configuración de Negocio Virtual"
+                android:textColor="@color/white"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:alpha="0.85"
+                android:text="Configura los detalles de tu negocio y mantenlos siempre al día. Cuando tu perfil esté listo, publícalo en el Mercado GoMezMart para conectar con más clientes y potenciar tu crecimiento."
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:lineSpacingExtra="3dp" />
+        </LinearLayout>
+
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -47,23 +74,28 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:paddingBottom="100dp">
 
             <!-- LOGO SECTION -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardBusinessLogo"
-                android:layout_width="120dp"
-                android:layout_height="120dp"
-                android:layout_gravity="center"
-                android:layout_marginBottom="32dp"
-                app:cardCornerRadius="60dp"
-                app:cardElevation="4dp"
-                app:strokeWidth="2dp"
-                app:strokeColor="@color/white">
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="100dp">
 
-                <FrameLayout
+                <View
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
+                    android:layout_height="50dp"
+                    android:background="@color/purple_600" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardBusinessLogo"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:layout_gravity="center_horizontal"
+                    app:cardCornerRadius="50dp"
+                    app:cardElevation="6dp"
+                    app:strokeColor="@color/white"
+                    app:strokeWidth="3dp"
+                    android:clipToOutline="true">
 
                     <ImageView
                         android:id="@+id/ivBusinessLogo"
@@ -71,66 +103,68 @@
                         android:layout_height="match_parent"
                         android:scaleType="centerCrop"
                         android:src="@android:drawable/ic_menu_gallery"
-                        android:padding="24dp"
-                        android:alpha="0.4"
-                        app:tint="@color/slate_400" />
+                        android:background="@color/slate_50" />
+                </com.google.android.material.card.MaterialCardView>
 
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="#1A000000" />
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnChangeLogoFab"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal|bottom"
+                    android:layout_marginStart="70dp"
+                    app:backgroundTint="@color/vibrant_purple"
+                    app:fabSize="mini"
+                    app:srcCompat="@android:drawable/ic_menu_camera"
+                    app:tint="@color/white" />
+            </FrameLayout>
 
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:layout_gravity="bottom|end"
-                        android:layout_margin="4dp"
-                        app:cardCornerRadius="18dp"
-                        app:cardElevation="2dp"
-                        app:cardBackgroundColor="@color/purple_600">
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:layout_gravity="center"
-                            android:src="@android:drawable/ic_menu_camera"
-                            app:tint="@color/white" />
-                    </com.google.android.material.card.MaterialCardView>
-                </FrameLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- FORM GROUPS -->
             <TextView
-                android:layout_width="wrap_content"
+                android:id="@+id/tvSystemTypeLabel"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="INFORMACIÓN BÁSICA"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:text="PANEL DE CONFIGURACIÓN PÚBLICA"
+                android:textColor="@color/purple_700"
                 android:textSize="11sp"
                 android:textStyle="bold"
-                android:textColor="@color/slate_400"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="12dp" />
+                android:letterSpacing="0.1" />
 
+            <!-- SECCIÓN 1: IDENTIDAD PÚBLICA -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="2dp"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="24dp"
                 app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="IDENTIDAD COMERCIAL"
+                        android:textColor="@color/slate_400"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05" />
 
                     <com.google.android.material.textfield.TextInputLayout
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Nombre del Negocio"
-                        app:startIconDrawable="@android:drawable/ic_menu_manage"
-                        android:layout_marginBottom="12dp">
+                        android:layout_marginBottom="12dp"
+                        android:hint="Nombre de tu Negocio"
+                        app:startIconDrawable="@android:drawable/ic_menu_manage">
+
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etBusinessName"
                             android:layout_width="match_parent"
@@ -142,160 +176,69 @@
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Número de RUC"
-                        app:startIconDrawable="@android:drawable/ic_menu_agenda"
-                        android:layout_marginBottom="12dp">
+                        android:hint="Cuéntanos sobre tu negocio"
+                        app:startIconDrawable="@android:drawable/ic_menu_edit">
+
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etBusinessRuc"
+                            android:id="@+id/etBusinessDescription"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="number"
-                            android:maxLength="11" />
+                            android:gravity="top"
+                            android:inputType="textMultiLine"
+                            android:minLines="3" />
                     </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Símbolo de Moneda (ej: S/)"
-                        app:startIconDrawable="@android:drawable/ic_menu_view"
-                        android:layout_marginBottom="12dp">
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etCurrencySymbol"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:maxLength="3" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Capital Total del Negocio"
-                        app:startIconDrawable="@android:drawable/ic_menu_save"
-                        android:layout_marginBottom="16dp"
-                        app:helperText="Dinero total invertido/disponible">
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etBusinessCapital"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="numberDecimal" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Rubro del Negocio"
-                        android:textSize="14sp"
-                        android:textColor="@color/slate_600"
-                        android:layout_marginBottom="8dp" />
-
-                    <com.google.android.material.button.MaterialButtonToggleGroup
-                        android:id="@+id/toggleBusinessType"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:singleSelection="true"
-                        app:selectionRequired="true">
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnTypeProducts"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Productos" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnTypeServices"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Servicios" />
-                    </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                    <!-- Sub-opción de Hotelería -->
-                    <LinearLayout
-                        android:id="@+id/layoutHotelOption"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_marginTop="12dp"
-                        android:visibility="gone"
-                        tools:visibility="visible">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Especialidad de Servicio"
-                            android:textSize="12sp"
-                            android:textColor="@color/slate_500"
-                            android:layout_marginBottom="8dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSelectHotel"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="🏨 Hotelería / Hospedaje"
-                            android:textAlignment="viewStart"
-                            app:icon="@android:drawable/ic_menu_agenda"
-                            app:iconGravity="textStart"
-                            android:layout_marginBottom="8dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSelectLoans"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="💸 Préstamos / Créditos"
-                            android:textAlignment="viewStart"
-                            app:icon="@android:drawable/ic_menu_save"
-                            app:iconGravity="textStart" />
-                    </LinearLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnChangeSystem"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="Cambiar de sistema"
-                        android:visibility="gone"
-                        app:icon="@android:drawable/ic_menu_rotate" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="CONTACTO Y UBICACIÓN"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:textColor="@color/slate_400"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="12dp" />
-
+            <!-- SECCIÓN 2: UBICACIÓN Y CONTACTO -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="2dp"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="16dp"
                 app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="CONTACTO PÚBLICO"
+                        android:textColor="@color/slate_400"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
 
                     <com.google.android.material.textfield.TextInputLayout
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Dirección Física"
-                        app:startIconDrawable="@android:drawable/ic_menu_mylocation"
-                        android:layout_marginBottom="12dp">
+                        android:layout_marginBottom="12dp"
+                        android:hint="RUC / DNI (Público)"
+                        app:startIconDrawable="@android:drawable/ic_menu_agenda">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etBusinessRuc"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:hint="Dirección de tu establecimiento"
+                        app:startIconDrawable="@android:drawable/ic_menu_directions">
+
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etBusinessAddress"
                             android:layout_width="match_parent"
@@ -307,8 +250,9 @@
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="WhatsApp / Teléfono"
+                        android:hint="Tu número de WhatsApp"
                         app:startIconDrawable="@android:drawable/ic_menu_call">
+
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etBusinessPhone"
                             android:layout_width="match_parent"
@@ -318,144 +262,176 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- SECCIÓN 3: PANEL DE PUBLICACIÓN -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="16dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="10dp"
+                app:strokeColor="@color/vibrant_purple"
+                app:strokeWidth="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchPublishStore"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="ACTIVAR TIENDA ONLINE"
+                        android:textColor="@color/vibrant_purple"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:alpha="0.7"
+                        android:text="Activa tu vitrina para que tus servicios y habitaciones sean visibles para todos los usuarios de la red GoMezMart."
+                        android:textColor="@color/slate_900"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SECCIÓN 4: SEGURIDAD (DISCRETA) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="SEGURIDAD Y APIS"
-                android:textSize="11sp"
-                android:textStyle="bold"
+                android:layout_marginStart="32dp"
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="12dp"
+                android:text="DATOS PRIVADOS"
                 android:textColor="@color/slate_400"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="12dp" />
+                android:textSize="10sp"
+                android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="32dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="2dp"
+                android:layout_marginHorizontal="20dp"
                 app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
 
                     <com.google.android.material.textfield.TextInputLayout
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="PIN de Seguridad (4 dígitos)"
-                        app:startIconDrawable="@android:drawable/ic_lock_lock"
-                        app:passwordToggleEnabled="true"
-                        android:layout_marginBottom="12dp">
+                        android:layout_marginBottom="12dp"
+                        android:hint="Nombre del Propietario">
+
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etSecurityPin"
+                            android:id="@+id/etOwnerName"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="numberPassword"
-                            android:maxLength="4" />
+                            android:layout_height="wrap_content" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Token de ApisPeru"
-                        app:startIconDrawable="@android:drawable/ic_menu_send"
-                        app:passwordToggleEnabled="true"
-                        app:helperText="Opcional: Para consultas RUC/DNI">
+                        android:layout_marginBottom="12dp"
+                        android:hint="DNI del Propietario">
+
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etApiToken"
+                            android:id="@+id/etOwnerDni"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="textPassword" />
+                            android:inputType="number" />
                     </com.google.android.material.textfield.TextInputLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="COMUNIDAD Y APOYO"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:textColor="@color/slate_400"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="12dp" />
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/btnSupportCreator"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="32dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/white"
-                app:strokeWidth="1dp"
-                app:strokeColor="@color/emerald_600"
-                android:clickable="true"
-                android:focusable="true">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@android:drawable/btn_star_big_on"
-                        app:tint="@color/emerald_600" />
 
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="16dp">
+                        android:orientation="horizontal">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="Apoyar al Creador de Nexur"
-                            android:textStyle="bold"
-                            android:textSize="16sp"
-                            android:textColor="@color/slate_900" />
+                            android:layout_weight="1"
+                            android:hint="Moneda">
 
-                            <TextView
-                                android:layout_width="wrap_content"
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etCurrencySymbol"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:hint="PIN de seguridad">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etSecurityPin"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="Ayúdame a mantener Naxor gratuito"
-                                android:textSize="12sp"
-                                android:textColor="@color/slate_500" />
+                                android:inputType="numberPassword" />
+                        </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_revert"
-                        android:rotation="180"
-                        app:tint="@color/slate_300" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnGoToMarketplace"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:layout_marginTop="24dp"
+                        android:text="IR AL MERCADO GOMEZMART"
+                        android:textColor="@color/white"
+                        android:textStyle="bold"
+                        app:backgroundTint="@color/sky_600"
+                        app:cornerRadius="16dp"
+                        app:icon="@android:drawable/ic_menu_search"
+                        app:iconTint="@color/white" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSaveSettings"
+                android:id="@+id/btnSupportCreator"
+                style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:text="Guardar Cambios"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:cornerRadius="16dp"
-                app:backgroundTint="@color/purple_600"
-                app:icon="@android:drawable/ic_menu_save"
-                app:iconGravity="textStart"
-                android:layout_marginBottom="24dp" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Centro de Ayuda y Soporte ⭐"
+                android:textColor="@color/slate_500" />
+
+            <!-- COMPATIBILIDAD CON KOTLIN (CAMPOS OCULTOS) -->
+            <View android:id="@+id/etBusinessNameLayout" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/etBusinessRucLayout" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/btnInfoCapital" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/etBusinessCapital" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/tvRubroTitle" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/toggleBusinessType" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/layoutHotelOption" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/btnChangeSystem" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/switchShowOwnerPdf" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/switchShowBusinessPdf" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/switchShowAddressPdf" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/switchShowPhonePdf" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/etApiToken" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/tvOnlineStoreTitle" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/cardOnlineStore" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/btnTypeProducts" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/btnTypeServices" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/btnSelectHotel" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/btnSelectLoans" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

@@ -15,6 +15,30 @@
             android:layout_height="?attr/actionBarSize"
             app:title="Control de Reservas"
             app:navigationIcon="@android:drawable/ic_menu_revert" />
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggleBookingTabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            app:checkedButton="@id/btnShowBookings">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnShowBookings"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="CONFIRMADAS" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnShowRequests"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="SOLICITUDES" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView

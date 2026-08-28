@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.util.Pair
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
@@ -25,7 +24,7 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class SalesHistoryActivity : AppCompatActivity() {
+class SalesHistoryActivity : BaseActivity() {
 
     private lateinit var binding: ActivitySalesHistoryBinding
     private lateinit var adapter: SaleAdapter

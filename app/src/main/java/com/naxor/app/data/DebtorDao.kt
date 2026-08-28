@@ -55,4 +55,10 @@ interface DebtorDao {
 
     @Query("SELECT COUNT(*) FROM debts WHERE isSynced = 0")
     fun getUnsyncedDebtDetailsCount(): androidx.lifecycle.LiveData<Int>
+
+    @Query("UPDATE debtors SET isSynced = 1 WHERE id = :id")
+    suspend fun markDebtorSynced(id: String)
+
+    @Query("UPDATE debts SET isSynced = 1 WHERE id = :id")
+    suspend fun markDebtDetailSynced(id: String)
 }

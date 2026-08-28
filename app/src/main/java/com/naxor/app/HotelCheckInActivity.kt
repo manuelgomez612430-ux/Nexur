@@ -2,7 +2,6 @@ package com.naxor.app
 
 import android.os.Bundle
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.HotelBookingEntity
@@ -11,7 +10,7 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.UUID
 
-class HotelCheckInActivity : AppCompatActivity() {
+class HotelCheckInActivity : BaseActivity() {
 
     private lateinit var binding: ActivityHotelCheckinBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
@@ -84,6 +83,11 @@ class HotelCheckInActivity : AppCompatActivity() {
         lifecycleScope.launch {
             database.hotelDao().insertBooking(booking)
             database.hotelDao().updateRoomStatus(roomId!!, "OCCUPIED")
+            
+            val syncManager = SyncManager(this@HotelCheckInActivity)
+            syncManager.syncHotelBookingToCloud(booking)
+            database.hotelDao().getRoomById(roomId!!)?.let { syncManager.syncHotelRoomToCloud(it) }
+
             Toast.makeText(this@HotelCheckInActivity, "Check-in exitoso", Toast.LENGTH_SHORT).show()
             finish()
         }

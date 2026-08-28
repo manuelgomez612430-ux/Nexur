@@ -8,11 +8,12 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.ListenerRegistration
 import com.naxor.app.data.AppDatabase
+import com.naxor.app.data.MovementLogEntity
 import com.naxor.app.databinding.ActivityMovementsBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,7 +21,7 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class MovementsActivity : AppCompatActivity() {
+class MovementsActivity : BaseActivity() {
 
     private lateinit var binding: ActivityMovementsBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
@@ -34,6 +35,7 @@ class MovementsActivity : AppCompatActivity() {
     private var lastUnsyncedCount = 0
     private var currentIsSyncing = false
     private var syncStatusText = "Conectado"
+    private var logsRegistration: ListenerRegistration? = null
 
     data class UnifiedMovement(
         val id: String,
@@ -58,7 +60,7 @@ class MovementsActivity : AppCompatActivity() {
             setupSyncIndicator()
             loadMovements()
             
-            SyncManager(this).startRealtimeLogsSync { loadMovements() }
+            logsRegistration = SyncManager(this).startRealtimeLogsSync { loadMovements() }
         } catch (e: Exception) {
             e.printStackTrace()
             setContentView(R.layout.activity_movements)
@@ -67,6 +69,11 @@ class MovementsActivity : AppCompatActivity() {
             setupListenersManual()
             loadMovements()
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        logsRegistration?.remove()
     }
 
     private fun setupRecyclerView() {
@@ -232,14 +239,14 @@ class MovementsActivity : AppCompatActivity() {
                 val list = mutableListOf<UnifiedMovement>()
 
                 // 1. Logs de Movimientos (ÚNICA FUENTE DE VERDAD)
-                // Esto incluye Ventas, Gastos, Creaciones, Modificaciones y Eliminaciones
+                // Limitamos a los últimos 100 para evitar bloqueos del hilo principal en DBs grandes
                 try {
-                    val logs = database.movementLogDao().getAllLogs()
+                    val logs = database.movementLogDao().getRecentLogs(100)
                     
                     // Si no hay ningún log (primera vez), hacemos un "backfill" de datos básicos
                     if (logs.isEmpty()) {
                         backfillInitialLogs()
-                        return@withContext database.movementLogDao().getAllLogs().map { l ->
+                        return@withContext database.movementLogDao().getRecentLogs(100).map { l ->
                             UnifiedMovement(l.id, l.type, l.title, l.description, l.value, l.timestamp, l.colorHex, l.iconRes)
                         }
                     }
@@ -268,44 +275,61 @@ class MovementsActivity : AppCompatActivity() {
     }
 
     private suspend fun backfillInitialLogs() {
-        // Ventas antiguas
-        val sales = database.saleDao().allSales
-        sales.forEach { s ->
-            database.movementLogDao().insert(com.naxor.app.data.MovementLogEntity(
-                type = "SALE",
-                title = "Venta Realizada",
-                description = "${s.cantidad} x ${s.nombreProducto}",
-                value = "+ S/ ${String.format(Locale.getDefault(), "%.2f", s.total)}",
-                timestamp = s.timestamp,
-                colorHex = "#059669",
-                iconRes = android.R.drawable.ic_menu_add
-            ))
-        }
-        // Gastos antiguos
-        val expenses = database.expenseDao().getAllExpenses()
-        expenses.forEach { e ->
-            database.movementLogDao().insert(com.naxor.app.data.MovementLogEntity(
-                type = "EXPENSE",
-                title = "Gasto Registrado",
-                description = "${e.categoria}: ${e.concepto}",
-                value = "- S/ ${String.format(Locale.getDefault(), "%.2f", e.monto)}",
-                timestamp = e.fecha,
-                colorHex = "#DC2626",
-                iconRes = android.R.drawable.ic_menu_send
-            ))
-        }
-        // Productos actuales
-        val products = database.productDao().allProducts
-        products.forEach { p ->
-            database.movementLogDao().insert(com.naxor.app.data.MovementLogEntity(
-                type = "PRODUCT_CREATED",
-                title = "Nuevo Producto",
-                description = "${p.categoria}: ${p.nombre}",
-                value = "Stock: ${p.stock}",
-                timestamp = p.timestamp,
-                colorHex = "#8E44AD",
-                iconRes = android.R.drawable.ic_menu_edit
-            ))
+        withContext(Dispatchers.IO) {
+            val batchLogs = mutableListOf<MovementLogEntity>()
+
+            // Ventas antiguas
+            val sales = database.saleDao().allSales
+            sales.forEach { s ->
+                batchLogs.add(
+                    MovementLogEntity(
+                        type = "SALE",
+                        title = "Venta Realizada",
+                        description = "${s.cantidad} x ${s.nombreProducto}",
+                        value = "+ S/ ${String.format(Locale.getDefault(), "%.2f", s.total)}",
+                        timestamp = s.timestamp,
+                        colorHex = "#059669",
+                        iconRes = android.R.drawable.ic_menu_add
+                    )
+                )
+            }
+
+            // Gastos antiguos
+            val expenses = database.expenseDao().getAllExpenses()
+            expenses.forEach { e ->
+                batchLogs.add(
+                    MovementLogEntity(
+                        type = "EXPENSE",
+                        title = "Gasto Registrado",
+                        description = "${e.categoria}: ${e.concepto}",
+                        value = "- S/ ${String.format(Locale.getDefault(), "%.2f", e.monto)}",
+                        timestamp = e.fecha,
+                        colorHex = "#DC2626",
+                        iconRes = android.R.drawable.ic_menu_send
+                    )
+                )
+            }
+
+            // Productos actuales
+            val products = database.productDao().allProducts
+            products.forEach { p ->
+                batchLogs.add(
+                    MovementLogEntity(
+                        type = "PRODUCT_CREATED",
+                        title = "Nuevo Producto",
+                        description = "${p.categoria}: ${p.nombre}",
+                        value = "Stock: ${p.stock}",
+                        timestamp = p.timestamp,
+                        colorHex = "#8E44AD",
+                        iconRes = android.R.drawable.ic_menu_edit
+                    )
+                )
+            }
+
+            if (batchLogs.isNotEmpty()) {
+                // Usamos insertAll si está disponible o Room en transacción
+                database.movementLogDao().insertAll(batchLogs)
+            }
         }
     }
 

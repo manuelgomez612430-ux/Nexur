@@ -14,11 +14,11 @@
             <item
                 android:id="@+id/menu_hotel_payments"
                 android:icon="@android:drawable/ic_menu_save"
-                android:title="Compromisos de Pago" />
+                android:title="Cuentas por Pagar" />
         </menu>
     </item>
 
-    <item android:title="Infraestructura y Ciudad">
+    <item android:title="Infraestructura">
         <menu>
             <item
                 android:id="@+id/menu_hotel_rooms_graph"
@@ -32,19 +32,11 @@
                 android:id="@+id/menu_hotel_tools"
                 android:icon="@android:drawable/ic_menu_agenda"
                 android:title="Inventario de Herramientas" />
-            <item
-                android:id="@+id/menu_hotel_guide"
-                android:icon="@android:drawable/ic_menu_directions"
-                android:title="Guía Digital de la Ciudad" />
         </menu>
     </item>
 
     <item android:title="Sistema">
         <menu>
-            <item
-                android:id="@+id/menu_settings"
-                android:icon="@android:drawable/ic_menu_preferences"
-                android:title="Ajustes de mi Negocio" />
             <item
                 android:id="@+id/menu_logout"
                 android:icon="@android:drawable/ic_menu_close_clear_cancel"

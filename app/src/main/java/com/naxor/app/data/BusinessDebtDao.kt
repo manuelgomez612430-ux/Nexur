@@ -24,4 +24,7 @@ interface BusinessDebtDao {
 
     @Query("SELECT SUM(montoTotal - montoPagado) FROM business_debts WHERE isDeleted = 0 AND isPaid = 0")
     suspend fun getTotalOwed(): Double?
+
+    @Query("UPDATE business_debts SET isSynced = 1 WHERE id = :id")
+    suspend fun markSynced(id: String)
 }

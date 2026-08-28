@@ -6,6 +6,7 @@
     android:layout_height="match_parent">
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/mainContentRoot"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="?attr/colorSurface">
@@ -15,41 +16,163 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
+            app:layout_constraintBottom_toTopOf="@id/cardBottomNavContainer"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
-        <!-- FONDO DE LA BARRA DE NAVEGACIÓN -->
-        <View
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardBottomNavContainer"
             android:layout_width="match_parent"
             android:layout_height="72dp"
-            android:background="?attr/colorSurfaceContainer"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="36dp"
+            app:cardElevation="12dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="@color/white"
+            app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- BLOQUE INDICADOR DINÁMICO (MODERN HUB) -->
-        <View
-            android:id="@+id/navIndicatorCustom"
-            android:layout_width="0dp"
-            android:layout_height="72dp"
-            android:background="?attr/colorPrimary"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintWidth_percent="0.25" />
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
 
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/bottomNavigation"
-            android:layout_width="match_parent"
-            android:layout_height="72dp"
-            android:background="@android:color/transparent"
-            app:elevation="0dp"
-            app:menu="@menu/menu_bottom_nav"
-            app:labelVisibilityMode="labeled"
-            app:itemIconTint="@color/nav_item_color"
-            app:itemTextColor="@color/nav_item_color"
-            app:itemRippleColor="@android:color/transparent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+                <!-- BLOQUE INDICADOR DINÁMICO (PREMIUM SELECTOR) -->
+                <View
+                    android:id="@+id/navIndicatorCustom"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_nav_indicator_pill"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent" />
+
+                <!-- Custom Navigation Layout for perfect alignment -->
+                <LinearLayout
+                    android:id="@+id/layoutCustomNav"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:weightSum="4">
+
+                    <!-- INICIO -->
+                    <LinearLayout
+                        android:id="@+id/btnNavInicio"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackgroundBorderless">
+                        <TextView
+                            android:id="@+id/tvIconInicio"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🏠"
+                            android:textSize="22sp" />
+                        <TextView
+                            android:id="@+id/tvLabelInicio"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Inicio"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/white" />
+                    </LinearLayout>
+
+                    <!-- STOCK / HABITACIONES -->
+                    <LinearLayout
+                        android:id="@+id/btnNavStock"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackgroundBorderless">
+                        <TextView
+                            android:id="@+id/tvIconStock"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🏨"
+                            android:textSize="22sp" />
+                        <TextView
+                            android:id="@+id/tvLabelStock"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Hotel"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_500" />
+                    </LinearLayout>
+
+                    <!-- RENDIMIENTO / METAS -->
+                    <LinearLayout
+                        android:id="@+id/btnNavMetricas"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackgroundBorderless">
+                        <TextView
+                            android:id="@+id/tvIconMetricas"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📊"
+                            android:textSize="22sp" />
+                        <TextView
+                            android:id="@+id/tvLabelMetricas"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Metas"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_500" />
+                    </LinearLayout>
+
+                    <!-- CONFIGURACIÓN -->
+                    <LinearLayout
+                        android:id="@+id/btnNavConfig"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackgroundBorderless">
+                        <TextView
+                            android:id="@+id/tvIconConfig"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⚙️"
+                            android:textSize="22sp" />
+                        <TextView
+                            android:id="@+id/tvLabelConfig"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ajustes"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_500" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <com.google.android.material.bottomnavigation.BottomNavigationView
+                    android:id="@+id/bottomNavigation"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:visibility="gone"
+                    app:menu="@menu/menu_bottom_nav" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- CAPA DE TUTORIAL CONTEXTUAL -->
         <FrameLayout
@@ -104,7 +227,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="12dp"
                             android:gravity="center"
-                            android:text="Toca para comenzar el recorrido por las funciones de Naxor."
+                            android:text="Toca para comenzar el recorrido por las funciones de GoMezMart."
                             android:textColor="?attr/colorOnSurface"
                             android:textSize="15sp" />
 

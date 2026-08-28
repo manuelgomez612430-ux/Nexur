@@ -20,10 +20,13 @@
     <color name="sky_600">#0284C7</color>
     <color name="red_600">#DC2626</color>
     <color name="red_700">#B91C1C</color>
+    <color name="red_50">#FEF2F2</color>
     <color name="indigo_500">#6366F1</color>
     <color name="purple_600">#7C3AED</color>
     <color name="purple_700">#6D28D9</color>
     <color name="purple_800">#5B21B6</color>
+    <color name="purple_100">#EDE9FE</color>
+    <color name="purple_50">#F5F3FF</color>
     <color name="green_600">#16A34A</color>
     <color name="orange_50">#FFF7ED</color>
     <color name="orange_600">#EA580C</color>
@@ -40,9 +43,13 @@
     <color name="dark_purple_card">#2A1045</color>
     <color name="vibrant_purple">#9333EA</color>
     <color name="vibrant_purple_light">#F5F3FF</color>
-    <color name="naxor_magenta">#C026D3</color>
+    <color name="gomezmart_magenta">#C026D3</color>
     <color name="purple_glow">#4C1D95</color>
     <color name="glass_white">#1AFFFFFF</color>
     <color name="glass_border">#40FFFFFF</color>
     <color name="nav_indicator">#6B21A8</color>
+    <!-- GoMezMart E-commerce Palette (Purple Branding) -->
+    <color name="gomezmart_primary">#7C3AED</color>
+    <color name="gomezmart_primary_dark">#5B21B6</color>
+    <color name="gomezmart_bg_marketplace">#F8FAFC</color>
 </resources>

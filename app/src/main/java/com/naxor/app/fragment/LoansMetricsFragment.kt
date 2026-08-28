@@ -10,6 +10,7 @@ import com.naxor.app.MainActivity
 import com.naxor.app.R
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.databinding.FragmentLoansMetricsBinding
+import com.naxor.app.util.GeminiHelper
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -24,6 +25,15 @@ class LoansMetricsFragment : Fragment() {
     private val binding get() = _binding!!
     private val database by lazy { AppDatabase.getDatabase(requireContext()) }
 
+    // Variables para IA
+    private var lastTotalLent = 0.0
+    private var lastPendingBalance = 0.0
+    private var lastNetProfit = 0.0
+    private var lastExpenses = 0.0
+    private var lastClientsCount = 0
+    private var lastOverdueCount = 0
+    private var lastCommitments = 0.0
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentLoansMetricsBinding.inflate(inflater, container, false)
         return binding.root
@@ -34,6 +44,41 @@ class LoansMetricsFragment : Fragment() {
         setupToolbar()
         loadCharts()
         loadTotals()
+
+        binding.btnRefreshLoansAi.setOnClickListener {
+            generateAiAnalysis()
+        }
+
+        binding.btnCloseLoansAi.setOnClickListener {
+            binding.tvLoansAiContent.text = "¿Quieres un análisis de tu rentabilidad y riesgo? Toca el botón para que Gemini revise tu cartera."
+            binding.btnCloseLoansAi.visibility = View.GONE
+        }
+    }
+
+    private fun generateAiAnalysis() {
+        binding.progressLoansAi.visibility = View.VISIBLE
+        binding.tvLoansAiContent.alpha = 0.5f
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val analysis = GeminiHelper.getLoanPortfolioAnalysis(
+                lastTotalLent,
+                lastPendingBalance,
+                lastNetProfit,
+                lastExpenses,
+                lastClientsCount,
+                lastOverdueCount,
+                lastCommitments
+            )
+            withContext(Dispatchers.Main) {
+                if (_binding != null) {
+                    val formattedText = GeminiHelper.formatMarkdown(analysis)
+                    binding.tvLoansAiContent.text = formattedText
+                    binding.tvLoansAiContent.alpha = 1.0f
+                    binding.progressLoansAi.visibility = View.GONE
+                    binding.btnCloseLoansAi.visibility = View.VISIBLE
+                }
+            }
+        }
     }
 
     private fun setupToolbar() {
@@ -53,8 +98,18 @@ class LoansMetricsFragment : Fragment() {
             val paymentsFlow = database.loanDao().getAllPaymentsFlowV2()
             val loansFlow = database.loanDao().getAllLoans()
             val expensesFlow = database.loanDao().getTotalExpensesFlow()
+            val clientsFlow = database.loanDao().getAllClients()
+            val installmentsFlow = database.loanDao().getAllInstallmentsFlow()
+            val commitmentsFlow = database.commitmentDao().getTotalPendingAmountFlow()
 
-            combine(paymentsFlow, loansFlow, expensesFlow) { payments, loans, expenses ->
+            combine(paymentsFlow, loansFlow, expensesFlow, clientsFlow, installmentsFlow, commitmentsFlow) { args ->
+                val payments = args[0] as List<com.naxor.app.data.LoanPaymentEntity>
+                val loans = args[1] as List<com.naxor.app.data.LoanEntity>
+                val expenses = args[2] as? Double
+                val clients = args[3] as List<com.naxor.app.data.LoanClientEntity>
+                val installments = args[4] as List<com.naxor.app.data.LoanInstallmentEntity>
+                val commitments = args[5] as? Double
+
                 val totalCollected = payments.sumOf { it.amount + it.lateFeeAmount }
                 
                 var totalProfit = 0.0
@@ -68,6 +123,22 @@ class LoansMetricsFragment : Fragment() {
                 
                 val netProfit = totalProfit - (expenses ?: 0.0)
                 
+                // Guardar datos para IA
+                lastTotalLent = loans.filter { it.status != "PAID" }.sumOf { it.amount }
+                lastPendingBalance = installments.filter { it.status != "PAID" }.sumOf { it.amount - it.amountPaid }
+                lastNetProfit = netProfit
+                lastExpenses = expenses ?: 0.0
+                lastClientsCount = clients.size
+                lastCommitments = commitments ?: 0.0
+                
+                // Clientes morosos (tienen al menos una cuota vencida)
+                val now = System.currentTimeMillis()
+                val overdueLoanIds = installments.filter { it.status != "PAID" && it.dueDate < now }
+                    .map { it.loanId }.distinct()
+                val overdueClientIds = loans.filter { overdueLoanIds.contains(it.id) }
+                    .map { it.clientId }.distinct()
+                lastOverdueCount = overdueClientIds.size
+                
                 withContext(Dispatchers.Main) {
                     binding.tvMetricsTotalCollected.text = String.format(Locale.US, "S/ %.2f", totalCollected)
                     binding.tvMetricsTotalProfit.text = String.format(Locale.US, "S/ %.2f", netProfit)
@@ -78,61 +149,121 @@ class LoansMetricsFragment : Fragment() {
 
     private fun loadCharts() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val capitalFlow = database.loanDao().getCapitalInStreetFlow()
-            val balanceFlow = database.loanDao().getTotalOutstandingBalanceFlow()
+            val loansFlow = database.loanDao().getAllLoans()
+            val installmentsFlow = database.loanDao().getAllInstallmentsFlow()
+            val paymentsFlow = database.loanDao().getAllPaymentsFlowV2()
+            val expensesFlow = database.loanDao().getTotalExpensesFlow()
+            val budgetFlow = database.loanDao().getLatestBudget()
 
-            combine(capitalFlow, balanceFlow) { capital, balance ->
-                val capValue = capital ?: 0.0
-                val balValue = balance ?: 0.0
+            combine(loansFlow, installmentsFlow, paymentsFlow, expensesFlow, budgetFlow) { args ->
+                val loans = args[0] as List<com.naxor.app.data.LoanEntity>
+                val installments = args[1] as List<com.naxor.app.data.LoanInstallmentEntity>
+                val payments = args[2] as List<com.naxor.app.data.LoanPaymentEntity>
+                val expenses = args[3] as? Double ?: 0.0
+                val budget = args[4] as? com.naxor.app.data.LoanBudgetEntity
+
+                // 1. Calcular Ganancia Cobrada (Intereses + Moras ya pagados)
+                var collectedProfit = 0.0
+                payments.forEach { p ->
+                    val loan = loans.find { it.id == p.loanId }
+                    loan?.let {
+                        val profitRatio = (it.totalToPay - it.amount) / it.totalToPay
+                        collectedProfit += (p.amount * profitRatio) + p.lateFeeAmount
+                    }
+                }
+
+                // 2. Calcular Capital en la Calle (Dinero real prestado que falta recuperar)
+                var capitalInStreet = 0.0
+                installments.filter { it.status != "PAID" }.forEach { inst ->
+                    val loan = loans.find { it.id == inst.loanId }
+                    loan?.let {
+                        val capitalRatio = it.amount / it.totalToPay
+                        capitalInStreet += (inst.amount - inst.amountPaid) * capitalRatio
+                    }
+                }
+
+                // 3. Calcular Ganancia Pendiente (Intereses que faltan cobrar)
+                var pendingProfit = 0.0
+                installments.filter { it.status != "PAID" }.forEach { inst ->
+                    val loan = loans.find { it.id == inst.loanId }
+                    loan?.let {
+                        val profitRatio = (it.totalToPay - it.amount) / it.totalToPay
+                        pendingProfit += (inst.amount - inst.amountPaid) * profitRatio
+                    }
+                }
+
+                // 4. Calcular presupuesto disponible
+                var availableBudget = 0.0
+                budget?.let {
+                    val startTime = it.startDate
+                    val totalLentInPeriod = loans.filter { l -> l.startDate >= startTime }.sumOf { l -> l.amount }
+                    val totalSpentInPeriod = database.loanDao().getAllLoanExpensesOnce().filter { e -> e.timestamp >= startTime }.sumOf { e -> e.amount }
+                    availableBudget = (it.amount - totalLentInPeriod - totalSpentInPeriod).coerceAtLeast(0.0)
+                }
 
                 withContext(Dispatchers.Main) {
                     val entries = mutableListOf<com.github.mikephil.charting.data.PieEntry>()
+                    val colorsList = mutableListOf<Int>()
                     
-                    // Si no hay datos, mostrar una rebanada gris de "Sin Deuda"
-                    if (capValue == 0.0 && balValue == 0.0) {
-                        entries.add(com.github.mikephil.charting.data.PieEntry(1f, "Sin préstamos"))
-                        val dataSet = com.github.mikephil.charting.data.PieDataSet(entries, "")
-                        dataSet.color = requireContext().getColor(R.color.slate_200)
-                        dataSet.setDrawValues(false)
+                    if (capitalInStreet < 0.1 && pendingProfit < 0.1 && collectedProfit < 0.1 && expenses < 0.1 && availableBudget < 0.1) {
+                        entries.add(com.github.mikephil.charting.data.PieEntry(1f, "Sin movimientos"))
+                        colorsList.add(requireContext().getColor(R.color.slate_200))
+                        
+                        val dataSet = com.github.mikephil.charting.data.PieDataSet(entries, "").apply {
+                            colors = colorsList
+                            setDrawValues(false)
+                        }
                         binding.chartMetricsRisk.data = com.github.mikephil.charting.data.PieData(dataSet)
                         binding.chartMetricsRisk.setCenterText("S/ 0.00\nTotal")
                     } else {
-                        if (capValue > 0) entries.add(com.github.mikephil.charting.data.PieEntry(capValue.toFloat(), "Dinero Prestado"))
-                        if (balValue > 0) entries.add(com.github.mikephil.charting.data.PieEntry(balValue.toFloat(), "Falta Cobrar"))
+                        if (capitalInStreet > 0.1) {
+                            entries.add(com.github.mikephil.charting.data.PieEntry(capitalInStreet.toFloat(), "Capital prestado"))
+                            colorsList.add(requireContext().getColor(R.color.indigo_500))
+                        }
+                        if (pendingProfit > 0.1) {
+                            entries.add(com.github.mikephil.charting.data.PieEntry(pendingProfit.toFloat(), "Interés x cobrar"))
+                            colorsList.add(requireContext().getColor(R.color.orange_600))
+                        }
+                        if (collectedProfit > 0.1) {
+                            entries.add(com.github.mikephil.charting.data.PieEntry(collectedProfit.toFloat(), "Ganancia cobrada"))
+                            colorsList.add(requireContext().getColor(R.color.emerald_600))
+                        }
+                        if (expenses > 0.1) {
+                            entries.add(com.github.mikephil.charting.data.PieEntry(expenses.toFloat(), "Gastos"))
+                            colorsList.add(requireContext().getColor(R.color.red_600))
+                        }
+                        if (availableBudget > 0.1) {
+                            entries.add(com.github.mikephil.charting.data.PieEntry(availableBudget.toFloat(), "Caja disponible"))
+                            colorsList.add(requireContext().getColor(R.color.vibrant_purple))
+                        }
 
-                        val dataSet = com.github.mikephil.charting.data.PieDataSet(entries, "")
-                        dataSet.colors = listOf(
-                            requireContext().getColor(R.color.indigo_500),
-                            requireContext().getColor(R.color.sky_600)
-                        )
-                        dataSet.valueTextColor = android.graphics.Color.WHITE
-                        dataSet.valueTextSize = 12f
+                        val dataSet = com.github.mikephil.charting.data.PieDataSet(entries, "").apply {
+                            colors = colorsList
+                            valueTextColor = android.graphics.Color.WHITE
+                            valueTextSize = 11f
+                        }
                         binding.chartMetricsRisk.data = com.github.mikephil.charting.data.PieData(dataSet)
-                        binding.chartMetricsRisk.setCenterText("S/ ${String.format(Locale.US, "%.2f", capValue + balValue)}\nCartera")
+                        
+                        val totalGeneral = capitalInStreet + pendingProfit + collectedProfit + expenses + availableBudget
+                        binding.chartMetricsRisk.setCenterText("S/ ${String.format(Locale.US, "%.2f", totalGeneral)}\nTotal")
                     }
 
                     binding.chartMetricsRisk.apply {
                         description.isEnabled = false
                         isDrawHoleEnabled = true
-                        holeRadius = 58f
+                        holeRadius = 55f
                         transparentCircleRadius = 0f
                         setHoleColor(android.graphics.Color.TRANSPARENT)
-                        
-                        legend.apply {
-                            isEnabled = true
-                            verticalAlignment = com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
-                            horizontalAlignment = com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
-                            textColor = requireContext().getColor(R.color.slate_500)
-                        }
-
+                        legend.isEnabled = true
+                        legend.verticalAlignment = com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
+                        legend.horizontalAlignment = com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
+                        legend.textColor = requireContext().getColor(R.color.slate_500)
+                        legend.orientation = com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
+                        legend.isWordWrapEnabled = true
                         setCenterTextColor(requireContext().getColor(R.color.slate_700))
-                        // Corrección para Modo Oscuro en texto central
-                        val isDark = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE).getBoolean("dark_mode", false)
-                        if (isDark) setCenterTextColor(android.graphics.Color.WHITE)
-                        
-                        setCenterTextSize(14f)
+                        setCenterTextSize(13f)
                         setDrawEntryLabels(false)
-                        animateXY(1000, 1000, com.github.mikephil.charting.animation.Easing.EaseInOutQuad)
+                        animateXY(800, 800)
                         invalidate()
                     }
                 }

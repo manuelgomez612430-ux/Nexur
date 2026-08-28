@@ -1,11 +1,12 @@
 package com.naxor.app
 
 import android.os.Bundle
+import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.HotelRoomEntity
@@ -13,8 +14,9 @@ import com.naxor.app.data.HotelRoomLayoutEntity
 import com.naxor.app.databinding.ActivityHotelMapEditorBinding
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.UUID
 
-class HotelMapEditorActivity : AppCompatActivity() {
+class HotelMapEditorActivity : BaseActivity() {
 
     private lateinit var binding: ActivityHotelMapEditorBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
@@ -149,6 +151,22 @@ class HotelMapEditorActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        binding.editorMapView.onElementModified = { modified ->
+            if (modified.type == "WALL" && modified.baseId != null) {
+                // Sincronizar cambios a otros pisos en el snapshot
+                val baseId = modified.baseId
+                allLayoutsSnapshot.filter { it.baseId == baseId && it.id != modified.id }.forEach { other ->
+                    other.x = modified.x
+                    other.y = modified.y
+                    other.width = modified.width
+                    other.height = modified.height
+                    other.rotation = modified.rotation
+                    other.strokeWidth = modified.strokeWidth
+                    other.isHollow = modified.isHollow
+                }
+            }
+        }
+
         binding.editorMapView.onDuplicateRequested = { element ->
             handleDuplicate(element)
         }
@@ -157,43 +175,78 @@ class HotelMapEditorActivity : AppCompatActivity() {
             binding.editorMapView.selectedElement?.let { handleDuplicate(it) }
         }
 
+        binding.btnDuplicateSelection.setOnClickListener {
+            binding.editorMapView.selectedElement?.let { handleDuplicate(it) }
+        }
+
+        binding.btnToggleBaseWall.setOnClickListener {
+            val element = binding.editorMapView.selectedElement ?: return@setOnClickListener
+            if (element.type == "WALL") {
+                saveStateToHistory()
+                if (element.baseId == null) {
+                    // Convertir en Pared Base
+                    val newBaseId = UUID.randomUUID().toString()
+                    element.baseId = newBaseId
+                    binding.btnToggleBaseWall.text = "Pared Base: ACTIVADO"
+                    Toast.makeText(this, "Esta pared ahora se sincronizará en todos los pisos", Toast.LENGTH_SHORT).show()
+                } else {
+                    // Quitar Pared Base
+                    element.baseId = null
+                    binding.btnToggleBaseWall.text = "Sincronizar entre pisos"
+                    Toast.makeText(this, "Esta pared ahora es independiente", Toast.LENGTH_SHORT).show()
+                }
+                binding.editorMapView.invalidate()
+            }
+        }
+
         binding.editorMapView.onElementSelected = { element ->
+            val titleParams = binding.txtToolsTitle.layoutParams as RelativeLayout.LayoutParams
+            
             if (element != null) {
-                binding.layoutElementControls.visibility = android.view.View.VISIBLE
-                binding.divider.visibility = android.view.View.VISIBLE
-                val isWall = element.type == "WALL"; val isDoor = element.type == "DOOR"
+                // MODO SELECCIÓN: Ocultar herramientas generales, mostrar controles específicos
+                binding.gridMainTools.visibility = View.GONE
+                binding.layoutElementControls.visibility = View.VISIBLE
+                binding.btnHeaderDelete.visibility = View.VISIBLE
                 
-                binding.btnAddWall.visibility = if (isDoor) android.view.View.GONE else android.view.View.VISIBLE
-                binding.btnAddRoom.visibility = if (isDoor) android.view.View.GONE else android.view.View.VISIBLE
-                binding.btnFlipSide.visibility = if (isDoor) android.view.View.VISIBLE else android.view.View.GONE
-                binding.btnFlipOpening.visibility = if (isDoor) android.view.View.VISIBLE else android.view.View.GONE
+                // Mover título a la izquierda
+                titleParams.removeRule(RelativeLayout.CENTER_IN_PARENT)
+                titleParams.addRule(RelativeLayout.ALIGN_PARENT_START)
+                titleParams.addRule(RelativeLayout.CENTER_VERTICAL)
+                binding.txtToolsTitle.layoutParams = titleParams
+
+                val isWall = element.type == "WALL"; val isDoor = element.type == "DOOR"; val isRoom = element.type == "ROOM"
                 
-                binding.sliderThickness.visibility = if (isWall) android.view.View.VISIBLE else android.view.View.GONE
-                binding.btnToggleHollow.visibility = if (isWall) android.view.View.VISIBLE else android.view.View.GONE
+                binding.btnFlipSide.visibility = if (isDoor) View.VISIBLE else View.GONE
+                binding.btnFlipOpening.visibility = if (isDoor) View.VISIBLE else View.GONE
+                
+                binding.layoutThickness.visibility = if (isWall) View.VISIBLE else View.GONE
+                binding.btnToggleBaseWall.visibility = if (isWall) View.VISIBLE else View.GONE
+                binding.btnDuplicateSelection.visibility = if (isRoom) View.VISIBLE else View.GONE
                 
                 if (isWall) {
                     binding.sliderThickness.value = element.strokeWidth.coerceIn(2f, 40f)
-                    binding.btnToggleHollow.text = if (element.isHollow) "Poner Relleno" else "Quitar Relleno"
+                    binding.btnToggleHollow.text = if (element.isHollow) "Sin Relleno" else "Con Relleno"
+                    binding.btnToggleBaseWall.text = if (element.baseId != null) "Pared Base: ACTIVADO" else "Sincronizar entre pisos"
                 }
-                val isSmall = element.width < 80f || element.height < 80f
-                binding.btnMoveAssist.visibility = if (isSmall) android.view.View.VISIBLE else android.view.View.GONE
                 
-                // Expandir panel automáticamente al seleccionar si está cerrado
-                if (binding.expandableContent.visibility == android.view.View.GONE) {
-                    binding.expandableContent.visibility = android.view.View.VISIBLE
+                if (binding.expandableContent.visibility == View.GONE) {
+                    binding.expandableContent.visibility = View.VISIBLE
                     binding.imgExpandIcon.rotation = 180f
                 }
             } else {
-                binding.layoutElementControls.visibility = android.view.View.GONE
-                binding.divider.visibility = android.view.View.GONE
-                binding.btnAddWall.visibility = android.view.View.VISIBLE
-                binding.btnAddRoom.visibility = android.view.View.VISIBLE
-                binding.btnFlipSide.visibility = android.view.View.GONE
-                binding.btnFlipOpening.visibility = android.view.View.GONE
+                // MODO NORMAL: Mostrar herramientas generales, ocultar controles específicos
+                binding.gridMainTools.visibility = View.VISIBLE
+                binding.layoutElementControls.visibility = View.GONE
+                binding.btnHeaderDelete.visibility = View.GONE
                 
-                // Minimizar panel automáticamente al deseleccionar
-                binding.expandableContent.visibility = android.view.View.GONE
-                binding.imgExpandIcon.rotation = 0f
+                // Centrar título
+                titleParams.removeRule(RelativeLayout.ALIGN_PARENT_START)
+                titleParams.addRule(RelativeLayout.CENTER_IN_PARENT)
+                binding.txtToolsTitle.layoutParams = titleParams
+
+                // Mantener panel abierto al deseleccionar para fluidez
+                binding.expandableContent.visibility = View.VISIBLE
+                binding.imgExpandIcon.rotation = 180f
             }
         }
 
@@ -203,13 +256,13 @@ class HotelMapEditorActivity : AppCompatActivity() {
         binding.btnFlipOpening.setOnClickListener {
             binding.editorMapView.selectedElement?.let { if (it.type == "DOOR") { saveStateToHistory(); it.strokeWidth = if (it.strokeWidth > 5f) 2f else 8f; binding.editorMapView.invalidate() } }
         }
-        binding.btnMoveAssist.setOnTouchListener { v, event ->
+        /* binding.btnMoveAssist.setOnTouchListener { v, event ->
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> { binding.editorMapView.isMoveAssistActive = true; v.isPressed = true }
                 android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> { binding.editorMapView.isMoveAssistActive = false; v.isPressed = false }
             }
             true
-        }
+        } */
         binding.sliderThickness.addOnChangeListener { _, value, fromUser ->
             if (fromUser) binding.editorMapView.selectedElement?.let { it.strokeWidth = value; binding.editorMapView.invalidate() }
         }
@@ -218,12 +271,12 @@ class HotelMapEditorActivity : AppCompatActivity() {
         }
         binding.btnAddWall.setOnClickListener {
             saveStateToHistory()
-            val newWall = HotelRoomLayoutEntity(type = "WALL", floorId = currentFloorId, x = 100f, y = 100f, width = 400f, height = 20f, isHollow = false, strokeWidth = 8f)
+            val newWall = HotelRoomLayoutEntity(type = "WALL", floorId = currentFloorId, x = 100f, y = 100f, width = 600f, height = 50f, isHollow = false, strokeWidth = 8f)
             binding.editorMapView.layoutElements.add(newWall); binding.editorMapView.constrainToCanvas(newWall); binding.editorMapView.invalidate()
         }
         binding.btnAddDoor.setOnClickListener {
             saveStateToHistory()
-            val newDoor = HotelRoomLayoutEntity(type = "DOOR", floorId = currentFloorId, x = 150f, y = 150f, width = 60f, height = 10f, isHollow = false, strokeWidth = 2f)
+            val newDoor = HotelRoomLayoutEntity(type = "DOOR", floorId = currentFloorId, x = 150f, y = 150f, width = 100f, height = 12f, isHollow = false, strokeWidth = 2f)
             binding.editorMapView.layoutElements.add(newDoor); binding.editorMapView.constrainToCanvas(newDoor); binding.editorMapView.invalidate()
         }
         binding.btnAddRoom.setOnClickListener {
@@ -246,6 +299,7 @@ class HotelMapEditorActivity : AppCompatActivity() {
             }.show()
         }
         binding.btnDelete.setOnClickListener { binding.editorMapView.deleteSelected() }
+        binding.btnHeaderDelete.setOnClickListener { binding.editorMapView.deleteSelected() }
         binding.btnRotate.setOnClickListener {
             binding.editorMapView.selectedElement?.let { saveStateToHistory(); it.rotation = (it.rotation + 90f) % 360f; binding.editorMapView.constrainToCanvas(it); binding.editorMapView.invalidate() }
         }
@@ -255,7 +309,12 @@ class HotelMapEditorActivity : AppCompatActivity() {
                 try {
                     val currentLayouts = database.hotelDao().getAllLayouts().first()
                     for (layout in currentLayouts) database.hotelDao().deleteLayout(layout)
-                    for (element in allLayoutsSnapshot) database.hotelDao().insertLayout(element)
+                    
+                    val syncManager = SyncManager(this@HotelMapEditorActivity)
+                    for (element in allLayoutsSnapshot) {
+                        database.hotelDao().insertLayout(element)
+                        syncManager.syncHotelLayoutToCloud(element)
+                    }
                     Toast.makeText(this@HotelMapEditorActivity, "Piso guardado con éxito", Toast.LENGTH_SHORT).show(); finish()
                 } catch (e: Exception) { Toast.makeText(this@HotelMapEditorActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show() }
             }

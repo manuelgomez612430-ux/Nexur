@@ -21,4 +21,7 @@ interface CustomerDao {
 
     @Query("SELECT * FROM customers WHERE isSynced = 0 AND isDeleted = 1")
     suspend fun getDeletedCustomers(): List<CustomerEntity>
+
+    @Query("UPDATE customers SET isSynced = 1 WHERE id = :id")
+    suspend fun markSynced(id: String)
 }

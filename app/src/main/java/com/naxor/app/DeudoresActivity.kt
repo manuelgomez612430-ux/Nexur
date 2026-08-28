@@ -1,5 +1,6 @@
 package com.naxor.app
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -10,12 +11,12 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.ListenerRegistration
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.DebtorEntity
 import com.naxor.app.data.MovementLogEntity
@@ -27,7 +28,7 @@ import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.*
 
-class DeudoresActivity : AppCompatActivity() {
+class DeudoresActivity : BaseActivity() {
 
     private lateinit var binding: ActivityDeudoresBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
@@ -82,6 +83,7 @@ class DeudoresActivity : AppCompatActivity() {
     private var lastUnsyncedCount = 0
     private var currentIsSyncing = false
     private var syncStatusText = "Conectado"
+    private var debtorsRegistrations: List<ListenerRegistration> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,7 +96,12 @@ class DeudoresActivity : AppCompatActivity() {
         setupSyncIndicator()
         loadDebtors()
         
-        SyncManager(this).startRealtimeDebtorsSync { loadDebtors() }
+        debtorsRegistrations = SyncManager(this).startRealtimeDebtorsSync { loadDebtors() }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        debtorsRegistrations.forEach { it.remove() }
     }
 
     private fun setupNetworkMonitoring() {
@@ -552,14 +559,24 @@ class DeudoresActivity : AppCompatActivity() {
             return
         }
 
-        val bizName = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("business_name", "Naxor") ?: "Naxor"
+        val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val businessType = prefs.getString("business_type", "PRODUCTS") ?: "PRODUCTS"
+        val systemName = prefs.getString("${businessType}_name", "") ?: ""
+        val ownerName = prefs.getString("${businessType}_owner_name", "") ?: ""
+        
+        val senderLabel = when {
+            systemName.isNotEmpty() -> systemName
+            ownerName.isNotEmpty() -> ownerName
+            else -> "tu gestor"
+        }
+
         val montoStr = String.format("%.2f", deudor.deudaTotal)
         
         val mensaje = if (deudor.fechaCobro > 0) {
             val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-            "Hola *${deudor.nombre}*, te saluda *${bizName}*. 👋 Te escribo para recordarte tu saldo pendiente de *S/ $montoStr*. La fecha programada para el pago es el *${sdf.format(Date(deudor.fechaCobro))}*. ¡Gracias! 😊"
+            "Hola *${deudor.nombre}*, te saluda *${senderLabel}*. 👋\n\nTe escribo para recordarte tu saldo pendiente de *S/ $montoStr*. La fecha programada para el pago es el *${sdf.format(Date(deudor.fechaCobro))}*. 🗓️\n\nAgradezco mucho tu puntualidad. ¡Que tengas un excelente día! 😊"
         } else {
-            "Hola *${deudor.nombre}*, te saluda *${bizName}*. 👋 Te escribo para recordarte que tienes un saldo pendiente de *S/ $montoStr*. ¡Muchas gracias! 😊"
+            "Hola *${deudor.nombre}*, te saluda *${senderLabel}*. 👋\n\nTe escribo para recordarte que tienes un saldo pendiente de *S/ $montoStr*. 🗓️\n\nAgradezco mucho tu puntualidad. ¡Que tengas un excelente día! 😊"
         }
         
         try {

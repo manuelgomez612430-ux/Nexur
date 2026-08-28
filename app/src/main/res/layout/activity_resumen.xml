@@ -335,7 +335,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="12dp"
-                            android:text="CONSEJERO IA NAXOR"
+                            android:text="CONSEJERO IA GOMEZMART"
                             android:textSize="12sp"
                             android:textStyle="bold"
                             android:letterSpacing="0.1"
@@ -356,25 +356,43 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="¿Quieres un análisis experto de hoy? Pulsa el botón para que Gemini analice tus números."
-                        android:textSize="14sp"
-                        android:textColor="@color/white"
-                        android:alpha="0.9"
-                        android:lineSpacingExtra="6dp" />
+                        android:textSize="15sp"
+                        android:textColor="#FFFFFF"
+                        android:alpha="1.0"
+                        android:lineSpacingExtra="7dp"
+                        android:padding="8dp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnRefreshAiAnalysis"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
-                        android:layout_gravity="end"
-                        android:text="Generar Análisis con IA"
-                        android:textSize="12sp"
-                        android:textColor="@color/midnight_purple"
-                        app:backgroundTint="@color/white"
-                        app:cornerRadius="12dp"
-                        app:icon="@android:drawable/stat_notify_sync"
-                        app:iconSize="16dp" />
+                        android:orientation="horizontal"
+                        android:gravity="end"
+                        android:layout_marginTop="20dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCloseAiAnalysis"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Limpiar"
+                            android:textSize="12sp"
+                            android:textColor="@color/white"
+                            android:visibility="gone"
+                            android:layout_marginEnd="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRefreshAiAnalysis"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Generar Análisis con IA"
+                            android:textSize="12sp"
+                            android:textColor="@color/midnight_purple"
+                            app:backgroundTint="@color/white"
+                            app:cornerRadius="12dp"
+                            app:icon="@android:drawable/stat_notify_sync"
+                            app:iconSize="16dp" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

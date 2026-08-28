@@ -2,12 +2,15 @@ package com.naxor.app
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.naxor.app.data.AppDatabase
+import com.naxor.app.data.HotelToolEntity
 import java.util.*
 
 class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
@@ -53,18 +56,111 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
             else showLoanNotification(pendingLoans.size, totalAmount)
         }
 
-        // 5. Herramientas
-        val activeTools = database.hotelToolDao().getAllActiveToolsOnce()
-        val expiredTools = activeTools.filter { tool ->
-            if (tool.maxUsageMonths > 0) {
-                val diffMs = System.currentTimeMillis() - tool.registrationDate
-                val monthsInUse = (java.util.concurrent.TimeUnit.MILLISECONDS.toDays(diffMs) / 30).toInt()
-                monthsInUse >= tool.maxUsageMonths
-            } else false
-        }
-        if (expiredTools.isNotEmpty()) showToolNotification(expiredTools.size)
+        // 5. Herramientas (Activos)
+        checkToolExpirations(database)
         
+        // 6. Compromisos (NUEVO)
+        checkCommitments(database)
+
         return Result.success()
+    }
+
+    private suspend fun checkCommitments(database: AppDatabase) {
+        val commitments = database.commitmentDao().getActiveCommitmentsOnce()
+        val prefs = context.getSharedPreferences("CommitmentNotifs", Context.MODE_PRIVATE)
+        val now = Calendar.getInstance()
+        
+        val currentMonth = now.get(Calendar.MONTH)
+        val currentYear = now.get(Calendar.YEAR)
+        
+        for (c in commitments) {
+            // Logic for MONTH START (First run of the month)
+            val monthKey = "month_start_${c.id}_${currentMonth}_${currentYear}"
+            if (!prefs.getBoolean(monthKey, false)) {
+                showCommitmentNotification(c, "Este mes toca pagar: ${c.description}", 10000 + c.id.hashCode())
+                prefs.edit().putBoolean(monthKey, true).apply()
+            }
+
+            // Logic for 7 DAYS BEFORE and SAME DAY
+            when(c.frequency) {
+                "FIXED" -> {
+                    // Normalizar ambos a las 00:00 para comparar días exactos
+                    val todayNormalized = Calendar.getInstance().apply { 
+                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                    }
+                    val dueNormalized = Calendar.getInstance().apply {
+                        timeInMillis = c.dueDate
+                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                    }
+                    
+                    val diffMs = dueNormalized.timeInMillis - todayNormalized.timeInMillis
+                    val diffDays = (diffMs / (1000 * 60 * 60 * 24)).toInt()
+                    
+                    if (diffDays == 7) {
+                        val key = "7days_${c.id}_${currentYear}"
+                        if (!prefs.getBoolean(key, false)) {
+                            showCommitmentNotification(c, "Faltan 7 días para: ${c.description}", 20000 + c.id.hashCode())
+                            prefs.edit().putBoolean(key, true).apply()
+                        }
+                    } else if (diffDays == 0) {
+                        val key = "today_${c.id}_${currentYear}"
+                        if (!prefs.getBoolean(key, false)) {
+                            showCommitmentNotification(c, "¡Hoy vence! ${c.description}", 30000 + c.id.hashCode())
+                            prefs.edit().putBoolean(key, true).apply()
+                        }
+                    }
+                }
+                "MONTHLY" -> {
+                    val todayNormalized = Calendar.getInstance().apply { 
+                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                    }
+                    val dueInCurrentMonth = Calendar.getInstance().apply {
+                        set(Calendar.DAY_OF_MONTH, c.recurringDay)
+                        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                    }
+                    
+                    val diffMs = dueInCurrentMonth.timeInMillis - todayNormalized.timeInMillis
+                    val diffDays = (diffMs / (1000 * 60 * 60 * 24)).toInt()
+
+                    if (diffDays == 7) {
+                        val key = "7days_${c.id}_${currentMonth}_${currentYear}"
+                        if (!prefs.getBoolean(key, false)) {
+                            showCommitmentNotification(c, "Faltan 7 días para: ${c.description}", 20000 + c.id.hashCode())
+                            prefs.edit().putBoolean(key, true).apply()
+                        }
+                    } else if (diffDays == 0) {
+                        val key = "today_${c.id}_${currentMonth}_${currentYear}"
+                        if (!prefs.getBoolean(key, false)) {
+                            showCommitmentNotification(c, "¡Hoy vence! ${c.description}", 30000 + c.id.hashCode())
+                            prefs.edit().putBoolean(key, true).apply()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showCommitmentNotification(commitment: com.naxor.app.data.CommitmentEntity, message: String, notificationId: Int) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = "commitment_reminders"
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(channelId, "Compromisos Personales", NotificationManager.IMPORTANCE_HIGH)
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val intent = android.content.Intent(context, CommitmentsActivity::class.java)
+        val pendingIntent = android.app.PendingIntent.getActivity(context, notificationId, intent, android.app.PendingIntent.FLAG_IMMUTABLE)
+
+        val builder = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.gomezmart_icon)
+            .setContentTitle("🤝 Recordatorio de Compromiso")
+            .setContentText(message + " (S/ ${String.format(Locale.getDefault(), "%.2f", commitment.amount)})")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+
+        notificationManager.notify(notificationId, builder.build())
     }
 
     private fun showMorningSummary(count: Int, total: Double) {
@@ -80,7 +176,7 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
         val pendingIntent = android.app.PendingIntent.getActivity(context, 5001, intent, android.app.PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.logo_naxor_icon)
+            .setSmallIcon(R.drawable.gomezmart_icon)
             .setContentTitle("🌅 ¡Buen día! Resumen de hoy")
             .setContentText("Hoy tienes $count cobros pendientes (S/ ${String.format(Locale.getDefault(), "%.2f", total)}).")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -103,7 +199,7 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
         val pendingIntent = android.app.PendingIntent.getActivity(context, 4001, intent, android.app.PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.logo_naxor_icon)
+            .setSmallIcon(R.drawable.gomezmart_icon)
             .setContentTitle("💰 Cobros de Préstamos")
             .setContentText("Tienes $count cuotas por cobrar hoy. Total: S/ ${String.format(Locale.getDefault(), "%.2f", total)}.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -113,27 +209,64 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
         notificationManager.notify(4001, builder.build())
     }
 
-    private fun showToolNotification(count: Int) {
+    private suspend fun checkToolExpirations(database: AppDatabase) {
+        val activeTools = database.hotelToolDao().getAllActiveToolsOnce()
+        val prefs = context.getSharedPreferences("ToolNotifs", Context.MODE_PRIVATE)
+        val now = Calendar.getInstance().apply { 
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }
+        val currentYear = now.get(Calendar.YEAR)
+        val dayOfYear = now.get(Calendar.DAY_OF_YEAR)
+
+        for (tool in activeTools) {
+            if (tool.expiryDate > 0L) {
+                val expiryNormalized = Calendar.getInstance().apply {
+                    timeInMillis = tool.expiryDate
+                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                }
+
+                val diffMs = expiryNormalized.timeInMillis - now.timeInMillis
+                val diffDays = (diffMs / (1000 * 60 * 60 * 24)).toInt()
+
+                // Intervalos: 7, 5, 2, 1 y hoy (0)
+                val intervals = listOf(7, 5, 2, 1, 0)
+                if (diffDays in intervals) {
+                    val notifKey = "tool_${tool.id}_${diffDays}_${currentYear}_${dayOfYear}"
+                    if (!prefs.getBoolean(notifKey, false)) {
+                        val message = when (diffDays) {
+                            0 -> "¡Hoy vence la vida útil de: ${tool.name}! (#${tool.code})"
+                            1 -> "Mañana vence la vida útil de: ${tool.name}"
+                            else -> "Faltan $diffDays días para renovar: ${tool.name}"
+                        }
+                        showToolNotification(message, 35000 + tool.id.hashCode() + diffDays)
+                        prefs.edit().putBoolean(notifKey, true).apply()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showToolNotification(message: String, notificationId: Int) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channelId = "tool_alerts"
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Alertas de Inventario", NotificationManager.IMPORTANCE_DEFAULT)
+            val channel = NotificationChannel(channelId, "Alertas de Activos Hotel", NotificationManager.IMPORTANCE_HIGH)
             notificationManager.createNotificationChannel(channel)
         }
 
-        val intent = android.content.Intent(context, HotelToolsActivity::class.java)
-        val pendingIntent = android.app.PendingIntent.getActivity(context, 3001, intent, android.app.PendingIntent.FLAG_IMMUTABLE)
+        val intent = Intent(context, HotelToolsActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(context, notificationId, intent, PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.logo_naxor_icon)
-            .setContentTitle("🛠️ Renovación de Herramientas")
-            .setContentText("Tienes $count herramientas con vida útil superada.")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setSmallIcon(R.drawable.gomezmart_icon)
+            .setContentTitle("🛠️ Control de Vida Útil")
+            .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
 
-        notificationManager.notify(3001, builder.build())
+        notificationManager.notify(notificationId, builder.build())
     }
 
     private fun showReminderNotification(count: Int, total: Double, type: String, notificationId: Int) {
@@ -159,7 +292,7 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
         val content = "Tienes $count compromisos hoy por un total de S/ ${String.format(Locale.getDefault(), "%.2f", total)}."
 
         val builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.logo_naxor_icon)
+            .setSmallIcon(R.drawable.gomezmart_icon)
             .setContentTitle(title)
             .setContentText(content)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

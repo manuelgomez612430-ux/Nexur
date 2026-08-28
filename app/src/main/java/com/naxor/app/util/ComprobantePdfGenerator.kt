@@ -27,18 +27,50 @@ class ComprobantePdfGenerator(private val context: Context) {
         val boldPaint = Paint().apply { isFakeBoldText = true }
         
         val prefs = context.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
-        val bName = prefs.getString("business_name", "MI NEGOCIO") ?: "MI NEGOCIO"
-        val bRuc = prefs.getString("business_ruc", "RUC NO REGISTRADO") ?: "RUC NO REGISTRADO"
-        val bAddr = prefs.getString("business_address", "DIRECCION NO REGISTRADA") ?: "DIRECCION NO REGISTRADA"
+        val bType = prefs.getString("business_type", "PRODUCTS") ?: "PRODUCTS"
+        
+        val bName = prefs.getString("${bType}_name", prefs.getString("business_name", "MI NEGOCIO"))
+        val bRuc = prefs.getString("${bType}_ruc", prefs.getString("business_ruc", ""))
+        val bAddr = prefs.getString("${bType}_address", prefs.getString("business_address", ""))
+        val bPhone = prefs.getString("${bType}_phone", prefs.getString("business_phone", ""))
+        val oName = prefs.getString("${bType}_owner_name", "")
+        val oDni = prefs.getString("${bType}_owner_dni", "")
+
+        val showOwner = prefs.getBoolean("${bType}_show_owner", false)
+        val showBusiness = prefs.getBoolean("${bType}_show_business", true)
+        val showAddress = prefs.getBoolean("${bType}_show_address", true)
+        val showPhone = prefs.getBoolean("${bType}_show_phone", true)
+        
         val currency = prefs.getString("currency_symbol", "S/") ?: "S/"
 
         // 1. CABECERA (EMISOR)
-        boldPaint.textSize = 20f; boldPaint.color = Color.BLACK
-        canvas.drawText(bName.uppercase(), 50f, 60f, boldPaint)
+        boldPaint.textSize = 18f; boldPaint.color = Color.BLACK
         
-        paint.textSize = 10f; paint.color = Color.DKGRAY
-        canvas.drawText(bAddr, 50f, 80f, paint)
-        canvas.drawText("Teléfono: ${prefs.getString("business_phone", "")}", 50f, 95f, paint)
+        var headerY = 60f
+        if (showBusiness && !bName.isNullOrEmpty()) {
+            canvas.drawText(bName.uppercase(), 50f, headerY, boldPaint)
+            headerY += 20f
+        }
+        
+        if (showOwner && !oName.isNullOrEmpty()) {
+            paint.textSize = 12f; paint.color = Color.BLACK; paint.isFakeBoldText = true
+            canvas.drawText("Titular: ${oName.uppercase()}", 50f, headerY, paint)
+            headerY += 15f
+            if (!oDni.isNullOrEmpty()) {
+                paint.isFakeBoldText = false
+                canvas.drawText("DNI: $oDni", 50f, headerY, paint)
+                headerY += 15f
+            }
+        }
+        
+        paint.textSize = 10f; paint.color = Color.DKGRAY; paint.isFakeBoldText = false
+        if (showAddress && !bAddr.isNullOrEmpty()) {
+            canvas.drawText(bAddr, 50f, headerY, paint)
+            headerY += 15f
+        }
+        if (showPhone && !bPhone.isNullOrEmpty()) {
+            canvas.drawText("Teléfono: $bPhone", 50f, headerY, paint)
+        }
 
         // 2. RECUADRO DERECHO (NUMERACION)
         val rectPaint = Paint().apply { 
@@ -56,7 +88,11 @@ class ComprobantePdfGenerator(private val context: Context) {
         }
         
         val titleY = if (docTitle.contains("\n")) 65f else 75f
-        canvas.drawText("RUC: $bRuc", 370f, 50f, boldPaint)
+        if (!bRuc.isNullOrEmpty()) {
+            canvas.drawText("RUC: $bRuc", 370f, 50f, boldPaint)
+        } else if (showOwner && !oDni.isNullOrEmpty()) {
+            canvas.drawText("DNI: $oDni", 370f, 50f, boldPaint)
+        }
         
         boldPaint.textSize = 12f
         val lines = docTitle.split("\n")

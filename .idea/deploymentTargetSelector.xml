@@ -4,15 +4,20 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-08-23T17:29:08.020301500Z">
+        <DropdownSelection timestamp="2026-09-07T15:06:21.298578800Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=AXLKCP4219405943" />
+              <DeviceId pluginId="Wireless" identifier="serviceName=adb-AXLKCP4219405943-zJcNHS" />
             </handle>
           </Target>
         </DropdownSelection>
         <DialogSelection>
           <targets>
+            <Target type="DEFAULT_BOOT">
+              <handle>
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=AXLKCP4219405943" />
+              </handle>
+            </Target>
             <Target type="DEFAULT_BOOT">
               <handle>
                 <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Willyam\.android\avd\Pixel_7.avd" />

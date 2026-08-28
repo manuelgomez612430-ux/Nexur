@@ -1,8 +1,9 @@
 package com.naxor.app
 
-import android.app.AlertDialog
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.media.ToneGenerator
 import android.net.Uri
@@ -12,12 +13,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
@@ -32,10 +40,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 
-class AddProductActivity : AppCompatActivity() {
+class AddProductActivity : BaseActivity() {
 
     private lateinit var binding: ActivityAddProductBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
@@ -44,18 +53,80 @@ class AddProductActivity : AppCompatActivity() {
     private var currentPhotoPath: String? = null
     private val voiceHelper by lazy { VoiceRecognitionHelper(this) }
 
+    private val requestCameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            launchCamera()
+        } else {
+            Toast.makeText(this, "Permiso de cámara necesario para tomar fotos", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private val takePhotoLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success && currentPhotoPath != null) {
-            binding.ivDialogProdPhoto.setImageURI(Uri.parse(currentPhotoPath))
-            binding.ivDialogProdPhoto.scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+            currentProduct?.photoUrl = null // Forzar nueva subida a la nube
+            val file = File(currentPhotoPath!!)
+            if (file.exists()) {
+                binding.ivDialogProdPhoto.imageTintList = null
+                binding.ivDialogProdPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
+                binding.ivDialogProdPhoto.setPadding(0, 0, 0, 0)
+                
+                Glide.with(this)
+                    .load(file)
+                    .into(binding.ivDialogProdPhoto)
+            }
+        }
+    }
+
+    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            currentProduct?.photoUrl = null // Forzar nueva subida a la nube
+            currentPhotoPath = saveImageToInternalStorage(it)
+            binding.ivDialogProdPhoto.imageTintList = null
+            binding.ivDialogProdPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
             binding.ivDialogProdPhoto.setPadding(0, 0, 0, 0)
+            
+            Glide.with(this)
+                .load(it)
+                .into(binding.ivDialogProdPhoto)
+        }
+    }
+
+    private fun saveImageToInternalStorage(uri: Uri): String? {
+        return try {
+            val inputStream = contentResolver.openInputStream(uri)
+            val file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "prod_${System.currentTimeMillis()}.jpg")
+            val outputStream = FileOutputStream(file)
+            inputStream?.copyTo(outputStream)
+            inputStream?.close()
+            outputStream.close()
+            file.absolutePath
+        } catch (e: Exception) {
+            null
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        enableEdgeToEdge()
+        
         binding = ActivityAddProductBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Estabilización Edge-to-Edge para formulario y footer fijo
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
+            
+            // El botón de guardado está en un layoutBottomActions (LinearLayout)
+            binding.layoutBottomActions.setPadding(
+                binding.layoutBottomActions.paddingLeft,
+                binding.layoutBottomActions.paddingTop,
+                binding.layoutBottomActions.paddingRight,
+                systemBars.bottom + (16 * resources.displayMetrics.density).toInt()
+            )
+            insets
+        }
 
         val productId = intent.getStringExtra("PRODUCT_ID")
         if (productId != null) {
@@ -66,9 +137,39 @@ class AddProductActivity : AppCompatActivity() {
         setupCategories()
     }
 
+    private fun showImagePickOptions() {
+        val options = arrayOf("Tomar Foto 📸", "Elegir de Galería 🖼️")
+        AlertDialog.Builder(this)
+            .setTitle("Seleccionar Imagen")
+            .setItems(options) { _, which ->
+                if (which == 0) checkCameraPermissionAndLaunch()
+                else pickImageLauncher.launch("image/*")
+            }
+            .show()
+    }
+
+    private fun checkCameraPermissionAndLaunch() {
+        if (PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)) {
+            launchCamera()
+        } else {
+            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    private fun launchCamera() {
+        try {
+            val file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "prod_${System.currentTimeMillis()}.jpg")
+            val uri = FileProvider.getUriForFile(this, "$packageName.provider", file)
+            currentPhotoPath = file.absolutePath
+            takePhotoLauncher.launch(uri)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error al abrir la cámara", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun loadProduct(id: String) {
         lifecycleScope.launch(Dispatchers.IO) {
-            val p = database.productDao().allProducts.find { it.id == id }
+            val p = database.productDao().getProductById(id)
             withContext(Dispatchers.Main) {
                 if (p != null) {
                     currentProduct = p
@@ -88,7 +189,7 @@ class AddProductActivity : AppCompatActivity() {
                     }
                     if (p.precioCosto > 0) {
                         binding.cbShowBatchCost.isChecked = true
-                        binding.layoutProdCosto.visibility = View.VISIBLE
+                        binding.layoutProdCostoContainer.visibility = View.VISIBLE
                         binding.etProdCosto.setText(p.precioCosto.toString())
                     }
                     if (p.expirationDate > 0) {
@@ -97,9 +198,17 @@ class AddProductActivity : AppCompatActivity() {
                         binding.etProdExpiration.setText(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(p.expirationDate)))
                     }
                     if (!p.photoPath.isNullOrEmpty()) {
-                        binding.ivDialogProdPhoto.setImageURI(Uri.parse(p.photoPath))
-                        binding.ivDialogProdPhoto.scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                        binding.ivDialogProdPhoto.imageTintList = null
+                        binding.ivDialogProdPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
                         binding.ivDialogProdPhoto.setPadding(0, 0, 0, 0)
+                        
+                        val file = File(p.photoPath)
+                        if (file.exists()) {
+                            Glide.with(this@AddProductActivity).load(file).into(binding.ivDialogProdPhoto)
+                        } else {
+                            Glide.with(this@AddProductActivity).load(Uri.parse(p.photoPath)).into(binding.ivDialogProdPhoto)
+                        }
+                        
                         currentPhotoPath = p.photoPath
                     }
                     binding.btnDeleteProduct.visibility = View.VISIBLE
@@ -116,7 +225,13 @@ class AddProductActivity : AppCompatActivity() {
         }
 
         binding.cbShowBatchCost.setOnCheckedChangeListener { _, isChecked -> 
-            binding.layoutProdCosto.visibility = if (isChecked) View.VISIBLE else View.GONE 
+            binding.layoutProdCostoContainer.visibility = if (isChecked) View.VISIBLE else View.GONE 
+        }
+        binding.btnInfoCosto.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("¿Qué es el costo?")
+                .setMessage("Es lo que tú pagaste por el producto. El sistema lo usa para decirte cuánta ganancia real tienes.")
+                .setPositiveButton("Entendido", null).show()
         }
         binding.cbShowExpiration.setOnCheckedChangeListener { _, isChecked -> 
             binding.layoutProdExpiration.visibility = if (isChecked) View.VISIBLE else View.GONE 
@@ -126,10 +241,7 @@ class AddProductActivity : AppCompatActivity() {
         }
 
         binding.cardProdPhoto.setOnClickListener {
-            val file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "prod_${System.currentTimeMillis()}.jpg")
-            val uri = FileProvider.getUriForFile(this, "$packageName.provider", file)
-            currentPhotoPath = file.absolutePath
-            takePhotoLauncher.launch(uri)
+            showImagePickOptions()
         }
 
         binding.btnScanCode.setOnClickListener {
@@ -156,14 +268,52 @@ class AddProductActivity : AppCompatActivity() {
             }
         }
 
-        binding.layoutProdDesc.setEndIconOnClickListener {
-            voiceHelper.startListening { text ->
-                binding.etProdDescripcion.setText(text.replaceFirstChar { it.uppercase() })
-            }
+        binding.etProdVenta.addTextChangedListener { updateProfitPreview() }
+        binding.etProdCosto.addTextChangedListener { updateProfitPreview() }
+
+        binding.etProdExpiration.setOnClickListener {
+            showExpirationDatePicker()
         }
 
         binding.btnConfirmAdd.setOnClickListener {
             saveProduct()
+        }
+    }
+
+    private fun showExpirationDatePicker() {
+        val cal = Calendar.getInstance()
+        val dateSetListener = android.app.DatePickerDialog.OnDateSetListener { _, year, monthOfYear, dayOfMonth ->
+            cal.set(Calendar.YEAR, year)
+            cal.set(Calendar.MONTH, monthOfYear)
+            cal.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            binding.etProdExpiration.setText(sdf.format(cal.time))
+        }
+        android.app.DatePickerDialog(this, dateSetListener,
+            cal.get(Calendar.YEAR),
+            cal.get(Calendar.MONTH),
+            cal.get(Calendar.DAY_OF_MONTH)).show()
+    }
+
+    private fun updateProfitPreview() {
+        val venta = binding.etProdVenta.text.toString().toDoubleOrNull() ?: 0.0
+        val costo = binding.etProdCosto.text.toString().toDoubleOrNull() ?: 0.0
+        
+        if (venta > 0 && costo > 0) {
+            val ganancia = venta - costo
+            val porcentaje = (ganancia / venta) * 100
+            binding.cardProfitPreview.visibility = View.VISIBLE
+            binding.tvProfitPreview.text = String.format(Locale.getDefault(), "Ganancia estimada: S/ %.2f (%.1f%%)", ganancia, porcentaje)
+            
+            if (ganancia < 0) {
+                binding.cardProfitPreview.setCardBackgroundColor(getColor(R.color.red_700).let { android.content.res.ColorStateList.valueOf(it) })
+                binding.tvProfitPreview.setTextColor(Color.WHITE)
+            } else {
+                binding.cardProfitPreview.setCardBackgroundColor(getColor(R.color.emerald_50).let { android.content.res.ColorStateList.valueOf(it) })
+                binding.tvProfitPreview.setTextColor(getColor(R.color.emerald_600))
+            }
+        } else {
+            binding.cardProfitPreview.visibility = View.GONE
         }
     }
 
@@ -245,13 +395,18 @@ class AddProductActivity : AppCompatActivity() {
         val name = binding.etProdNombre.text.toString().trim()
         val cat = binding.autoProdCategoria.text.toString().trim()
         
-        if (name.isBlank() || cat.isNotBlank()) {
+        if (name.isNotBlank() && cat.isNotBlank()) {
             val stock = binding.etProdStock.text.toString().toIntOrNull() ?: 0
             val sale = binding.etProdVenta.text.toString().toDoubleOrNull() ?: 0.0
             val cost = if (binding.cbShowBatchCost.isChecked) binding.etProdCosto.text.toString().toDoubleOrNull() ?: 0.0 else 0.0
             val loc = binding.etProdLocation.text.toString().trim()
             val desc = binding.etProdDescripcion.text.toString().trim()
             val codes = addedCodes.joinToString(",")
+
+            val expirationStr = binding.etProdExpiration.text.toString().trim()
+            val expirationDate = if (binding.cbShowExpiration.isChecked && expirationStr.isNotEmpty()) {
+                try { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(expirationStr)?.time ?: 0L } catch(e: Exception) { 0L }
+            } else 0L
 
             lifecycleScope.launch(Dispatchers.IO) {
                 val existing = database.productDao().getProductByName(name)
@@ -261,11 +416,11 @@ class AddProductActivity : AppCompatActivity() {
                             .setTitle("Producto existente")
                             .setMessage("¿Unificar stock con '$name'?")
                             .setPositiveButton("Sí") { _, _ -> 
-                                unificarProductos(existing, currentProduct, codes, stock, cost, sale, currentPhotoPath, loc, desc) 
+                                unificarProductos(existing, currentProduct, codes, stock, cost, sale, currentPhotoPath, loc, desc, expirationDate) 
                             }
                             .setNegativeButton("No", null).show()
                     } else {
-                        performSave(currentProduct, codes, name, cat, stock, cost, sale, currentPhotoPath, loc, desc)
+                        performSave(currentProduct, codes, name, cat, stock, cost, sale, currentPhotoPath, loc, desc, expirationDate)
                     }
                 }
             }
@@ -274,7 +429,7 @@ class AddProductActivity : AppCompatActivity() {
         }
     }
 
-    private fun performSave(p: ProductEntity?, code: String, name: String, cat: String, stock: Int, cost: Double, sale: Double, photo: String?, loc: String, desc: String) {
+    private fun performSave(p: ProductEntity?, code: String, name: String, cat: String, stock: Int, cost: Double, sale: Double, photo: String?, loc: String, desc: String, exp: Long) {
         lifecycleScope.launch(Dispatchers.IO) {
             val isNew = p == null
             val changes = mutableListOf<String>()
@@ -286,14 +441,30 @@ class AddProductActivity : AppCompatActivity() {
                 if (p.precioVenta != sale) changes.add("Precio (S/ ${p.precioVenta} -> S/ $sale)")
                 if (p.precioCosto != cost) changes.add("Costo")
                 if (p.codigo != code) changes.add("Código")
+                if (p.expirationDate != exp) changes.add("Vencimiento")
             }
 
             val productToSync = if (p != null) {
-                p.apply { codigo = code; nombre = name; categoria = cat; this.stock = stock; precioCosto = cost; precioVenta = sale; photoPath = photo; location = loc; descripcion = desc; isSynced = false }
+                p.codigo = code
+                p.nombre = name
+                p.categoria = cat
+                p.stock = stock
+                p.precioCosto = cost
+                p.precioVenta = sale
+                p.photoPath = photo
+                p.location = loc
+                p.descripcion = desc
+                p.expirationDate = exp
+                p.isSynced = false
                 database.productDao().update(p)
                 p
             } else {
-                val newP = ProductEntity(code, name, cat, stock, cost, sale).apply { photoPath = photo; location = loc; descripcion = desc; isSynced = false }
+                val newP = ProductEntity(code, name, cat, stock, cost, sale)
+                newP.photoPath = photo
+                newP.location = loc
+                newP.descripcion = desc
+                newP.expirationDate = exp
+                newP.isSynced = false
                 database.productDao().insert(newP)
                 newP
             }
@@ -318,12 +489,22 @@ class AddProductActivity : AppCompatActivity() {
         }
     }
 
-    private fun unificarProductos(e: ProductEntity, p: ProductEntity?, code: String, s: Int, c: Double, sp: Double, ph: String?, loc: String, desc: String) {
+    private fun unificarProductos(e: ProductEntity, p: ProductEntity?, code: String, s: Int, c: Double, sp: Double, ph: String?, loc: String, desc: String, exp: Long) {
         lifecycleScope.launch(Dispatchers.IO) {
             val oldStock = e.stock
             val codes = e.codigo?.split(",")?.toMutableList() ?: mutableListOf()
             code.split(",").forEach { if (it.isNotBlank() && !codes.contains(it)) codes.add(it) }
-            e.apply { codigo = codes.joinToString(","); stock += s; precioCosto += c; precioVenta = sp; photoPath = ph; location = loc; descripcion = desc; isSynced = false }
+            
+            e.codigo = codes.joinToString(",")
+            e.stock += s
+            e.precioCosto += c
+            e.precioVenta = sp
+            e.photoPath = ph
+            e.location = loc
+            e.descripcion = desc
+            e.expirationDate = exp
+            e.isSynced = false
+            
             database.productDao().update(e)
             
             val log = MovementLogEntity(

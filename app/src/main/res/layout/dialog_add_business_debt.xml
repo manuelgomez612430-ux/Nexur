@@ -29,7 +29,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Programación de Pago"
+                android:text="¿Cuándo y cómo se paga?"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="@color/slate_600"
@@ -115,7 +115,7 @@
                 style="?attr/textInputOutlinedStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Acreedor (¿A quién le debes?)"
+                android:hint="¿A quién se le debe el dinero?"
                 app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
                 android:layout_marginBottom="16dp">
                 <com.google.android.material.textfield.TextInputEditText
@@ -146,15 +146,15 @@
                 android:baselineAligned="false"
                 android:layout_marginBottom="16dp">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/layoutDebtMontoTotal"
-                    style="?attr/textInputOutlinedStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="Deuda Total"
-                    app:prefixText="S/ "
-                    android:layout_marginEnd="8dp">
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutDebtMontoTotal"
+                        style="?attr/textInputOutlinedStyle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Monto total de la deuda"
+                        app:prefixText="S/ "
+                        android:layout_marginEnd="8dp">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etDebtMontoTotal"
                         android:layout_width="match_parent"

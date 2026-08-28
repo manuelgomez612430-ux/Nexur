@@ -58,4 +58,29 @@ interface SystemMaintenanceDao {
 
     @Query("DELETE FROM loan_payments")
     suspend fun clearLoanPayments()
+
+    @Query("DELETE FROM loan_budgets")
+    suspend fun clearLoanBudgets()
+
+    // --- GENERAL ---
+    @Query("DELETE FROM commitments")
+    suspend fun clearCommitments()
+
+    @Query("DELETE FROM movement_logs")
+    suspend fun clearLogs()
+
+    @Query("DELETE FROM calculations")
+    suspend fun clearCalculations()
+
+    @Query("DELETE FROM providers")
+    suspend fun clearProviders()
+
+    @Query("DELETE FROM customers")
+    suspend fun clearCustomers()
+
+    @Query("DELETE FROM business_debts")
+    suspend fun clearBusinessDebts()
+
+    @Query("DELETE FROM cash_sessions")
+    suspend fun clearCashSessions()
 }

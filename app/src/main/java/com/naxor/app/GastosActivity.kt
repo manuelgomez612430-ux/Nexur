@@ -12,10 +12,10 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.ListenerRegistration
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.ExpenseEntity
 import com.naxor.app.data.MovementLogEntity
@@ -28,7 +28,7 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class GastosActivity : AppCompatActivity() {
+class GastosActivity : BaseActivity() {
 
     private lateinit var binding: ActivityGastosBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
@@ -42,6 +42,7 @@ class GastosActivity : AppCompatActivity() {
     private var lastUnsyncedCount = 0
     private var currentIsSyncing = false
     private var syncStatusText = "Conectado"
+    private var expensesRegistration: ListenerRegistration? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +56,7 @@ class GastosActivity : AppCompatActivity() {
         setupSyncIndicator()
         loadExpenses()
         
-        SyncManager(this).startRealtimeExpensesSync { loadExpenses() }
+        expensesRegistration = SyncManager(this).startRealtimeExpensesSync { loadExpenses() }
     }
 
     private fun setupNetworkMonitoring() {
@@ -200,7 +201,7 @@ class GastosActivity : AppCompatActivity() {
     private fun showAddExpenseDialog() {
         val db = DialogAddExpenseBinding.inflate(layoutInflater)
         currentDialogBinding = db
-        val dialog = AlertDialog.Builder(this, R.style.Theme_Naxor_Dialog).setView(db.root).create()
+        val dialog = AlertDialog.Builder(this, R.style.Theme_GoMezMart_Dialog).setView(db.root).create()
         
         // CARGAR CATEGORÍAS DINÁMICAS + PREDEFINIDAS
         lifecycleScope.launch {
@@ -371,6 +372,11 @@ class GastosActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        expensesRegistration?.remove()
     }
 
     override fun onDestroy() {

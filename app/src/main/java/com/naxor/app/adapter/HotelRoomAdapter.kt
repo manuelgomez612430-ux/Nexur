@@ -86,15 +86,18 @@ class HotelRoomAdapter(
 
                 tvRoomNumber.text = statusText.toString()
                 tvRoomNumber.setTextColor(titleColor)
+                
+                tvRoomType.text = room.type
+                tvRoomPrice.text = String.format(Locale.US, "S/ %.2f", room.baseRate)
 
-                val iconRes = when(room.type.uppercase()) {
-                    "SIMPLE" -> android.R.drawable.ic_menu_directions
-                    "DOBLE" -> android.R.drawable.ic_menu_sort_by_size
-                    "MATRIMONIAL" -> android.R.drawable.ic_menu_gallery
-                    "SUITE" -> android.R.drawable.ic_menu_compass
-                    else -> android.R.drawable.ic_menu_agenda
+                val emoji = when(room.type.uppercase()) {
+                    "SIMPLE" -> "🛏️"
+                    "DOBLE" -> "👥"
+                    "MATRIMONIAL" -> "❤️"
+                    "SUITE" -> "🌟"
+                    else -> "🏢"
                 }
-                ivRoomIcon.setImageResource(iconRes)
+                tvRoomEmoji.text = emoji
 
                 // Botón Reparado (🛠️)
                 if (roomData.hasPendingFailure) {
@@ -123,8 +126,10 @@ class HotelRoomAdapter(
                             chipRoomStatus.setTextColor(root.context.getColor(R.color.emerald_600))
                             
                             btnRoomAction.text = "Check-in"
+                            btnRoomAction.setIconResource(android.R.drawable.ic_input_add)
                             btnRoomAction.setBackgroundColor(root.context.getColor(R.color.emerald_50))
                             btnRoomAction.setTextColor(root.context.getColor(R.color.emerald_600))
+                            btnRoomAction.setIconTintResource(R.color.emerald_600)
                             btnRoomAction.isEnabled = true
                         }
                         
@@ -136,8 +141,10 @@ class HotelRoomAdapter(
                         
                         // Botón Gestionar en MORADO
                         btnRoomAction.text = "Gestionar"
+                        btnRoomAction.setIconResource(android.R.drawable.ic_menu_manage)
                         btnRoomAction.setBackgroundColor(root.context.getColor(R.color.vibrant_purple))
                         btnRoomAction.setTextColor(root.context.getColor(R.color.white))
+                        btnRoomAction.setIconTintResource(R.color.white)
                         
                         if (needsCleaning) {
                             btnSecondAction.text = "Aseado"
@@ -159,8 +166,10 @@ class HotelRoomAdapter(
                         
                         // Check-in se mantiene visible
                         btnRoomAction.text = "Check-in"
+                        btnRoomAction.setIconResource(android.R.drawable.ic_input_add)
                         btnRoomAction.setBackgroundColor(root.context.getColor(R.color.emerald_50))
                         btnRoomAction.setTextColor(root.context.getColor(R.color.emerald_600))
+                        btnRoomAction.setIconTintResource(R.color.emerald_600)
 
                         // Botón Aseado al costado en NARANJA
                         btnSecondAction.text = "Aseado"
@@ -168,6 +177,20 @@ class HotelRoomAdapter(
                         btnSecondAction.setBackgroundColor(root.context.getColor(R.color.orange_600))
                         btnSecondAction.setTextColor(root.context.getColor(R.color.white))
                         btnSecondAction.setOnClickListener { onSecondAction?.invoke(room) }
+                    }
+                    "RESERVED" -> {
+                        chipRoomStatus.text = "RESERVADA"
+                        chipRoomStatus.setChipBackgroundColorResource(R.color.sky_600)
+                        chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
+                        
+                        btnRoomAction.text = "Check-in"
+                        btnRoomAction.setIconResource(android.R.drawable.ic_input_add)
+                        btnRoomAction.setBackgroundColor(root.context.getColor(R.color.emerald_50))
+                        btnRoomAction.setTextColor(root.context.getColor(R.color.emerald_600))
+                        btnRoomAction.setIconTintResource(R.color.emerald_600)
+                        btnRoomAction.isEnabled = true
+                        
+                        btnSecondAction.visibility = View.GONE
                     }
                 }
                 btnRoomAction.setOnClickListener { onAction(room) }

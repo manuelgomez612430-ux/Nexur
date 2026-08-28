@@ -7,11 +7,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.HotelMaintenanceEntity
 import com.naxor.app.data.HotelRoomEntity
@@ -24,10 +26,12 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.io.File
 
-class HotelMaintenanceActivity : AppCompatActivity() {
+class HotelMaintenanceActivity : BaseActivity() {
 
     private lateinit var binding: ActivityHotelMaintenanceBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
     private lateinit var adapter: MaintenanceAdapter
     private var allRooms: List<HotelRoomEntity> = emptyList()
 
@@ -102,7 +106,9 @@ class HotelMaintenanceActivity : AppCompatActivity() {
 
     private fun markAsFixed(report: HotelMaintenanceEntity) {
         lifecycleScope.launch {
-            database.hotelDao().updateMaintenanceReport(report.copy(status = "FIXED"))
+            val updatedReport = report.copy(status = "FIXED")
+            database.hotelDao().updateMaintenanceReport(updatedReport)
+            SyncManager(this@HotelMaintenanceActivity).syncHotelMaintenanceToCloud(updatedReport)
             Toast.makeText(this@HotelMaintenanceActivity, "Falla marcada como solucionada", Toast.LENGTH_SHORT).show()
         }
     }
@@ -182,6 +188,10 @@ class HotelMaintenanceActivity : AppCompatActivity() {
     }
 
     private fun saveReport(roomId: String, description: String) {
+        val bizPrefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val isCollab = bizPrefs.getBoolean("is_collaborator_mode", false)
+        val ownerId = bizPrefs.getString("collaborator_owner_id", null) ?: auth.currentUser?.uid ?: return
+        
         lifecycleScope.launch {
             val report = HotelMaintenanceEntity(
                 roomId = roomId,
@@ -190,6 +200,24 @@ class HotelMaintenanceActivity : AppCompatActivity() {
                 status = "PENDING"
             )
             database.hotelDao().insertMaintenanceReport(report)
+            SyncManager(this@HotelMaintenanceActivity).syncHotelMaintenanceToCloud(report)
+            
+            // Si es colaborador, enviar mensaje/notificación al dueño
+            if (isCollab) {
+                val collabName = getSharedPreferences("CollabPermissions", MODE_PRIVATE).getString("collab_name", "Un colaborador")
+                val roomNum = allRooms.find { it.id == roomId }?.number ?: "?"
+                
+                val notificationMsg = mapOf(
+                    "title" to "Reporte de Avería 🛠️",
+                    "content" to "$collabName ha reportado una falla en la Habitación $roomNum: $description",
+                    "timestamp" to FieldValue.serverTimestamp(),
+                    "senderName" to collabName,
+                    "roomId" to roomId
+                )
+                
+                db.collection("users").document(ownerId).collection("messages").add(notificationMsg)
+            }
+
             Toast.makeText(this@HotelMaintenanceActivity, "Reporte enviado con éxito", Toast.LENGTH_SHORT).show()
             currentPhotoPath = null
         }

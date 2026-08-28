@@ -1,11 +1,11 @@
 package com.naxor.app
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,12 +21,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
 
-class LoansCollectionsActivity : AppCompatActivity() {
+class LoansCollectionsActivity : BaseActivity() {
 
     private lateinit var binding: ActivityLoansCollectionsBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
     private lateinit var adapter: CollectionsAdapter
     private var allTodayPending: List<LoanInstallmentEntity> = emptyList()
+    private var isNetworkAvailable = true
+    private var lastUnsyncedCount = 0
+    private var syncStatusText = "Sincronizado"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,9 +45,71 @@ class LoansCollectionsActivity : AppCompatActivity() {
         }
 
         binding.toolbarCollections.setNavigationOnClickListener { finish() }
+        setupSyncIndicator()
         setupRecyclerView()
         setupSearch()
         loadCollections()
+    }
+
+    private fun setupSyncIndicator() {
+        val cm = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val networkCallback = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                isNetworkAvailable = true
+                runOnUiThread { updateSyncIconState() }
+            }
+            override fun onLost(network: android.net.Network) {
+                isNetworkAvailable = false
+                runOnUiThread { updateSyncIconState() }
+            }
+        }
+        cm.registerDefaultNetworkCallback(networkCallback)
+
+        lifecycleScope.launch {
+            database.loanDao().getUnsyncedCount().collectLatest { count ->
+                lastUnsyncedCount = count
+                updateSyncIconState()
+            }
+        }
+
+        binding.btnSyncIndicator.setOnClickListener {
+            val networkStatus = if (isNetworkAvailable) "📡 Conectado" else "📵 Sin Internet"
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Sincronización de Cartera")
+                .setMessage("Estado: $syncStatusText\nRed: $networkStatus")
+                .setPositiveButton("Sincronizar ahora") { _, _ -> 
+                    SyncManager(this).scheduleOfflineSync()
+                }
+                .setNegativeButton("Cerrar", null).show()
+        }
+    }
+
+    private fun updateSyncIconState() {
+        val color: Int
+        val iconRes: Int
+        
+        when {
+            !isNetworkAvailable -> {
+                syncStatusText = if (lastUnsyncedCount > 0) "Sin internet ($lastUnsyncedCount pendientes)" else "Sin conexión"
+                color = android.graphics.Color.parseColor("#DC2626")
+                iconRes = android.R.drawable.ic_menu_upload
+            }
+            lastUnsyncedCount > 0 -> {
+                syncStatusText = "Hay $lastUnsyncedCount cambios pendientes"
+                color = android.graphics.Color.parseColor("#3B82F6")
+                iconRes = android.R.drawable.stat_notify_sync
+            }
+            else -> {
+                syncStatusText = "Datos a salvo en la nube"
+                color = android.graphics.Color.parseColor("#059669")
+                iconRes = android.R.drawable.stat_sys_download_done
+            }
+        }
+
+        binding.btnSyncIndicator.apply {
+            setImageResource(iconRes)
+            setColorFilter(color)
+        }
     }
 
     private fun exportDailyReport() {
@@ -55,13 +120,11 @@ class LoansCollectionsActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val pdfFile = com.naxor.app.util.LoanPdfGenerator(this@LoansCollectionsActivity).generateDailyCollectionReport(allTodayPending)
             pdfFile?.let { file ->
-                val uri = androidx.core.content.FileProvider.getUriForFile(this@LoansCollectionsActivity, "$packageName.provider", file)
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "application/pdf"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                val intent = Intent(this@LoansCollectionsActivity, PdfViewerActivity::class.java).apply {
+                    putExtra("PDF_PATH", file.absolutePath)
+                    putExtra("GUEST_NAME", "Reporte Diario")
                 }
-                startActivity(Intent.createChooser(intent, "Compartir Reporte del Día"))
+                startActivity(intent)
             }
         }
     }
@@ -115,7 +178,7 @@ class LoansCollectionsActivity : AppCompatActivity() {
                     tvLateFee.text = "⚠️ Mora por atraso: S/ ${String.format(Locale.US, "%.2f", lateFee)}"
                 }
 
-                etAmount.setText(String.format(Locale.US, "%.2f", totalToPayThisQuota))
+                etAmount.setText("0.00")
                 etAmount.requestFocus()
 
                 val dialog = androidx.appcompat.app.AlertDialog.Builder(this@LoansCollectionsActivity)
@@ -168,16 +231,17 @@ class LoansCollectionsActivity : AppCompatActivity() {
                 database.loanDao().updateLoan(loan.copy(status = "PAID"))
             }
 
+            SyncManager(this@LoansCollectionsActivity).scheduleOfflineSync()
+
             // Generar Recibo PDF
             val receipt = com.naxor.app.util.LoanPdfGenerator(this@LoansCollectionsActivity).generatePaymentReceipt(client, loan, updated, amount)
             receipt?.let { file ->
-                val uri = androidx.core.content.FileProvider.getUriForFile(this@LoansCollectionsActivity, "$packageName.provider", file)
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "application/pdf"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                val intent = Intent(this@LoansCollectionsActivity, PdfViewerActivity::class.java).apply {
+                    putExtra("PDF_PATH", file.absolutePath)
+                    putExtra("GUEST_PHONE", client.phone)
+                    putExtra("GUEST_NAME", client.name)
                 }
-                startActivity(Intent.createChooser(intent, "Enviar Recibo"))
+                startActivity(intent)
             }
             Toast.makeText(this@LoansCollectionsActivity, "Cobro registrado correctamente", Toast.LENGTH_SHORT).show()
         }
@@ -232,7 +296,20 @@ class LoansCollectionsActivity : AppCompatActivity() {
             val client = loan?.let { database.loanDao().getClientById(it.clientId) }
             
             client?.let {
-                val message = "Hola ${it.name}, te recordamos que hoy vence tu cuota de Naxor por S/ ${String.format(Locale.US, "%.2f", installment.amount)}. ¡Que tengas un buen día!"
+                val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+                val businessType = prefs.getString("business_type", "LOANS") ?: "LOANS"
+                val systemName = prefs.getString("${businessType}_name", "") ?: ""
+                val ownerName = prefs.getString("${businessType}_owner_name", "") ?: ""
+                
+                val senderLabel = when {
+                    systemName.isNotEmpty() -> systemName
+                    ownerName.isNotEmpty() -> ownerName
+                    else -> "tu gestor"
+                }
+
+                val montoStr = String.format(Locale.US, "%.2f", installment.amount)
+                val message = "Hola *${it.name}*, te saluda *${senderLabel}*. 👋\n\nTe escribo para recordarte que hoy vence tu cuota por un valor de *S/ $montoStr*. 🗓️\n\nAgradezco mucho tu puntualidad. ¡Que tengas un excelente día! 😊"
+                
                 val uri = android.net.Uri.parse("https://api.whatsapp.com/send?phone=${it.phone}&text=${android.net.Uri.encode(message)}")
                 val intent = Intent(Intent.ACTION_VIEW, uri)
                 startActivity(intent)

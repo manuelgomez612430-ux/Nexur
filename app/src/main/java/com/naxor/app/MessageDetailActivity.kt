@@ -1,12 +1,11 @@
 package com.naxor.app
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import com.naxor.app.databinding.ActivityMessageDetailBinding
 import java.text.SimpleDateFormat
 import java.util.*
 
-class MessageDetailActivity : AppCompatActivity() {
+class MessageDetailActivity : BaseActivity() {
 
     private lateinit var binding: ActivityMessageDetailBinding
 

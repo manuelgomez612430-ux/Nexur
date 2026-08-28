@@ -5,7 +5,6 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -18,11 +17,14 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
-class LoansExpensesActivity : AppCompatActivity() {
+class LoansExpensesActivity : BaseActivity() {
 
     private lateinit var binding: ActivityLoansExpensesBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
     private lateinit var adapter: ExpensesAdapter
+    private var isNetworkAvailable = true
+    private var lastUnsyncedCount = 0
+    private var syncStatusText = "Sincronizado"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,9 +33,71 @@ class LoansExpensesActivity : AppCompatActivity() {
 
         binding.toolbarLoansExpenses.setNavigationOnClickListener { finish() }
         
+        setupSyncIndicator()
         setupRecyclerView()
         setupListeners()
         loadExpenses()
+    }
+
+    private fun setupSyncIndicator() {
+        val cm = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val networkCallback = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                isNetworkAvailable = true
+                runOnUiThread { updateSyncIconState() }
+            }
+            override fun onLost(network: android.net.Network) {
+                isNetworkAvailable = false
+                runOnUiThread { updateSyncIconState() }
+            }
+        }
+        cm.registerDefaultNetworkCallback(networkCallback)
+
+        lifecycleScope.launch {
+            database.loanDao().getUnsyncedCount().collectLatest { count ->
+                lastUnsyncedCount = count
+                updateSyncIconState()
+            }
+        }
+
+        binding.btnSyncIndicator.setOnClickListener {
+            val networkStatus = if (isNetworkAvailable) "📡 Conectado" else "📵 Sin Internet"
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Sincronización de Cartera")
+                .setMessage("Estado: $syncStatusText\nRed: $networkStatus")
+                .setPositiveButton("Sincronizar ahora") { _, _ -> 
+                    SyncManager(this).scheduleOfflineSync()
+                }
+                .setNegativeButton("Cerrar", null).show()
+        }
+    }
+
+    private fun updateSyncIconState() {
+        val color: Int
+        val iconRes: Int
+        
+        when {
+            !isNetworkAvailable -> {
+                syncStatusText = if (lastUnsyncedCount > 0) "Sin internet ($lastUnsyncedCount pendientes)" else "Sin conexión"
+                color = android.graphics.Color.parseColor("#DC2626")
+                iconRes = android.R.drawable.ic_menu_upload
+            }
+            lastUnsyncedCount > 0 -> {
+                syncStatusText = "Hay $lastUnsyncedCount cambios pendientes"
+                color = android.graphics.Color.parseColor("#3B82F6")
+                iconRes = android.R.drawable.stat_notify_sync
+            }
+            else -> {
+                syncStatusText = "Datos a salvo en la nube"
+                color = android.graphics.Color.parseColor("#059669")
+                iconRes = android.R.drawable.stat_sys_download_done
+            }
+        }
+
+        binding.btnSyncIndicator.apply {
+            setImageResource(iconRes)
+            setColorFilter(color)
+        }
     }
 
     private fun setupRecyclerView() {

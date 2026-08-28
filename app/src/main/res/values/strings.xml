@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Naxor</string>
+    <string name="app_name">GoMezMart</string>
 
     <!-- Main Activity -->
     <string name="main_subtitle">Sistema de gestión y control de costos</string>

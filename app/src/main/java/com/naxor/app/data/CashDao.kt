@@ -10,7 +10,7 @@ interface CashDao {
     @Query("SELECT * FROM cash_sessions ORDER BY startTime DESC")
     suspend fun getAllSessions(): List<CashSessionEntity>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(session: CashSessionEntity)
 
     @Update
@@ -24,4 +24,7 @@ interface CashDao {
 
     @Query("SELECT * FROM cash_sessions WHERE isSynced = 0 AND isDeleted = 1")
     suspend fun getDeletedSessions(): List<CashSessionEntity>
+
+    @Query("UPDATE cash_sessions SET isSynced = 1 WHERE id = :id")
+    suspend fun markSynced(id: String)
 }

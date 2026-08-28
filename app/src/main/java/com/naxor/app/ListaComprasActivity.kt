@@ -7,7 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -19,7 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URLEncoder
 
-class ListaComprasActivity : AppCompatActivity() {
+class ListaComprasActivity : BaseActivity() {
 
     private lateinit var binding: ActivityListaComprasBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
@@ -75,7 +74,7 @@ class ListaComprasActivity : AppCompatActivity() {
 
         val body = StringBuilder()
         body.append("📝 *LISTA DE COMPRAS / PEDIDO* 📝\n")
-        body.append("🏪 *Naxor*\n")
+        body.append("🏪 *GoMezMart*\n")
         body.append("--------------------------------\n\n")
         
         for (p in products) {

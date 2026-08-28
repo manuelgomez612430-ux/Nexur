@@ -1,5 +1,6 @@
 package com.naxor.app.fragment
 
+import android.content.Context
 import com.naxor.app.data.HotelRoomLayoutEntity
 import com.naxor.app.util.HotelMapView
 import com.naxor.app.R
@@ -7,6 +8,7 @@ import com.naxor.app.MainActivity
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.view.Gravity
 import android.widget.Toast
 import android.view.LayoutInflater
 import android.view.View
@@ -20,16 +22,40 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.shape.CornerSize
+import android.content.res.ColorStateList
+import android.net.Uri
+import android.text.Html
+import android.text.InputType
+import android.widget.ImageView
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.widget.addTextChangedListener
+import com.google.android.material.shape.CornerFamily
+import com.google.android.material.textfield.TextInputLayout
+import com.naxor.app.HotelCheckInActivity
+import com.naxor.app.HotelMaintenanceActivity
+import com.naxor.app.HotelManageRoomActivity
+import com.naxor.app.HotelMapEditorActivity
+import com.naxor.app.SyncManager
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.HotelRoomEntity
 import com.naxor.app.adapter.HotelRoomAdapter
+import com.naxor.app.adapter.RoomListItem
+import com.naxor.app.adapter.RoomListType
+import com.naxor.app.databinding.DialogAddRoomBinding
 import com.naxor.app.databinding.FragmentHotelRoomsBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import java.io.File
+import java.io.FileOutputStream
 import java.util.Calendar
 
 class HotelRoomsFragment : Fragment() {
@@ -42,6 +68,35 @@ class HotelRoomsFragment : Fragment() {
     
     private var allLayouts: List<HotelRoomLayoutEntity> = emptyList()
     private var currentFloor = 1
+    
+    private var tempRoomPhotoPath: String? = null
+    private var currentDialogBinding: DialogAddRoomBinding? = null
+
+    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            tempRoomPhotoPath = saveImageToInternalStorage(it)
+            currentDialogBinding?.let { b ->
+                b.ivRoomPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
+                b.ivRoomPhoto.setPadding(0, 0, 0, 0)
+                b.ivRoomPhoto.imageTintList = null
+                Glide.with(this).load(it).into(b.ivRoomPhoto)
+            }
+        }
+    }
+
+    private fun saveImageToInternalStorage(uri: Uri): String? {
+        return try {
+            val inputStream = requireContext().contentResolver.openInputStream(uri)
+            val file = File(requireContext().getExternalFilesDir(null), "room_${System.currentTimeMillis()}.jpg")
+            val outputStream = FileOutputStream(file)
+            inputStream?.copyTo(outputStream)
+            inputStream?.close()
+            outputStream.close()
+            file.absolutePath
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHotelRoomsBinding.inflate(inflater, container, false)
@@ -50,12 +105,39 @@ class HotelRoomsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        
+        // Soporte Edge-to-edge (Fondo extendido hasta arriba)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.roomsContentRoot) { _, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            
+            // 1. Pad horizontal del root
+            binding.roomsContentRoot.setPadding(systemBars.left, 0, systemBars.right, 0)
+            
+            // 2. Pad top del Toolbar para no quedar bajo la hora/batería
+            binding.layoutRoomsToolbar.setPadding(0, systemBars.top, 0, 0)
+            
+            insets
+        }
+
         setupToolbar()
         setupRecyclerView()
         setupViewToggle()
         setupListeners()
         observeRooms()
         observeLayouts()
+        checkInitialViewMode()
+    }
+
+    private fun checkInitialViewMode() {
+        val prefs = requireContext().getSharedPreferences("HotelPrefs", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("FORCE_MAP_VIEW", false)) {
+            binding.toggleViewMode.check(R.id.btnGraphView)
+            binding.rvRooms.visibility = View.GONE
+            binding.layoutGraphView.visibility = View.VISIBLE
+            binding.fabAddRoom.hide()
+            
+            prefs.edit().remove("FORCE_MAP_VIEW").apply()
+        }
     }
 
     private fun setupViewToggle() {
@@ -75,8 +157,16 @@ class HotelRoomsFragment : Fragment() {
     }
 
     private fun setupListeners() {
-        binding.fabAddRoom.setOnClickListener { showAddRoomDialog() }
+        binding.fabAddRoom.setOnClickListener { showRoomDialog() }
         
+        val bizPrefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val isCollab = bizPrefs.getBoolean("is_collaborator_mode", false)
+        val collabPrefs = requireContext().getSharedPreferences("CollabPermissions", Context.MODE_PRIVATE)
+        val canEditMap = !isCollab || collabPrefs.getBoolean("can_edit_map", false)
+
+        binding.btnOpenEditor.visibility = if (canEditMap) View.VISIBLE else View.GONE
+        binding.btnCreateMapEmpty.visibility = if (canEditMap) View.VISIBLE else View.GONE
+
         binding.btnOpenEditor.setOnClickListener { showFloorSelectionDialog() }
         binding.btnCreateMapEmpty.setOnClickListener { showFloorSelectionDialog() }
         
@@ -93,23 +183,126 @@ class HotelRoomsFragment : Fragment() {
     }
 
     private fun showFloorSelectionDialog() {
-        val floors = (1..10).toList()
-        val floorNames = floors.map { "Piso $it" }.toTypedArray()
+        // Combinar pisos de habitaciones y de layouts existentes
+        val floorsFromRooms = allRooms.map { it.floor }
+        val floorsFromLayouts = allLayouts.map { it.floorId }
+        val availableFloors = (floorsFromRooms + floorsFromLayouts).distinct().sorted()
+        
+        if (availableFloors.isEmpty()) {
+            // Si no hay nada, mostrar al menos el piso 1 para poder empezar
+            val intent = Intent(requireContext(), HotelMapEditorActivity::class.java)
+            intent.putExtra("FLOOR_ID", 1)
+            startActivity(intent)
+            return
+        }
+
+        val floorNames = availableFloors.map { "Piso $it" }.toTypedArray()
         
         AlertDialog.Builder(requireContext())
             .setTitle("Seleccionar Piso para Editar")
             .setItems(floorNames) { _, which ->
-                val selectedFloor = floors[which]
-                val intent = Intent(requireContext(), com.naxor.app.HotelMapEditorActivity::class.java)
+                val selectedFloor = availableFloors[which]
+                val intent = Intent(requireContext(), HotelMapEditorActivity::class.java)
                 intent.putExtra("FLOOR_ID", selectedFloor)
                 startActivity(intent)
             }
             .show()
     }
 
-    private fun setupToolbar() {
-        binding.toolbarRooms.setNavigationIcon(android.R.drawable.ic_menu_sort_by_size)
-        binding.toolbarRooms.setNavigationOnClickListener { (activity as? MainActivity)?.openSideMenu() }
+    private fun showBulkDeleteDialog() {
+        val options = arrayOf("🗑️ Por Piso", "🔢 Por Rango de Números")
+        AlertDialog.Builder(requireContext())
+            .setTitle("Eliminación Masiva")
+            .setItems(options) { _, which ->
+                if (which == 0) showDeleteByFloorDialog()
+                else showDeleteByRangeDialog()
+            }
+            .show()
+    }
+
+    private fun showDeleteByFloorDialog() {
+        val floors = allRooms.map { it.floor }.distinct().sorted()
+        if (floors.isEmpty()) {
+            Toast.makeText(requireContext(), "No hay habitaciones para eliminar", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        val floorNames = floors.map { "Piso $it" }.toTypedArray()
+        AlertDialog.Builder(requireContext())
+            .setTitle("Seleccionar Piso a vaciar")
+            .setItems(floorNames) { _, which ->
+                val floor = floors[which]
+                confirmBulkDelete("¿Eliminar TODAS las habitaciones del Piso $floor?") {
+                    lifecycleScope.launch {
+                        val roomsToDelete = allRooms.filter { it.floor == floor }
+                        if (roomsToDelete.isNotEmpty()) {
+                            val updatedRooms = roomsToDelete.map { it.copy(isDeleted = true) }
+                            database.hotelDao().updateRooms(updatedRooms)
+                            
+                            // Sincronizar con la nube en segundo plano
+                            updatedRooms.forEach {
+                                SyncManager(requireContext()).syncHotelRoomToCloud(it)
+                            }
+                            Toast.makeText(requireContext(), "Piso $floor vaciado", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }.show()
+    }
+
+    private fun showDeleteByRangeDialog() {
+        val layout = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(60, 40, 60, 40)
+        }
+        
+        val etStart = EditText(requireContext()).apply { hint = "Desde N° (Ej: 101)"; inputType = InputType.TYPE_CLASS_NUMBER }
+        val etEnd = EditText(requireContext()).apply { hint = "Hasta N° (Ej: 110)"; inputType = InputType.TYPE_CLASS_NUMBER }
+        
+        layout.addView(etStart)
+        layout.addView(etEnd)
+        
+        AlertDialog.Builder(requireContext())
+            .setTitle("Eliminar por Rango")
+            .setView(layout)
+            .setPositiveButton("Eliminar") { _, _ ->
+                val start = etStart.text.toString().toIntOrNull()
+                val end = etEnd.text.toString().toIntOrNull()
+                
+                if (start != null && end != null && start <= end) {
+                    confirmBulkDelete("¿Eliminar habitaciones desde la $start hasta la $end?") {
+                        lifecycleScope.launch {
+                            val roomsToDelete = allRooms.filter { 
+                                val num = it.number.toIntOrNull()
+                                num != null && num in start..end
+                            }
+                            if (roomsToDelete.isNotEmpty()) {
+                                val updatedRooms = roomsToDelete.map { it.copy(isDeleted = true) }
+                                database.hotelDao().updateRooms(updatedRooms)
+                                
+                                // Sincronizar
+                                updatedRooms.forEach {
+                                    SyncManager(requireContext()).syncHotelRoomToCloud(it)
+                                }
+                                Toast.makeText(requireContext(), "Rango eliminado correctamente", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Rango inválido", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun confirmBulkDelete(msg: String, onConfirm: () -> Unit) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("⚠️ Confirmar Eliminación")
+            .setMessage(msg)
+            .setPositiveButton("Sí, Eliminar", { _, _ -> onConfirm() })
+            .setNegativeButton("No", null)
+            .show()
     }
 
     private fun observeLayouts() {
@@ -158,7 +351,7 @@ class HotelRoomsFragment : Fragment() {
                 setPadding((12 * density).toInt(), 0, (12 * density).toInt(), 0)
                 minWidth = 0; minHeight = 0
                 shapeAppearanceModel = shapeAppearanceModel.toBuilder()
-                    .setAllCorners(com.google.android.material.shape.CornerFamily.ROUNDED, heightSize / 2f)
+                    .setAllCorners(CornerFamily.ROUNDED, heightSize / 2f)
                     .build()
                 
                 if (floor == currentFloor) {
@@ -190,146 +383,274 @@ class HotelRoomsFragment : Fragment() {
             ) { rooms, maintenance, bookings ->
                 Triple(rooms, maintenance, bookings)
             }.collectLatest { (rooms, maintenance, bookings) ->
-                _binding?.let { b ->
-                    allRooms = rooms
-                    
-                    val cal = java.util.Calendar.getInstance()
-                    cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
-                    cal.set(java.util.Calendar.MINUTE, 0)
-                    cal.set(java.util.Calendar.SECOND, 0)
-                    cal.set(java.util.Calendar.MILLISECOND, 0)
-                    val startOfToday = cal.timeInMillis
-                    
-                    rooms.filter { it.status == "FREE" && it.lastCleaned < startOfToday }.forEach { room ->
-                        lifecycleScope.launch {
-                            database.hotelDao().updateRoomStatus(room.id, "MAINTENANCE")
-                        }
-                    }
+                val startOfToday = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
 
-                    // Preparar mapas de estado
+                // Procesamiento de datos para UI
+                val processedData = withContext(Dispatchers.Default) {
                     val pendingMaintMap = maintenance.filter { it.status == "PENDING" }.groupBy { it.roomId }
                     val reservationsMap = bookings.filter { it.status == "CONFIRMED" }.groupBy { it.roomId }
 
-                    val groupedList = mutableListOf<com.naxor.app.adapter.RoomListType>()
+                    val groupedList = mutableListOf<RoomListType>()
                     rooms.groupBy { it.floor }.toSortedMap().forEach { (floor, roomsInFloor) ->
-                        groupedList.add(com.naxor.app.adapter.RoomListType.Header(floor))
+                        groupedList.add(RoomListType.Header(floor))
                         roomsInFloor.forEach { room ->
                             val hasFailure = pendingMaintMap.containsKey(room.id)
                             val hasRes = reservationsMap.containsKey(room.id)
-                            groupedList.add(com.naxor.app.adapter.RoomListType.Room(
-                                com.naxor.app.adapter.RoomListItem(room, hasFailure, hasRes)
+                            groupedList.add(
+                                RoomListType.Room(
+                                    RoomListItem(room, hasFailure, hasRes)
                             ))
                         }
                     }
-                    adapter.submitList(groupedList)
-                    
+
                     val statusMap = rooms.associate { it.id to it.status }
                     val nameMap = rooms.associate { it.id to it.number }
-                    b.mapView.roomStatuses = statusMap
-                    b.mapView.roomNames = nameMap
                     
-                    // Pasar datos extra al mapa
-                    b.mapView.roomsWithFailures = pendingMaintMap.keys
-                    b.mapView.roomsReserved = reservationsMap.keys
+                    Quadruple(groupedList, statusMap, nameMap, Pair(pendingMaintMap.keys, reservationsMap.keys))
+                }
+
+                _binding?.let { b ->
+                    allRooms = rooms
+                    adapter.submitList(processedData.first)
+                    
+                    b.mapView.roomStatuses = processedData.second
+                    b.mapView.roomNames = processedData.third
+                    b.mapView.roomsWithFailures = processedData.fourth.first
+                    b.mapView.roomsReserved = processedData.fourth.second
                     
                     b.mapView.invalidate()
                 }
-            }
-        }
-    }
 
-    private fun showAddRoomDialog() {
-        val layout = LinearLayout(requireContext()).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(60, 30, 60, 30)
-        }
-
-        val checkBulk = com.google.android.material.checkbox.MaterialCheckBox(requireContext()).apply {
-            text = "Creación Masiva (Múltiples habitaciones)"
-            setTextColor(ContextCompat.getColor(requireContext(), R.color.slate_700))
-        }
-
-        val etNumber = EditText(requireContext()).apply { 
-            hint = "Número de Habitación"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        }
-
-        val etFloor = EditText(requireContext()).apply {
-            hint = "Piso"
-            setText("1")
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        }
-        
-        val etCount = EditText(requireContext()).apply {
-            hint = "Cantidad a crear"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-            visibility = View.GONE
-        }
-
-        val etPrice = EditText(requireContext()).apply { 
-            hint = "Precio por Noche"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
-        }
-        
-        val spinnerType = Spinner(requireContext())
-        val types = arrayOf("Simple", "Doble", "Matrimonial", "Suite")
-        spinnerType.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, types)
-
-        checkBulk.setOnCheckedChangeListener { _, isChecked ->
-            etNumber.hint = if (isChecked) "Número Inicial (Ej: 101)" else "Número de Habitación"
-            etCount.visibility = if (isChecked) View.VISIBLE else View.GONE
-        }
-
-        layout.addView(checkBulk)
-        layout.addView(etNumber)
-        layout.addView(etFloor)
-        layout.addView(etCount)
-        layout.addView(spinnerType)
-        layout.addView(etPrice)
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Nueva Habitación")
-            .setView(layout)
-            .setPositiveButton("Guardar") { _, _ ->
-                val numberStr = etNumber.text.toString()
-                val floor = etFloor.text.toString().toIntOrNull() ?: 1
-                val price = etPrice.text.toString().toDoubleOrNull() ?: 0.0
-                val type = spinnerType.selectedItem.toString()
-                val isBulk = checkBulk.isChecked
-                val count = etCount.text.toString().toIntOrNull() ?: 1
-
-                if (numberStr.isNotEmpty()) {
-                    lifecycleScope.launch {
-                        if (isBulk) {
-                            val startNum = numberStr.toIntOrNull()
-                            if (startNum != null) {
-                                for (i in 0 until count) {
-                                    val currentNum = (startNum + i).toString()
-                                    database.hotelDao().insertRoom(HotelRoomEntity(
-                                        number = currentNum,
-                                        floor = floor,
-                                        type = type,
-                                        baseRate = price
-                                    ))
-                                }
-                                Toast.makeText(requireContext(), "$count habitaciones creadas", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(requireContext(), "El número inicial debe ser numérico", Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            database.hotelDao().insertRoom(HotelRoomEntity(
-                                number = numberStr,
-                                floor = floor,
-                                type = type,
-                                baseRate = price
-                            ))
+                // Ejecutar actualización de estados de limpieza una sola vez fuera del flujo reactivo principal
+                withContext(Dispatchers.IO) {
+                    val roomsToUpdate = rooms.filter { it.status == "FREE" && it.lastCleaned < startOfToday }
+                    if (roomsToUpdate.isNotEmpty()) {
+                        roomsToUpdate.forEach { room ->
+                            val updated = room.copy(status = "MAINTENANCE")
+                            database.hotelDao().updateRoom(updated)
+                            SyncManager(requireContext()).syncHotelRoomToCloud(updated)
                         }
                     }
                 }
             }
-            .setNegativeButton("Cancelar", null)
-            .show()
+        }
     }
+
+    private fun showRoomDialog(roomToEdit: HotelRoomEntity? = null) {
+        val bizPrefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val isCollab = bizPrefs.getBoolean("is_collaborator_mode", false)
+
+        val dialogBinding = DialogAddRoomBinding.inflate(layoutInflater)
+        currentDialogBinding = dialogBinding
+        tempRoomPhotoPath = roomToEdit?.photoPath
+
+        if (isCollab) {
+            dialogBinding.etRoomNumber.isEnabled = false
+            dialogBinding.etRoomFloor.isEnabled = false
+            dialogBinding.etRoomPrice.isEnabled = false
+            dialogBinding.checkBulk.visibility = View.GONE
+        }
+
+        val dialog = AlertDialog.Builder(requireContext(), R.style.Theme_GoMezMart_Dialog)
+            .setView(dialogBinding.root)
+            .create()
+
+        if (roomToEdit != null) {
+            dialogBinding.tvTitleDialog.text = "Editar Habitación"
+            dialogBinding.checkBulk.visibility = View.GONE
+            dialogBinding.etRoomNumber.setText(roomToEdit.number)
+            dialogBinding.etRoomFloor.setText(roomToEdit.floor.toString())
+            dialogBinding.etRoomPrice.setText(roomToEdit.baseRate.toString())
+            dialogBinding.etGlobalDescription.setText(roomToEdit.description)
+            dialogBinding.etSpecificDescription.setText(roomToEdit.specificDescription)
+            dialogBinding.btnSaveRoom.text = "Actualizar"
+            
+            if (!roomToEdit.photoPath.isNullOrEmpty()) {
+                val file = File(roomToEdit.photoPath)
+                if (file.exists()) {
+                    dialogBinding.ivRoomPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
+                    dialogBinding.ivRoomPhoto.setPadding(0, 0, 0, 0)
+                    dialogBinding.ivRoomPhoto.imageTintList = null
+                    Glide.with(this).load(file).into(dialogBinding.ivRoomPhoto)
+                }
+            }
+        }
+
+        dialogBinding.cardRoomPhoto.setOnClickListener {
+            pickImageLauncher.launch("image/*")
+        }
+
+        // --- CARGAR DESCRIPCIONES GLOBALES (Sugerencias dinámicas) ---
+        val globalDescs = allRooms.mapNotNull { it.description }.filter { it.isNotEmpty() }.distinct()
+        val adapterDescs = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, globalDescs)
+        dialogBinding.etGlobalDescription.setAdapter(adapterDescs)
+
+        // Configurar Tipos de Habitación (Exposed Dropdown)
+        val types = arrayOf("Simple", "Doble", "Matrimonial", "Suite")
+        val adapterTypes = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, types)
+        dialogBinding.spinnerRoomType.setAdapter(adapterTypes)
+        
+        if (roomToEdit != null) {
+            dialogBinding.spinnerRoomType.setText(roomToEdit.type, false)
+        } else {
+            dialogBinding.spinnerRoomType.setText(types[0], false)
+        }
+
+        dialogBinding.checkBulk.setOnCheckedChangeListener { _, isChecked: Boolean ->
+            dialogBinding.layoutRoomNormal.visibility = if (isChecked) View.GONE else View.VISIBLE
+            dialogBinding.layoutRoomBulk.visibility = if (isChecked) View.VISIBLE else View.GONE
+        }
+
+        // --- LÓGICA DE VALIDACIÓN EN TIEMPO REAL ---
+        val validateRoom = { input: String, layout: TextInputLayout ->
+            if (input.isEmpty()) {
+                layout.error = null
+                layout.helperText = null
+                layout.setBoxStrokeColorStateList(ColorStateList.valueOf(requireContext().getColor(R.color.slate_200)))
+            } else {
+                lifecycleScope.launch {
+                    val exists = withContext(Dispatchers.IO) {
+                        val r = database.hotelDao().getRoomByNumber(input)
+                        r != null && r.id != roomToEdit?.id
+                    }
+                    if (exists) {
+                        layout.error = "Esta habitación ya existe"
+                        layout.helperText = null
+                        layout.setBoxStrokeColorStateList(ColorStateList.valueOf(requireContext().getColor(R.color.red_600)))
+                    } else {
+                        layout.error = null
+                        layout.helperText = "Número disponible ✓"
+                        layout.setHelperTextColor(ColorStateList.valueOf(requireContext().getColor(R.color.emerald_600)))
+                        layout.setBoxStrokeColorStateList(ColorStateList.valueOf(requireContext().getColor(R.color.emerald_600)))
+                    }
+                }
+            }
+        }
+
+        dialogBinding.etRoomNumber.addTextChangedListener { validateRoom(it.toString(), dialogBinding.layoutRoomNumber) }
+        dialogBinding.etRoomStart.addTextChangedListener { validateRoom(it.toString(), dialogBinding.layoutRoomStart) }
+        dialogBinding.etRoomEnd.addTextChangedListener { validateRoom(it.toString(), dialogBinding.layoutRoomEnd) }
+
+        dialogBinding.btnCancelRoom.setOnClickListener { dialog.dismiss() }
+
+        dialogBinding.btnSaveRoom.setOnClickListener {
+            val isBulk = dialogBinding.checkBulk.isChecked
+            val type = dialogBinding.spinnerRoomType.text.toString()
+            val price = dialogBinding.etRoomPrice.text.toString().toDoubleOrNull() ?: 0.0
+            val globalDesc = dialogBinding.etGlobalDescription.text.toString().trim()
+            val specificDesc = dialogBinding.etSpecificDescription.text.toString().trim()
+
+            if (isBulk && roomToEdit == null) {
+                val startNum = dialogBinding.etRoomStart.text.toString().toIntOrNull()
+                val endNum = dialogBinding.etRoomEnd.text.toString().toIntOrNull()
+                val floor = dialogBinding.etRoomFloorBulk.text.toString().toIntOrNull() ?: 1
+
+                if (startNum != null && endNum != null && startNum <= endNum) {
+                    val count = endNum - startNum + 1
+                    if (count > 50) {
+                        Toast.makeText(requireContext(), "Máximo 50 habitaciones a la vez", Toast.LENGTH_SHORT).show()
+                        return@setOnClickListener
+                    }
+                    lifecycleScope.launch {
+                        val conflictingRooms = withContext(Dispatchers.IO) {
+                            (startNum..endNum).filter { database.hotelDao().getRoomByNumber(it.toString()) != null }
+                        }
+
+                        if (conflictingRooms.isNotEmpty()) {
+                            Toast.makeText(requireContext(), "Error: Las habitaciones ${conflictingRooms.joinToString()} ya existen", Toast.LENGTH_LONG).show()
+                            return@launch
+                        }
+
+                        for (num in startNum..endNum) {
+                            val room = HotelRoomEntity(
+                                number = num.toString(),
+                                floor = floor,
+                                type = type,
+                                baseRate = price,
+                                description = globalDesc,
+                                specificDescription = specificDesc,
+                                photoPath = tempRoomPhotoPath
+                            )
+                            database.hotelDao().insertRoom(room)
+                            SyncManager(requireContext()).syncHotelRoomToCloud(room)
+                        }
+                        Toast.makeText(requireContext(), "Creadas $count habitaciones", Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Ingresa un rango válido (Inicio <= Final)", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                val numberStr = dialogBinding.etRoomNumber.text.toString()
+                val floor = dialogBinding.etRoomFloor.text.toString().toIntOrNull() ?: 1
+
+                if (numberStr.isNotEmpty()) {
+                    lifecycleScope.launch {
+                        val exists = withContext(Dispatchers.IO) {
+                            val r = database.hotelDao().getRoomByNumber(numberStr)
+                            r != null && r.id != roomToEdit?.id
+                        }
+                        if (exists) {
+                            dialogBinding.layoutRoomNumber.error = "Esta habitación ya existe"
+                            return@launch
+                        }
+
+                        if (roomToEdit != null) {
+                            val updatedRoom = roomToEdit.copy(
+                                number = numberStr,
+                                floor = floor,
+                                type = type,
+                                baseRate = price,
+                                description = globalDesc,
+                                specificDescription = specificDesc,
+                                photoPath = tempRoomPhotoPath,
+                                photoUrl = if (tempRoomPhotoPath != roomToEdit.photoPath) null else roomToEdit.photoUrl
+                            )
+                            database.hotelDao().updateRoom(updatedRoom)
+                            SyncManager(requireContext()).syncHotelRoomToCloud(updatedRoom)
+                            Toast.makeText(requireContext(), "Habitación actualizada", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val room = HotelRoomEntity(
+                                number = numberStr,
+                                floor = floor,
+                                type = type,
+                                baseRate = price,
+                                description = globalDesc,
+                                specificDescription = specificDesc,
+                                photoPath = tempRoomPhotoPath
+                            )
+                            database.hotelDao().insertRoom(room)
+                            SyncManager(requireContext()).syncHotelRoomToCloud(room)
+                        }
+                        dialog.dismiss()
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Ingresa el número de habitación", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        dialog.show()
+
+        // Ajustar ancho del diálogo
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.90).toInt(),
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+    }
+
+    private fun setupToolbar() {
+        binding.btnMenuRooms.setOnClickListener { (activity as? MainActivity)?.openSideMenu() }
+        val bizPrefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val isCollab = bizPrefs.getBoolean("is_collaborator_mode", false)
+        binding.btnBulkDelete.visibility = if (isCollab) View.GONE else View.VISIBLE
+        binding.btnBulkDelete.setOnClickListener { showBulkDeleteDialog() }
+    }
+
+    private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
     private fun setupRecyclerView() {
         adapter = HotelRoomAdapter(
@@ -337,12 +658,12 @@ class HotelRoomsFragment : Fragment() {
                 lifecycleScope.launch {
                     when (room.status) {
                         "OCCUPIED" -> {
-                            val intent = Intent(requireContext(), com.naxor.app.HotelManageRoomActivity::class.java)
+                            val intent = Intent(requireContext(), HotelManageRoomActivity::class.java)
                             intent.putExtra("ROOM_ID", room.id); intent.putExtra("ROOM_NUMBER", room.number)
                             startActivity(intent)
                         }
-                        "FREE", "DIRTY", "MAINTENANCE" -> {
-                            val i = Intent(requireContext(), com.naxor.app.HotelCheckInActivity::class.java)
+                        "FREE", "DIRTY", "MAINTENANCE", "RESERVED" -> {
+                            val i = Intent(requireContext(), HotelCheckInActivity::class.java)
                             i.putExtra("ROOM_ID", room.id); i.putExtra("ROOM_NUMBER", room.number); i.putExtra("BASE_RATE", room.baseRate)
                             startActivity(i)
                         }
@@ -352,7 +673,9 @@ class HotelRoomsFragment : Fragment() {
             onSecondAction = { room ->
                 lifecycleScope.launch {
                     val newStatus = if (room.status == "OCCUPIED") "OCCUPIED" else "FREE"
-                    database.hotelDao().updateRoom(room.copy(status = newStatus, lastCleaned = System.currentTimeMillis()))
+                    val updatedRoom = room.copy(status = newStatus, lastCleaned = System.currentTimeMillis())
+                    database.hotelDao().updateRoom(updatedRoom)
+                    SyncManager(requireContext()).syncHotelRoomToCloud(updatedRoom)
                     Toast.makeText(requireContext(), "Aseo registrado correctamente ✨", Toast.LENGTH_SHORT).show()
                 }
             },
@@ -372,14 +695,19 @@ class HotelRoomsFragment : Fragment() {
     }
 
     private fun showRoomActionDialog(room: HotelRoomEntity, hasPendingFailure: Boolean, hasReservation: Boolean = false) {
+        val bizPrefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val isCollab = bizPrefs.getBoolean("is_collaborator_mode", false)
+        val collabPrefs = requireContext().getSharedPreferences("CollabPermissions", Context.MODE_PRIVATE)
+        
         val options = mutableListOf<String>()
         
         if (room.status == "FREE" && !hasReservation) {
             options.add("Check-in Rápido")
         }
 
-        val cal = java.util.Calendar.getInstance()
-        cal.set(java.util.Calendar.HOUR_OF_DAY, 0); cal.set(java.util.Calendar.MINUTE, 0); cal.set(java.util.Calendar.SECOND, 0); cal.set(java.util.Calendar.MILLISECOND, 0)
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(
+            Calendar.MILLISECOND, 0)
         val needsCleaning = room.lastCleaned < cal.timeInMillis
 
         if (needsCleaning || room.status == "DIRTY" || room.status == "MAINTENANCE") {
@@ -394,23 +722,38 @@ class HotelRoomsFragment : Fragment() {
             options.add("Reportar Falla 🛠️")
         }
 
-        options.add("Eliminar Habitación")
+        if (isCollab) {
+            if (collabPrefs.getBoolean("can_edit_room_info", false)) options.add("Editar Información")
+        } else {
+            options.add("Editar Información")
+            options.add("Eliminar Habitación")
+        }
+
+        val descriptionText = StringBuilder()
+        if (!room.description.isNullOrEmpty()) descriptionText.append("<br><small>📝 ${room.description}</small>")
+        if (!room.specificDescription.isNullOrEmpty()) descriptionText.append("<br><small>✨ ${room.specificDescription}</small>")
+
+        val titleHtml = "<b>Opciones: Habitación ${room.number}</b>$descriptionText"
 
         AlertDialog.Builder(requireContext())
-            .setTitle("Opciones: Habitación ${room.number}")
+            .setTitle(Html.fromHtml(titleHtml, Html.FROM_HTML_MODE_LEGACY))
             .setItems(options.toTypedArray()) { _, w ->
                 lifecycleScope.launch {
                     when (options[w]) {
                         "Check-in Rápido" -> {
-                            val i = Intent(requireContext(), com.naxor.app.HotelCheckInActivity::class.java)
+                            val i = Intent(requireContext(), HotelCheckInActivity::class.java)
                             i.putExtra("ROOM_ID", room.id); i.putExtra("ROOM_NUMBER", room.number); i.putExtra("BASE_RATE", room.baseRate)
                             startActivity(i)
                         }
                         "Limpieza Realizada" -> {
-                            database.hotelDao().updateRoom(room.copy(status = if(room.status == "OCCUPIED") "OCCUPIED" else "FREE", lastCleaned = System.currentTimeMillis()))
+                            val updatedRoom = room.copy(status = if(room.status == "OCCUPIED") "OCCUPIED" else "FREE", lastCleaned = System.currentTimeMillis())
+                            database.hotelDao().updateRoom(updatedRoom)
+                            SyncManager(requireContext()).syncHotelRoomToCloud(updatedRoom)
                         }
                         "Solicitar Aseo (Manual)" -> {
-                            database.hotelDao().updateRoom(room.copy(lastCleaned = 0L))
+                            val updatedRoom = room.copy(lastCleaned = 0L)
+                            database.hotelDao().updateRoom(updatedRoom)
+                            SyncManager(requireContext()).syncHotelRoomToCloud(updatedRoom)
                         }
                     "Marcar como Reparada ✅" -> {
                         val reports = database.hotelDao().getPendingMaintenanceForRoom(room.id).first()
@@ -420,16 +763,27 @@ class HotelRoomsFragment : Fragment() {
                         Toast.makeText(requireContext(), "Falla reparada", Toast.LENGTH_SHORT).show()
                     }
                     "Reportar Falla 🛠️" -> {
-                        val intent = Intent(requireContext(), com.naxor.app.HotelMaintenanceActivity::class.java)
+                        val intent = Intent(requireContext(), HotelMaintenanceActivity::class.java)
                         intent.putExtra("REPORT_ROOM_ID", room.id)
                         startActivity(intent)
                     }
+                        "Editar Información" -> {
+                            showRoomDialog(room)
+                        }
                         "Eliminar Habitación" -> {
-                            AlertDialog.Builder(requireContext()).setTitle("¿Eliminar?").setPositiveButton("Sí") { _,_ -> lifecycleScope.launch { database.hotelDao().updateRoom(room.copy(isDeleted = true)) } }.setNegativeButton("No", null).show()
+                            AlertDialog.Builder(requireContext()).setTitle("¿Eliminar?").setPositiveButton("Sí") { _,_ -> 
+                                lifecycleScope.launch { 
+                                    val updatedRoom = room.copy(isDeleted = true)
+                                    database.hotelDao().updateRoom(updatedRoom) 
+                                    SyncManager(requireContext()).syncHotelRoomToCloud(updatedRoom)
+                                } 
+                            }.setNegativeButton("No", null).show()
                         }
                     }
                 }
-            }.show()
+            }
+            .setNegativeButton("Cerrar", null)
+            .show()
     }
 
     override fun onDestroyView() { super.onDestroyView(); _binding = null }

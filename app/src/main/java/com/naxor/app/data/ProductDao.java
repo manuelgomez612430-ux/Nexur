@@ -1,5 +1,6 @@
 package com.naxor.app.data;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -12,6 +13,9 @@ import java.util.List;
 public interface ProductDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(ProductEntity product);
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertAll(List<ProductEntity> products);
 
     @Update
     void update(ProductEntity product);
@@ -56,6 +60,9 @@ public interface ProductDao {
     List<ProductEntity> getDeletedProducts();
 
     @Query("SELECT COUNT(*) FROM products WHERE isSynced = 0")
-    androidx.lifecycle.LiveData<Integer> getUnsyncedCount();
+    LiveData<Integer> getUnsyncedCount();
+
+    @Query("UPDATE products SET isSynced = 1 WHERE id = :id")
+    void markSynced(String id);
 }
 

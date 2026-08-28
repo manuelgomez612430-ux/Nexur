@@ -7,9 +7,9 @@ import java.util.UUID
 @Entity(tableName = "hotel_charges")
 data class HotelChargeEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
-    val bookingId: String,
-    val concept: String,
-    val amount: Double,
+    val bookingId: String = "",
+    val concept: String = "",
+    val amount: Double = 0.0,
     val timestamp: Long = System.currentTimeMillis(),
     var isSynced: Boolean = false,
     var isDeleted: Boolean = false

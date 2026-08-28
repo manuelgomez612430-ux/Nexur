@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -22,7 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URLEncoder
 
-class CustomersActivity : AppCompatActivity() {
+class CustomersActivity : BaseActivity() {
 
     private lateinit var binding: ActivityCustomersBinding
     private val database by lazy { AppDatabase.getDatabase(this) }

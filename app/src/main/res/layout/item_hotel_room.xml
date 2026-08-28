@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="16dp"
+    android:layout_marginHorizontal="20dp"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="24dp"
     app:cardElevation="2dp"
     app:strokeWidth="1dp"
-    app:strokeColor="@color/slate_200">
+    app:strokeColor="@color/slate_100"
+    app:cardBackgroundColor="@color/white">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -21,27 +24,40 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
+            <!-- ICONO DINÁMICO TIPO BURBUJA -->
             <com.google.android.material.card.MaterialCardView
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                app:cardCornerRadius="12dp"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:cardBackgroundColor="@color/slate_50"
-                android:layout_marginEnd="12dp">
-                <ImageView
-                    android:id="@+id/ivRoomIcon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center"
-                    android:src="@android:drawable/ic_menu_agenda"
-                    app:tint="@color/purple_600" />
+                app:cardBackgroundColor="@color/slate_50">
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                    <TextView
+                        android:id="@+id/tvRoomEmoji"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="🏨"
+                        android:textSize="24sp" />
+                    <ImageView
+                        android:id="@+id/ivRoomIcon"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:layout_gravity="center"
+                        android:src="@android:drawable/ic_menu_agenda"
+                        app:tint="@color/purple_600"
+                        android:visibility="gone" />
+                </FrameLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:layout_marginStart="16dp">
                 <TextView
                     android:id="@+id/tvRoomNumber"
                     android:layout_width="wrap_content"
@@ -56,7 +72,7 @@
                     android:layout_height="wrap_content"
                     android:text="Simple"
                     android:textSize="13sp"
-                    android:textColor="@color/slate_500" />
+                    android:textColor="@color/slate_400" />
             </LinearLayout>
 
             <com.google.android.material.chip.Chip
@@ -68,13 +84,14 @@
                 app:chipStrokeWidth="0dp"
                 android:textColor="@color/emerald_600"
                 android:textSize="10sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                app:chipMinTouchTargetSize="0dp" />
         </LinearLayout>
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="@color/slate_100"
+            android:background="@color/slate_50"
             android:layout_marginVertical="16dp" />
 
         <LinearLayout
@@ -100,46 +117,59 @@
                     android:id="@+id/tvRoomPrice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="S/ 80.00"
-                    android:textSize="16sp"
+                    android:text="S/ 0.00"
+                    android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="@color/purple_800" />
+                    android:textColor="@color/purple_700" />
             </LinearLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnThirdAction"
-                style="@style/Widget.Material3.Button.TonalButton"
+            <!-- CONTENEDOR DE ACCIONES DINÁMICAS -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Reparado"
-                android:visibility="gone"
-                app:cornerRadius="12dp"
-                android:paddingHorizontal="12dp"
-                android:layout_marginEnd="8dp"
-                app:backgroundTint="@color/slate_100"
-                android:textColor="@color/sky_600" />
+                android:orientation="horizontal">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSecondAction"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Aseado"
-                android:visibility="gone"
-                app:cornerRadius="12dp"
-                android:paddingHorizontal="16dp"
-                android:layout_marginEnd="8dp"
-                app:backgroundTint="@color/orange_50"
-                android:textColor="@color/orange_600" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnThirdAction"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:text="Reparado"
+                    android:visibility="gone"
+                    app:cornerRadius="12dp"
+                    android:paddingHorizontal="12dp"
+                    android:layout_marginEnd="8dp"
+                    app:backgroundTint="@color/slate_50"
+                    android:textColor="@color/sky_600"
+                    android:textSize="12sp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnRoomAction"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Check-in"
-                app:cornerRadius="12dp"
-                android:paddingHorizontal="20dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSecondAction"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:text="Aseado"
+                    android:visibility="gone"
+                    app:cornerRadius="12dp"
+                    android:paddingHorizontal="16dp"
+                    android:layout_marginEnd="8dp"
+                    app:backgroundTint="@color/orange_50"
+                    android:textColor="@color/orange_600"
+                    android:textSize="12sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRoomAction"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Check-in"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="16dp"
+                    app:backgroundTint="@color/purple_600"
+                    app:icon="@android:drawable/ic_input_add"
+                    app:iconSize="16dp"
+                    android:paddingHorizontal="16dp" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

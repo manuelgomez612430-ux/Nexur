@@ -3,18 +3,26 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingHorizontal="24dp"
-    android:paddingTop="20dp"
-    android:paddingBottom="8dp"
-    android:background="@color/slate_50">
+    android:background="?attr/colorSurface">
 
-    <TextView
-        android:id="@+id/tvFloorHeader"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Piso 1"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:textColor="@color/slate_900"
-        android:textAllCaps="true" />
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@color/purple_600"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:id="@+id/tvFloorHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="PISO 1"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:letterSpacing="0.2"
+            android:textAllCaps="true" />
+
+    </FrameLayout>
+
 </LinearLayout>

@@ -15,8 +15,6 @@ import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
 import com.naxor.app.LoginActivity
 import com.naxor.app.R
-import com.naxor.app.SettingsActivity
-import com.naxor.app.TutorialActivity
 import com.naxor.app.Updater
 import com.naxor.app.databinding.FragmentSettingsBinding
 
@@ -43,10 +41,6 @@ class SettingsFragment : Fragment() {
         val user = FirebaseAuth.getInstance().currentUser
         _binding?.tvUserEmailSettings?.text = user?.email ?: "Modo Invitado"
 
-        binding.cardBusinessSettings.setOnClickListener {
-            startActivity(Intent(requireContext(), SettingsActivity::class.java))
-        }
-
         binding.cardSystemSettings.setOnClickListener {
             startActivity(Intent(requireContext(), com.naxor.app.SystemSettingsActivity::class.java))
         }
@@ -70,10 +64,6 @@ class SettingsFragment : Fragment() {
             }
         }
 
-        binding.cardActivateSystem.setOnClickListener {
-            Toast.makeText(requireContext(), "Método de Pago (Próximamente)", Toast.LENGTH_SHORT).show()
-        }
-
         binding.cardLogout.setOnClickListener {
             showLogoutConfirmation()
         }
@@ -89,8 +79,12 @@ class SettingsFragment : Fragment() {
             .setTitle("Cerrar Sesión")
             .setMessage("¿Estás seguro de que deseas salir de tu cuenta?")
             .setPositiveButton("Salir") { _, _ ->
+                // Limpiar configuración de rubro para obligar selección en el próximo login
+                requireContext().getSharedPreferences("BusinessPrefs", android.content.Context.MODE_PRIVATE)
+                    .edit().remove("business_type").apply()
+
                 FirebaseAuth.getInstance().signOut()
-                startActivity(Intent(requireContext(), LoginActivity::class.java))
+                startActivity(Intent(requireContext(), LoginActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
                 activity?.finish()
             }
             .setNegativeButton("Cancelar", null)

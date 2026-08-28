@@ -13,8 +13,10 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.core.app.ActivityCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.naxor.app.data.*
 import com.naxor.app.databinding.ActivityLoansAddBinding
@@ -26,7 +28,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
-class AddLoanActivity : AppCompatActivity() {
+class AddLoanActivity : BaseActivity() {
 
     private lateinit var binding: ActivityLoansAddBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
@@ -38,6 +40,9 @@ class AddLoanActivity : AppCompatActivity() {
     private var selectedLoanDate = System.currentTimeMillis() + (24 * 60 * 60 * 1000)
     private var selectedClientId: String? = null
     private var allClients: List<LoanClientEntity> = emptyList()
+    private var isNetworkAvailable = true
+    private var lastUnsyncedCount = 0
+    private var syncStatusText = "Sincronizado"
 
     private val pickContactLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -70,10 +75,30 @@ class AddLoanActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        enableEdgeToEdge()
+        
         binding = ActivityLoansAddBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        
+        // Estabilización Edge-to-Edge para formulario y footer
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
+            
+            // Ajustar el footer para que no se superponga con la barra de gestos
+            val footer = binding.btnSaveLoan.parent as View
+            footer.setPadding(
+                footer.paddingLeft,
+                footer.paddingTop,
+                footer.paddingRight,
+                systemBars.bottom + (16 * resources.displayMetrics.density).toInt()
+            )
+            insets
+        }
 
         binding.toolbarAddLoan.setNavigationOnClickListener { finish() }
+        setupSyncIndicator()
         setupCalculator()
         setupAdvancedToggle()
         setupClientAutocomplete()
@@ -110,11 +135,9 @@ class AddLoanActivity : AppCompatActivity() {
             if (isChecked) {
                 hideKeyboard()
                 if (checkedId == R.id.btnFreqNone) {
-                    binding.btnLoanDatePicker.visibility = View.VISIBLE
                     binding.layoutInstallmentConfig.visibility = View.GONE
                     binding.etLoanInstallments.setText("1")
                 } else {
-                    binding.btnLoanDatePicker.visibility = View.GONE
                     binding.layoutInstallmentConfig.visibility = View.VISIBLE
                     if (binding.etLoanInstallments.text.toString() == "1") {
                         binding.etLoanInstallments.setText("24")
@@ -137,6 +160,67 @@ class AddLoanActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun setupSyncIndicator() {
+        val cm = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val networkCallback = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                isNetworkAvailable = true
+                runOnUiThread { updateSyncIconState() }
+            }
+            override fun onLost(network: android.net.Network) {
+                isNetworkAvailable = false
+                runOnUiThread { updateSyncIconState() }
+            }
+        }
+        cm.registerDefaultNetworkCallback(networkCallback)
+
+        lifecycleScope.launch {
+            database.loanDao().getUnsyncedCount().collectLatest { count ->
+                lastUnsyncedCount = count
+                updateSyncIconState()
+            }
+        }
+
+        binding.btnSyncIndicator.setOnClickListener {
+            val networkStatus = if (isNetworkAvailable) "📡 Conectado" else "📵 Sin Internet"
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Sincronización de Cartera")
+                .setMessage("Estado: $syncStatusText\nRed: $networkStatus")
+                .setPositiveButton("Sincronizar ahora") { _, _ -> 
+                    SyncManager(this).scheduleOfflineSync()
+                }
+                .setNegativeButton("Cerrar", null).show()
+        }
+    }
+
+    private fun updateSyncIconState() {
+        val color: Int
+        val iconRes: Int
+        
+        when {
+            !isNetworkAvailable -> {
+                syncStatusText = if (lastUnsyncedCount > 0) "Sin internet ($lastUnsyncedCount pendientes)" else "Sin conexión"
+                color = android.graphics.Color.parseColor("#DC2626")
+                iconRes = android.R.drawable.ic_menu_upload
+            }
+            lastUnsyncedCount > 0 -> {
+                syncStatusText = "Hay $lastUnsyncedCount cambios pendientes"
+                color = android.graphics.Color.parseColor("#3B82F6")
+                iconRes = android.R.drawable.stat_notify_sync
+            }
+            else -> {
+                syncStatusText = "Datos a salvo en la nube"
+                color = android.graphics.Color.parseColor("#059669")
+                iconRes = android.R.drawable.stat_sys_download_done
+            }
+        }
+
+        binding.btnSyncIndicator.apply {
+            setImageResource(iconRes)
+            setColorFilter(color)
         }
     }
 
@@ -359,7 +443,9 @@ class AddLoanActivity : AppCompatActivity() {
             val schedule = mutableListOf<LoanInstallmentEntity>()
             val quotaAmount = total / installments
             val cal = Calendar.getInstance()
-            // Normalizar el calendario de inicio al final del día de hoy
+            // Iniciar desde la fecha seleccionada por el usuario
+            cal.timeInMillis = selectedLoanDate
+            // Normalizar a fin de día
             cal.set(Calendar.HOUR_OF_DAY, 23)
             cal.set(Calendar.MINUTE, 59)
             cal.set(Calendar.SECOND, 59)
@@ -372,17 +458,26 @@ class AddLoanActivity : AppCompatActivity() {
                     loanId = loanId,
                     installmentNumber = 1,
                     amount = total,
-                    dueDate = selectedLoanDate
+                    dueDate = cal.timeInMillis
                 ))
             } else {
                 for (i in 1..installments) {
-                    do {
-                        when(freq) {
-                            "DAILY" -> cal.add(Calendar.DAY_OF_YEAR, 1)
-                            "WEEKLY" -> cal.add(Calendar.WEEK_OF_YEAR, 1)
-                            "MONTHLY" -> cal.add(Calendar.MONTH, 1)
+                    // El primer pago es en la fecha seleccionada
+                    // Los siguientes se van sumando según la frecuencia
+                    if (i > 1) {
+                        do {
+                            when(freq) {
+                                "DAILY" -> cal.add(Calendar.DAY_OF_YEAR, 1)
+                                "WEEKLY" -> cal.add(Calendar.WEEK_OF_YEAR, 1)
+                                "MONTHLY" -> cal.add(Calendar.MONTH, 1)
+                            }
+                        } while (skipSundays && cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)
+                    } else {
+                        // Si la fecha inicial cae domingo y se debe omitir, buscar el siguiente lunes
+                        while (skipSundays && cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+                            cal.add(Calendar.DAY_OF_YEAR, 1)
                         }
-                    } while (skipSundays && cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)
+                    }
                     
                     schedule.add(LoanInstallmentEntity(
                         loanId = loanId,
@@ -401,8 +496,10 @@ class AddLoanActivity : AppCompatActivity() {
                 }
             }
 
+            SyncManager(this@AddLoanActivity).scheduleOfflineSync()
+
             withContext(Dispatchers.Main) {
-                Toast.makeText(this@AddLoanActivity, if (oldLoanId != null) "Préstamo refinanciado con éxito" else "Préstamo registrado con éxito", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@AddLoanActivity, if (oldLoanId != null) "Préstamo refinanciado en GoMezMart" else "Préstamo registrado en GoMezMart ✅", Toast.LENGTH_SHORT).show()
                 finish()
             }
         }

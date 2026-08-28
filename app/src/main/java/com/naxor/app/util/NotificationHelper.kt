@@ -2,42 +2,93 @@ package com.naxor.app.util
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.graphics.Color
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.naxor.app.R
+import com.naxor.app.SplashActivity
 
 object NotificationHelper {
-    private const val CHANNEL_ID = "sales_notifications"
-    private const val CHANNEL_NAME = "Ventas Naxor"
-    private const val CHANNEL_DESC = "Notificaciones al realizar ventas con éxito"
+    private const val CHANNEL_ID = "gomezmart_notifications"
+    private const val CHANNEL_NAME = "Avisos de GoMezMart"
+    private const val CHANNEL_DESC = "Notificaciones de ventas, mensajes y solicitudes"
 
-    fun showSaleNotification(context: Context, total: String, businessName: String) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        // Crear canal para Android 8.0+
+    private fun getManager(context: Context): NotificationManager {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH).apply {
                 description = CHANNEL_DESC
                 enableLights(true)
-                lightColor = android.graphics.Color.MAGENTA
+                lightColor = Color.MAGENTA
                 enableVibration(true)
                 setShowBadge(true)
-                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }
-            notificationManager.createNotificationChannel(channel)
+            manager.createNotificationChannel(channel)
         }
+        return manager
+    }
 
+    fun showSaleNotification(context: Context, total: String, businessName: String) {
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.logo_naxor_icon)
+            .setSmallIcon(R.drawable.gomezmart_icon)
             .setContentTitle("¡Venta Realizada!")
             .setContentText("Se registró una venta por $total en $businessName")
-            .setPriority(NotificationCompat.PRIORITY_HIGH) // Subir prioridad para que aparezca arriba
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
 
-        // Usar un ID basado en el tiempo para que no se sobrepongan
-        val notificationId = (System.currentTimeMillis() % 1000000).toInt()
-        notificationManager.notify(notificationId, builder.build())
+        getManager(context).notify((System.currentTimeMillis() % 1000000).toInt(), builder.build())
+    }
+
+    fun showMessageNotification(context: Context, title: String, message: String) {
+        val notificationId = (title.hashCode() + message.hashCode() + System.currentTimeMillis().toInt()) % 1000000
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.gomezmart_icon)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setAutoCancel(true)
+
+        getManager(context).notify(notificationId, builder.build())
+    }
+
+    fun showUpdateNotification(context: Context, latestVersionName: String, releaseNotes: String) {
+        val intent = Intent(context, SplashActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("START_UPDATE", true)
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            context, 2024, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.gomezmart_icon)
+            .setContentTitle("¡Nueva Versión $latestVersionName! 🚀")
+            .setContentText("Toca para descargar y actualizar ahora.")
+            .setStyle(NotificationCompat.BigTextStyle().bigText("Novedades:\n$releaseNotes"))
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+
+        getManager(context).notify(2024, builder.build())
+    }
+
+    fun showRequestNotification(context: Context, name: String) {
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.gomezmart_icon)
+            .setContentTitle("Nueva Solicitud 🤝")
+            .setContentText("$name desea colaborar con tu negocio.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setAutoCancel(true)
+
+        getManager(context).notify(2002, builder.build())
     }
 }

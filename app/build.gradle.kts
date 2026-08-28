@@ -21,8 +21,8 @@ android {
         applicationId = "com.naxor.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 5 // Sube esto cada vez que envíes una actualización
-        versionName = "1.3" // Nombre visual de la versión
+        versionCode = 17 // Sube esto cada vez que envíes una actualización
+        versionName = "1.5.6" // Nombre visual de la versión
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
@@ -79,7 +79,7 @@ android {
         val variantName = name
         outputs.all {
             val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
-            output.outputFileName = "Naxor_v${defaultConfig.versionName}_${variantName}.apk"
+            output.outputFileName = "GoMezMart_v${defaultConfig.versionName}_${variantName}.apk"
         }
     }
 }
@@ -90,11 +90,15 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     
     // GMS Code Scanner (Ligero, usa Google Play Services)
     implementation(libs.google.scanner)
     implementation("com.google.android.gms:play-services-auth:21.2.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    
+    // Mapa Gratuito (Sin necesidad de tarjeta)
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
     
     // CameraX (Necesario solo para funciones específicas de cámara)
     implementation("androidx.camera:camera-core:1.4.0")
@@ -127,14 +131,24 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-messaging")
-    implementation("com.google.firebase:firebase-ai")
+    implementation("com.google.firebase:firebase-ai:16.0.0-beta01")
+    implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
     implementation("com.google.firebase:firebase-appcheck-playintegrity")
     implementation("com.google.firebase:firebase-appcheck-debug")
-
+    
     // Network (Consultas RUC/DNI)
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // Supabase (Almacenamiento de Imágenes)
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.storage)
+    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.core)
+
+    // Recorte de Imágenes (Moderno)
+    implementation("com.github.CanHub:Android-Image-Cropper:4.5.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)

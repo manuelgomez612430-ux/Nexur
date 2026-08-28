@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
@@ -21,7 +20,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class HistorialActivity : AppCompatActivity() {
+class HistorialActivity : BaseActivity() {
 
     private lateinit var binding: ActivityHistorialBinding
     private lateinit var adapter: HistorialAdapter

@@ -22,4 +22,14 @@ interface HotelToolDao {
 
     @Query("DELETE FROM hotel_tools WHERE id = :id")
     suspend fun deleteToolHard(id: String)
+
+    // --- SYNC HELPERS ---
+    @Query("SELECT * FROM hotel_tools WHERE isSynced = 0")
+    suspend fun getUnsyncedTools(): List<HotelToolEntity>
+
+    @Query("SELECT * FROM hotel_tools WHERE isDeleted = 1")
+    suspend fun getDeletedTools(): List<HotelToolEntity>
+
+    @Query("UPDATE hotel_tools SET isSynced = 1 WHERE id = :id")
+    suspend fun markToolSynced(id: String)
 }

@@ -9,15 +9,32 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurface"
-        app:elevation="0dp">
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbarLoansExpenses"
+        app:elevation="0dp"
+        app:liftOnScroll="false">
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="Mis Gastos"
-            app:titleTextColor="?attr/colorOnSurface"
-            app:navigationIcon="@android:drawable/ic_menu_revert"
-            app:navigationIconTint="?attr/colorOnSurface" />
+            android:layout_height="wrap_content">
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbarLoansExpenses"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:title="Mis Gastos"
+                app:titleTextColor="?attr/colorOnSurface"
+                app:navigationIcon="@android:drawable/ic_menu_revert"
+                app:navigationIconTint="?attr/colorOnSurface" />
+
+            <ImageButton
+                android:id="@+id/btnSyncIndicator"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_vertical|end"
+                android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="12dp"
+                android:scaleType="fitCenter"
+                android:src="@android:drawable/stat_sys_download_done"
+                app:tint="?attr/colorOnSurfaceVariant" />
+        </FrameLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView

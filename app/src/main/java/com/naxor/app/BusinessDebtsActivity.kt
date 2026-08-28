@@ -8,11 +8,11 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.ListenerRegistration
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.BusinessDebtEntity
 import com.naxor.app.data.MovementLogEntity
@@ -26,11 +26,12 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class BusinessDebtsActivity : AppCompatActivity() {
+class BusinessDebtsActivity : BaseActivity() {
 
     private lateinit var binding: ActivityBusinessDebtsBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
     private lateinit var adapter: BusinessDebtsAdapter
+    private var hotelRegistrations: List<ListenerRegistration> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +41,16 @@ class BusinessDebtsActivity : AppCompatActivity() {
         setupRecyclerView()
         setupListeners()
         loadDebts()
+
+        // Activar sincronización en tiempo real
+        hotelRegistrations = SyncManager(this).startRealtimeHotelSync {
+            loadDebts()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        hotelRegistrations.forEach { it.remove() }
     }
 
     private fun setupRecyclerView() {
@@ -63,10 +74,44 @@ class BusinessDebtsActivity : AppCompatActivity() {
                     showPaymentDialog(debt)
                 }
             },
-            onPdf = { debt -> shareDebtPdf(debt) }
+            onPdf = { debt -> shareDebtPdf(debt) },
+            onLongClick = { debt -> showDebtOptions(debt) }
         )
         binding.rvBusinessDebts.layoutManager = LinearLayoutManager(this)
         binding.rvBusinessDebts.adapter = adapter
+    }
+
+    private fun showDebtOptions(debt: BusinessDebtEntity) {
+        val options = arrayOf("📄 Generar PDF / Compromiso", "🗑️ Eliminar Cuenta por Pagar")
+        AlertDialog.Builder(this)
+            .setTitle("Opciones: ${debt.acreedor}")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> shareDebtPdf(debt)
+                    1 -> confirmDeleteDebt(debt)
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun confirmDeleteDebt(debt: BusinessDebtEntity) {
+        AlertDialog.Builder(this)
+            .setTitle("¿Eliminar cuenta?")
+            .setMessage("¿Estás seguro de que deseas eliminar esta cuenta por pagar? Esta acción no se puede deshacer.")
+            .setPositiveButton("Sí, Eliminar") { _, _ ->
+                lifecycleScope.launch(Dispatchers.IO) {
+                    debt.isDeleted = true
+                    database.businessDebtDao().update(debt)
+                    SyncManager(this@BusinessDebtsActivity).syncBusinessDebtToCloud(debt)
+                    withContext(Dispatchers.Main) {
+                        loadDebts()
+                        Toast.makeText(this@BusinessDebtsActivity, "Cuenta eliminada correctamente", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton("No", null)
+            .show()
     }
 
     private fun setupListeners() {
@@ -86,11 +131,54 @@ class BusinessDebtsActivity : AppCompatActivity() {
         
         lifecycleScope.launch(Dispatchers.IO) {
             val debts = database.businessDebtDao().getPendingDebts()
-            val total = database.businessDebtDao().getTotalOwed() ?: 0.0
+            
+            // 1. Total Global (Deudas Reales)
+            val totalGlobal = debts.filter { it.categoria != "SERVICIOS" }
+                .sumOf { it.montoTotal - it.montoPagado }
+            
+            // 2. Cálculos por períodos (Considerando la cuota o saldo)
+            val cal = Calendar.getInstance()
+            
+            // Inicio de hoy
+            cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+            val startOfToday = cal.timeInMillis
+            
+            // Fin de hoy
+            cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59); cal.set(Calendar.MILLISECOND, 999)
+            val endOfToday = cal.timeInMillis
+            
+            // Fin de semana (7 días)
+            val endOfWeek = startOfToday + (7L * 24 * 60 * 60 * 1000) - 1
+            
+            // Fin de mes
+            cal.timeInMillis = startOfToday
+            cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH))
+            cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59)
+            val endOfMonth = cal.timeInMillis
+
+            var totalToday = 0.0
+            var totalWeek = 0.0
+            var totalMonth = 0.0
+
+            for (d in debts) {
+                val dueDate = if (d.recurrencia != "NONE") d.proximoPago else d.fechaVencimiento
+                if (dueDate == 0L) continue
+                
+                val amountToConsider = if (d.categoria == "SERVICIOS") d.montoCuota else (d.montoTotal - d.montoPagado)
+
+                if (dueDate in startOfToday..endOfToday) totalToday += amountToConsider
+                if (dueDate in startOfToday..endOfWeek) totalWeek += amountToConsider
+                if (dueDate in startOfToday..endOfMonth) totalMonth += amountToConsider
+            }
             
             withContext(Dispatchers.Main) {
                 adapter.submitList(debts)
-                binding.tvTotalOwed.text = String.format(Locale.getDefault(), "$currency %.2f", total)
+                binding.tvTotalOwed.text = String.format(Locale.getDefault(), "$currency %.2f", totalGlobal)
+                
+                binding.tvTotalToday.text = String.format(Locale.getDefault(), "$currency %.2f", totalToday)
+                binding.tvTotalWeek.text = String.format(Locale.getDefault(), "$currency %.2f", totalWeek)
+                binding.tvTotalMonth.text = String.format(Locale.getDefault(), "$currency %.2f", totalMonth)
+                
                 binding.layoutEmptyDebts.visibility = if (debts.isEmpty()) View.VISIBLE else View.GONE
             }
         }
@@ -98,7 +186,7 @@ class BusinessDebtsActivity : AppCompatActivity() {
 
     private fun showAddDebtDialog() {
         val db = DialogAddBusinessDebtBinding.inflate(layoutInflater)
-        val dialog = AlertDialog.Builder(this, R.style.Theme_Naxor_Dialog).setView(db.root).create()
+        val dialog = AlertDialog.Builder(this, R.style.Theme_GoMezMart_Dialog).setView(db.root).create()
         
         val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val currency = prefs.getString("currency_symbol", "S/")
@@ -166,7 +254,7 @@ class BusinessDebtsActivity : AppCompatActivity() {
                     val debt = BusinessDebtEntity(
                         acreedor = acreedor,
                         concepto = concepto,
-                        montoTotal = if (isService) 999999.0 else montoTotal, // Para servicios usamos un monto alto o infinito
+                        montoTotal = if (isService) 0.0 else montoTotal, // Los servicios no tienen un "total" a liquidar, son recurrentes
                         montoCuota = montoCuota,
                         fechaVencimiento = if (recurrencia == "NONE") selectedDate else 0L,
                         recurrencia = recurrencia,
@@ -252,7 +340,8 @@ class BusinessDebtsActivity : AppCompatActivity() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Registrar Pago a ${debt.acreedor}")
         
-        val remaining = debt.montoTotal - debt.montoPagado
+        val isService = debt.categoria == "SERVICIOS"
+        val remaining = if (isService) debt.montoCuota else debt.montoTotal - debt.montoPagado
         val currency = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("currency_symbol", "S/")
         
         val layout = android.widget.LinearLayout(this).apply {
@@ -263,14 +352,18 @@ class BusinessDebtsActivity : AppCompatActivity() {
         // --- Información Detallada del Plan ---
         val tvInfo = android.widget.TextView(this).apply {
             val sb = StringBuilder()
-            sb.append("💰 Saldo Actual: $currency ${String.format(Locale.US, "%.2f", remaining)}\n")
-            
-            if (debt.recurrencia == "DAILY") {
-                sb.append("🔄 Plan: PAGO DIARIO ACTIVADO\n")
-                sb.append("📅 Siguiente cuota: $currency ${String.format(Locale.US, "%.2f", debt.montoCuota)}\n")
-                sb.append("🏁 Meta Total: $currency ${String.format(Locale.US, "%.2f", debt.montoTotal)}")
-            } else if (debt.montoCuota > 0) {
-                sb.append("💵 Cuota sugerida: $currency ${String.format(Locale.US, "%.2f", debt.montoCuota)}")
+            if (isService) {
+                sb.append("🔄 Servicio Recurrente: ${debt.concepto}\n")
+                sb.append("📅 Siguiente pago: $currency ${String.format(Locale.US, "%.2f", debt.montoCuota)}")
+            } else {
+                sb.append("💰 Saldo Actual: $currency ${String.format(Locale.US, "%.2f", remaining)}\n")
+                if (debt.recurrencia == "DAILY") {
+                    sb.append("🔄 Plan: PAGO DIARIO ACTIVADO\n")
+                    sb.append("📅 Siguiente cuota: $currency ${String.format(Locale.US, "%.2f", debt.montoCuota)}\n")
+                    sb.append("🏁 Meta Total: $currency ${String.format(Locale.US, "%.2f", debt.montoTotal)}")
+                } else if (debt.montoCuota > 0) {
+                    sb.append("💵 Cuota sugerida: $currency ${String.format(Locale.US, "%.2f", debt.montoCuota)}")
+                }
             }
             
             text = sb.toString()
@@ -293,21 +386,25 @@ class BusinessDebtsActivity : AppCompatActivity() {
         builder.setPositiveButton("Registrar Pago") { _, _ ->
             val pago = etMonto.text.toString().toDoubleOrNull() ?: 0.0
             if (pago > 0) {
-                if (pago > remaining + 0.01) {
+                if (!isService && pago > remaining + 0.01) {
                     Toast.makeText(this@BusinessDebtsActivity, "⚠️ El monto excede el saldo pendiente (Máx: $currency ${String.format(Locale.US, "%.2f", remaining)})", Toast.LENGTH_LONG).show()
                     return@setPositiveButton
                 }
                 
                 lifecycleScope.launch(Dispatchers.IO) {
-                    debt.montoPagado += pago
-                    // Usar un margen de error pequeño para Double
-                    if (debt.montoPagado >= debt.montoTotal - 0.01) {
-                        debt.isPaid = true
-                        debt.recurrencia = "NONE"
-                        debt.montoPagado = debt.montoTotal
-                    } else if (debt.recurrencia != "NONE") {
-                        // Calcular siguiente fecha de pago
+                    if (isService) {
+                        // Para servicios, simplemente registramos el gasto y saltamos al siguiente pago
                         debt.proximoPago = calculateNextPayment(debt.recurrencia, debt.diaRecurrencia)
+                        // Para servicios no acumulamos montoPagado contra un total de 0
+                    } else {
+                        debt.montoPagado += pago
+                        if (debt.montoPagado >= debt.montoTotal - 0.01) {
+                            debt.isPaid = true
+                            debt.recurrencia = "NONE"
+                            debt.montoPagado = debt.montoTotal
+                        } else if (debt.recurrencia != "NONE") {
+                            debt.proximoPago = calculateNextPayment(debt.recurrencia, debt.diaRecurrencia)
+                        }
                     }
                     
                     database.businessDebtDao().update(debt)
@@ -315,42 +412,46 @@ class BusinessDebtsActivity : AppCompatActivity() {
                     
                     val log = MovementLogEntity(
                         type = "EXPENSE",
-                        title = "Pago de Deuda",
-                        description = "Acreedor: ${debt.acreedor}",
+                        title = if (isService) "Pago de Servicio" else "Pago de Deuda",
+                        description = "${debt.acreedor}: ${debt.concepto}",
                         value = "- $currency ${String.format(Locale.US, "%.2f", pago)}",
                         colorHex = "#F43F5E",
-                        iconRes = android.R.drawable.ic_menu_send
+                        iconRes = if (isService) android.R.drawable.ic_menu_agenda else android.R.drawable.ic_menu_send
                     )
                     database.movementLogDao().insert(log)
                     
                     withContext(Dispatchers.Main) { 
                         loadDebts()
-                        Toast.makeText(this@BusinessDebtsActivity, "Pago registrado. ¡Falta menos! 💪", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@BusinessDebtsActivity, "Pago registrado con éxito ✅", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
         }
-        builder.setNeutralButton("Liquidar Total") { _, _ ->
-            lifecycleScope.launch(Dispatchers.IO) {
-                val montoLiquidado = debt.montoTotal - debt.montoPagado
-                debt.montoPagado = debt.montoTotal
-                debt.isPaid = true
-                debt.recurrencia = "NONE"
-                database.businessDebtDao().update(debt)
-                SyncManager(this@BusinessDebtsActivity).syncBusinessDebtToCloud(debt)
-                
-                val log = MovementLogEntity(
-                    type = "EXPENSE",
-                    title = "Deuda Liquidada",
-                    description = "Acreedor: ${debt.acreedor}",
-                    value = "- $currency ${String.format(Locale.US, "%.2f", montoLiquidado)}",
-                    colorHex = "#F43F5E",
-                    iconRes = android.R.drawable.checkbox_on_background
-                )
-                database.movementLogDao().insert(log)
-                withContext(Dispatchers.Main) { loadDebts() }
+        
+        if (!isService) {
+            builder.setNeutralButton("Liquidar Total") { _, _ ->
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val montoLiquidado = debt.montoTotal - debt.montoPagado
+                    debt.montoPagado = debt.montoTotal
+                    debt.isPaid = true
+                    debt.recurrencia = "NONE"
+                    database.businessDebtDao().update(debt)
+                    SyncManager(this@BusinessDebtsActivity).syncBusinessDebtToCloud(debt)
+                    
+                    val log = MovementLogEntity(
+                        type = "EXPENSE",
+                        title = "Deuda Liquidada",
+                        description = "Acreedor: ${debt.acreedor}",
+                        value = "- $currency ${String.format(Locale.US, "%.2f", montoLiquidado)}",
+                        colorHex = "#F43F5E",
+                        iconRes = android.R.drawable.checkbox_on_background
+                    )
+                    database.movementLogDao().insert(log)
+                    withContext(Dispatchers.Main) { loadDebts() }
+                }
             }
         }
+        
         builder.setNegativeButton("Cancelar", null).show()
     }
 
@@ -371,7 +472,8 @@ class BusinessDebtsActivity : AppCompatActivity() {
 
     inner class BusinessDebtsAdapter(
         private val onPay: (BusinessDebtEntity) -> Unit,
-        private val onPdf: (BusinessDebtEntity) -> Unit
+        private val onPdf: (BusinessDebtEntity) -> Unit,
+        private val onLongClick: (BusinessDebtEntity) -> Unit
     ) : RecyclerView.Adapter<BusinessDebtsAdapter.ViewHolder>() {
         private var list = listOf<BusinessDebtEntity>()
         fun submitList(newList: List<BusinessDebtEntity>) { list = newList; notifyDataSetChanged() }
@@ -385,7 +487,14 @@ class BusinessDebtsActivity : AppCompatActivity() {
             
             holder.b.tvDebtCreditor.text = d.acreedor
             holder.b.tvDebtConcept.text = d.concepto
-            holder.b.tvDebtAmount.text = String.format("$currency %.2f", d.montoTotal - d.montoPagado)
+            
+            if (d.categoria == "SERVICIOS") {
+                holder.b.tvDebtAmount.text = String.format("$currency %.2f", d.montoCuota)
+                holder.b.tvDebtAmount.setTextColor(holder.itemView.context.getColor(R.color.slate_900))
+            } else {
+                holder.b.tvDebtAmount.text = String.format("$currency %.2f", d.montoTotal - d.montoPagado)
+                holder.b.tvDebtAmount.setTextColor(holder.itemView.context.getColor(R.color.red_600))
+            }
             
             val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
             
@@ -414,6 +523,11 @@ class BusinessDebtsActivity : AppCompatActivity() {
             
             holder.b.btnRegisterPayment.setOnClickListener { onPay(d) }
             holder.b.btnDebtPdf.setOnClickListener { onPdf(d) }
+            
+            holder.itemView.setOnLongClickListener {
+                onLongClick(d)
+                true
+            }
         }
         override fun getItemCount() = list.size
     }

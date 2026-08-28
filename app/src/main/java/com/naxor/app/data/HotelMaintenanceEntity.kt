@@ -7,8 +7,8 @@ import java.util.UUID
 @Entity(tableName = "hotel_maintenance")
 data class HotelMaintenanceEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
-    val roomId: String,
-    val description: String,
+    val roomId: String = "",
+    val description: String = "",
     val photoPath: String? = null,
     val status: String = "PENDING", // PENDING, FIXED
     val reportedBy: String? = "Personal de Limpieza",

@@ -13,6 +13,9 @@ public interface SaleDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(SaleEntity sale);
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertAll(List<SaleEntity> sales);
+
     @Update
     void update(SaleEntity sale);
 
@@ -51,5 +54,11 @@ public interface SaleDao {
 
     @Query("SELECT * FROM sales WHERE isSynced = 0 AND isDeleted = 1")
     List<SaleEntity> getDeletedSales();
+
+    @Query("UPDATE sales SET isSynced = 1 WHERE id = :id")
+    void markSynced(String id);
+
+    @Query("SELECT id FROM sales WHERE id IN (:ids)")
+    List<String> getExistingIds(List<String> ids);
 }
 

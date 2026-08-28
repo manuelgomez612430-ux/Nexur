@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawerBuyerHome"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/gomezmart_bg_marketplace">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/mainContentRoot"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/buyerFragmentContainer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/cardBottomNavContainer"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardBottomNavContainer"
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="36dp"
+            app:cardElevation="12dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="@color/white"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <!-- BLOQUE INDICADOR DINÁMICO (PURPLE PILL) -->
+                <View
+                    android:id="@+id/navIndicatorCustom"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_nav_indicator_pill"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent" />
+
+                <!-- Custom Navigation Layout -->
+                <LinearLayout
+                    android:id="@+id/layoutCustomNav"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:weightSum="3">
+
+                    <!-- INICIO -->
+                    <LinearLayout
+                        android:id="@+id/btnNavHome"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackgroundBorderless">
+                        <TextView
+                            android:id="@+id/tvIconHome"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🏠"
+                            android:textSize="22sp" />
+                        <TextView
+                            android:id="@+id/tvLabelHome"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Inicio"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/white" />
+                    </LinearLayout>
+
+                    <!-- CUENTA -->
+                    <LinearLayout
+                        android:id="@+id/btnNavAccount"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackgroundBorderless">
+                        <TextView
+                            android:id="@+id/tvIconAccount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="👤"
+                            android:textSize="22sp" />
+                        <TextView
+                            android:id="@+id/tvLabelAccount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Cuenta"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_500" />
+                    </LinearLayout>
+
+                    <!-- AJUSTES -->
+                    <LinearLayout
+                        android:id="@+id/btnNavSettings"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackgroundBorderless">
+                        <TextView
+                            android:id="@+id/tvIconSettings"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⚙️"
+                            android:textSize="22sp" />
+                        <TextView
+                            android:id="@+id/tvLabelSettings"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ajustes"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_500" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Side Menu -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navBuyerHome"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:menu="@menu/menu_buyer_drawer"
+        app:headerLayout="@layout/drawer_header_simple" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.naxor.app.adapter.SaleAdapter
@@ -19,7 +18,7 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class EmitirComprobanteActivity : AppCompatActivity() {
+class EmitirComprobanteActivity : BaseActivity() {
 
     private lateinit var binding: ActivityEmitirComprobanteBinding
     private val database by lazy { AppDatabase.getDatabase(this) }

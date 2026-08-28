@@ -8,7 +8,6 @@ import android.os.ParcelFileDescriptor
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -16,7 +15,7 @@ import com.naxor.app.databinding.ActivityPdfViewerBinding
 import com.naxor.app.databinding.ItemPdfPageBinding
 import java.io.File
 
-class PdfViewerActivity : AppCompatActivity() {
+class PdfViewerActivity : BaseActivity() {
 
     private lateinit var binding: ActivityPdfViewerBinding
     private var pdfFile: File? = null
@@ -72,6 +71,45 @@ class PdfViewerActivity : AppCompatActivity() {
         binding.btnSendWhatsApp.setOnClickListener {
             sendPdfByWhatsApp()
         }
+        
+        val isContract = pdfFile?.name?.contains("Contrato") == true
+        if (isContract) {
+            binding.btnPrintPdf.visibility = android.view.View.VISIBLE
+            binding.btnPrintPdf.setOnClickListener { printPdf() }
+        }
+    }
+
+    private fun printPdf() {
+        pdfFile?.let { file ->
+            val printManager = getSystemService(android.content.Context.PRINT_SERVICE) as android.print.PrintManager
+            val jobName = "${getString(R.string.app_name)} Document"
+            
+            printManager.print(jobName, object : android.print.PrintDocumentAdapter() {
+                override fun onLayout(oldAttributes: android.print.PrintAttributes?, newAttributes: android.print.PrintAttributes, cancellationSignal: android.os.CancellationSignal?, callback: LayoutResultCallback, extras: Bundle?) {
+                    if (cancellationSignal?.isCanceled == true) {
+                        callback.onLayoutCancelled()
+                        return
+                    }
+                    val builder = android.print.PrintDocumentInfo.Builder(file.name)
+                        .setContentType(android.print.PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
+                        .setPageCount(android.print.PrintDocumentInfo.PAGE_COUNT_UNKNOWN)
+                    callback.onLayoutFinished(builder.build(), true)
+                }
+
+                override fun onWrite(pages: Array<out android.print.PageRange>?, destination: android.os.ParcelFileDescriptor, cancellationSignal: android.os.CancellationSignal?, callback: WriteResultCallback) {
+                    try {
+                        val input = java.io.FileInputStream(file)
+                        val output = java.io.FileOutputStream(destination.fileDescriptor)
+                        input.copyTo(output)
+                        callback.onWriteFinished(arrayOf(android.print.PageRange.ALL_PAGES))
+                        input.close()
+                        output.close()
+                    } catch (e: Exception) {
+                        callback.onWriteFailed(e.message)
+                    }
+                }
+            }, null)
+        }
     }
 
     private fun sendPdfByWhatsApp() {
@@ -79,23 +117,27 @@ class PdfViewerActivity : AppCompatActivity() {
 
         val phone = guestPhone ?: ""
         val name = guestName ?: "Cliente"
-        val message = "Hola *$name*, te envío tu estado de cuenta actualizado de parte de NEXUR. Adjunto el documento PDF para tu revisión. 😊"
+        val message = "Hola *$name*, te envío el documento PDF de parte de GOMEZMART. 😊"
 
         try {
             val uri = FileProvider.getUriForFile(this, "$packageName.provider", pdfFile!!)
             
-            var cleanNumber = phone.replace(" ", "").replace("-", "").replace("+", "")
-            if (cleanNumber.length == 9 && !cleanNumber.startsWith("51")) cleanNumber = "51$cleanNumber"
-
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "application/pdf"
-                setPackage("com.whatsapp")
                 putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra("jid", "$cleanNumber@s.whatsapp.net")
                 putExtra(Intent.EXTRA_TEXT, message)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            startActivity(intent)
+
+            if (phone.isNotEmpty()) {
+                var cleanNumber = phone.replace(" ", "").replace("-", "").replace("+", "")
+                if (cleanNumber.length == 9 && !cleanNumber.startsWith("51")) cleanNumber = "51$cleanNumber"
+                intent.setPackage("com.whatsapp")
+                intent.putExtra("jid", "$cleanNumber@s.whatsapp.net")
+                startActivity(intent)
+            } else {
+                startActivity(Intent.createChooser(intent, "Enviar por..."))
+            }
         } catch (e: Exception) {
             val uri = FileProvider.getUriForFile(this, "$packageName.provider", pdfFile!!)
             val intent = Intent(Intent.ACTION_SEND).apply {

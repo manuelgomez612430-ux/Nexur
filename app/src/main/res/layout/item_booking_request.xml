@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="2dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/slate_200">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <TextView
+                android:id="@+id/tvReqGuestName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Nombre del Huésped"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_900" />
+            <TextView
+                android:id="@+id/tvReqDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Fecha: 01/01/2024"
+                android:textSize="12sp"
+                android:textColor="@color/slate_500" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvReqDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Hab. 101 | 2 noches"
+            android:textSize="14sp"
+            android:textColor="@color/purple_600"
+            android:textStyle="bold"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tvReqPhone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="987654321"
+            android:textSize="13sp"
+            android:textColor="@color/slate_600"
+            android:layout_marginTop="4dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/slate_100"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCallGuest"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LLAMAR"
+                android:textSize="11sp"
+                app:cornerRadius="12dp"
+                app:icon="@android:drawable/stat_sys_phone_call" />
+
+            <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRejectRequest"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rechazar"
+                android:textColor="@color/red_600"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAcceptRequest"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Aceptar"
+                android:textSize="12sp"
+                app:cornerRadius="12dp"
+                app:backgroundTint="@color/emerald_600" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

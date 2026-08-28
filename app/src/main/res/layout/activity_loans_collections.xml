@@ -9,15 +9,33 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurfaceContainer"
-        app:elevation="0dp">
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbarCollections"
+        app:elevation="0dp"
+        app:liftOnScroll="false">
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="Cobros del Día"
-            app:titleTextColor="@color/slate_900"
-            app:navigationIcon="@android:drawable/ic_menu_revert"
-            app:navigationIconTint="@color/slate_900" />
+            android:layout_height="wrap_content">
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbarCollections"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:title="Cobros del Día"
+                app:titleTextColor="@color/slate_900"
+                app:navigationIcon="@android:drawable/ic_menu_revert"
+                app:navigationIconTint="@color/slate_900" />
+
+            <ImageButton
+                android:id="@+id/btnSyncIndicator"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_vertical|end"
+                android:layout_marginEnd="56dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="12dp"
+                android:scaleType="fitCenter"
+                android:src="@android:drawable/stat_sys_download_done"
+                android:contentDescription="Estado de sincronización"
+                app:tint="@color/slate_400" />
+        </FrameLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
     <LinearLayout

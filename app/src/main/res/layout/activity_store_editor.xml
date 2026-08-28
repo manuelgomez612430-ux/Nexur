@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/slate_50">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        app:elevation="0dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarStoreEditor"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Editar Tienda Online"
+            app:titleTextColor="@color/slate_900"
+            app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:navigationIconTint="@color/slate_900" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- IMAGEN DE PORTADA -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="IMAGEN DE PORTADA (RECOMENDADO)"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:textColor="@color/slate_400"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardEditCover"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_200"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/ivEditCover"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/gomezmart_full_bg" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#4D000000" />
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:src="@android:drawable/ic_menu_camera"
+                    app:tint="@color/white" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- LOGOTIPO -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LOGOTIPO DE LA TIENDA"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:textColor="@color/slate_400"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardEditLogo"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="32dp"
+                app:cardCornerRadius="50dp"
+                app:cardElevation="4dp"
+                app:strokeWidth="2dp"
+                app:strokeColor="@color/white"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:id="@+id/ivEditLogo"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/gomezmart_icon" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- INFORMACIÓN -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="Rubro del Negocio"
+                app:startIconDrawable="@android:drawable/ic_menu_sort_by_size">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditStoreRubro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:enabled="false"
+                    android:textColor="@color/slate_500" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="Nombre Comercial">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditStoreName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapWords" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="Descripción del Negocio">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditStoreDesc"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="3"
+                    android:gravity="top" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="Nombre del Fundador / Dueño">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditOwnerName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapWords" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:hint="Dirección Pública">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditStoreAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPostalAddress" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSelectLocationOnMap"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginBottom="24dp"
+                android:text="Ubicación en el Mapa 📍"
+                app:cornerRadius="12dp"
+                app:icon="@android:drawable/ic_menu_mylocation" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/slate_100"
+                android:layout_marginBottom="24dp" />
+
+            <!-- SECCIÓN: DETALLES EXTRA Y FOTOS -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MÁS DETALLES Y FOTOS (OPCIONAL)"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:textColor="@color/slate_400"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:id="@+id/layoutExtraSectionsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddExtraSection"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="32dp"
+                android:text="➕ AÑADIR NUEVA SECCIÓN (TÍTULO/FOTO)"
+                android:textColor="@color/sky_600" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchActivateOnlineStore"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:text="Activar negocio online"
+                android:textColor="@color/purple_600"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAiDesigner"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:layout_marginBottom="16dp"
+                android:text="✨ DISEÑAR TIENDA CON IA"
+                android:textColor="@color/slate_400"
+                android:textStyle="bold"
+                android:enabled="false"
+                app:cornerRadius="16dp"
+                app:icon="@android:drawable/ic_menu_edit"
+                app:iconTint="@color/slate_400" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveStoreChanges"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:text="GUARDAR Y ACTUALIZAR ✨"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                app:cornerRadius="16dp"
+                app:backgroundTint="@color/purple_600" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

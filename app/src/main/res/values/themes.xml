@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.Naxor" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.GoMezMart" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/purple_600</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorSecondary">@color/indigo_500</item>
@@ -11,10 +11,10 @@
         <item name="android:windowBackground">@color/slate_50</item>
     </style>
 
-    <style name="Theme.Naxor" parent="Base.Theme.Naxor" />
+    <style name="Theme.GoMezMart" parent="Base.Theme.GoMezMart" />
 
-    <style name="Theme.Naxor.Dialog" parent="Theme.Material3.DayNight.Dialog">
-        <item name="android:windowBackground">@android:color/transparent</item>
+    <style name="Theme.GoMezMart.Dialog" parent="Theme.Material3.DayNight.Dialog">
+        <!-- Eliminamos el fondo transparente para que el diálogo tenga su contenedor estándar y no se vea oscuro/flotante -->
     </style>
 
     <!-- Estilos para el Menú Principal -->
@@ -141,5 +141,43 @@
         <item name="android:textColor">@color/toggle_text_color</item>
         <item name="backgroundTint">@color/toggle_background_color</item>
         <item name="strokeColor">@color/purple_600</item>
+    </style>
+    <style name="MarketplaceTab">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingLeft">16dp</item>
+        <item name="android:paddingRight">16dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/slate_800</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+    </style>
+
+    <style name="Theme.GoMezMart.Splash" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@drawable/bg_splash</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+
+    <style name="NavTextSmall">
+        <item name="android:textSize">10sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="ShapeAppearance.App.Pill" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="Widget.App.BottomNavigationView.NoIndicator" parent="Widget.Material3.BottomNavigationView">
+        <item name="itemActiveIndicatorStyle">@style/App.EmptyIndicator</item>
+    </style>
+
+    <style name="App.EmptyIndicator" parent="">
+        <item name="android:width">0dp</item>
+        <item name="android:height">0dp</item>
     </style>
 </resources>

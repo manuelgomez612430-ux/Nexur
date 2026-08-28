@@ -27,4 +27,7 @@ interface ProviderDao {
 
     @Query("SELECT COUNT(*) FROM providers WHERE isSynced = 0")
     fun getUnsyncedCount(): androidx.lifecycle.LiveData<Int>
+
+    @Query("UPDATE providers SET isSynced = 1 WHERE id = :id")
+    suspend fun markSynced(id: String)
 }

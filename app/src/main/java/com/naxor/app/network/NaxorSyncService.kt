@@ -9,12 +9,14 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import com.google.firebase.firestore.ListenerRegistration
 import com.naxor.app.SyncManager
 
-class NaxorSyncService : Service() {
+class GoMezMartSyncService : Service() {
 
     private val CHANNEL_ID = "sync_service_channel"
     private lateinit var syncManager: SyncManager
+    private val registrations = mutableListOf<ListenerRegistration>()
 
     override fun onCreate() {
         super.onCreate()
@@ -22,36 +24,30 @@ class NaxorSyncService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        createNotificationChannel()
+        // Eliminada la notificación persistente para mejorar la comodidad del usuario
+        // El servicio ahora funcionará en segundo plano mientras el sistema lo permita
         
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Naxor: Monitoreo Activo")
-            .setContentText("Sincronizando ventas en tiempo real...")
-            .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOngoing(true)
-            .build()
+        // Limpiar registros previos si existen
+        registrations.forEach { it.remove() }
+        registrations.clear()
 
-        startForeground(1, notification)
-
-        // Iniciar el monitoreo en tiempo real (Ventas e Inventario)
-        syncManager.startRealtimeSalesSync { }
-        syncManager.startRealtimeInventorySync { }
+        // Iniciar el monitoreo en tiempo real y guardar registros
+        syncManager.startRealtimeSalesSync { }?.let { registrations.add(it) }
+        syncManager.startRealtimeInventorySync { }?.let { registrations.add(it) }
+        syncManager.startRealtimeRequestsSync()?.let { registrations.add(it) }
+        registrations.addAll(syncManager.startRealtimeMessagesSync())
 
         return START_STICKY
     }
 
+    override fun onDestroy() {
+        registrations.forEach { it.remove() }
+        registrations.clear()
+        super.onDestroy()
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val serviceChannel = NotificationChannel(
-                CHANNEL_ID,
-                "Naxor Sync Service",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(serviceChannel)
-        }
-    }
+    // Ya no es necesario crear el canal de notificación para el monitoreo persistente
+    private fun createNotificationChannel() {}
 }

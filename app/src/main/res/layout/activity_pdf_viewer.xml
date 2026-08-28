@@ -46,14 +46,28 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSendWhatsApp"
                 android:layout_width="match_parent"
-                android:layout_height="64dp"
-                android:text="ENVIAR POR WHATSAPP"
-                android:textSize="16sp"
+                android:layout_height="56dp"
+                android:text="ENVIAR DOCUMENTO"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 app:icon="@android:drawable/ic_menu_send"
                 app:iconGravity="textStart"
                 app:cornerRadius="16dp"
                 app:backgroundTint="@color/emerald_600" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPrintPdf"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="8dp"
+                android:text="IMPRIMIR CONTRATO"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:icon="@android:drawable/ic_menu_share"
+                app:iconGravity="textStart"
+                app:cornerRadius="16dp"
+                android:visibility="gone" />
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

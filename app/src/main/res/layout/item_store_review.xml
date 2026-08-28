@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="1dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/slate_100">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/purple_50">
+            <ImageView
+                android:id="@+id/ivReviewUserPhoto"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/gomezmart_icon" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:id="@+id/tvReviewUserName"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="Nombre de Usuario"
+                    android:textColor="@color/slate_900"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <ImageButton
+                    android:id="@+id/btnEditReview"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_edit"
+                    app:tint="@color/slate_400"
+                    android:visibility="gone"
+                    android:contentDescription="Editar comentario" />
+
+                <RatingBar
+                    android:id="@+id/rbReviewStars"
+                    style="@android:style/Widget.Material.RatingBar.Small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:numStars="5"
+                    android:stepSize="1.0"
+                    android:isIndicator="true"
+                    android:progressTint="@color/orange_600" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvReviewComment"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Este es un excelente negocio, muy buena atención."
+                android:textColor="@color/slate_600"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/tvReviewDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Hace 2 días"
+                android:textColor="@color/slate_400"
+                android:textSize="11sp" />
+
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -1,10 +1,9 @@
 package com.naxor.app
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import com.naxor.app.databinding.ActivityInstruccionesBinding
 
-class InstruccionesActivity : AppCompatActivity() {
+class InstruccionesActivity : BaseActivity() {
 
     private lateinit var binding: ActivityInstruccionesBinding
 

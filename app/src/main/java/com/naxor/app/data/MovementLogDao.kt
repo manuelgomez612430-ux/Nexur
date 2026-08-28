@@ -13,8 +13,14 @@ interface MovementLogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(log: MovementLogEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(logs: List<MovementLogEntity>)
+
     @Query("SELECT * FROM movement_logs WHERE isSynced = 0")
     suspend fun getUnsyncedLogs(): List<MovementLogEntity>
+
+    @Query("SELECT * FROM movement_logs ORDER BY timestamp DESC LIMIT :limit")
+    suspend fun getRecentLogs(limit: Int): List<MovementLogEntity>
 
     @Query("DELETE FROM movement_logs")
     suspend fun deleteAll()
@@ -27,4 +33,7 @@ interface MovementLogDao {
 
     @Query("SELECT COUNT(*) FROM movement_logs WHERE isSynced = 0")
     fun getUnsyncedCount(): androidx.lifecycle.LiveData<Int>
+
+    @Query("UPDATE movement_logs SET isSynced = 1 WHERE id = :id")
+    suspend fun markSynced(id: String)
 }

@@ -21,9 +21,17 @@ class DebtorPdfGenerator(private val context: Context) {
         val boldPaint = Paint().apply { isFakeBoldText = true }
         
         val prefs = context.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
-        val bName = prefs.getString("business_name", "MI NEGOCIO") ?: "MI NEGOCIO"
-        val bPhone = prefs.getString("business_phone", "") ?: ""
-        val bAddress = prefs.getString("business_address", "Dirección no registrada") ?: "Dirección no registrada"
+        val bType = prefs.getString("business_type", "PRODUCTS") ?: "PRODUCTS"
+        
+        val bName = prefs.getString("${bType}_name", prefs.getString("business_name", "MI NEGOCIO"))
+        val bPhone = prefs.getString("${bType}_phone", prefs.getString("business_phone", ""))
+        val bAddress = prefs.getString("${bType}_address", prefs.getString("business_address", ""))
+        val oName = prefs.getString("${bType}_owner_name", "")
+
+        val showOwner = prefs.getBoolean("${bType}_show_owner", false)
+        val showBusiness = prefs.getBoolean("${bType}_show_business", true)
+        val showAddress = prefs.getBoolean("${bType}_show_address", true)
+        val showPhone = prefs.getBoolean("${bType}_show_phone", true)
         
         // --- 1. FONDO Y ESTILO ---
         canvas.drawColor(Color.WHITE)
@@ -36,18 +44,35 @@ class DebtorPdfGenerator(private val context: Context) {
         }
 
         // --- 2. CABECERA ---
-        boldPaint.textSize = 28f; boldPaint.color = accentColor
-        canvas.drawText(bName.uppercase(), 50f, 70f, boldPaint)
+        boldPaint.textSize = 24f; boldPaint.color = accentColor
         
-        paint.textSize = 10f; paint.color = Color.GRAY
+        var headerY = 70f
+        if (showBusiness && !bName.isNullOrEmpty()) {
+            canvas.drawText(bName.uppercase(), 50f, headerY, boldPaint)
+            headerY += 20f
+        }
+        
+        if (showOwner && !oName.isNullOrEmpty()) {
+            paint.textSize = 12f; paint.color = Color.BLACK; paint.isFakeBoldText = true
+            canvas.drawText("Titular: ${oName.uppercase()}", 50f, headerY, paint)
+            headerY += 15f
+        }
+        
+        paint.textSize = 10f; paint.color = Color.GRAY; paint.isFakeBoldText = false
         val headerSubtitle = if (isProfessional) "COMPROBANTE DE ESTADO DE CUENTA" else "RECORDATORIO DE PAGO"
-        canvas.drawText(headerSubtitle, 50f, 90f, paint)
+        canvas.drawText(headerSubtitle, 50f, headerY, paint)
+        headerY += 15f
         
         if (isProfessional) {
-            canvas.drawText("📍 $bAddress", 50f, 105f, paint)
-            canvas.drawText("📞 Contacto: $bPhone", 50f, 120f, paint)
+            if (showAddress && !bAddress.isNullOrEmpty()) {
+                canvas.drawText("📍 $bAddress", 50f, headerY, paint)
+                headerY += 15f
+            }
+            if (showPhone && !bPhone.isNullOrEmpty()) {
+                canvas.drawText("📞 Contacto: $bPhone", 50f, headerY, paint)
+            }
         } else {
-            canvas.drawText("Generado el: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())}", 50f, 105f, paint)
+            canvas.drawText("Generado el: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())}", 50f, headerY, paint)
         }
         
         // Línea divisoria
@@ -61,7 +86,7 @@ class DebtorPdfGenerator(private val context: Context) {
         paint.textSize = 12f; paint.color = Color.DKGRAY
         canvas.drawText("Nombre: ${debtor.nombre.uppercase()}", 50f, 195f, paint)
         if (isProfessional) {
-            canvas.drawText("Documento: ${if (debtor.telefono.isBlank()) "Sin número" else debtor.telefono}", 50f, 215f, paint)
+            canvas.drawText("Contacto: ${if (debtor.telefono.isBlank()) "Sin número" else debtor.telefono}", 50f, 215f, paint)
         }
         
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -85,10 +110,12 @@ class DebtorPdfGenerator(private val context: Context) {
         paint.textSize = 11f; paint.color = Color.BLACK
         var yPos = 420f
         
+        val senderLabel = if (showBusiness && !bName.isNullOrEmpty()) bName else if (!oName.isNullOrEmpty()) oName else "mi sistema"
+
         val messages = if (isProfessional) {
             listOf(
                 "Estimado(a) ${debtor.nombre},",
-                "En *${bName}* valoro mucho su preferencia y confianza. Trabajo día a día",
+                "En *$senderLabel* valoro mucho su preferencia y confianza. Trabajo día a día",
                 "para ofrecerle el mejor servicio y calidad que usted se merece.",
                 "",
                 "Le envío este documento como un recordatorio formal de su saldo pendiente.",
@@ -109,7 +136,7 @@ class DebtorPdfGenerator(private val context: Context) {
                 "Espero que te encuentres muy bien.",
                 "",
                 "Te envío este pequeño recordatorio sobre el saldo pendiente que tengo",
-                "registrado en mi sistema por el valor mencionado arriba.",
+                "registrado con $senderLabel por el valor mencionado arriba.",
                 "",
                 "Agradecería mucho que pudieras ponerte al día en cuanto te sea posible.",
                 "Esto me ayuda a seguir trabajando contigo de la mejor manera.",
@@ -131,7 +158,7 @@ class DebtorPdfGenerator(private val context: Context) {
         // --- 6. PIE DE PÁGINA ---
         paint.textSize = 9f; paint.color = Color.LTGRAY
         val sdfFull = SimpleDateFormat("dd 'de' MMMM 'de' yyyy, HH:mm", Locale("es", "PE"))
-        canvas.drawText("Documento informativo generado por Naxor.", 50f, 780f, paint)
+        canvas.drawText("Documento informativo generado por GoMezMart.", 50f, 780f, paint)
         canvas.drawText("Emisión: ${sdfFull.format(Date())}", 50f, 795f, paint)
         
         if (isProfessional) {

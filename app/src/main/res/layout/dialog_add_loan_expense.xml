@@ -25,20 +25,20 @@
 
     <!-- CATEGORÍA (Obligatoria / Editable / Seleccionable) -->
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutCategory"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:hint="Escriba o elija una Categoría"
-        app:startIconDrawable="@android:drawable/ic_menu_sort_by_size"
-        app:endIconMode="clear_text">
+        app:startIconDrawable="@android:drawable/ic_menu_sort_by_size">
 
         <com.google.android.material.textfield.MaterialAutoCompleteTextView
             android:id="@+id/autoCompleteCategory"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textCapWords"
-            android:text="" />
+            android:completionThreshold="0" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- CONCEPTO (Opcional) -->

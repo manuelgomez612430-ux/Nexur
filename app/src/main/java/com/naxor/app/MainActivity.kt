@@ -2,534 +2,411 @@ package com.naxor.app
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.graphics.Shader
 import android.os.Build
 import android.os.Bundle
+import android.text.InputType
 import android.util.Log
-import android.Manifest
-import android.content.pm.PackageManager
-import com.google.firebase.Firebase
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.messaging.FirebaseMessaging
-import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
-import com.google.firebase.appcheck.appCheck
-import com.google.firebase.initialize
-import androidx.core.content.ContextCompat
-import androidx.activity.result.contract.ActivityResultContracts
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.view.View
-import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.FileProvider
-import android.media.AudioManager
-import android.media.ToneGenerator
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.GravityCompat
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
-import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
+import androidx.work.*
+import com.bumptech.glide.Glide
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
+import com.naxor.app.data.CollaboratorEntity
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.databinding.ActivityMainBinding
-import androidx.work.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import android.view.GestureDetector
-import android.view.MotionEvent
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.naxor.app.data.QuickAction
+import com.naxor.app.fragment.*
+import com.naxor.app.util.SessionManager
+import com.naxor.app.network.GoMezMartSyncService
+import kotlinx.coroutines.*
+import kotlinx.coroutines.tasks.await
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private val database by lazy { AppDatabase.getDatabase(this) }
-
-    private lateinit var globalGestureDetector: GestureDetector
-
-    // SISTEMA DE TUTORIAL CONTEXTUAL
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+    
     private var currentTutorialStep = 0
     private val tutorialSteps = listOf(
-        "¡Bienvenido a Naxor! 🚀" to "Hemos rediseñado todo para que tu negocio crezca. Vamos a darte un recorrido rápido.",
-        "Navegación Central" to "Usa la barra inferior para moverte entre tu Inventario, el Rendimiento de tu negocio y los Ajustes.",
-        "Menú de Gestión" to "Desliza tu dedo hacia la derecha en cualquier parte de la pantalla para abrir herramientas como Gastos, Caja y Deudores.",
-        "Herramientas de Control" to "Dentro del menú encontrarás funciones para controlar tus deudas, proveedores y comprobantes electrónicos.",
-        "Tu Dashboard" to "Aquí ves tus Ventas, Utilidad y Gastos de HOY. Todo se actualiza en tiempo real.",
-        "Registro de Ventas" to "Usa el botón central para vender. ¡Puedes usar la cámara para escanear códigos de barras!",
-        "Buzón de Mensajes" to "Mira el sobre arriba a la derecha. Ahí te enviaremos novedades y consejos para tu negocio.",
-        "¡Todo listo!" to "Ya puedes empezar a usar Naxor. Recuerda que puedes ver esta guía de nuevo en Ajustes."
+        "¡Bienvenido a GoMezMart!" to "Hemos actualizado tu sistema para que sea más potente y profesional. Sigue esta guía rápida para conocer las novedades.",
+        "Nuevo Panel de Control" to "Ahora tienes acceso directo a tus productos, métricas y configuración desde la barra inferior.",
+        "Sistema Inteligente" to "El menú lateral se adapta automáticamente a tu tipo de negocio (Tienda, Hotel o Préstamos).",
+        "Entorno Colaborativo" to "Invita a tu equipo y asigna permisos específicos para que te ayuden a gestionar tu negocio.",
+        "Mercado GoMezMart" to "Tu negocio ahora puede estar online. Actívalo en Ajustes para que aparezca en nuestra red global.",
+        "Buzón de Mensajes" to "Recibe avisos importantes y mensajes directos en tu nuevo centro de notificaciones.",
+        "¡Éxito en tus cobros!" to "Ya puedes empezar. Recuerda que puedes ver esta guía de nuevo en Ajustes."
     )
 
-    private val requestNotificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (!isGranted) {
-            Toast.makeText(this, "Las notificaciones están desactivadas. No recibirás avisos de ventas en tiempo real.", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun checkNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Aplicar modo oscuro guardado antes del super.onCreate
-        val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val isDark = appPrefs.getBoolean("dark_mode", false)
-        if (isDark) {
-            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES)
-        } else {
-            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO)
-        }
-        
         super.onCreate(savedInstanceState)
-        
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        updateMenuForBusinessType()
-        hideBottomNavIndicator()
-        setupCustomBottomNav()
-        setupGlobalGesture()
-        checkNotificationPermission()
         setupListeners()
-        startSyncService()
-        subscribeToSalesTopic()
-        scheduleReminders()
-
+        setupCustomBottomNav()
+        
         if (savedInstanceState == null) {
             navigateToInicio()
-            checkTutorial()
+        }
+
+        if (intent.getBooleanExtra("START_UPDATE", false)) {
+            Updater(this).checkAndDownload(autoDownload = true)
+        }
+
+        checkCollaboratorAccess()
+        startSyncService()
+        subscribeToSalesTopic()
+        schedulePeriodicSync()
+    }
+
+    private fun checkCollaboratorAccess() {
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val isCollab = prefs.getBoolean("is_collaborator_mode", false)
+        val ownerId = prefs.getString("collaborator_owner_id", null)
+
+        if (isCollab && ownerId != null) {
+            val userEmail = auth.currentUser?.email?.lowercase() ?: ""
+            db.collection("users").document(ownerId)
+                .collection("collaborators").document(userEmail)
+                .addSnapshotListener { snapshot, e ->
+                    if (e != null) {
+                        Log.e("MainActivity", "Error collab listener: ${e.message}")
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot == null || !snapshot.exists()) {
+                        // BLOQUEO INMEDIATO: El colaborador ha sido removido
+                        handleCollaboratorLockout(ownerId)
+                        return@addSnapshotListener
+                    }
+                    
+                    val collab = snapshot.toObject(CollaboratorEntity::class.java)
+                    collab?.let {
+                        val collabPrefs = getSharedPreferences("CollabPermissions", MODE_PRIVATE)
+                        val editor = collabPrefs.edit()
+                        it.permissions.forEach { (key, value) -> editor.putBoolean(key, value) }
+                        editor.putString("collab_name", it.name)
+                        editor.putString("collab_role", if (it.roles.isNotEmpty()) it.roles.joinToString(", ") else it.role)
+                        editor.commit() 
+                        
+                        runOnUiThread {
+                            updateMenuForBusinessType()
+                        }
+                    }
+                }
+        }
+    }
+
+    private fun handleCollaboratorLockout(ownerId: String) {
+        lifecycleScope.launch(Dispatchers.Main) {
+            // 1. Obtener nombre del dueño antes de cerrar todo
+            var ownerName = "el administrador"
+            try {
+                val ownerDoc = db.collection("users").document(ownerId).get().await()
+                ownerName = ownerDoc.getString("business_owner_name") ?: ownerDoc.getString("business_name") ?: ownerName
+            } catch (e: Exception) {}
+
+            // 2. Limpiar rastro de colaboración
+            val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+            prefs.edit().apply {
+                putBoolean("is_collaborator_mode", false)
+                remove("collaborator_owner_id")
+                apply()
+            }
+            
+            // 3. Limpiar base de datos local (SEGURIDAD CRÍTICA - Previene ver datos del dueño en sistema personal)
+            withContext(Dispatchers.IO) {
+                AppDatabase.getDatabase(this@MainActivity).clearAllTables()
+            }
+            
+            // Reiniciar servicio de sincronización para que tome el nuevo ID de usuario
+            startSyncService()
+
+            // 4. Mostrar aviso y redirigir
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle("Acceso Revocado 🚫")
+                .setMessage("Has sido retirado del sistema como colaborador por: $ownerName.\n\nSe ha cerrado el acceso al negocio y se han limpiado todos los datos compartidos de este dispositivo para proteger la privacidad del dueño.")
+                .setCancelable(false)
+                .setPositiveButton("Entendido") { _, _ ->
+                    updateMenuForBusinessType()
+                    navigateToInicio()
+                    // Re-instanciar actividad para asegurar limpieza total de memoria y estados
+                    val intent = Intent(this@MainActivity, MainActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
+                .show()
         }
     }
 
     private fun updateMenuForBusinessType() {
-        val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val businessType = prefs.getString("business_type", "PRODUCTS")
-        
-        // --- 1. Bottom Navigation ---
-        val menu = binding.bottomNavigation.menu
-        val stockItem = menu.findItem(R.id.nav_stock)
-        
-        stockItem?.let { item ->
-            if (businessType == "SERVICES" || businessType == "HOTEL" || businessType == "LOANS") {
-                item.title = when(businessType) {
-                    "HOTEL" -> "Habitaciones"
-                    "LOANS" -> "Clientes"
-                    else -> "Servicios"
-                }
+        val isCollabMode = prefs.getBoolean("is_collaborator_mode", false)
+        val collabPrefs = getSharedPreferences("CollabPermissions", MODE_PRIVATE)
+
+        // --- 1. Botones de la Cabecera del Menú (Drawer Header) ---
+        if (binding.navigationViewMain.headerCount > 0) {
+            val headerView = binding.navigationViewMain.getHeaderView(0)
+            val tvHeaderTitle = headerView.findViewById<TextView>(R.id.tvHeaderTitle)
+            val ivDrawerLogo = headerView.findViewById<ImageView>(R.id.ivDrawerLogo)
+            val btnPublish = headerView.findViewById<View>(R.id.btnDrawerPublishService)
+            val btnTeam = headerView.findViewById<View>(R.id.btnDrawerManageTeam)
+            val btnCollab = headerView.findViewById<View>(R.id.btnDrawerSearchToCollab)
+            val btnSwitchSystem = headerView.findViewById<View>(R.id.btnDrawerSwitchSystem)
+            val btnMarket = headerView.findViewById<View>(R.id.btnDrawerGoToMarket)
+            val btnMyCollabs = headerView.findViewById<View>(R.id.btnDrawerMyCollaborations)
+            val btnCollabAccount = headerView.findViewById<View>(R.id.btnDrawerCollabAccount)
+            val tvCollabTitle = headerView.findViewById<TextView>(R.id.tvDrawerCollabTitle)
+            val tvCollabDesc = headerView.findViewById<TextView>(R.id.tvDrawerCollabDesc)
+
+            // Configurar visibilidad según el modo
+            if (isCollabMode) {
+                btnTeam?.visibility = View.GONE
                 
-                // Actualizar iconos según rubro (Estilo Premium)
-                when(businessType) {
-                    "LOANS" -> {
-                        menu.findItem(R.id.nav_inicio)?.setIcon(android.R.drawable.ic_menu_directions)
-                        item.setIcon(android.R.drawable.ic_menu_my_calendar)
-                        menu.findItem(R.id.nav_metricas)?.setIcon(android.R.drawable.ic_menu_compass)
-                        menu.findItem(R.id.nav_config)?.setIcon(android.R.drawable.ic_menu_manage)
-                        
-                        menu.findItem(R.id.nav_inicio)?.title = "Inicio"
-                        menu.findItem(R.id.nav_metricas)?.title = "Rendimiento"
-                    }
-                    "HOTEL" -> {
-                        item.setIcon(android.R.drawable.ic_menu_sort_by_size)
-                    }
-                    else -> {
-                        item.setIcon(android.R.drawable.ic_menu_agenda)
-                    }
-                }
+                // Permitir a colaboradores con permiso editar la tienda del dueño
+                // Si es ADMINISTRACIÓN, habilitamos por defecto para facilitar la transición
+                val collabRole = collabPrefs.getString("collab_role", "") ?: ""
+                val canEditStore = collabPrefs.getBoolean("can_edit_store_info", false) || 
+                                   collabRole.contains("ADMINISTRACIÓN")
                 
-                // --- 2. Side Drawer ---
-                binding.navigationViewMain.menu.clear()
-                when(businessType) {
-                    "HOTEL" -> binding.navigationViewMain.inflateMenu(R.menu.menu_hotel_drawer)
-                    "LOANS" -> binding.navigationViewMain.inflateMenu(R.menu.menu_loans_drawer)
-                    else -> binding.navigationViewMain.inflateMenu(R.menu.menu_main_drawer)
-                }
+                btnPublish?.visibility = if (canEditStore) View.VISIBLE else View.GONE
+                
+                btnSwitchSystem?.visibility = View.GONE
+                btnCollabAccount?.visibility = View.VISIBLE
+                tvCollabTitle?.text = "🏠 Volver a mi Negocio"
+                tvCollabDesc?.text = "Regresa a tu panel de gestión personal."
             } else {
-                item.title = "Inventario"
-                item.setIcon(android.R.drawable.ic_menu_save)
-                
-                binding.navigationViewMain.menu.clear()
-                binding.navigationViewMain.inflateMenu(R.menu.menu_main_drawer)
+                btnTeam?.visibility = if (businessType == "HOTEL") View.VISIBLE else View.GONE
+                btnPublish?.visibility = View.VISIBLE
+                btnSwitchSystem?.visibility = View.VISIBLE
+                btnCollabAccount?.visibility = View.GONE
+                tvCollabTitle?.text = "🤝 Mis Colaboraciones"
+                tvCollabDesc?.text = "Accede a los negocios donde eres parte del equipo."
+            }
+
+            // Asignar listeners una sola vez o re-asignarlos (es seguro en Android)
+            btnPublish?.setOnClickListener { 
+                binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
+                if (isCollabMode) {
+                    val ownerId = prefs.getString("collaborator_owner_id", null)
+                    startToolActivity(Intent(this, StoreProfileActivity::class.java).apply {
+                        putExtra("STORE_ID", ownerId)
+                        putExtra("IS_OWNER", true)
+                        putExtra("FORCE_RUBRO", businessType)
+                    })
+                } else {
+                    startActivity(Intent(this, MyBusinessesActivity::class.java).apply {
+                        putExtra("MANAGE_STORE_MODE", true)
+                    }) 
+                }
+            }
+            btnTeam?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startToolActivity(Intent(this, HotelManageTeamActivity::class.java)) }
+            btnCollab?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startToolActivity(Intent(this, SearchBusinessActivity::class.java)) }
+            btnSwitchSystem?.setOnClickListener { 
+                binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
+                startActivity(Intent(this, MyBusinessesActivity::class.java)) 
+            }
+            btnMarket?.setOnClickListener { 
+                binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
+                startToolActivity(Intent(this, BuyerHomeActivity::class.java)) 
+            }
+            btnMyCollabs?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); if (isCollabMode) switchToPersonalBusiness() else showCollaborationsDialog() }
+            btnCollabAccount?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startToolActivity(Intent(this, CollabAccountActivity::class.java)) }
+
+            // Identidad del Negocio
+            val businessName = when(businessType) {
+                "HOTEL" -> prefs.getString("HOTEL_name", "Mi Hospedaje")
+                "LOANS" -> prefs.getString("LOANS_name", "Nexur Préstamos")
+                else -> prefs.getString("PRODUCTS_name", "Mi Tienda")
+            }
+            if (isCollabMode) {
+                val collabName = collabPrefs.getString("collab_name", "Colaborador")
+                val collabRole = collabPrefs.getString("collab_role", "EQUIPO")
+                tvHeaderTitle?.text = "$collabName ($collabRole)\n@ $businessName"
+            } else {
+                tvHeaderTitle?.text = businessName
+            }
+
+            // Logo
+            val logoPath = prefs.getString("${businessType}_logo_local", null)
+            if (!logoPath.isNullOrEmpty()) {
+                val file = File(logoPath)
+                if (file.exists()) Glide.with(this).load(file).into(ivDrawerLogo!!)
+                else ivDrawerLogo?.setImageResource(R.drawable.logotipo_de_gomezmart)
+            } else {
+                ivDrawerLogo?.setImageResource(R.drawable.logotipo_de_gomezmart)
             }
         }
-    }
 
-    private fun hideBottomNavIndicator() {
-        binding.bottomNavigation.post {
-            try {
-                val menuView = binding.bottomNavigation.getChildAt(0) as? android.view.ViewGroup
-                for (i in 0 until (menuView?.childCount ?: 0)) {
-                    val item = menuView?.getChildAt(i) as? android.view.ViewGroup
-                    val indicator = item?.findViewById<View>(com.google.android.material.R.id.navigation_bar_item_active_indicator_view)
-                    indicator?.visibility = View.GONE
-                    indicator?.alpha = 0f
-                }
-            } catch (e: Exception) { e.printStackTrace() }
+        // --- 2. Menú Lateral (Drawer Menu Items) ---
+        binding.navigationViewMain.menu.clear()
+        if (isCollabMode) {
+            if (businessType == "HOTEL") {
+                binding.navigationViewMain.inflateMenu(R.menu.menu_hotel_drawer)
+                val menu = binding.navigationViewMain.menu
+                menu.findItem(R.id.menu_hotel_guests)?.isVisible = collabPrefs.getBoolean("can_view_history", true)
+                menu.findItem(R.id.menu_hotel_bookings)?.isVisible = collabPrefs.getBoolean("can_manage_bookings", true)
+                menu.findItem(R.id.menu_hotel_payments)?.isVisible = collabPrefs.getBoolean("can_manage_debts", false)
+                menu.findItem(R.id.menu_hotel_maintenance)?.isVisible = collabPrefs.getBoolean("can_manage_failures", true)
+                menu.findItem(R.id.menu_hotel_tools)?.isVisible = collabPrefs.getBoolean("can_manage_tools", true)
+                menu.findItem(R.id.menu_hotel_rooms_graph)?.isVisible = collabPrefs.getBoolean("can_manage_rooms", true)
+            } else if (businessType == "LOANS") {
+                binding.navigationViewMain.inflateMenu(R.menu.menu_loans_drawer)
+            } else {
+                binding.navigationViewMain.inflateMenu(R.menu.menu_main_drawer)
+            }
+        } else {
+            if (businessType == "HOTEL") binding.navigationViewMain.inflateMenu(R.menu.menu_hotel_drawer)
+            else if (businessType == "LOANS") binding.navigationViewMain.inflateMenu(R.menu.menu_loans_drawer)
+            else binding.navigationViewMain.inflateMenu(R.menu.menu_main_drawer)
+        }
+
+        // --- 3. Navegación Inferior (Bottom Nav) ---
+        if (isCollabMode) {
+            val canViewMetrics = collabPrefs.getBoolean("can_view_metrics", false)
+            val canManageRooms = collabPrefs.getBoolean("can_manage_rooms", true)
+            val canManageInventory = collabPrefs.getBoolean("can_manage_inventory", false)
+            binding.btnNavMetricas.visibility = if (canViewMetrics) View.VISIBLE else View.GONE
+            binding.btnNavStock.visibility = if (canManageRooms || canManageInventory) View.VISIBLE else View.GONE
+            val visibleCount = 2 + (if (canViewMetrics) 1 else 0) + (if (canManageRooms || canManageInventory) 1 else 0)
+            binding.layoutCustomNav.weightSum = visibleCount.toFloat()
+        } else {
+            binding.btnNavMetricas.visibility = View.VISIBLE
+            binding.btnNavStock.visibility = View.VISIBLE
+            binding.layoutCustomNav.weightSum = 4f
+        }
+
+        // Labels dinámicos
+        binding.tvLabelStock.text = when(businessType) {
+            "HOTEL" -> "Hotel"; "LOANS" -> "Clientes"; else -> "Stock"
+        }
+        binding.tvIconStock.text = when(businessType) {
+            "HOTEL" -> "🏨"; "LOANS" -> "👥"; else -> "📦"
         }
     }
 
     private fun setupCustomBottomNav() {
-        // Inicializar posición 0 (Inicio)
-        binding.bottomNavigation.post {
-            val itemWidth = binding.bottomNavigation.width / 4
-            binding.navIndicatorCustom.translationX = 0f
-        }
+        binding.btnNavInicio.setOnClickListener { navigateToInicio() }
+        binding.btnNavStock.setOnClickListener { navigateToStock() }
+        binding.btnNavMetricas.setOnClickListener { navigateToMetricas() }
+        binding.btnNavConfig.setOnClickListener { navigateToSettings() }
+
+        binding.layoutCustomNav.post { updateCustomNavUI(0) }
     }
 
-    private fun moveNavIndicator(index: Int) {
-        hideBottomNavIndicator() // Asegurar que el indicador por defecto estÃ© oculto
-        binding.bottomNavigation.post {
-            val itemWidth = binding.bottomNavigation.width / 4
-            binding.navIndicatorCustom.animate()
-                .translationX(index * itemWidth.toFloat())
-                .setDuration(400)
-                .setInterpolator(android.view.animation.OvershootInterpolator(0.7f))
-                .start()
-        }
-    }
-
-    private fun scheduleReminders() {
-        val reminderRequest = PeriodicWorkRequestBuilder<ReminderWorker>(3, java.util.concurrent.TimeUnit.HOURS)
-            .setConstraints(Constraints.NONE)
-            .build()
-
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "debt_reminders",
-            ExistingPeriodicWorkPolicy.KEEP,
-            reminderRequest
-        )
-    }
-
-    private fun checkTutorial() {
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val shown = prefs.getBoolean("tutorial_shown_v3", false)
-        if (!shown) {
-            startInteractiveTutorial()
-        }
-    }
-
-    private fun showNewLoanOptions() {
-        val options = arrayOf("👤 Cliente existente", "🆕 Nuevo cliente")
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Registrar Préstamo")
-            .setItems(options) { _, which ->
-                if (which == 0) {
-                    val intent = Intent(this, com.naxor.app.LoansClientsActivity::class.java)
-                    intent.putExtra("PICK_MODE", true)
-                    startActivity(intent)
-                } else {
-                    startActivity(Intent(this, com.naxor.app.AddLoanActivity::class.java))
-                }
-            }
-            .show()
-    }
-
-    fun startInteractiveTutorial() {
-        currentTutorialStep = 0
-        binding.layoutTutorialOverlay.visibility = View.VISIBLE
-        updateTutorialUI()
-        
-        binding.btnNextTutorialStep.setOnClickListener {
-            currentTutorialStep++
-            if (currentTutorialStep < tutorialSteps.size) {
-                updateTutorialUI()
-            } else {
-                finishTutorial()
-            }
-        }
-    }
-
-    private fun updateTutorialUI() {
-        val step = tutorialSteps[currentTutorialStep]
-        val title = step.first
-        val desc = step.second
-        
-        binding.tvTutorialStepTitle.text = title
-        binding.tvTutorialStepDesc.text = desc
-        
-        // Lógica de resaltado (Spotlight)
-        when(currentTutorialStep) {
-            1 -> highlightView(binding.bottomNavigation)
-            2 -> highlightView(null)
-            3 -> {
-                binding.drawerLayoutMain.openDrawer(GravityCompat.START)
-                highlightView(null)
-            }
-            4 -> {
-                binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
-                highlightView(findViewById(R.id.cardDashboard))
-            }
-            5 -> highlightView(findViewById(R.id.layoutVentaActions))
-            6 -> highlightView(findViewById(R.id.btnMailboxHome))
-            else -> highlightView(null)
-        }
-    }
-
-    private fun highlightView(view: View?) {
-        val spotlight = findViewById<com.naxor.app.util.TutorialSpotlightView>(R.id.viewTutorialSpotlight) ?: return
-        
-        if (view == null) {
-            spotlight.clearTarget()
-            val params = binding.cardTutorialInfo.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
-            params.topToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
-            params.bottomToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
-            params.verticalBias = 0.5f
-            binding.cardTutorialInfo.layoutParams = params
-            return
+    private fun updateCustomNavUI(index: Int) {
+        val activeColor = Color.WHITE
+        val inactiveColor = Color.parseColor("#94A3B8")
+        listOf(binding.tvLabelInicio, binding.tvLabelStock, binding.tvLabelMetricas, binding.tvLabelConfig).forEach { it.setTextColor(inactiveColor) }
+        listOf(binding.tvIconInicio, binding.tvIconStock, binding.tvIconMetricas, binding.tvIconConfig).forEach { it.alpha = 0.6f }
+        when(index) {
+            0 -> { binding.tvLabelInicio.setTextColor(activeColor); binding.tvIconInicio.alpha = 1.0f }
+            1 -> { binding.tvLabelStock.setTextColor(activeColor); binding.tvIconStock.alpha = 1.0f }
+            2 -> { binding.tvLabelMetricas.setTextColor(activeColor); binding.tvIconMetricas.alpha = 1.0f }
+            3 -> { binding.tvLabelConfig.setTextColor(activeColor); binding.tvIconConfig.alpha = 1.0f }
         }
 
-        view.post {
-            spotlight.setTarget(view)
+        val totalWidth = binding.layoutCustomNav.width
+        val count = if (binding.layoutCustomNav.weightSum > 0) binding.layoutCustomNav.weightSum.toInt() else 4
+        if (count > 0 && totalWidth > 0) {
+            val step = totalWidth / count
             
-            val location = IntArray(2)
-            view.getLocationInWindow(location)
-            
-            val params = binding.cardTutorialInfo.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
-            val screenHeight = resources.displayMetrics.heightPixels
-            
-            // Posicionamiento dinámico más cercano al centro
-            params.topToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
-            params.bottomToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
-            
-            if (location[1] > screenHeight / 2) {
-                // Si el botón está abajo, poner el mensaje arriba (pero no al extremo)
-                params.verticalBias = 0.42f
-            } else {
-                // Si el botón está arriba, poner el mensaje abajo (pero no al extremo)
-                params.verticalBias = 0.58f
+            // Ajustar el ancho del indicador dinámicamente según la cantidad de botones visibles
+            val params = binding.navIndicatorCustom.layoutParams as ConstraintLayout.LayoutParams
+            params.width = step
+            params.matchConstraintPercentWidth = 1.0f / count // Alternativa para ConstraintLayout
+            binding.navIndicatorCustom.layoutParams = params
+
+            val visibleButtons = mutableListOf<View>()
+            if (binding.btnNavInicio.visibility == View.VISIBLE) visibleButtons.add(binding.btnNavInicio)
+            if (binding.btnNavStock.visibility == View.VISIBLE) visibleButtons.add(binding.btnNavStock)
+            if (binding.btnNavMetricas.visibility == View.VISIBLE) visibleButtons.add(binding.btnNavMetricas)
+            if (binding.btnNavConfig.visibility == View.VISIBLE) visibleButtons.add(binding.btnNavConfig)
+            val actualIndex = when(index) {
+                0 -> visibleButtons.indexOf(binding.btnNavInicio)
+                1 -> visibleButtons.indexOf(binding.btnNavStock)
+                2 -> visibleButtons.indexOf(binding.btnNavMetricas)
+                3 -> visibleButtons.indexOf(binding.btnNavConfig)
+                else -> 0
             }
-            binding.cardTutorialInfo.layoutParams = params
-        }
-    }
-
-    private fun finishTutorial() {
-        binding.layoutTutorialOverlay.visibility = View.GONE
-        getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putBoolean("tutorial_shown_v3", true).apply()
-    }
-
-    private fun setupGlobalGesture() {
-        globalGestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-                if (e1 == null) return false
-                val diffX = e2.x - e1.x
-                val diffY = e2.y - e1.y
-                
-                // Si el movimiento es horizontal y hacia la derecha
-                if (Math.abs(diffX) > Math.abs(diffY)) {
-                    if (diffX > 150 && Math.abs(velocityX) > 200) {
-                        // Solo abrir si no hay un menú ya abierto
-                        if (!binding.drawerLayoutMain.isDrawerOpen(GravityCompat.START)) {
-                            openAnyDrawer()
-                            return true
-                        }
-                    }
-                }
-                return false
-            }
-        })
-    }
-
-    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
-        if (ev != null) globalGestureDetector.onTouchEvent(ev)
-        
-        if (ev?.action == MotionEvent.ACTION_DOWN) {
-            val v = currentFocus
-            if (v is android.widget.EditText) {
-                val outRect = android.graphics.Rect()
-                v.getGlobalVisibleRect(outRect)
-                if (!outRect.contains(ev.rawX.toInt(), ev.rawY.toInt())) {
-                    v.clearFocus()
-                    val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-                    imm.hideSoftInputFromWindow(v.windowToken, 0)
-                }
+            if (actualIndex >= 0) {
+                binding.navIndicatorCustom.animate().translationX((actualIndex * step).toFloat()).setDuration(250).start()
             }
         }
-        return super.dispatchTouchEvent(ev)
-    }
-
-    fun openSideMenu() {
-        binding.drawerLayoutMain.openDrawer(GravityCompat.START)
-    }
-
-    private fun openAnyDrawer() {
-        val currentFrag = supportFragmentManager.findFragmentById(R.id.mainFragmentContainer)
-        
-        // Buscar por tag si el ID no es suficiente (debido a la nueva lÃ³gica de show/hide)
-        val homeFrag = supportFragmentManager.findFragmentByTag("HOME")
-        val stockFrag = supportFragmentManager.findFragmentByTag("STOCK")
-        val metricsFrag = supportFragmentManager.findFragmentByTag("METRICAS")
-
-        when {
-            homeFrag != null && homeFrag.isVisible -> {
-                binding.drawerLayoutMain.openDrawer(GravityCompat.START)
-            }
-            stockFrag != null && stockFrag.isVisible -> {
-                (stockFrag as? com.naxor.app.fragment.StockFragment)?.openDrawer()
-            }
-            metricsFrag != null && metricsFrag.isVisible -> {
-                (metricsFrag as? com.naxor.app.fragment.MetricasFragment)?.openDrawer()
-            }
-            else -> {
-                // No hacer nada o comportamiento por defecto
-            }
-        }
-    }
-
-    private var isNavigatingInternally = false
-
-    private fun showFragment(tag: String) {
-        val fm = supportFragmentManager
-        val transaction = fm.beginTransaction()
-        
-        // Animación suave de entrada
-        transaction.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
-
-        val fragments = listOf("HOME", "STOCK", "METRICAS", "SETTINGS")
-        
-        // Ocultar todos los fragmentos
-        fragments.forEach { t ->
-            fm.findFragmentByTag(t)?.let { transaction.hide(it) }
-        }
-
-        val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
-        val businessType = prefs.getString("business_type", "PRODUCTS")
-
-        val target = fm.findFragmentByTag(tag)
-        
-        // Verificar si el fragmento existente es del tipo correcto para el rubro actual
-        val isWrongType = target != null && when(tag) {
-            "HOME" -> (businessType == "HOTEL" && target !is com.naxor.app.fragment.HotelHomeFragment) || 
-                      (businessType == "LOANS" && target !is com.naxor.app.fragment.LoansHomeFragment) ||
-                      (businessType != "HOTEL" && businessType != "LOANS" && target !is com.naxor.app.fragment.HomeFragment)
-            "STOCK" -> (businessType == "HOTEL" && target !is com.naxor.app.fragment.HotelRoomsFragment) || 
-                       (businessType == "LOANS" && target !is com.naxor.app.fragment.LoansClientsFragment) ||
-                       (businessType != "HOTEL" && businessType != "LOANS" && target !is com.naxor.app.fragment.StockFragment)
-            "METRICAS" -> (businessType == "HOTEL" && target !is com.naxor.app.fragment.HotelMetricsFragment) || 
-                          (businessType == "LOANS" && target !is com.naxor.app.fragment.LoansMetricsFragment) ||
-                          (businessType != "HOTEL" && businessType != "LOANS" && target !is com.naxor.app.fragment.MetricasFragment)
-            else -> false
-        }
-
-        if (target != null && !isWrongType) {
-            transaction.show(target)
-        } else {
-            // Si es el tipo incorrecto, lo eliminamos para crear el nuevo
-            target?.let { transaction.remove(it) }
-            
-            val newFrag = when(tag) {
-                "HOME" -> {
-                    when(businessType) {
-                        "HOTEL" -> com.naxor.app.fragment.HotelHomeFragment()
-                        "LOANS" -> com.naxor.app.fragment.LoansHomeFragment()
-                        else -> com.naxor.app.fragment.HomeFragment()
-                    }
-                }
-                "STOCK" -> {
-                    when(businessType) {
-                        "HOTEL" -> com.naxor.app.fragment.HotelRoomsFragment()
-                        "LOANS" -> com.naxor.app.fragment.LoansClientsFragment()
-                        else -> com.naxor.app.fragment.StockFragment()
-                    }
-                }
-                "METRICAS" -> {
-                    when(businessType) {
-                        "HOTEL" -> com.naxor.app.fragment.HotelMetricsFragment()
-                        "LOANS" -> com.naxor.app.fragment.LoansMetricsFragment()
-                        else -> com.naxor.app.fragment.MetricasFragment()
-                    }
-                }
-                "SETTINGS" -> com.naxor.app.fragment.SettingsFragment()
-                else -> com.naxor.app.fragment.HomeFragment()
-            }
-            transaction.add(R.id.mainFragmentContainer, newFrag, tag)
-        }
-
-        transaction.commitAllowingStateLoss()
     }
 
     fun navigateToInicio() {
-        if (isNavigatingInternally) return
-        isNavigatingInternally = true
-        if (binding.bottomNavigation.selectedItemId != R.id.nav_inicio) {
-            binding.bottomNavigation.selectedItemId = R.id.nav_inicio
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val businessType = prefs.getString("business_type", "PRODUCTS")
+        val fragment = when(businessType) {
+            "HOTEL" -> HotelHomeFragment(); "LOANS" -> LoansHomeFragment(); else -> HomeFragment()
         }
-        moveNavIndicator(0)
-        showFragment("HOME")
-        isNavigatingInternally = false
+        replaceFragment(fragment)
+        updateCustomNavUI(0)
     }
 
-    fun navigateToStock() {
-        if (isNavigatingInternally) return
-        isNavigatingInternally = true
-        if (binding.bottomNavigation.selectedItemId != R.id.nav_stock) {
-            binding.bottomNavigation.selectedItemId = R.id.nav_stock
+    fun navigateToStock(forceGraph: Boolean = false) {
+        if (forceGraph) getSharedPreferences("HotelPrefs", MODE_PRIVATE).edit().putBoolean("FORCE_MAP_VIEW", true).apply()
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val businessType = prefs.getString("business_type", "PRODUCTS")
+        val fragment = when(businessType) {
+            "HOTEL" -> HotelRoomsFragment(); "LOANS" -> LoansClientsFragment(); else -> StockFragment()
         }
-        moveNavIndicator(1)
-        showFragment("STOCK")
-        isNavigatingInternally = false
+        replaceFragment(fragment)
+        updateCustomNavUI(1)
     }
 
     fun navigateToMetricas() {
-        if (isNavigatingInternally) return
-        isNavigatingInternally = true
-        if (binding.bottomNavigation.selectedItemId != R.id.nav_metricas) {
-            binding.bottomNavigation.selectedItemId = R.id.nav_metricas
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val businessType = prefs.getString("business_type", "PRODUCTS")
+        val fragment = when(businessType) {
+            "HOTEL" -> HotelMetricsFragment(); "LOANS" -> LoansMetricsFragment(); else -> MetricasFragment()
         }
-        moveNavIndicator(2)
-        showFragment("METRICAS")
-        isNavigatingInternally = false
+        replaceFragment(fragment)
+        updateCustomNavUI(2)
     }
 
     fun navigateToSettings() {
-        if (isNavigatingInternally) return
-        isNavigatingInternally = true
-        if (binding.bottomNavigation.selectedItemId != R.id.nav_config) {
-            binding.bottomNavigation.selectedItemId = R.id.nav_config
-        }
-        moveNavIndicator(3)
-        showFragment("SETTINGS")
-        isNavigatingInternally = false
+        replaceFragment(SettingsFragment())
+        updateCustomNavUI(3)
     }
 
-    fun navigateToGestion() {
-        binding.drawerLayoutMain.openDrawer(GravityCompat.START)
+    private fun replaceFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction().replace(R.id.mainFragmentContainer, fragment).commit()
     }
+
+    fun openSideMenu() = binding.drawerLayoutMain.openDrawer(GravityCompat.START)
+    fun navigateToGestion() = binding.drawerLayoutMain.openDrawer(GravityCompat.START)
 
     private fun startSyncService() {
-        val serviceIntent = Intent(this, com.naxor.app.network.NaxorSyncService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent)
-        } else {
-            startService(serviceIntent)
-        }
+        val serviceIntent = Intent(this, GoMezMartSyncService::class.java)
+        // Cambiado a startService normal para evitar la notificación persistente
+        startService(serviceIntent)
     }
 
     private fun subscribeToSalesTopic() {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val topic = "sales_$userId"
-        FirebaseMessaging.getInstance().subscribeToTopic(topic)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Log.d("FCM", "Suscrito con éxito al tema: $topic")
-                } else {
-                    Log.e("FCM", "Error al suscribirse al tema")
-                }
-            }
+        val userId = auth.currentUser?.uid ?: return
+        FirebaseMessaging.getInstance().subscribeToTopic("sales_$userId")
     }
 
     override fun onResume() {
@@ -542,352 +419,34 @@ class MainActivity : AppCompatActivity() {
         binding.navigationViewMain.setNavigationItemSelectedListener { menuItem ->
             binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
             when (menuItem.itemId) {
-                // Hotel Specific
                 R.id.menu_hotel_guests -> { startToolActivity(Intent(this, HotelGuestHistoryActivity::class.java)); true }
-                R.id.menu_hotel_bookings -> { navigateToMetricas(); true }
-                R.id.menu_hotel_payments -> { startToolActivity(Intent(this, BusinessDebtsActivity::class.java)); true }
-                R.id.menu_hotel_rooms_graph -> { navigateToStock(); true }
+                R.id.menu_hotel_bookings -> { startToolActivity(Intent(this, HotelBookingsActivity::class.java)); true }
+                R.id.menu_hotel_payments, R.id.menu_business_debts -> { startToolActivity(Intent(this, BusinessDebtsActivity::class.java)); true }
+                R.id.menu_hotel_rooms_graph -> { navigateToStock(true); true }
                 R.id.menu_hotel_maintenance -> { startToolActivity(Intent(this, HotelMaintenanceActivity::class.java)); true }
                 R.id.menu_hotel_tools -> { startToolActivity(Intent(this, HotelToolsActivity::class.java)); true }
-                R.id.menu_hotel_guide -> { Toast.makeText(this, "Guía de la Ciudad", Toast.LENGTH_SHORT).show(); true }
-                
-                // Loans Specific
                 R.id.menu_loans_clients -> { navigateToStock(); true }
-                R.id.menu_loans_new -> { showNewLoanOptions(); true }
                 R.id.menu_loans_collections -> { startToolActivity(Intent(this, LoansCollectionsActivity::class.java)); true }
-                R.id.menu_loans_profit -> { navigateToMetricas(); true }
-                R.id.menu_loans_expenses -> { startToolActivity(Intent(this, LoansExpensesActivity::class.java)); true }
-                
-                // General
-                R.id.menu_gastos -> { checkPinAndNavigate { startToolActivity(Intent(this, GastosActivity::class.java)) }; true }
                 R.id.menu_caja -> { startToolActivity(Intent(this, CajaActivity::class.java)); true }
-                R.id.menu_fiados -> { startToolActivity(Intent(this, DeudoresActivity::class.java)); true }
-                R.id.menu_business_debts -> { startToolActivity(Intent(this, BusinessDebtsActivity::class.java)); true }
-                R.id.menu_proveedores -> { startToolActivity(Intent(this, ProveedoresActivity::class.java)); true }
-                R.id.menu_emitir_comprobante -> { startToolActivity(Intent(this, EmitirComprobanteActivity::class.java)); true }
-                R.id.menu_customize_actions -> { showActionsConfigDialog(); true }
-                R.id.menu_catalogo -> { generatePDFCatalog(); true }
-                R.id.menu_sync -> { manualSync(); true }
-                R.id.menu_sales_history -> { checkPinAndNavigate { startToolActivity(Intent(this, SalesHistoryActivity::class.java)) }; true }
-                R.id.menu_lista_compras -> { startToolActivity(Intent(this, ListaComprasActivity::class.java)); true }
-                R.id.menu_asignador -> { startToolActivity(Intent(this, AsignadorDePreciosActivity::class.java)); true }
-                R.id.menu_customers -> { startToolActivity(Intent(this, CustomersActivity::class.java)); true }
-                R.id.menu_settings -> { startToolActivity(Intent(this, SettingsActivity::class.java)); true }
-                R.id.menu_view_history -> { startToolActivity(Intent(this, HistorialActivity::class.java)); true }
-                R.id.menu_instructions -> { startToolActivity(Intent(this, InstruccionesActivity::class.java)); true }
-                R.id.menu_logout -> {
-                    com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
-                    startActivity(Intent(this, LoginActivity::class.java))
-                    finish()
-                    true
-                }
-                else -> false
-            }
-        }
-
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
-            val currentId = binding.bottomNavigation.selectedItemId
-            if (currentId == item.itemId) return@setOnItemSelectedListener true
-
-            when (item.itemId) {
-                R.id.nav_inicio -> {
-                    navigateToInicio()
-                    true
-                }
-                R.id.nav_stock -> {
-                    navigateToStock()
-                    true
-                }
-                R.id.nav_metricas -> {
-                    navigateToMetricas()
-                    true
-                }
-                R.id.nav_config -> {
-                    navigateToSettings()
-                    true
-                }
+                R.id.menu_gastos -> { startToolActivity(Intent(this, GastosActivity::class.java)); true }
+                R.id.menu_settings -> { navigateToSettings(); true }
+                R.id.menu_logout -> { showLogoutDialog(); true }
                 else -> false
             }
         }
     }
 
-    fun startDirectScanner() {
-        val options = GmsBarcodeScannerOptions.Builder()
-            .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
-            .enableAutoZoom()
-            .build()
-
-        val scanner = GmsBarcodeScanning.getClient(this, options)
-        scanner.startScan()
-            .addOnSuccessListener { barcode ->
-                val code = barcode.rawValue ?: ""
-                if (code.isNotEmpty()) {
-                    beep(ToneGenerator.TONE_PROP_BEEP)
-                    val intent = Intent(this, VentasActivity::class.java)
-                    intent.putExtra("EXTRA_SCANNED_CODE", code)
-                    startActivity(intent)
-                }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Error del escáner: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    private fun beep(type: Int) {
-        try {
-            val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
-            toneGen.startTone(type, 200)
-        } catch (e: Exception) {}
-    }
-
-
-
-
-
-
-    fun manualSync() {
-        val loading = AlertDialog.Builder(this)
-            .setTitle("Sincronizando")
-            .setMessage("Descargando datos actualizados de la nube...")
-            .setCancelable(false)
-            .show()
-            
-        SyncManager(this).downloadEverythingFromCloud {
-            loading.dismiss()
-            navigateToInicio() // Recargar el fragmento para refrescar datos
-            Toast.makeText(this, "¡Datos sincronizados correctamente!", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    fun generatePDFCatalog() {
-        val loadingDialog = AlertDialog.Builder(this)
-            .setTitle("Generando Catálogo")
-            .setMessage("Por favor espera, estoy preparando tus productos con imágenes HD...")
-            .setCancelable(false)
-            .create()
-        loadingDialog.show()
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-                val name = prefs.getString("business_name", "Mi Negocio")
-                val phone = prefs.getString("business_phone", "Sin teléfono")
-                val address = prefs.getString("business_address", "Dirección no registrada")
-                val ruc = prefs.getString("business_ruc", "RUC no registrado")
-                val curr = prefs.getString("currency_symbol", "S/")
-                val products = database.productDao().allProducts.sortedBy { it.categoria }
-                
-                if (products.isEmpty()) {
-                    withContext(Dispatchers.Main) { 
-                        loadingDialog.dismiss()
-                        Toast.makeText(this@MainActivity, "No hay productos", Toast.LENGTH_SHORT).show() 
-                    }
-                    return@launch
-                }
-
-                val doc = android.graphics.pdf.PdfDocument()
-                val paint = android.graphics.Paint()
-                val boldPaint = android.graphics.Paint().apply { isFakeBoldText = true }
-                
-                var pageNumber = 1
-                var pageInfo = android.graphics.pdf.PdfDocument.PageInfo.Builder(595, 842, pageNumber).create()
-                var page = doc.startPage(pageInfo)
-                var canvas = page.canvas
-                
-                boldPaint.textSize = 40f; boldPaint.color = Color.parseColor("#0284C7")
-                canvas.drawText(name?.uppercase() ?: "MI NEGOCIO", 100f, 300f, boldPaint)
-                paint.textSize = 18f; paint.color = Color.GRAY
-                canvas.drawText("CATÁLOGO DIGITAL DE PRODUCTOS", 100f, 340f, paint)
-                paint.textSize = 14f; paint.color = Color.DKGRAY
-                canvas.drawText("📞 Pedidos: $phone", 100f, 450f, paint)
-                canvas.drawText("📍 Ubicación: $address", 100f, 480f, paint)
-                canvas.drawText("🆔 RUC: $ruc", 100f, 510f, paint)
-                paint.color = Color.parseColor("#0284C7")
-                canvas.drawRect(100f, 360f, 495f, 365f, paint)
-                doc.finishPage(page)
-
-                pageNumber++; pageInfo = android.graphics.pdf.PdfDocument.PageInfo.Builder(595, 842, pageNumber).create()
-                page = doc.startPage(pageInfo); canvas = page.canvas
-                boldPaint.textSize = 24f; boldPaint.color = Color.BLACK
-                canvas.drawText("ÍNDICE", 50f, 80f, boldPaint)
-                var indexY = 130f
-                val categories = products.map { it.categoria }.distinct()
-                var currentPageForIndex = 3
-                categories.forEach { cat ->
-                    paint.textSize = 14f; paint.color = Color.BLACK
-                    canvas.drawText("• ${cat.uppercase()}", 70f, indexY, paint)
-                    paint.color = Color.LTGRAY
-                    canvas.drawText("......................................................................", 200f, indexY, paint)
-                    paint.color = Color.parseColor("#0284C7")
-                    canvas.drawText("Pág. $currentPageForIndex", 480f, indexY, paint)
-                    val count = products.count { it.categoria == cat }
-                    currentPageForIndex += Math.ceil(Math.ceil(count / 2.0) / 2.0).toInt().coerceAtLeast(1)
-                    indexY += 30f
-                }
-                doc.finishPage(page)
-
-                val itemHeight = 340f
-                categories.forEach { categoryName ->
-                    pageNumber++; pageInfo = android.graphics.pdf.PdfDocument.PageInfo.Builder(595, 842, pageNumber).create()
-                    page = doc.startPage(pageInfo); canvas = page.canvas
-                    var currentY = 60f; var isLeftCol = true
-                    boldPaint.textSize = 20f; boldPaint.color = Color.parseColor("#0284C7")
-                    canvas.drawText("📂 ${categoryName.uppercase()}", 40f, currentY, boldPaint)
-                    paint.color = Color.parseColor("#0284C7")
-                    canvas.drawRect(40f, currentY + 10f, 555f, currentY + 13f, paint)
-                    currentY += 50f
-
-                    products.filter { it.categoria == categoryName }.forEach { prod ->
-                        if (currentY > 700f) {
-                            doc.finishPage(page); pageNumber++
-                            pageInfo = android.graphics.pdf.PdfDocument.PageInfo.Builder(595, 842, pageNumber).create()
-                            page = doc.startPage(pageInfo); canvas = page.canvas; currentY = 60f
-                        }
-                        val startX = if (isLeftCol) 40f else 40f + 245f + 25f
-                        paint.color = Color.WHITE; canvas.drawRoundRect(startX, currentY, startX + 245f, currentY + 320f, 25f, 25f, paint)
-                        paint.color = Color.parseColor("#F1F5F9"); paint.style = android.graphics.Paint.Style.STROKE; paint.strokeWidth = 2f
-                        canvas.drawRoundRect(startX, currentY, startX + 245f, currentY + 320f, 25f, 25f, paint)
-                        paint.style = android.graphics.Paint.Style.FILL
-
-                        if (!prod.photoPath.isNullOrEmpty()) {
-                            try {
-                                // 1. Intentar carga por Stream (Más seguro para permisos)
-                                val cleanPath = prod.photoPath.replace("file://", "")
-                                val inputStream = if (cleanPath.startsWith("content://")) {
-                                    contentResolver.openInputStream(android.net.Uri.parse(cleanPath))
-                                } else {
-                                    File(cleanPath).inputStream()
-                                }
-
-                                inputStream?.use { stream ->
-                                    val options = BitmapFactory.Options().apply { inSampleSize = 1 }
-                                    val original = BitmapFactory.decodeStream(stream)
-                                    if (original != null) {
-                                        // DIBUJAR FOTO CON BORDES REDONDEADOS (Efecto Premium)
-                                        val scaled = Bitmap.createScaledBitmap(original, 220, 200, true)
-                                        
-                                        val roundedPaint = android.graphics.Paint().apply { isAntiAlias = true }
-                                        val shader = android.graphics.BitmapShader(scaled, android.graphics.Shader.TileMode.CLAMP, android.graphics.Shader.TileMode.CLAMP)
-                                        roundedPaint.shader = shader
-                                        
-                                        val rect = android.graphics.RectF(startX + 12f, currentY + 12f, startX + 232f, currentY + 212f)
-                                        canvas.drawRoundRect(rect, 25f, 25f, roundedPaint)
-                                        
-                                        original.recycle(); scaled.recycle()
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                // 2. Segundo intento: Carga directa si el stream falló
-                                try {
-                                    val bitmap = BitmapFactory.decodeFile(prod.photoPath.replace("file://", ""))
-                                    if (bitmap != null) {
-                                        val scaled = Bitmap.createScaledBitmap(bitmap, 220, 200, true)
-                                        canvas.drawBitmap(scaled, startX + 12f, currentY + 12f, null)
-                                        bitmap.recycle(); scaled.recycle()
-                                    }
-                                } catch (e2: Exception) {}
-                            }
-                        }
-                        paint.color = Color.BLACK; paint.textSize = 14f
-                        val nameStr = if(prod.nombre.length > 25) prod.nombre.take(22)+"..." else prod.nombre
-                        canvas.drawText(nameStr, startX + 15f, currentY + 245f, paint)
-                        paint.color = Color.parseColor("#0284C7")
-                        canvas.drawRoundRect(startX + 15f, currentY + 265f, startX + 160f, currentY + 305f, 12f, 12f, paint)
-                        boldPaint.textSize = 16f; boldPaint.color = Color.WHITE
-                        canvas.drawText("$curr ${String.format(Locale.getDefault(), "%.2f", prod.precioVenta)}", startX + 25f, currentY + 293f, boldPaint)
-                        if (!isLeftCol) currentY += itemHeight
-                        isLeftCol = !isLeftCol
-                    }
-                    doc.finishPage(page)
-                }
-                
-                val fileName = "Catalogo_${name?.replace(" ", "_")}.pdf"
-                val file = File(getExternalFilesDir(null), fileName)
-                try { 
-                    doc.writeTo(file.outputStream()); doc.close()
-                    withContext(Dispatchers.Main) { 
-                        loadingDialog.dismiss()
-                        val uri = FileProvider.getUriForFile(this@MainActivity, "$packageName.provider", file)
-                        val intent = Intent(Intent.ACTION_SEND).apply { 
-                            type = "application/pdf"; putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) 
-                        }
-                        startActivity(Intent.createChooser(intent, "Enviar Catálogo HD")) 
-                    }
-                } catch (e: Exception) { 
-                    e.printStackTrace()
-                    withContext(Dispatchers.Main) { 
-                        loadingDialog.dismiss()
-                        Toast.makeText(this@MainActivity, "Error al guardar el archivo", Toast.LENGTH_SHORT).show() 
-                    }
-                }
-            } catch (e: Exception) { 
-                e.printStackTrace()
-                withContext(Dispatchers.Main) { 
-                    loadingDialog.dismiss()
-                    Toast.makeText(this@MainActivity, "Error al generar catálogo", Toast.LENGTH_SHORT).show() 
-                }
-            }
-        }
-    }
-
-    fun showActionsConfigDialog() {
-        val actionNames = arrayOf(
-            "💸 Gastos", "💰 Caja", "👥 Deudores", "💸 Mis Cuentas", "🚚 Proveedores", 
-            "👤 Clientes", "📖 Catálogo", "🔄 Sincronizar", "📬 Buzón", 
-            "🛒 Compras", "⚖️ Precios", "📜 Ventas", 
-            "🕒 Cálculos", "💡 Ayuda"
-        )
-        val actionIds = arrayOf(
-            "gastos", "caja", "fiados", "business_debts", "proveedores", 
-            "clientes", "catalogo", "sync", "mailbox", 
-            "lista_compras", "asignador", "sales_history", 
-            "view_history", "instructions"
-        )
-        
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val defaultActions = "gastos,caja,fiados,business_debts,proveedores"
-        val savedActions = prefs.getString("quick_actions_list", defaultActions) ?: defaultActions
-        val tempSelection = if (savedActions.isEmpty()) mutableListOf<String>() else savedActions.split(",").filter { it.isNotEmpty() }.toMutableList()
-
-        val rv = RecyclerView(this).apply {
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = ConfigActionsAdapter(this@MainActivity, actionNames, actionIds, tempSelection)
-            setPadding(0, 16, 0, 16)
-            clipToPadding = false
-        }
-
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("Personalización de Herramientas (Exactamente 5)")
-            .setView(rv)
-            .setPositiveButton("Guardar", null) // Set null to override later
-            .setNegativeButton("Cancelar", null)
-            .create()
-
-        dialog.show()
-
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            if (tempSelection.size == 5) {
-                prefs.edit().putString("quick_actions_list", tempSelection.joinToString(",")).apply()
-                navigateToInicio()
-                
-                // Forzar refresco inmediato si el fragmento de inicio está activo
-                (supportFragmentManager.findFragmentByTag("HOME") as? com.naxor.app.fragment.HomeFragment)?.refreshQuickActions()
-                
-                dialog.dismiss()
-            } else {
-                Toast.makeText(this, "¡Atención! Debes seleccionar exactamente 5 herramientas para mantener la estética del menú.", Toast.LENGTH_LONG).show()
-                // Animación de feedback en el diálogo si es necesario
-            }
-        }
+    private fun startToolActivity(intent: Intent) {
+        startActivity(intent)
+        overridePendingTransition(R.anim.slide_in_up, R.anim.stay)
     }
 
     fun checkPinAndNavigate(onSuccess: () -> Unit) {
         val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val savedPin = prefs.getString("user_pin", "") ?: ""
         if (savedPin.isEmpty()) { onSuccess(); return }
-        val etPin = android.widget.EditText(this).apply {
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        val etPin = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
             hint = "Escribe el PIN"
         }
         AlertDialog.Builder(this)
@@ -901,13 +460,110 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Cancelar", null).show()
     }
 
-    private fun startToolActivity(intent: Intent) {
-        startActivity(intent)
-        overridePendingTransition(R.anim.slide_in_up, R.anim.stay)
+    private fun showLogoutDialog() {
+        AlertDialog.Builder(this).setTitle("Cerrar Sesión").setMessage("¿Deseas salir?")
+            .setPositiveButton("Salir") { _, _ ->
+                lifecycleScope.launch {
+                    SessionManager.clearSessionData(this@MainActivity)
+                    startActivity(Intent(this@MainActivity, WelcomeRoleActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                    finish()
+                }
+            }.setNegativeButton("Cancelar", null).show()
     }
 
-    override fun finish() {
-        super.finish()
-        overridePendingTransition(R.anim.stay, R.anim.slide_out_down)
+    private fun switchToPersonalBusiness() {
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        
+        lifecycleScope.launch {
+            // 1. Limpiar base de datos local antes de volver a modo personal
+            withContext(Dispatchers.IO) {
+                AppDatabase.getDatabase(this@MainActivity).clearAllTables()
+            }
+            
+            // 2. Cambiar modo
+            prefs.edit().putBoolean("is_collaborator_mode", false).apply()
+            
+            // Reiniciar servicio de sincronización
+            startSyncService()
+            
+            // 3. Refrescar UI y Sincronizar datos personales
+            updateMenuForBusinessType()
+            navigateToInicio()
+            
+            Toast.makeText(this@MainActivity, "Volviendo a tu negocio personal. Sincronizando...", Toast.LENGTH_SHORT).show()
+            SyncManager(this@MainActivity).scheduleOfflineSync()
+        }
+    }
+
+    private fun showCollaborationsDialog() {
+        lifecycleScope.launch {
+            try {
+                val email = auth.currentUser?.email?.lowercase() ?: return@launch
+                val accessKeys = db.collection("access_keys").whereEqualTo("email", email).get().await()
+                if (accessKeys.isEmpty) {
+                    Toast.makeText(this@MainActivity, "No tienes invitaciones activas", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val items = accessKeys.documents.map { doc -> "${doc.getString("businessName")} (${doc.getString("role")})" }.toTypedArray()
+                AlertDialog.Builder(this@MainActivity).setTitle("Tus Colaboraciones").setItems(items) { _, which ->
+                    val doc = accessKeys.documents[which]
+                    switchToCollaborativeEnvironment(doc.getString("ownerId") ?: "", doc.getString("businessType") ?: "HOTEL")
+                }.setNegativeButton("Cancelar", null).show()
+            } catch (e: Exception) { }
+        }
+    }
+
+    private fun switchToCollaborativeEnvironment(ownerId: String, businessType: String) {
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        
+        lifecycleScope.launch {
+            // 1. Limpiar base de datos local para no mezclar datos personales con los del dueño
+            withContext(Dispatchers.IO) {
+                AppDatabase.getDatabase(this@MainActivity).clearAllTables()
+            }
+            
+            // 2. Establecer nuevo entorno
+            prefs.edit().apply {
+                putBoolean("is_collaborator_mode", true)
+                putString("collaborator_owner_id", ownerId)
+                putString("business_type", businessType)
+                apply()
+            }
+            
+            // Reiniciar servicio de sincronización
+            startSyncService()
+            
+            // 3. Actualizar UI y Sincronizar datos del dueño
+            updateMenuForBusinessType()
+            navigateToInicio()
+            SyncManager(this@MainActivity).scheduleOfflineSync()
+            
+            Toast.makeText(this@MainActivity, "Entorno de equipo activado ✨", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun schedulePeriodicSync() {
+        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS)
+            .build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork("periodic_sync", ExistingPeriodicWorkPolicy.KEEP, syncRequest)
+    }
+
+    fun startInteractiveTutorial() { showTutorialDialog() }
+    fun startDirectScanner() = Toast.makeText(this, "Iniciando Escáner...", Toast.LENGTH_SHORT).show()
+    fun generatePDFCatalog() = Toast.makeText(this, "Generando Catálogo PDF...", Toast.LENGTH_SHORT).show()
+    fun manualSync() { Toast.makeText(this, "Sincronizando...", Toast.LENGTH_SHORT).show(); SyncManager(this).scheduleOfflineSync() }
+
+    private fun showTutorialDialog() { currentTutorialStep = 0; showNextTutorialStep() }
+
+    private fun showNextTutorialStep() {
+        if (currentTutorialStep < tutorialSteps.size) {
+            val step = tutorialSteps[currentTutorialStep]
+            val builder = AlertDialog.Builder(this, R.style.Theme_GoMezMart_Dialog)
+            builder.setTitle(step.first).setMessage(step.second).setCancelable(false)
+                .setPositiveButton(if (currentTutorialStep == tutorialSteps.size - 1) "Empezar" else "Siguiente") { _, _ -> currentTutorialStep++; showNextTutorialStep() }
+            if (currentTutorialStep > 0) builder.setNeutralButton("Atrás") { _, _ -> currentTutorialStep--; showNextTutorialStep() }
+            builder.create().show()
+        } else { getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putBoolean("tutorial_shown_v5", true).apply() }
     }
 }

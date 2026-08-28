@@ -1,39 +1,96 @@
 package com.naxor.app
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.core.content.edit
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.textfield.TextInputLayout
 import com.naxor.app.adapter.HotelToolAdapter
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.HotelToolEntity
 import com.naxor.app.databinding.ActivityHotelToolsBinding
+import com.naxor.app.databinding.DialogAddHotelToolBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
-class HotelToolsActivity : AppCompatActivity() {
+class HotelToolsActivity : BaseActivity() {
 
     private lateinit var binding: ActivityHotelToolsBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
     private lateinit var adapter: HotelToolAdapter
+    private var deleteMenuItem: MenuItem? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityHotelToolsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.toolbarTools.setNavigationOnClickListener { finish() }
-        
+        setupToolbar()
         setupRecyclerView()
         loadData()
         
         binding.fabAddTool.setOnClickListener { showAddToolDialog() }
 
         checkIntroTutorial()
+    }
+
+    private fun setupToolbar() {
+        setSupportActionBar(binding.toolbarTools)
+        binding.toolbarTools.setNavigationOnClickListener { 
+            if (deleteMenuItem?.isVisible == true) {
+                adapter.setSelectionMode(false)
+                deleteMenuItem?.isVisible = false
+            } else {
+                finish() 
+            }
+        }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_hotel_tools, menu)
+        deleteMenuItem = menu?.findItem(R.id.action_delete_tools)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_delete_tools) {
+            showBulkDeleteConfirmation()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    private fun showBulkDeleteConfirmation() {
+        val selected = adapter.getSelectedTools()
+        if (selected.isEmpty()) return
+
+        AlertDialog.Builder(this)
+            .setTitle("¿Eliminar seleccionados?")
+            .setMessage("¿Estás seguro de que deseas eliminar ${selected.size} activos del inventario?")
+            .setPositiveButton("Eliminar") { _, _ ->
+                lifecycleScope.launch {
+                    selected.forEach { tool ->
+                        val updated = tool.copy(isDeleted = true)
+                        database.hotelToolDao().updateTool(updated)
+                        SyncManager(this@HotelToolsActivity).syncHotelToolToCloud(updated)
+                    }
+                    adapter.setSelectionMode(false)
+                    deleteMenuItem?.isVisible = false
+                    Toast.makeText(this@HotelToolsActivity, "Activos eliminados", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun checkIntroTutorial() {
@@ -47,11 +104,10 @@ class HotelToolsActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle("🚀 Guía de Inventario")
             .setMessage("¡Bienvenido al Control de Activos! 🛠️\n\n" +
-                    "IMPORTANCIA:\nEsta herramienta te permite asegurar que tus sábanas, toallas y herramientas estén siempre en óptimo estado para tus clientes. Evita usar insumos desgastados que dañen la reputación de tu hotel.\n\n" +
+                    "IMPORTANCIA:\nEsta herramienta te permite asegurar que tus sábanas, toallas y herramientas estén siempre en óptimo estado.\n\n" +
                     "¿CÓMO EMPEZAR?\n1. Presiona el botón '+' abajo a la derecha.\n" +
-                    "2. Asigna un código físico a cada objeto (ej: una etiqueta en la sábana con 'S-101').\n" +
-                    "3. Ingresa el nombre y cuánto tiempo deseas que dure antes de cambiarlo.\n\n" +
-                    "¡Naxor te avisará cuando sea momento de renovarlos!")
+                    "2. Asigna un código físico (ej: 'S-101') y su vida útil.\n" +
+                    "GoMezMart te avisará 7, 5, 2 y 1 día antes de que venzan.")
             .setPositiveButton("Entendido") { _, _ ->
                 getSharedPreferences("HotelToolsPrefs", MODE_PRIVATE).edit { putBoolean("intro_shown", true) }
             }
@@ -68,12 +124,10 @@ class HotelToolsActivity : AppCompatActivity() {
 
     private fun showCardTutorial() {
         AlertDialog.Builder(this)
-            .setTitle("💡 ¿Cómo gestionar tus herramientas?")
-            .setMessage("Ahora que tienes tu primer registro, así es como funciona:\n\n" +
-                    "⏱️ TIEMPO DE USO: Cuenta los días desde que registraste el objeto.\n\n" +
-                    "⏳ VIDA ÚTIL: Te indica cuántos meses le quedan según tu configuración. Si sale 'VENCIDO' en rojo, ¡es hora de un cambio!\n\n" +
-                    "🔄 RENOVAR: Úsalo cuando compres un repuesto nuevo (ej: sábana nueva) para el mismo código. El tiempo volverá a cero.\n\n" +
-                    "🚫 DAR DE BAJA: Úsalo si la herramienta se perdió o ya no se usará más.")
+            .setTitle("💡 Gestión de Activos")
+            .setMessage("⏱️ TIEMPO DE USO: Tiempo transcurrido.\n\n" +
+                    "⏳ VIDA ÚTIL: Tiempo restante exacto.\n\n" +
+                    "🔄 RENOVAR: Reinicia el contador al comprar uno nuevo.")
             .setPositiveButton("¡Excelente!") { _, _ ->
                 getSharedPreferences("HotelToolsPrefs", MODE_PRIVATE).edit { putBoolean("card_tutorial_shown", true) }
             }
@@ -83,29 +137,36 @@ class HotelToolsActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         adapter = HotelToolAdapter(
             onRetire = { tool -> showRetireConfirmation(tool) },
-            onRenew = { tool -> showRenewConfirmation(tool) }
+            onRenew = { tool -> showRenewConfirmation(tool) },
+            onSelectionChanged = { count ->
+                deleteMenuItem?.isVisible = count > 0
+            }
         )
         binding.rvTools.layoutManager = LinearLayoutManager(this)
         binding.rvTools.adapter = adapter
     }
 
     private fun showRenewConfirmation(tool: HotelToolEntity) {
-        val title = if (tool.status == "RETIRED") "Reactivar herramienta" else "Renovar herramienta"
-        val message = if (tool.status == "RETIRED") 
-            "¿Deseas reactivar la herramienta #${tool.code}? Su tiempo de uso comenzará a contar desde hoy."
-            else "¿Has reemplazado esta herramienta por una nueva? El contador de tiempo de uso se reiniciará a cero."
-
+        val title = if (tool.status == "RETIRED") "Reactivar" else "Renovar"
         AlertDialog.Builder(this)
             .setTitle(title)
-            .setMessage(message)
+            .setMessage("¿Confirmas la renovación del activo #${tool.code}? El contador de vida útil se reiniciará.")
             .setPositiveButton("Confirmar") { _, _ ->
                 lifecycleScope.launch {
+                    val cal = Calendar.getInstance()
+                    val now = cal.timeInMillis
+                    
+                    if (tool.maxUsageDays > 0) {
+                        cal.add(Calendar.DAY_OF_YEAR, tool.maxUsageDays)
+                    }
+                    
                     val updatedTool = tool.copy(
-                        registrationDate = System.currentTimeMillis(),
+                        registrationDate = now,
+                        expiryDate = if (tool.maxUsageDays > 0) cal.timeInMillis else 0L,
                         status = "ACTIVE"
                     )
                     database.hotelToolDao().updateTool(updatedTool)
-                    Toast.makeText(this@HotelToolsActivity, "Herramienta renovada correctamente", Toast.LENGTH_SHORT).show()
+                    SyncManager(this@HotelToolsActivity).syncHotelToolToCloud(updatedTool)
                 }
             }
             .setNegativeButton("Cancelar", null)
@@ -121,78 +182,122 @@ class HotelToolsActivity : AppCompatActivity() {
     }
 
     private fun showAddToolDialog() {
-        val builder = AlertDialog.Builder(this)
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(60, 40, 60, 40)
+        val db = DialogAddHotelToolBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this, R.style.Theme_GoMezMart_Dialog).setView(db.root).create()
+
+        var isUpdating = false
+        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
+        val updateExpiryText = {
+            val totalDays = db.etToolDays.text.toString().toIntOrNull() ?: 0
+            
+            if (totalDays == 0) {
+                db.tvExpiryCalc.text = "Vence el: --/--/---- (Vida útil: Ilimitada)"
+            } else {
+                val cal = Calendar.getInstance()
+                cal.add(Calendar.DAY_OF_YEAR, totalDays)
+                
+                val months = totalDays / 30
+                val remDays = totalDays % 30
+                val durationStr = when {
+                    months > 0 && remDays > 0 -> "$months meses y $remDays días"
+                    months > 0 -> "$months meses"
+                    else -> "$totalDays días"
+                }
+                
+                db.tvExpiryCalc.text = "Vence el: ${sdf.format(cal.time)} (Vida útil: $durationStr)"
+            }
         }
 
-        // Guía informativa
-        val tvGuide = TextView(this).apply {
-            text = "ℹ️ IMPORTANTE: Cada herramienta debe tener un código único para su control individual."
-            textSize = 12f
-            setTextColor(getColor(R.color.purple_600))
-            setPadding(0, 0, 0, 20)
-        }
-
-        val etCode = EditText(this).apply { hint = "Código único (Eje: SAB-001)" }
-        val etName = EditText(this).apply { hint = "Nombre (Eje: Sábana Matrimonial)" }
-        val etMonths = EditText(this).apply { 
-            hint = "Vida útil en meses (0 = ilimitada)"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        }
-
-        layout.addView(tvGuide)
-        layout.addView(etCode)
-        layout.addView(etName)
-        layout.addView(etMonths)
-
-        builder.setTitle("Registrar Herramienta")
-            .setView(layout)
-            .setPositiveButton("Registrar") { _, _ ->
-                val code = etCode.text.toString().trim()
-                val name = etName.text.toString().trim()
-                val months = etMonths.text.toString().toIntOrNull() ?: 0
-
-                if (code.isEmpty() || name.isEmpty()) {
-                    Toast.makeText(this, "El código y nombre son obligatorios", Toast.LENGTH_SHORT).show()
+        db.etToolMonths.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                if (isUpdating) return
+                isUpdating = true
+                val months = s.toString().toIntOrNull() ?: 0
+                if (months > 0) {
+                    val cal = Calendar.getInstance()
+                    val now = cal.timeInMillis
+                    cal.add(Calendar.MONTH, months)
+                    val diffDays = ((cal.timeInMillis - now) / (1000 * 60 * 60 * 24)).toInt()
+                    db.etToolDays.setText(diffDays.toString())
                 } else {
-                    saveTool(code, name, months)
+                    db.etToolDays.setText("0")
+                }
+                updateExpiryText()
+                isUpdating = false
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        db.etToolDays.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                if (isUpdating) return
+                isUpdating = true
+                val days = s.toString().toIntOrNull() ?: 0
+                if (days >= 28) {
+                    val months = days / 30
+                    db.etToolMonths.setText(months.toString())
+                } else {
+                    db.etToolMonths.setText("0")
+                }
+                updateExpiryText()
+                isUpdating = false
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        db.btnCancelTool.setOnClickListener { dialog.dismiss() }
+        db.btnSaveTool.setOnClickListener {
+            val code = db.etToolCode.text.toString().trim()
+            val name = db.etToolName.text.toString().trim()
+            val totalDays = db.etToolDays.text.toString().toIntOrNull() ?: 0
+
+            if (code.isEmpty() || name.isEmpty()) {
+                Toast.makeText(this, "Completa los campos obligatorios", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            lifecycleScope.launch {
+                val existing = database.hotelToolDao().getToolByCode(code)
+                if (existing != null) {
+                    db.layoutToolCode.error = "Código en uso"
+                } else {
+                    val cal = Calendar.getInstance()
+                    if (totalDays > 0) cal.add(Calendar.DAY_OF_YEAR, totalDays)
+
+                    val tool = HotelToolEntity(
+                        code = code,
+                        name = name,
+                        maxUsageDays = totalDays,
+                        expiryDate = if (totalDays > 0) cal.timeInMillis else 0L
+                    )
+                    database.hotelToolDao().insertTool(tool)
+                    SyncManager(this@HotelToolsActivity).syncHotelToolToCloud(tool)
+                    dialog.dismiss()
+                    checkCardTutorial()
                 }
             }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-
-    private fun saveTool(code: String, name: String, months: Int) {
-        lifecycleScope.launch {
-            // Verificar si el código ya existe
-            val existing = database.hotelToolDao().getToolByCode(code)
-            if (existing != null) {
-                Toast.makeText(this@HotelToolsActivity, "El código #$code ya está en uso", Toast.LENGTH_SHORT).show()
-                return@launch
-            }
-
-            val tool = HotelToolEntity(
-                code = code,
-                name = name,
-                maxUsageMonths = months
-            )
-            database.hotelToolDao().insertTool(tool)
-            Toast.makeText(this@HotelToolsActivity, "Herramienta registrada con éxito", Toast.LENGTH_SHORT).show()
-            
-            // Mostrar tutorial de tarjeta después del primer registro exitoso
-            checkCardTutorial()
         }
+        
+        dialog.show()
+        
+        // --- HACER LA VENTANA MÁS ANCHA ---
+        val width = (resources.displayMetrics.widthPixels * 0.95).toInt()
+        dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
     }
 
     private fun showRetireConfirmation(tool: HotelToolEntity) {
         AlertDialog.Builder(this)
-            .setTitle("¿Dar de baja?")
-            .setMessage("¿Confirmas que la herramienta #${tool.code} será retirada o cambiada?")
+            .setTitle("Dar de baja")
+            .setMessage("¿Confirmas que el activo #${tool.code} será retirado?")
             .setPositiveButton("Sí, Retirar") { _, _ ->
                 lifecycleScope.launch {
-                    database.hotelToolDao().updateTool(tool.copy(status = "RETIRED"))
+                    val updatedTool = tool.copy(status = "RETIRED")
+                    database.hotelToolDao().updateTool(updatedTool)
+                    SyncManager(this@HotelToolsActivity).syncHotelToolToCloud(updatedTool)
                 }
             }
             .setNegativeButton("Cancelar", null)

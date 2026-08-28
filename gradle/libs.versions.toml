@@ -1,5 +1,5 @@
 [versions]
-agp = "8.6.0"
+agp = "8.7.3"
 kotlin = "2.3.10"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -19,8 +19,14 @@ playServicesAuth = "21.1.1"
 camerax = "1.4.0"
 glide = "4.16.0"
 firebaseBom = "34.18.0"
+supabase = "3.0.2"
+ktor = "3.0.1"
 
 [libraries]
+supabase-bom = { group = "io.github.jan-tennert.supabase", name = "bom", version.ref = "supabase" }
+supabase-storage = { group = "io.github.jan-tennert.supabase", name = "storage-kt" }
+ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor" }
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
 glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glide" }

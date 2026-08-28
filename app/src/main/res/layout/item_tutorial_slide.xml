@@ -10,7 +10,7 @@
         android:id="@+id/ivTutorialImage"
         android:layout_width="250dp"
         android:layout_height="250dp"
-        android:src="@drawable/logo_naxor_full"
+        android:src="@drawable/gomezmart_logo"
         android:scaleType="fitCenter" />
 
     <TextView

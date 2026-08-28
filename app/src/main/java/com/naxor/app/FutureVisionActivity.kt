@@ -1,10 +1,9 @@
 package com.naxor.app
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import com.naxor.app.databinding.ActivityFutureVisionBinding
 
-class FutureVisionActivity : AppCompatActivity() {
+class FutureVisionActivity : BaseActivity() {
 
     private lateinit var binding: ActivityFutureVisionBinding
 

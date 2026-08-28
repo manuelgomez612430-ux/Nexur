@@ -5,8 +5,8 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.google.firebase.firestore.ListenerRegistration
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.CashSessionEntity
 import com.naxor.app.databinding.ActivityCajaBinding
@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
-class CajaActivity : AppCompatActivity() {
+class CajaActivity : BaseActivity() {
 
     private lateinit var binding: ActivityCajaBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
@@ -26,6 +26,7 @@ class CajaActivity : AppCompatActivity() {
     private var lastUnsyncedCount = 0
     private var currentIsSyncing = false
     private var syncStatusText = "Conectado"
+    private var cashRegistration: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +42,12 @@ class CajaActivity : AppCompatActivity() {
         setupSyncIndicator()
         checkSession()
         
-        SyncManager(this).startRealtimeCashSync { checkSession() }
+        cashRegistration = SyncManager(this).startRealtimeCashSync { checkSession() }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        cashRegistration?.remove()
     }
 
     private fun setupNetworkMonitoring() {

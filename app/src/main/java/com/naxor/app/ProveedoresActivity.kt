@@ -11,10 +11,10 @@ import android.widget.EditText
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.ListenerRegistration
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.ProviderEntity
 import com.naxor.app.databinding.ActivityProveedoresBinding
@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URLEncoder
 
-class ProveedoresActivity : AppCompatActivity() {
+class ProveedoresActivity : BaseActivity() {
 
     private lateinit var binding: ActivityProveedoresBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
@@ -35,6 +35,7 @@ class ProveedoresActivity : AppCompatActivity() {
     private var lastUnsyncedCount = 0
     private var currentIsSyncing = false
     private var syncStatusText = "Conectado"
+    private var providersRegistration: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +48,12 @@ class ProveedoresActivity : AppCompatActivity() {
         setupSyncIndicator()
         loadProviders()
         
-        SyncManager(this).startRealtimeProvidersSync { loadProviders() }
+        providersRegistration = SyncManager(this).startRealtimeProvidersSync { loadProviders() }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        providersRegistration?.remove()
     }
 
     private fun setupNetworkMonitoring() {

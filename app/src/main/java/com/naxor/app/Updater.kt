@@ -29,7 +29,7 @@ class Updater(private val context: Context) {
     private val handler = Handler(Looper.getMainLooper())
     private var downloadId: Long = -1
 
-    fun checkAndDownload() {
+    fun checkAndDownload(autoDownload: Boolean = false) {
         val currentVersion = try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 context.packageManager.getPackageInfo(context.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0)).longVersionCode
@@ -46,13 +46,21 @@ class Updater(private val context: Context) {
                 val notes = doc.getString("release_notes") ?: ""
 
                 if (latestVersion > currentVersion && url.isNotEmpty()) {
-                    showUpdateDialog(url, notes)
+                    if (autoDownload) {
+                        startDownload(url)
+                    } else {
+                        showUpdateDialog(url, notes)
+                    }
                 } else {
-                    Toast.makeText(context, "Ya tienes la última versión instalada ✅", Toast.LENGTH_SHORT).show()
+                    if (!autoDownload) {
+                        Toast.makeText(context, "Ya tienes la última versión instalada ✅", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
             .addOnFailureListener {
-                Toast.makeText(context, "No se pudo verificar la actualización", Toast.LENGTH_SHORT).show()
+                if (!autoDownload) {
+                    Toast.makeText(context, "No se pudo verificar la actualización", Toast.LENGTH_SHORT).show()
+                }
             }
     }
 
@@ -81,13 +89,13 @@ class Updater(private val context: Context) {
         
         progressDialog?.show()
 
-        val fileName = "Naxor_v_Update.apk"
+        val fileName = "GoMezMart_v_Update.apk"
         val file = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
         if (file.exists()) file.delete()
         
         val request = try {
             DownloadManager.Request(Uri.parse(downloadUrl))
-                .setTitle("Actualizando Naxor 🚀")
+                .setTitle("Actualizando GoMezMart 🚀")
                 .setDescription("Descargando la última versión...")
                 .setDestinationUri(Uri.fromFile(file))
                 .setMimeType("application/vnd.android.package-archive")
@@ -167,7 +175,7 @@ class Updater(private val context: Context) {
     private fun installApk(file: File) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (!context.packageManager.canRequestPackageInstalls()) {
-                Toast.makeText(context, "⚠️ Permita que Naxor instale actualizaciones en la siguiente pantalla", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "⚠️ Permita que GoMezMart instale actualizaciones en la siguiente pantalla", Toast.LENGTH_LONG).show()
                 context.startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}")))
                 return
             }

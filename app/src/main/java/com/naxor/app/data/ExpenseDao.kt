@@ -45,4 +45,7 @@ interface ExpenseDao {
 
     @Query("SELECT DISTINCT categoria FROM expenses WHERE isDeleted = 0 ORDER BY categoria ASC")
     suspend fun getUniqueCategories(): List<String>
+
+    @Query("UPDATE expenses SET isSynced = 1 WHERE id = :id")
+    suspend fun markSynced(id: String)
 }

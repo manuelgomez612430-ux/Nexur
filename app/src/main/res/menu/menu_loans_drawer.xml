@@ -28,6 +28,10 @@
                 android:id="@+id/menu_loans_expenses"
                 android:icon="@android:drawable/ic_menu_send"
                 android:title="Gastos Operativos" />
+            <item
+                android:id="@+id/menu_commitments"
+                android:icon="@android:drawable/ic_menu_today"
+                android:title="Mis Compromisos" />
         </menu>
     </item>
 

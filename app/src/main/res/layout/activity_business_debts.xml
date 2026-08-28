@@ -20,12 +20,12 @@
         android:orientation="vertical"
         app:layout_constraintGuide_percent="0.94" />
 
-    <!-- FONDO DE CABECERA PREMIUM -->
+    <!-- FONDO DE CABECERA PREMIUM (MORADO GO MEZ MART) -->
     <View
         android:id="@+id/topHeaderBackground"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:background="#1E293B"
+        android:background="@color/purple_600"
         app:layout_constraintBottom_toBottomOf="@id/cardTotalOwed"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -50,7 +50,7 @@
                 android:layout_height="40dp"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardBackgroundColor="#20FFFFFF"
+                app:cardBackgroundColor="#30FFFFFF"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="0dp">
@@ -88,13 +88,13 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        app:cardBackgroundColor="#334155"
+        app:cardBackgroundColor="@color/purple_700"
         app:cardElevation="8dp"
         app:layout_constraintEnd_toEndOf="@id/guidelineRight"
         app:layout_constraintStart_toStartOf="@id/guidelineLeft"
         app:layout_constraintTop_toBottomOf="@id/headerDebts"
         app:shapeAppearance="@style/ShapeAppearance.App.Card.TopRounded"
-        app:strokeColor="#64748B"
+        app:strokeColor="@color/purple_800"
         app:strokeWidth="1dp">
 
         <LinearLayout
@@ -110,7 +110,7 @@
                 android:alpha="0.7"
                 android:text="TOTAL PENDIENTE DE PAGO"
                 android:textColor="@android:color/white"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.1" />
 
@@ -118,11 +118,100 @@
                 android:id="@+id/tvTotalOwed"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:text="S/ 0.00"
                 android:textColor="@android:color/white"
-                android:textSize="28sp"
+                android:textSize="26sp"
                 android:textStyle="bold" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#475569"
+                android:layout_marginVertical="16dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+
+                <!-- Hoy -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.6"
+                        android:text="HOY"
+                        android:textColor="@android:color/white"
+                        android:textSize="9sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tvTotalToday"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="S/ 0.00"
+                        android:textColor="@android:color/white"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Semana -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.6"
+                        android:text="ESTA SEMANA"
+                        android:textColor="@android:color/white"
+                        android:textSize="9sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tvTotalWeek"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="S/ 0.00"
+                        android:textColor="@android:color/white"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Mes -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.6"
+                        android:text="ESTE MES"
+                        android:textColor="@android:color/white"
+                        android:textSize="9sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tvTotalMonth"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="S/ 0.00"
+                        android:textColor="@android:color/white"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+            </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

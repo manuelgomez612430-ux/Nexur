@@ -9,7 +9,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurfaceContainer"
-        app:elevation="0dp">
+        app:elevation="0dp"
+        app:liftOnScroll="false">
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarClients"
             android:layout_width="match_parent"
@@ -17,7 +18,19 @@
             app:title="Mis Clientes"
             app:titleTextColor="@color/slate_900"
             app:navigationIcon="@android:drawable/ic_menu_revert"
-            app:navigationIconTint="@color/slate_900" />
+            app:navigationIconTint="@color/slate_900">
+
+            <ImageButton
+                android:id="@+id/btnSyncIndicatorClients"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="end"
+                android:layout_marginEnd="16dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/stat_notify_sync"
+                app:tint="?attr/colorPrimary" />
+
+        </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
     <LinearLayout

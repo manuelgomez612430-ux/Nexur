@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/slate_50">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarMyBusinesses"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Mis Sistemas de Gestión"
+            app:navigationIcon="@android:drawable/ic_menu_revert" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Selecciona un sistema para trabajar o añade uno nuevo para expandir tu negocio."
+                android:textColor="@color/slate_500"
+                android:textSize="14sp"
+                android:layout_marginBottom="24dp" />
+
+            <!-- List of active systems -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvMyBusinesses"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                tools:listitem="@layout/item_business_profile" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddSystem"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:layout_marginTop="16dp"
+                android:text="➕ AÑADIR NUEVO SISTEMA"
+                android:textStyle="bold"
+                app:cornerRadius="16dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSkipToMarket"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="24dp"
+                android:text="Omitir, ir al Mercado Online"
+                android:textColor="@color/slate_400"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

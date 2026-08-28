@@ -44,6 +44,7 @@ class MetricasFragment : Fragment() {
     private var currentGastos = 0.0
     private var currentDeudores = 0.0
     private var currentDeudas = 0.0
+    private var currentCompromisos = 0.0
 
     fun openDrawer() {
         if (_binding != null) {
@@ -87,7 +88,12 @@ class MetricasFragment : Fragment() {
         }
 
         binding.btnRefreshAiAnalysis.setOnClickListener {
-            generateAiAnalysis(currentVentas, currentUtilidad, currentGastos, currentDeudores, currentDeudas)
+            generateAiAnalysis(currentVentas, currentUtilidad, currentGastos, currentDeudores, currentDeudas, currentCompromisos)
+        }
+
+        binding.btnCloseAiAnalysis.setOnClickListener {
+            binding.tvAiAnalysisContent.text = "¿Quieres un análisis experto de hoy? Pulsa el botón para que Gemini analice tus números."
+            binding.btnCloseAiAnalysis.visibility = View.GONE
         }
         
         setupCharts()
@@ -228,7 +234,8 @@ class MetricasFragment : Fragment() {
     }
 
     private fun setupCharts() {
-        binding.pieChartCategorias.description.isEnabled = false
+        binding.pieChartCategorias.description.text = "GoMezMart: Ventas por Categoría"
+        binding.pieChartCategorias.description.isEnabled = true
         val legend = binding.pieChartCategorias.legend
         legend.isEnabled = true
         legend.verticalAlignment = Legend.LegendVerticalAlignment.CENTER
@@ -324,6 +331,9 @@ class MetricasFragment : Fragment() {
                 currentGastos = gastosTotales
                 currentDeudores = totalDeudores
                 currentDeudas = totalDeudasPropias
+                currentCompromisos = withContext(Dispatchers.IO) {
+                    database.commitmentDao().getTotalPendingAmountOnce() ?: 0.0
+                }
 
                 if (_binding != null) {
                     updateUI(ventasTotales, gananciaBruta, gastosTotales, utilidadNeta, inversionTotal, valorInventario, topProducts, ticketPromedio, costoVentas, totalDeudores, totalDeudasPropias)
@@ -339,7 +349,7 @@ class MetricasFragment : Fragment() {
         }
     }
 
-    private fun generateAiAnalysis(v: Double, u: Double, g: Double, dr: Double, dp: Double) {
+    private fun generateAiAnalysis(v: Double, u: Double, g: Double, dr: Double, dp: Double, c: Double) {
         val range = binding.tvCurrentFilterRange.text.toString().replace("Mostrando: ", "")
         val capital = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE).getFloat("business_capital", 0f).toDouble()
         
@@ -347,12 +357,14 @@ class MetricasFragment : Fragment() {
         binding.tvAiAnalysisContent.alpha = 0.5f
 
         lifecycleScope.launch {
-            val analysis = GeminiHelper.getBusinessAnalysis(v, u, g, dr, dp, capital, range)
+            val analysis = GeminiHelper.getBusinessAnalysis(v, u, g, dr, dp, capital, c, range)
             withContext(Dispatchers.Main) {
                 if (_binding != null) {
-                    binding.tvAiAnalysisContent.text = analysis
+                    val formattedText = GeminiHelper.formatMarkdown(analysis)
+                    binding.tvAiAnalysisContent.text = formattedText
                     binding.tvAiAnalysisContent.alpha = 1.0f
                     binding.progressAiAnalysis.visibility = View.GONE
+                    binding.btnCloseAiAnalysis.visibility = View.VISIBLE
                 }
             }
         }

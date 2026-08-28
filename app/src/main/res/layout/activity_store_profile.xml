@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        app:elevation="0dp">
+
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed"
+            app:titleEnabled="false">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <!-- 1. PORTADA -->
+                <ImageView
+                    android:id="@+id/ivStoreCover"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/gomezmart_full_bg" />
+
+                <!-- 2. LOGO -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardProfileLogo"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:layout_marginStart="24dp"
+                    android:layout_marginTop="160dp"
+                    app:cardCornerRadius="50dp"
+                    app:cardElevation="8dp"
+                    app:strokeColor="@color/white"
+                    app:strokeWidth="4dp">
+                    <ImageView
+                        android:id="@+id/ivProfileStoreLogo"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/gomezmart_icon" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Padding bottom to prevent overlap -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="20dp"
+                    android:layout_below="@id/cardProfileLogo" />
+
+            </RelativeLayout>
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbarStoreProfile"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:layout_collapseMode="pin"
+                app:navigationIcon="@android:drawable/ic_menu_revert"
+                app:navigationIconTint="@color/white" />
+
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/nsvStoreProfile"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/white"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- CAPA DE DECORACIONES (Fondo) -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/layoutThemeDecorations"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <View
+                    android:id="@+id/viewDecorCircle1"
+                    android:layout_width="300dp"
+                    android:layout_height="300dp"
+                    android:background="@drawable/bg_deco_circle"
+                    android:visibility="gone"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:translationX="-150dp"
+                    android:translationY="-50dp" />
+
+                <View
+                    android:id="@+id/viewDecorCircle2"
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:background="@drawable/bg_deco_circle"
+                    android:visibility="gone"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:translationX="100dp"
+                    android:translationY="50dp" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutMainProfileContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="24dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="48dp">
+
+            <!-- ID SECTION -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:id="@+id/tvProfileStoreName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Nombre de la Tienda"
+                    android:textColor="@color/slate_900"
+                    android:textSize="26sp"
+                    android:textStyle="bold" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEditStoreProfile"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="EDITAR"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    app:cornerRadius="12dp"
+                    app:icon="@android:drawable/ic_menu_edit" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvProfileStoreCategory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="CATEGORÍA"
+                android:textColor="@color/purple_600"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1" />
+
+            <!-- DISPONIBILIDAD (Modern Pill) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardHotelAvailability"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/emerald_50"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/emerald_600"
+                android:visibility="gone">
+                <TextView
+                    android:id="@+id/tvHotelAvailability"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="4dp"
+                    android:text="11 de 11 habitaciones disponibles"
+                    android:textColor="@color/emerald_600"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- BOTÓN PRINCIPAL (Antes de Acerca de Nosotros) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnViewFullCatalog"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:layout_marginTop="24dp"
+                android:text="VER CATÁLOGO COMPLETO 🛒"
+                android:textStyle="bold"
+                android:textSize="15sp"
+                app:cornerRadius="16dp"
+                app:backgroundTint="@color/purple_600" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/slate_100"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="24dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Acerca de nosotros"
+                android:textColor="@color/slate_400"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.05" />
+
+            <TextView
+                android:id="@+id/tvProfileStoreDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Somos una empresa dedicada a brindar lo mejor..."
+                android:textColor="@color/slate_700"
+                android:textSize="15sp"
+                android:lineSpacingExtra="4dp" />
+
+            <!-- DUEÑO Y UBICACIÓN -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="24dp"
+                android:gravity="center_vertical">
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/slate_50">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:text="👤"
+                        android:gravity="center"
+                        android:textSize="18sp" />
+                </com.google.android.material.card.MaterialCardView>
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="12dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Fundador / Dueño"
+                        android:textColor="@color/slate_400"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tvProfileOwnerName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Nombre del Fundador"
+                        android:textColor="@color/slate_800"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_menu_directions"
+                    app:tint="@color/slate_400" />
+                <TextView
+                    android:id="@+id/tvProfileStoreAddress"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Ubicación no especificada"
+                    android:textColor="@color/slate_600"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- SECCIÓN: EXTRA DETAILS (Dynamic) -->
+            <LinearLayout
+                android:id="@+id/layoutExtraSectionsProfile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="32dp" />
+
+            <!-- SECCIÓN: MAPA DEL NEGOCIO -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardStoreMap"
+                android:layout_width="match_parent"
+                android:layout_height="240dp"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_100"
+                android:visibility="gone">
+                <org.osmdroid.views.MapView
+                    android:id="@+id/mvStoreProfile"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/slate_100"
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="24dp" />
+
+            <!-- SECCIÓN DE RESEÑAS -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RESEÑAS Y COMENTARIOS"
+                android:textColor="@color/slate_500"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAddReview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <RatingBar
+                        android:id="@+id/rbNewReview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:numStars="5"
+                        android:stepSize="1.0"
+                        android:rating="5.0"
+                        android:progressTint="@color/orange_600"
+                        android:layout_gravity="center_horizontal" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="Escribe tu opinión aquí..."
+                        app:boxCornerRadiusTopStart="16dp"
+                        app:boxCornerRadiusTopEnd="16dp"
+                        app:boxCornerRadiusBottomStart="16dp"
+                        app:boxCornerRadiusBottomEnd="16dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etNewReviewComment"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapSentences|textMultiLine"
+                            android:maxLines="3" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="12dp">
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCancelReview"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="0dp"
+                            android:layout_height="54dp"
+                            android:layout_weight="1"
+                            android:text="CANCELAR"
+                            android:textColor="@color/slate_400"
+                            android:visibility="gone" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSubmitReview"
+                            android:layout_width="0dp"
+                            android:layout_height="54dp"
+                            android:layout_weight="2"
+                            android:text="PUBLICAR COMENTARIO"
+                            android:textStyle="bold"
+                            app:cornerRadius="12dp"
+                            app:backgroundTint="@color/purple_600" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvStoreReviews"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                tools:listitem="@layout/item_store_review" />
+
+            <TextView
+                android:id="@+id/tvNoReviews"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:text="Sé el primero en calificar este negocio ✨"
+                android:textColor="@color/slate_400"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </FrameLayout>
+</androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

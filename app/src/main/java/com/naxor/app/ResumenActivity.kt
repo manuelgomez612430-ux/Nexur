@@ -8,7 +8,6 @@ import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.SaleEntity
@@ -24,7 +23,7 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class ResumenActivity : AppCompatActivity() {
+class ResumenActivity : BaseActivity() {
 
     private lateinit var binding: ActivityResumenBinding
     private val database by lazy { AppDatabase.getDatabase(this) }
@@ -35,6 +34,7 @@ class ResumenActivity : AppCompatActivity() {
     private var currentGastos = 0.0
     private var currentDeudores = 0.0
     private var currentDeudas = 0.0
+    private var currentCompromisos = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -263,6 +263,9 @@ class ResumenActivity : AppCompatActivity() {
                 currentGastos = gastosTotales
                 currentDeudores = totalDeudores
                 currentDeudas = totalDeudasPropias
+                currentCompromisos = withContext(Dispatchers.IO) {
+                    database.commitmentDao().getTotalPendingAmountOnce() ?: 0.0
+                }
 
                 // 5. Actualizar UI
                 updateUI(ventasTotales, gananciaBruta, gastosTotales, utilidadNeta, inversionTotal, valorInventario, topProducts, ticketPromedio, costoVentas, totalDeudores, totalDeudasPropias)
@@ -283,7 +286,7 @@ class ResumenActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val analysis = com.naxor.app.util.GeminiHelper.getBusinessAnalysis(
-                currentVentas, currentUtilidad, currentGastos, currentDeudores, currentDeudas, capital, range
+                currentVentas, currentUtilidad, currentGastos, currentDeudores, currentDeudas, capital, currentCompromisos, range
             )
             withContext(Dispatchers.Main) {
                 binding.tvAiAnalysisContent.text = analysis

@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="350dp"
+        android:background="@color/slate_50">
+
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed"
+            app:contentScrim="@color/white">
+
+            <ImageView
+                android:id="@+id/ivProductDetailImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/gomezmart_icon"
+                app:layout_collapseMode="parallax" />
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbarProductDetail"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:layout_collapseMode="pin"
+                app:navigationIcon="@android:drawable/ic_menu_revert"
+                app:navigationIconTint="@color/slate_900" />
+
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:id="@+id/tvDetailCategory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Categoría"
+                android:textSize="12sp"
+                android:textColor="@color/slate_400"
+                android:textAllCaps="true" />
+
+            <TextView
+                android:id="@+id/tvDetailName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Nombre del Producto"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_900"
+                android:layout_marginTop="4dp" />
+
+            <TextView
+                android:id="@+id/tvDetailPrice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="S/ 0.00"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="@color/gomezmart_primary"
+                android:layout_marginTop="12dp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/slate_100"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="24dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Descripción"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_900" />
+
+            <TextView
+                android:id="@+id/tvDetailDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Aquí aparecerá la descripción detallada del producto."
+                android:textSize="15sp"
+                android:textColor="@color/slate_600"
+                android:layout_marginTop="8dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardDetailStoreInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_200"
+                app:cardBackgroundColor="@color/slate_50">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <FrameLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="16dp">
+
+                        <TextView
+                            android:id="@+id/tvStoreEmojiPlaceholder"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:text="🏪"
+                            android:textSize="24sp"
+                            android:gravity="center"
+                            android:background="@drawable/bg_circle_surface" />
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            app:cardCornerRadius="24dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="0dp">
+                            <ImageView
+                                android:id="@+id/ivDetailStoreLogo"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:scaleType="centerCrop"
+                                android:visibility="gone" />
+                        </com.google.android.material.card.MaterialCardView>
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvDetailStoreName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Nombre de la Tienda"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_900" />
+
+                        <TextView
+                            android:id="@+id/tvDetailStoreAddress"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Dirección de la tienda"
+                            android:textSize="13sp"
+                            android:textColor="@color/slate_500" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/ic_menu_directions"
+                        app:tint="@color/slate_400" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SIMILAR PRODUCTS FROM SAME STORE -->
+            <LinearLayout
+                android:id="@+id/layoutSimilarHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="12dp"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvSimilarStoreTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Más de esta tienda"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_900" />
+
+                <TextView
+                    android:id="@+id/btnViewAllFromStore"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ver todo"
+                    android:textColor="@color/sky_600"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvSimilarProducts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:paddingHorizontal="4dp"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone" />
+
+            <!-- RECOMMENDED PRODUCTS (SAME CATEGORY) -->
+            <TextView
+                android:id="@+id/tvRecommendedTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="También te puede interesar"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_900"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvRecommendedProducts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:paddingHorizontal="4dp"
+                android:layout_marginBottom="100dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        app:cardCornerRadius="0dp"
+        app:cardElevation="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:background="@color/white">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDetailAddToCart"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="Añadir al Carrito"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                app:cornerRadius="16dp"
+                app:icon="@android:drawable/ic_input_add" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/metricsRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/slate_50">
+    android:background="?attr/colorSurface">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -15,8 +17,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="Rendimiento del Negocio"
-            app:titleTextColor="@color/slate_900"
-            app:menu="@menu/menu_mailbox" />
+            app:titleTextColor="@color/slate_900" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -28,16 +29,60 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="100dp">
+
+            <!-- SELECTOR DE PERÍODO -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp">
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipToday"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Hoy"
+                        android:checked="true" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipYesterday"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ayer" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipMonth"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Este Mes" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipCustom"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Elegir Fecha"
+                        app:chipIcon="@android:drawable/ic_menu_my_calendar" />
+                </com.google.android.material.chip.ChipGroup>
+            </HorizontalScrollView>
 
             <!-- RESUMEN FINANCIERO GLOBAL -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="2dp"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="4dp"
                 app:strokeWidth="0dp"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="@color/white">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -48,7 +93,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="UTILIDAD NETA ESTIMADA"
+                        android:text="UTILIDAD NETA"
                         android:textSize="11sp"
                         android:textStyle="bold"
                         android:textColor="@color/slate_400"
@@ -59,7 +104,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="S/ 0.00"
-                        android:textSize="32sp"
+                        android:textSize="34sp"
                         android:textStyle="bold"
                         android:textColor="@color/emerald_600"
                         android:layout_marginTop="4dp" />
@@ -67,13 +112,14 @@
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:background="@color/slate_100"
-                        android:layout_marginVertical="20dp" />
+                        android:background="@color/slate_50"
+                        android:layout_marginVertical="24dp" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:weightSum="2">
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -83,7 +129,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="TOTAL INGRESOS"
+                                android:text="INGRESOS"
                                 android:textSize="10sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/slate_400" />
@@ -92,10 +138,10 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="S/ 0.00"
-                                android:textSize="16sp"
+                                android:textSize="18sp"
                                 android:textStyle="bold"
-                                android:textColor="@color/slate_800"
-                                android:layout_marginTop="2dp" />
+                                android:textColor="@color/slate_900"
+                                android:layout_marginTop="4dp" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -107,7 +153,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="TOTAL EGRESOS"
+                                android:text="EGRESOS"
                                 android:textSize="10sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/slate_400" />
@@ -116,20 +162,106 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="S/ 0.00"
-                                android:textSize="16sp"
+                                android:textSize="18sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/red_600"
-                                android:layout_marginTop="2dp" />
+                                android:layout_marginTop="4dp" />
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- DETALLE DE MOVIMIENTOS RECIENTES -->
+            <!-- TARJETA DE ANÁLISIS IA -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAIAnalysis"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="8dp"
+                app:strokeWidth="0dp"
+                app:cardBackgroundColor="@color/midnight_purple">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="✨ Análisis Estratégico IA"
+                            android:textColor="@color/white"
+                            android:textStyle="bold"
+                            android:textSize="14sp" />
+                        <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRefreshAI"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Analizar"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            app:icon="@android:drawable/ic_menu_rotate"
+                            app:iconTint="@color/white" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvAICounsel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Presiona el botón para recibir consejos personalizados de Gemini para tu negocio..."
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:alpha="0.9"
+                        android:lineSpacingExtra="4dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- GRÁFICO COMPARATIVO -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_100"
+                app:cardBackgroundColor="@color/white">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="COMPARATIVA FLUJO DE CAJA"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_400"
+                        android:textSize="11sp"
+                        android:letterSpacing="0.1" />
+                    <com.github.mikephil.charting.charts.BarChart
+                        android:id="@+id/barChartFinancial"
+                        android:layout_width="match_parent"
+                        android:layout_height="220dp"
+                        android:layout_marginTop="16dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- MOVIMIENTOS -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="MOVIMIENTOS DE CAJA RECIENTES"
+                android:text="DETALLE DE OPERACIONES"
                 android:textStyle="bold"
                 android:textColor="@color/slate_500"
                 android:textSize="11sp"
@@ -139,11 +271,10 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="20dp"
+                app:cardCornerRadius="24dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="@color/slate_200">
-
+                app:strokeColor="@color/slate_100">
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvFinancialMovements"
                     android:layout_width="match_parent"
@@ -151,11 +282,6 @@
                     android:minHeight="200dp"
                     android:padding="8dp" />
             </com.google.android.material.card.MaterialCardView>
-
-            <!-- ESPACIO FINAL -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="100dp" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

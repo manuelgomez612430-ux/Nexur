@@ -19,10 +19,13 @@ data class GuestHistoryItem(
     val floor: Int,
     val stayNights: Int,
     val extraCharges: Double,
-    val totalAmount: Double
+    val totalAmount: Double,
+    val timestamp: Long
 )
 
-class HotelGuestHistoryAdapter : ListAdapter<GuestHistoryItem, HotelGuestHistoryAdapter.ViewHolder>(DiffCallback) {
+class HotelGuestHistoryAdapter(
+    private val onLongClick: (GuestHistoryItem) -> Unit
+) : ListAdapter<GuestHistoryItem, HotelGuestHistoryAdapter.ViewHolder>(DiffCallback) {
 
     class ViewHolder(val binding: ItemHotelGuestHistoryBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -42,6 +45,11 @@ class HotelGuestHistoryAdapter : ListAdapter<GuestHistoryItem, HotelGuestHistory
             tvTotalAmount.text = "S/ ${String.format(Locale.US, "%.2f", item.totalAmount)}"
 
             chipNationality.text = if (item.nationality == "FOREIGNER") "Extranjero" else "Nacional"
+            
+            root.setOnLongClickListener {
+                onLongClick(item)
+                true
+            }
         }
     }
 

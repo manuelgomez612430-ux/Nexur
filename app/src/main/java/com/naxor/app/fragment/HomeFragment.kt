@@ -18,8 +18,10 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.naxor.app.*
 import com.naxor.app.adapter.RecentActivityAdapter
@@ -41,6 +43,7 @@ class HomeFragment : Fragment() {
     private var activityFilters = mutableSetOf<String>()
     private lateinit var quickActionsAdapter: QuickActionsAdapter
     private lateinit var recentActivityAdapter: RecentActivityAdapter
+    private val registrations = mutableListOf<ListenerRegistration>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
@@ -50,14 +53,12 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
-        // Cargar logo con Glide para evitar pixelado por gran tamaño del PNG
-        Glide.with(this)
-            .load(R.drawable.logo_naxor_full) // Cambiado a full para mejor calidad en cabecera
-            .into(homeBinding.ivLogoHome)
+        loadUserLogo()
 
         loadActivityFilters()
         updateUIForBusinessType()
         setupListeners()
+        setupActivityListeners()
         setupRealtimeActivityFeed()
         setupQuickActionsRecyclerView()
         setupRecentActivityRecyclerView()
@@ -66,8 +67,8 @@ class HomeFragment : Fragment() {
         listenForNewMessages()
 
         val sm = SyncManager(requireContext())
-        sm.startRealtimeSalesSync { loadDashboardData() }
-        sm.startRealtimeLogsSync { setupRealtimeActivityFeed() }
+        sm.startRealtimeSalesSync { loadDashboardData() }?.let { registrations.add(it) }
+        sm.startRealtimeLogsSync { setupRealtimeActivityFeed() }?.let { registrations.add(it) }
     }
 
     private fun listenForNewMessages() {
@@ -76,22 +77,48 @@ class HomeFragment : Fragment() {
         val lastRead = prefs.getLong("last_mailbox_read_time", 0L)
 
         // 1. Escuchar mensajes globales
-        FirebaseFirestore.getInstance().collection("app_messages")
+        val regGlobal = FirebaseFirestore.getInstance().collection("app_messages")
             .addSnapshotListener { snapshot, _ ->
-                val messages = snapshot?.toObjects(AppMessage::class.java) ?: emptyList()
+                val messages = snapshot?.documents?.mapNotNull { doc ->
+                    try {
+                        val id = doc.id
+                        val title = doc.getString("title") ?: ""
+                        val content = doc.getString("content") ?: ""
+                        val timestamp = doc.get("timestamp")
+                        AppMessage(id, title, content, timestamp)
+                    } catch (e: Exception) { null }
+                } ?: emptyList()
                 checkIfAnyNew(messages, lastRead)
             }
+        registrations.add(regGlobal)
 
         // 2. Escuchar mensajes privados
-        FirebaseFirestore.getInstance().collection("users").document(userId).collection("messages")
-            .addSnapshotListener { snapshot, _ ->
-                val messages = snapshot?.toObjects(AppMessage::class.java) ?: emptyList()
+        val regPrivate = FirebaseFirestore.getInstance().collection("users").document(userId).collection("messages")
+            .addSnapshotListener { snapshotPriv, _ ->
+                val messages = snapshotPriv?.documents?.mapNotNull { doc ->
+                    try {
+                        val id = doc.id
+                        val title = doc.getString("title") ?: ""
+                        val content = doc.getString("content") ?: ""
+                        val timestamp = doc.get("timestamp")
+                        AppMessage(id, title, content, timestamp)
+                    } catch (e: Exception) { null }
+                } ?: emptyList()
                 checkIfAnyNew(messages, lastRead)
             }
+        registrations.add(regPrivate)
     }
 
     private fun checkIfAnyNew(messages: List<AppMessage>, lastRead: Long) {
-        val hasNew = messages.any { (it.timestamp?.toDate()?.time ?: 0L) > lastRead }
+        val hasNew = messages.any { message ->
+            val ts = when (val t = message.timestamp) {
+                is Timestamp -> t.toDate().time
+                is String -> try { t.toLong() } catch (e: Exception) { 0L }
+                is Long -> t
+                else -> 0L
+            }
+            ts > lastRead
+        }
         if (hasNew) {
             requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
                 .edit().putBoolean("has_new_message", true).apply()
@@ -102,7 +129,21 @@ class HomeFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         updateMailboxBadge()
+        updateCollabBadge()
         renderQuickActions()
+        loadUserLogo()
+    }
+
+    private fun updateCollabBadge() {
+        val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        val hasNew = prefs.getBoolean("has_new_request", false)
+        homeBinding.viewCollabBadgeMain.visibility = if (hasNew) View.VISIBLE else View.GONE
+    }
+
+    private fun clearCollabBadge() {
+        requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+            .edit().putBoolean("has_new_request", false).apply()
+        homeBinding.viewCollabBadgeMain.visibility = View.GONE
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
@@ -152,9 +193,11 @@ class HomeFragment : Fragment() {
         }
 
         homeBinding.ivLogoHome.setOnClickListener { 
+            clearCollabBadge()
             (activity as? MainActivity)?.navigateToGestion()
         }
         homeBinding.cardLogoHome.setOnClickListener { 
+            clearCollabBadge()
             (activity as? MainActivity)?.navigateToGestion()
         }
         homeBinding.btnInfoDashboard.setOnClickListener { showFinancialInfoDialog() }
@@ -168,16 +211,62 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun loadUserLogo() {
+        if (_binding == null || !isAdded) return
+        
+        val prefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val localPath = prefs.getString("business_logo_local", null)
+        
+        if (!localPath.isNullOrEmpty()) {
+            val file = java.io.File(localPath)
+            if (file.exists()) {
+                Glide.with(this).load(file).circleCrop().into(homeBinding.ivLogoHome)
+                return
+            }
+        }
+        
+        // Fallback al logo de GoMezMart
+        Glide.with(this).load(R.drawable.gomezmart_icon).circleCrop().into(homeBinding.ivLogoHome)
+    }
+
     private fun startToolActivity(intent: Intent) {
         startActivity(intent)
         activity?.overridePendingTransition(R.anim.slide_in_up, R.anim.stay)
     }
 
     private fun loadDashboardData() {
-        val prefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
-        homeBinding.tvMainBusinessName.text = prefs.getString("business_name", "Mi Negocio")
-        val currency = prefs.getString("currency_symbol", "S/")
-        val capital = prefs.getFloat("business_capital", 0f)
+        val bizPrefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val collabPrefs = requireContext().getSharedPreferences("CollabPermissions", Context.MODE_PRIVATE)
+        val isCollab = bizPrefs.getBoolean("is_collaborator_mode", false)
+
+        val businessType = bizPrefs.getString("business_type", "PRODUCTS") ?: "PRODUCTS"
+        val systemName = bizPrefs.getString("${businessType}_name", "") ?: ""
+        val businessName = bizPrefs.getString("business_name", "") ?: ""
+
+        val finalBusinessName = when {
+            systemName.isNotEmpty() -> systemName
+            businessName.isNotEmpty() -> businessName
+            else -> "Mi Negocio"
+        }
+
+        if (isCollab) {
+            val collabName = collabPrefs.getString("collab_name", "Colaborador")
+            val collabRole = collabPrefs.getString("collab_role", "EQUIPO")
+            homeBinding.tvMainBusinessName.text = collabName
+            homeBinding.tvWelcomeSubtitle.text = "Has ingresado como $collabRole en $finalBusinessName"
+        } else {
+            val ownerName = bizPrefs.getString("${businessType}_owner_name", "") ?: ""
+            if (ownerName.isNotEmpty()) {
+                homeBinding.tvMainBusinessName.text = ownerName
+                homeBinding.tvWelcomeSubtitle.text = if (finalBusinessName != "Mi Negocio") "Bienvenido al sistema de $finalBusinessName" else "Bienvenido a Naxor"
+            } else {
+                homeBinding.tvMainBusinessName.text = finalBusinessName
+                homeBinding.tvWelcomeSubtitle.text = "GoMezMart le da la bienvenida a la gestión inteligente"
+            }
+        }
+        
+        val currency = bizPrefs.getString("currency_symbol", "S/") ?: "S/"
+        val capital = bizPrefs.getFloat("business_capital", 0f)
 
         lifecycleScope.launch {
             try {
@@ -193,9 +282,9 @@ class HomeFragment : Fragment() {
                 val totalProfitAsync = async(Dispatchers.IO) { database.saleDao().getProfitFrom(startOfToday) }
                 val totalExpensesAsync = async(Dispatchers.IO) { database.expenseDao().getExpensesAmountFrom(startOfToday) ?: 0.0 }
 
-                val totalSales = totalSalesAsync.await()
-                val totalProfit = totalProfitAsync.await()
-                val totalExpenses = totalExpensesAsync.await()
+                val totalSales = totalSalesAsync.await() ?: 0.0
+                val totalProfit = totalProfitAsync.await() ?: 0.0
+                val totalExpenses = totalExpensesAsync.await() ?: 0.0
 
                 withContext(Dispatchers.Main) {
                     if (_binding != null) {
@@ -281,6 +370,7 @@ class HomeFragment : Fragment() {
             "asignador" to Triple("⚖️ PRECIOS", "#64748B") { startToolActivity(Intent(requireContext(), AsignadorDePreciosActivity::class.java)) },
             "sales_history" to Triple("📜 VENTAS", "#3B82F6") { (activity as? MainActivity)?.checkPinAndNavigate { startToolActivity(Intent(requireContext(), SalesHistoryActivity::class.java)) } },
             "view_history" to Triple("🕒 CÁLCULOS", "#8B5CF6") { startToolActivity(Intent(requireContext(), HistorialActivity::class.java)) },
+            "commitments" to Triple("🤝 COMPROM.", "#7C3AED") { startToolActivity(Intent(requireContext(), CommitmentsActivity::class.java)) },
             "instructions" to Triple("💡 AYUDA", "#14B8A6") { startToolActivity(Intent(requireContext(), InstruccionesActivity::class.java)) }
         )
 
@@ -334,6 +424,13 @@ class HomeFragment : Fragment() {
             .setNegativeButton("Cancelar", null).show()
     }
 
+    private fun setupActivityListeners() {
+        // Asumiendo que homeBinding está disponible y tiene el ID correcto
+        homeBinding.btnSupportCreatorMain.setOnClickListener {
+            startToolActivity(Intent(requireContext(), com.naxor.app.SupportCreatorActivity::class.java))
+        }
+    }
+
     private fun showActivityFilterDialog() {
         val options = arrayOf("TODOS", "VENTAS", "GASTOS", "STOCK", "SISTEMA")
         val checked = options.map { activityFilters.contains(it) }.toBooleanArray()
@@ -344,6 +441,12 @@ class HomeFragment : Fragment() {
             }
             .setPositiveButton("Aplicar") { _, _ -> setupRealtimeActivityFeed() }
             .show()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        registrations.forEach { it.remove() }
+        registrations.clear()
     }
 
     override fun onDestroyView() {

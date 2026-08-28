@@ -9,17 +9,26 @@ interface HotelDao {
     @Query("SELECT * FROM hotel_rooms WHERE isDeleted = 0 ORDER BY floor ASC, CAST(number AS INTEGER) ASC, number ASC")
     fun getAllRooms(): Flow<List<HotelRoomEntity>>
 
+    @Query("SELECT * FROM hotel_rooms WHERE isDeleted = 0")
+    suspend fun getAllRoomsOnce(): List<HotelRoomEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRoom(room: HotelRoomEntity)
 
     @Update
     suspend fun updateRoom(room: HotelRoomEntity)
 
+    @Update
+    suspend fun updateRooms(rooms: List<HotelRoomEntity>)
+
     @Query("UPDATE hotel_rooms SET status = :status WHERE id = :roomId")
     suspend fun updateRoomStatus(roomId: String, status: String)
 
     @Query("SELECT * FROM hotel_rooms WHERE id = :id")
     suspend fun getRoomById(id: String): HotelRoomEntity?
+
+    @Query("SELECT * FROM hotel_rooms WHERE number = :number AND isDeleted = 0 LIMIT 1")
+    suspend fun getRoomByNumber(number: String): HotelRoomEntity?
 
     // --- BOOKINGS ---
     @Query("SELECT * FROM hotel_bookings WHERE isDeleted = 0")
@@ -96,4 +105,77 @@ interface HotelDao {
 
     @Delete
     suspend fun deleteLayout(layout: HotelRoomLayoutEntity)
+
+    // --- SYNC HELPERS ---
+    @Query("SELECT * FROM hotel_rooms WHERE isSynced = 0")
+    suspend fun getUnsyncedRooms(): List<HotelRoomEntity>
+
+    @Query("SELECT * FROM hotel_bookings WHERE isSynced = 0")
+    suspend fun getUnsyncedBookings(): List<HotelBookingEntity>
+
+    @Query("SELECT * FROM hotel_charges WHERE isSynced = 0")
+    suspend fun getUnsyncedCharges(): List<HotelChargeEntity>
+
+    @Query("SELECT * FROM hotel_payments WHERE isSynced = 0")
+    suspend fun getUnsyncedPayments(): List<HotelPaymentEntity>
+
+    @Query("SELECT * FROM hotel_maintenance WHERE isSynced = 0")
+    suspend fun getUnsyncedMaintenance(): List<HotelMaintenanceEntity>
+
+    @Query("SELECT * FROM hotel_room_layouts WHERE isSynced = 0")
+    suspend fun getUnsyncedLayouts(): List<HotelRoomLayoutEntity>
+
+    @Query("UPDATE hotel_rooms SET isSynced = 1 WHERE id = :id")
+    suspend fun markRoomSynced(id: String)
+
+    @Query("UPDATE hotel_bookings SET isSynced = 1 WHERE id = :id")
+    suspend fun markBookingSynced(id: String)
+
+    @Query("UPDATE hotel_charges SET isSynced = 1 WHERE id = :id")
+    suspend fun markChargeSynced(id: String)
+
+    @Query("UPDATE hotel_payments SET isSynced = 1 WHERE id = :id")
+    suspend fun markPaymentSynced(id: String)
+
+    @Query("UPDATE hotel_maintenance SET isSynced = 1 WHERE id = :id")
+    suspend fun markMaintenanceSynced(id: String)
+
+    @Query("UPDATE hotel_room_layouts SET isSynced = 1 WHERE id = :id")
+    suspend fun markLayoutSynced(id: String)
+
+    @Query("SELECT * FROM hotel_rooms WHERE isDeleted = 1")
+    suspend fun getDeletedRooms(): List<HotelRoomEntity>
+
+    @Query("SELECT * FROM hotel_bookings WHERE isDeleted = 1")
+    suspend fun getDeletedBookings(): List<HotelBookingEntity>
+
+    @Query("SELECT * FROM hotel_charges WHERE isDeleted = 1")
+    suspend fun getDeletedCharges(): List<HotelChargeEntity>
+
+    @Query("SELECT * FROM hotel_payments WHERE isDeleted = 1")
+    suspend fun getDeletedPayments(): List<HotelPaymentEntity>
+
+    @Query("SELECT * FROM hotel_maintenance WHERE isDeleted = 1")
+    suspend fun getDeletedMaintenance(): List<HotelMaintenanceEntity>
+
+    @Query("SELECT * FROM hotel_room_layouts WHERE isDeleted = 1")
+    suspend fun getDeletedLayouts(): List<HotelRoomLayoutEntity>
+
+    @Query("DELETE FROM hotel_rooms WHERE id = :id")
+    suspend fun deleteRoomHard(id: String)
+
+    @Query("DELETE FROM hotel_bookings WHERE id = :id")
+    suspend fun deleteBookingHard(id: String)
+
+    @Query("DELETE FROM hotel_charges WHERE id = :id")
+    suspend fun deleteChargeHard(id: String)
+
+    @Query("DELETE FROM hotel_payments WHERE id = :id")
+    suspend fun deletePaymentHard(id: String)
+
+    @Query("DELETE FROM hotel_maintenance WHERE id = :id")
+    suspend fun deleteMaintenanceHard(id: String)
+
+    @Query("DELETE FROM hotel_room_layouts WHERE id = :id")
+    suspend fun deleteLayoutHard(id: String)
 }

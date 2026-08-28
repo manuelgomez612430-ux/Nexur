@@ -14,8 +14,22 @@ import java.util.concurrent.TimeUnit
 
 class HotelToolAdapter(
     private val onRetire: (HotelToolEntity) -> Unit,
-    private val onRenew: (HotelToolEntity) -> Unit
+    private val onRenew: (HotelToolEntity) -> Unit,
+    private val onSelectionChanged: (Int) -> Unit
 ) : ListAdapter<HotelToolEntity, HotelToolAdapter.ViewHolder>(DiffCallback) {
+
+    private var isSelectionMode = false
+    private val selectedIds = mutableSetOf<String>()
+
+    fun setSelectionMode(enabled: Boolean) {
+        isSelectionMode = enabled
+        if (!enabled) selectedIds.clear()
+        notifyDataSetChanged()
+    }
+
+    fun getSelectedTools(): List<HotelToolEntity> {
+        return currentList.filter { selectedIds.contains(it.id) }
+    }
 
     class ViewHolder(val binding: ItemHotelToolBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -31,20 +45,27 @@ class HotelToolAdapter(
             tvToolCode.text = "CÓDIGO: #${tool.code}"
 
             // Calcular tiempo de uso
-            val diffMs = System.currentTimeMillis() - tool.registrationDate
+            val now = System.currentTimeMillis()
+            val diffMs = now - tool.registrationDate
             val daysInUse = TimeUnit.MILLISECONDS.toDays(diffMs).toInt()
-            val monthsInUse = (daysInUse / 30).coerceAtLeast(0)
-            
-            tvUsageTime.text = if (monthsInUse == 0) "$daysInUse Días" else "$monthsInUse Meses"
+            tvUsageTime.text = formatDetailedTime(daysInUse)
 
             // Calcular vida útil restante
-            if (tool.maxUsageMonths > 0) {
-                val remainingMonths = tool.maxUsageMonths - monthsInUse
-                tvRemainingTime.text = if (remainingMonths <= 0) "VENCIDO" else "$remainingMonths Meses"
-                tvRemainingTime.setTextColor(
-                    if (remainingMonths <= 1) ContextCompat.getColor(root.context, R.color.red_600)
-                    else ContextCompat.getColor(root.context, R.color.emerald_600)
-                )
+            if (tool.expiryDate > 0L) {
+                val remainingMs = tool.expiryDate - now
+                val remainingDays = TimeUnit.MILLISECONDS.toDays(remainingMs).toInt()
+                
+                if (remainingDays <= 0) {
+                    tvRemainingTime.text = "VENCIDO"
+                    tvRemainingTime.setTextColor(ContextCompat.getColor(root.context, R.color.red_600))
+                } else {
+                    tvRemainingTime.text = formatDetailedTime(remainingDays)
+                    tvRemainingTime.setTextColor(
+                        if (remainingDays <= 7) ContextCompat.getColor(root.context, R.color.red_600)
+                        else if (remainingDays <= 30) ContextCompat.getColor(root.context, R.color.orange_600)
+                        else ContextCompat.getColor(root.context, R.color.emerald_600)
+                    )
+                }
             } else {
                 tvRemainingTime.text = "Ilimitada"
                 tvRemainingTime.setTextColor(ContextCompat.getColor(root.context, R.color.slate_400))
@@ -66,8 +87,57 @@ class HotelToolAdapter(
                 btnRenew.text = "Renovar"
             }
 
-            btnMarkRetired.setOnClickListener { onRetire(tool) }
-            btnRenew.setOnClickListener { onRenew(tool) }
+            // --- SELECCIÓN DINÁMICA ---
+            checkTool.visibility = if (isSelectionMode) View.VISIBLE else View.GONE
+            checkTool.isChecked = selectedIds.contains(tool.id)
+            
+            root.setOnLongClickListener {
+                if (!isSelectionMode) {
+                    isSelectionMode = true
+                    selectedIds.add(tool.id)
+                    notifyDataSetChanged()
+                    onSelectionChanged(selectedIds.size)
+                }
+                true
+            }
+
+            root.setOnClickListener {
+                if (isSelectionMode) {
+                    if (selectedIds.contains(tool.id)) selectedIds.remove(tool.id)
+                    else selectedIds.add(tool.id)
+                    checkTool.isChecked = selectedIds.contains(tool.id)
+                    onSelectionChanged(selectedIds.size)
+                    if (selectedIds.isEmpty()) {
+                        isSelectionMode = false
+                        notifyDataSetChanged()
+                    }
+                }
+            }
+
+            checkTool.setOnClickListener {
+                if (selectedIds.contains(tool.id)) selectedIds.remove(tool.id)
+                else selectedIds.add(tool.id)
+                onSelectionChanged(selectedIds.size)
+                if (selectedIds.isEmpty()) {
+                    isSelectionMode = false
+                    notifyDataSetChanged()
+                }
+            }
+
+            btnMarkRetired.setOnClickListener { if (!isSelectionMode) onRetire(tool) }
+            btnRenew.setOnClickListener { if (!isSelectionMode) onRenew(tool) }
+        }
+    }
+
+    private fun formatDetailedTime(totalDays: Int): String {
+        if (totalDays <= 0) return "0 Días"
+        val months = totalDays / 30
+        val days = totalDays % 30
+        
+        return when {
+            months > 0 && days > 0 -> "$months Meses, $days Días"
+            months > 0 -> "$months Meses"
+            else -> "$days Días"
         }
     }
 

@@ -7,7 +7,6 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import com.naxor.app.data.AppDatabase
@@ -20,7 +19,7 @@ import kotlinx.coroutines.withContext
 import java.util.Locale
 import kotlin.math.round
 
-class AsignadorDePreciosActivity : AppCompatActivity() {
+class AsignadorDePreciosActivity : BaseActivity() {
 
     private lateinit var binding: ActivityAsignadorDePreciosBinding
     private val database by lazy { AppDatabase.getDatabase(this) }

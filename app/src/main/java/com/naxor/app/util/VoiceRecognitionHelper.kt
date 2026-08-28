@@ -70,7 +70,7 @@ class VoiceRecognitionHelper(private val context: Context) {
 
     private fun showListeningDialog() {
         val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_voice_listening, null)
-        listeningDialog = AlertDialog.Builder(context, R.style.Theme_Naxor_Dialog)
+        listeningDialog = AlertDialog.Builder(context, R.style.Theme_GoMezMart_Dialog)
             .setView(dialogView)
             .setCancelable(true)
             .setOnCancelListener { speechRecognizer?.stopListening() }

@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/slate_50">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        app:elevation="0dp">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarTeam"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Gestión de Colaboradores"
+            app:navigationIcon="@android:drawable/ic_menu_revert" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnViewRequests"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginEnd="8dp"
+            android:text="Solicitudes (0)"
+            android:textColor="@color/purple_600"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Card de Solicitudes Pendientes (Aparece solo si hay) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardPendingRequests"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:visibility="gone"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/purple_100"
+                app:cardBackgroundColor="@color/purple_50">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:text="📩"
+                        android:textSize="24sp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_circle_light_purple" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvPendingRequestsTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Solicitudes Pendientes"
+                            android:textStyle="bold"
+                            android:textColor="@color/purple_800"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:id="@+id/tvPendingRequestsCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tienes solicitudes nuevas"
+                            android:textColor="@color/purple_700"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnManageRequests"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ver"
+                        android:textSize="12sp"
+                        app:cornerRadius="12dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Lista de Colaboradores -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvCollaborators"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:paddingBottom="100dp"
+                android:clipToPadding="false"
+                tools:listitem="@layout/item_collaborator" />
+
+            <!-- Estado Vacío -->
+            <LinearLayout
+                android:id="@+id/layoutEmptyTeam"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="40dp"
+                android:gravity="center"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="👥"
+                    android:textSize="64sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Tu equipo está vacío"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_900"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Invita a tus recepcionistas o personal de limpieza para gestionar el hotel juntos."
+                    android:textAlignment="center"
+                    android:textColor="@color/slate_500"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/fabAddCollaborator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="24dp"
+        android:text="Invitar Usuario"
+        android:textColor="@color/white"
+        app:backgroundTint="@color/purple_600"
+        app:icon="@android:drawable/ic_input_add"
+        app:iconTint="@color/white"
+        app:cornerRadius="16dp" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

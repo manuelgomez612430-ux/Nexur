@@ -9,10 +9,12 @@ import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -35,7 +37,7 @@ import kotlinx.coroutines.withContext
 import java.util.Locale
 import java.util.UUID
 
-class VentasActivity : AppCompatActivity() {
+class VentasActivity : BaseActivity() {
 
     private lateinit var binding: ActivityVentasBinding
     private lateinit var cartAdapter: CartAdapter
@@ -48,8 +50,27 @@ class VentasActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        enableEdgeToEdge()
+        
         binding = ActivityVentasBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Estabilización Edge-to-Edge para evitar recortes en el footer de pago
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
+            
+            // Ajustar el footer de pago si está visible
+            binding.paymentFooter.setPadding(
+                binding.paymentFooter.paddingLeft,
+                binding.paymentFooter.paddingTop,
+                binding.paymentFooter.paddingRight,
+                systemBars.bottom + (16 * resources.displayMetrics.density).toInt()
+            )
+            
+            insets
+        }
 
         // Solicitar permisos de cámara al inicio
         val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -137,10 +158,6 @@ class VentasActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.btnBackVentas.setOnClickListener { finish() }
         
-        binding.btnMailboxVentas.setOnClickListener {
-            startActivity(Intent(this, MailboxActivity::class.java))
-        }
-
         binding.btnOpenMenuVentas.setOnClickListener {
             binding.drawerLayoutVentas.openDrawer(GravityCompat.START)
         }
@@ -501,30 +518,12 @@ class VentasActivity : AppCompatActivity() {
     private fun sharePdfComprobante(items: List<SaleEntity>, customerPhone: String) {
         val pdfFile = ComprobantePdfGenerator(this).generateComprobantePdf(items)
         if (pdfFile != null && pdfFile.exists()) {
-            val uri = androidx.core.content.FileProvider.getUriForFile(this, "$packageName.provider", pdfFile)
-            
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "application/pdf"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            val intent = Intent(this, PdfViewerActivity::class.java).apply {
+                putExtra("PDF_PATH", pdfFile.absolutePath)
+                putExtra("GUEST_PHONE", customerPhone)
+                putExtra("GUEST_NAME", items.firstOrNull()?.customerName ?: "Cliente")
             }
-
-            if (customerPhone.isNotEmpty()) {
-                // Intentar abrir WhatsApp directamente al número del cliente
-                val phoneClean = customerPhone.replace("[^0-9]".toRegex(), "")
-                val whatsappNum = if (phoneClean.length == 9) "51$phoneClean" else phoneClean
-                
-                try {
-                    // Para enviar a un número específico de WhatsApp con archivo adjunto
-                    shareIntent.`package` = "com.whatsapp"
-                    shareIntent.putExtra("jid", "$whatsappNum@s.whatsapp.net")
-                    startActivity(shareIntent)
-                } catch (e: Exception) {
-                    startActivity(Intent.createChooser(shareIntent, "Enviar Comprobante"))
-                }
-            } else {
-                startActivity(Intent.createChooser(shareIntent, "Enviar Comprobante"))
-            }
+            startActivity(intent)
         } else {
             Toast.makeText(this, "Error al generar PDF", Toast.LENGTH_SHORT).show()
         }

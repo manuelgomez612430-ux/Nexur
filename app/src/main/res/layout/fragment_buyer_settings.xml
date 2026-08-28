@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/slate_50">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        app:elevation="0dp">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarSettings"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Ajustes del Mercado"
+            app:titleCentered="true" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GENERAL"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_400"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="1dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_200">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="8dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCheckUpdates"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:text="🔄  Buscar Actualizaciones"
+                        android:gravity="start|center_vertical"
+                        android:textColor="@color/slate_700"
+                        android:textSize="15sp"
+                        app:icon="@android:drawable/ic_menu_revert"
+                        app:iconGravity="end"
+                        app:iconTint="@color/slate_300" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:background="@color/slate_100" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDonate"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:text="☕  Donar al Creador"
+                        android:gravity="start|center_vertical"
+                        android:textColor="@color/slate_700"
+                        android:textSize="15sp"
+                        app:icon="@android:drawable/ic_menu_revert"
+                        app:iconGravity="end"
+                        app:iconTint="@color/slate_300" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Gracias por ser parte de GoMezMart. Seguimos trabajando para darte la mejor experiencia."
+                android:textAlignment="center"
+                android:textColor="@color/slate_400"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/slate_50">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        app:elevation="0dp">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarAccount"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Mi Perfil de Comprador"
+            app:titleCentered="true" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Card: Perfil -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="24dp"
+                    android:gravity="center">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardProfileImage"
+                            android:layout_width="100dp"
+                            android:layout_height="100dp"
+                            app:cardCornerRadius="50dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="@color/purple_100"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent">
+                            <FrameLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent">
+                                <TextView
+                                    android:id="@+id/tvProfileInitial"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:text="U"
+                                    android:gravity="center"
+                                    android:textSize="40sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/purple_600" />
+                                <ImageView
+                                    android:id="@+id/ivProfileImage"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:scaleType="centerCrop"
+                                    android:visibility="gone" />
+                            </FrameLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Botón de Cámara tipo Badge -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/btnChangePhotoBadge"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            app:cardCornerRadius="18dp"
+                            app:cardElevation="4dp"
+                            app:strokeWidth="2dp"
+                            app:strokeColor="@color/white"
+                            app:cardBackgroundColor="@color/purple_600"
+                            app:layout_constraintBottom_toBottomOf="@id/cardProfileImage"
+                            app:layout_constraintEnd_toEndOf="@id/cardProfileImage"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:text="📷"
+                                android:textSize="14sp"
+                                android:gravity="center" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    <TextView
+                        android:id="@+id/tvProfileName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Nombre de Usuario"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_900" />
+
+                    <TextView
+                        android:id="@+id/tvProfileEmail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="usuario@correo.com"
+                        android:textColor="@color/slate_500"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvUserCurrentLocation"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="📍 Sin ubicación configurada"
+                        android:textColor="@color/purple_600"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:paddingHorizontal="16dp"
+                        android:gravity="center" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEditProfile"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="EDITAR MI INFORMACIÓN"
+                        android:textSize="11sp"
+                        app:cornerRadius="12dp" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OPCIONES DE CUENTA"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_400"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Card: Acciones -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="1dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_200">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="8dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSetLocation"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:text="📍  Gestionar mi Ubicación"
+                        android:gravity="start|center_vertical"
+                        android:textColor="@color/slate_700"
+                        android:textSize="15sp"
+                        app:icon="@android:drawable/ic_menu_revert"
+                        app:iconGravity="end"
+                        app:iconTint="@color/slate_300" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:background="@color/slate_100" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCollabWithBusiness"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:text="🤝  Colaborar con un negocio"
+                        android:gravity="start|center_vertical"
+                        android:textColor="@color/slate_700"
+                        android:textSize="15sp"
+                        app:icon="@android:drawable/ic_menu_revert"
+                        app:iconGravity="end"
+                        app:iconTint="@color/slate_300" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:background="@color/slate_100" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSwitchToSeller"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:text="💼  Vender en GoMezMart"
+                        android:gravity="start|center_vertical"
+                        android:textColor="@color/slate_700"
+                        android:textSize="15sp"
+                        app:icon="@android:drawable/ic_menu_revert"
+                        app:iconGravity="end"
+                        app:iconTint="@color/slate_300" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:background="@color/slate_100" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLogout"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:text="🚪  Cerrar Sesión"
+                        android:gravity="start|center_vertical"
+                        android:textColor="@color/red_600"
+                        android:textSize="15sp" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
