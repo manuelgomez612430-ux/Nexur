@@ -17,6 +17,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
+import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
@@ -88,7 +89,7 @@ class AddProductActivity : AppCompatActivity() {
                     }
                     if (p.precioCosto > 0) {
                         binding.cbShowBatchCost.isChecked = true
-                        binding.layoutProdCosto.visibility = View.VISIBLE
+                        binding.layoutProdCostoContainer.visibility = View.VISIBLE
                         binding.etProdCosto.setText(p.precioCosto.toString())
                     }
                     if (p.expirationDate > 0) {
@@ -116,7 +117,13 @@ class AddProductActivity : AppCompatActivity() {
         }
 
         binding.cbShowBatchCost.setOnCheckedChangeListener { _, isChecked -> 
-            binding.layoutProdCosto.visibility = if (isChecked) View.VISIBLE else View.GONE 
+            binding.layoutProdCostoContainer.visibility = if (isChecked) View.VISIBLE else View.GONE 
+        }
+        binding.btnInfoCosto.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("¿Qué es el costo?")
+                .setMessage("Es lo que tú pagaste por el producto. El sistema lo usa para decirte cuánta ganancia real tienes.")
+                .setPositiveButton("Entendido", null).show()
         }
         binding.cbShowExpiration.setOnCheckedChangeListener { _, isChecked -> 
             binding.layoutProdExpiration.visibility = if (isChecked) View.VISIBLE else View.GONE 
@@ -156,14 +163,33 @@ class AddProductActivity : AppCompatActivity() {
             }
         }
 
-        binding.layoutProdDesc.setEndIconOnClickListener {
-            voiceHelper.startListening { text ->
-                binding.etProdDescripcion.setText(text.replaceFirstChar { it.uppercase() })
-            }
-        }
+        binding.etProdVenta.addTextChangedListener { updateProfitPreview() }
+        binding.etProdCosto.addTextChangedListener { updateProfitPreview() }
 
         binding.btnConfirmAdd.setOnClickListener {
             saveProduct()
+        }
+    }
+
+    private fun updateProfitPreview() {
+        val venta = binding.etProdVenta.text.toString().toDoubleOrNull() ?: 0.0
+        val costo = binding.etProdCosto.text.toString().toDoubleOrNull() ?: 0.0
+        
+        if (venta > 0 && costo > 0) {
+            val ganancia = venta - costo
+            val porcentaje = (ganancia / venta) * 100
+            binding.cardProfitPreview.visibility = View.VISIBLE
+            binding.tvProfitPreview.text = String.format(Locale.getDefault(), "Ganancia estimada: S/ %.2f (%.1f%%)", ganancia, porcentaje)
+            
+            if (ganancia < 0) {
+                binding.cardProfitPreview.setCardBackgroundColor(getColor(R.color.red_700).let { android.content.res.ColorStateList.valueOf(it) })
+                binding.tvProfitPreview.setTextColor(Color.WHITE)
+            } else {
+                binding.cardProfitPreview.setCardBackgroundColor(getColor(R.color.emerald_50).let { android.content.res.ColorStateList.valueOf(it) })
+                binding.tvProfitPreview.setTextColor(getColor(R.color.emerald_600))
+            }
+        } else {
+            binding.cardProfitPreview.visibility = View.GONE
         }
     }
 

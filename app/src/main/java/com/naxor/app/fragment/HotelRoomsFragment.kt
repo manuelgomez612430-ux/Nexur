@@ -30,6 +30,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import java.util.Calendar
 
 class HotelRoomsFragment : Fragment() {
@@ -190,23 +192,20 @@ class HotelRoomsFragment : Fragment() {
             ) { rooms, maintenance, bookings ->
                 Triple(rooms, maintenance, bookings)
             }.collectLatest { (rooms, maintenance, bookings) ->
-                _binding?.let { b ->
-                    allRooms = rooms
-                    
-                    val cal = java.util.Calendar.getInstance()
-                    cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
-                    cal.set(java.util.Calendar.MINUTE, 0)
-                    cal.set(java.util.Calendar.SECOND, 0)
-                    cal.set(java.util.Calendar.MILLISECOND, 0)
-                    val startOfToday = cal.timeInMillis
-                    
-                    rooms.filter { it.status == "FREE" && it.lastCleaned < startOfToday }.forEach { room ->
-                        lifecycleScope.launch {
+                val startOfToday = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+
+                // Procesamiento pesado en hilo de fondo
+                val processedData = withContext(Dispatchers.Default) {
+                    // Actualizar estados de limpieza si es necesario (sin bloquear UI)
+                    for (room in rooms) {
+                        if (room.status == "FREE" && room.lastCleaned < startOfToday) {
                             database.hotelDao().updateRoomStatus(room.id, "MAINTENANCE")
                         }
                     }
 
-                    // Preparar mapas de estado
                     val pendingMaintMap = maintenance.filter { it.status == "PENDING" }.groupBy { it.roomId }
                     val reservationsMap = bookings.filter { it.status == "CONFIRMED" }.groupBy { it.roomId }
 
@@ -221,22 +220,29 @@ class HotelRoomsFragment : Fragment() {
                             ))
                         }
                     }
-                    adapter.submitList(groupedList)
-                    
+
                     val statusMap = rooms.associate { it.id to it.status }
                     val nameMap = rooms.associate { it.id to it.number }
-                    b.mapView.roomStatuses = statusMap
-                    b.mapView.roomNames = nameMap
                     
-                    // Pasar datos extra al mapa
-                    b.mapView.roomsWithFailures = pendingMaintMap.keys
-                    b.mapView.roomsReserved = reservationsMap.keys
+                    Quadruple(groupedList, statusMap, nameMap, Pair(pendingMaintMap.keys, reservationsMap.keys))
+                }
+
+                _binding?.let { b ->
+                    allRooms = rooms
+                    adapter.submitList(processedData.first)
+                    
+                    b.mapView.roomStatuses = processedData.second
+                    b.mapView.roomNames = processedData.third
+                    b.mapView.roomsWithFailures = processedData.fourth.first
+                    b.mapView.roomsReserved = processedData.fourth.second
                     
                     b.mapView.invalidate()
                 }
             }
         }
     }
+
+    private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
     private fun showAddRoomDialog() {
         val layout = LinearLayout(requireContext()).apply {

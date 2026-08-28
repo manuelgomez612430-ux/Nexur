@@ -25,7 +25,7 @@
         android:id="@+id/topHeaderBackgroundCaja"
         android:layout_width="match_parent"
         android:layout_height="180dp"
-        android:background="#6B21A8"
+        android:background="@drawable/bg_header_purple_gradient"
         app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Cabecera -->

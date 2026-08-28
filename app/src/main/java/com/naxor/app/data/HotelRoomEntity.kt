@@ -4,7 +4,11 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID
 
-@Entity(tableName = "hotel_rooms")
+@Entity(tableName = "hotel_rooms", indices = [
+    androidx.room.Index("floor"),
+    androidx.room.Index("status"),
+    androidx.room.Index("isDeleted")
+])
 data class HotelRoomEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val number: String,
