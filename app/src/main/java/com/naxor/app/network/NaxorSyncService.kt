@@ -17,6 +17,7 @@ class GoMezMartSyncService : Service() {
     private val CHANNEL_ID = "sync_service_channel"
     private lateinit var syncManager: SyncManager
     private val registrations = mutableListOf<ListenerRegistration>()
+    private var isListenersActive = false
 
     override fun onCreate() {
         super.onCreate()
@@ -24,25 +25,39 @@ class GoMezMartSyncService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Eliminada la notificación persistente para mejorar la comodidad del usuario
-        // El servicio ahora funcionará en segundo plano mientras el sistema lo permita
+        val action = intent?.action
         
-        // Limpiar registros previos si existen
-        registrations.forEach { it.remove() }
-        registrations.clear()
-
-        // Iniciar el monitoreo en tiempo real y guardar registros
-        syncManager.startRealtimeSalesSync { }?.let { registrations.add(it) }
-        syncManager.startRealtimeInventorySync { }?.let { registrations.add(it) }
-        syncManager.startRealtimeRequestsSync()?.let { registrations.add(it) }
-        registrations.addAll(syncManager.startRealtimeMessagesSync())
+        if (action == "STOP_LISTENERS") {
+            stopAllListeners()
+        } else {
+            startAllListeners()
+        }
 
         return START_STICKY
     }
 
-    override fun onDestroy() {
+    private fun startAllListeners() {
+        if (isListenersActive) return
+        
         registrations.forEach { it.remove() }
         registrations.clear()
+
+        syncManager.startRealtimeSalesSync { }?.let { registrations.add(it) }
+        syncManager.startRealtimeInventorySync { }?.let { registrations.add(it) }
+        syncManager.startRealtimeRequestsSync()?.let { registrations.add(it) }
+        registrations.addAll(syncManager.startRealtimeMessagesSync())
+        
+        isListenersActive = true
+    }
+
+    private fun stopAllListeners() {
+        registrations.forEach { it.remove() }
+        registrations.clear()
+        isListenersActive = false
+    }
+
+    override fun onDestroy() {
+        stopAllListeners()
         super.onDestroy()
     }
 

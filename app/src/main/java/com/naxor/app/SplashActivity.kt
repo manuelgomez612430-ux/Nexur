@@ -15,8 +15,9 @@ class SplashActivity : BaseActivity() {
 
         val user = FirebaseAuth.getInstance().currentUser
         if (user != null) {
-            // Usuario logueado, verificación de preferencias instantánea para reducir tiempo de apertura
+            // Usuario logueado, verificación instantánea para un inicio más ágil
             checkPreferencesAndNavigate()
+            finish()
         } else {
             // No logueado, ir al Login tras una breve pausa para la marca
             Handler(Looper.getMainLooper()).postDelayed({

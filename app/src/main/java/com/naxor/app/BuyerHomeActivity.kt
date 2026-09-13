@@ -194,8 +194,21 @@ class BuyerHomeActivity : BaseActivity() {
         if (targetView.width > 0) alignAction.run() else targetView.post(alignAction)
     }
 
-    private fun navigateToMarketplace() { supportFragmentManager.beginTransaction().hide(activeFragment).show(marketplaceFragment).commit(); activeFragment = marketplaceFragment; updateCustomNavUI(0) }
-    private fun navigateToAccount() { supportFragmentManager.beginTransaction().hide(activeFragment).show(accountFragment).commit(); activeFragment = accountFragment; updateCustomNavUI(1) }
-    private fun navigateToSettings() { supportFragmentManager.beginTransaction().hide(activeFragment).show(settingsFragment).commit(); activeFragment = settingsFragment; updateCustomNavUI(2) }
+    private fun navigateToFragment(fragment: Fragment, tag: String) {
+        val transaction = supportFragmentManager.beginTransaction()
+        transaction.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+        transaction.hide(activeFragment)
+        if (supportFragmentManager.findFragmentByTag(tag) == null) {
+            transaction.add(R.id.buyerFragmentContainer, fragment, tag)
+        } else {
+            transaction.show(fragment)
+        }
+        transaction.commit()
+        activeFragment = fragment
+    }
+
+    private fun navigateToMarketplace() { navigateToFragment(marketplaceFragment, "1"); updateCustomNavUI(0) }
+    private fun navigateToAccount() { navigateToFragment(accountFragment, "2"); updateCustomNavUI(1) }
+    private fun navigateToSettings() { navigateToFragment(settingsFragment, "3"); updateCustomNavUI(2) }
     fun openDrawer() = binding.drawerBuyerHome.openDrawer(GravityCompat.START)
 }

@@ -8,6 +8,7 @@ import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.SaleEntity
@@ -41,7 +42,9 @@ class ResumenActivity : BaseActivity() {
         binding = ActivityResumenBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.btnBackResumen.setOnClickListener { finish() }
+        binding.btnOpenMenuResumen.setOnClickListener {
+            binding.drawerLayoutResumen.openDrawer(GravityCompat.START)
+        }
 
         binding.navigationViewResumen.setNavigationItemSelectedListener { menuItem ->
             binding.drawerLayoutResumen.closeDrawer(androidx.core.view.GravityCompat.START)

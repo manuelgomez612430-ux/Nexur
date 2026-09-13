@@ -22,6 +22,7 @@ import androidx.work.*
 import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.messaging.FirebaseMessaging
 import com.naxor.app.data.CollaboratorEntity
 import com.naxor.app.data.AppDatabase
@@ -53,6 +54,9 @@ class MainActivity : BaseActivity() {
         "¡Éxito en tus cobros!" to "Ya puedes empezar. Recuerda que puedes ver esta guía de nuevo en Ajustes."
     )
 
+    private var loadJob: Job? = null
+    private val registrations = mutableListOf<ListenerRegistration>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -75,6 +79,57 @@ class MainActivity : BaseActivity() {
         schedulePeriodicSync()
     }
 
+    private fun startCloudSyncListeners() {
+        val user = auth.currentUser ?: return
+        
+        // 1. Escuchar info del Perfil (Nombre completo desde la cuenta)
+        val regProfile = db.collection("users").document(user.uid).collection("profile").document("info")
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null && snapshot.exists()) {
+                    val name = snapshot.getString("name")
+                    if (!name.isNullOrEmpty()) {
+                        getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putString("user_full_name", name).apply()
+                        runOnUiThread { updateMenuForBusinessType() }
+                    }
+                }
+            }
+        registrations.add(regProfile)
+
+        // 2. Escuchar info del Negocio actual (Nombre, Logo y Nombre del Dueño)
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val businessType = prefs.getString("business_type", "PRODUCTS") ?: "PRODUCTS"
+        
+        val syncBusinessInfo = { docId: String ->
+            val regBiz = db.collection("users").document(user.uid).collection("settings").document(docId)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null && snapshot.exists()) {
+                        val bizName = snapshot.getString("business_name") ?: snapshot.getString("${docId}_name")
+                        val logoUrl = snapshot.getString("business_logo_url")
+                        val ownerName = snapshot.getString("business_owner_name")
+                        
+                        val editor = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit()
+                        if (!bizName.isNullOrEmpty()) editor.putString("${businessType}_name", bizName)
+                        if (!logoUrl.isNullOrEmpty()) editor.putString("${businessType}_logo_url", logoUrl)
+                        
+                        // Sincronizar el nombre del dueño con el perfil si este está vacío
+                        if (!ownerName.isNullOrEmpty()) {
+                            val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+                            if (appPrefs.getString("user_full_name", null).isNullOrEmpty()) {
+                                appPrefs.edit().putString("user_full_name", ownerName).apply()
+                            }
+                        }
+                        
+                        editor.apply()
+                        runOnUiThread { updateMenuForBusinessType() }
+                    }
+                }
+            registrations.add(regBiz)
+        }
+
+        syncBusinessInfo(businessType)
+        if (businessType != "business") syncBusinessInfo("business") // Fallback
+    }
+
     private fun refreshIndicatorPosition() {
         val icons = listOf(binding.tvIconInicio, binding.tvIconStock, binding.tvIconMetricas, binding.tvIconConfig, binding.tvIconMarket)
         val activeIdx = icons.indexOfFirst { it.alpha == 1.0f }
@@ -90,7 +145,7 @@ class MainActivity : BaseActivity() {
 
         if (isCollab && ownerId != null) {
             val userEmail = auth.currentUser?.email?.lowercase() ?: ""
-            db.collection("users").document(ownerId)
+            val regCollab = db.collection("users").document(ownerId)
                 .collection("collaborators").document(userEmail)
                 .addSnapshotListener { snapshot, e ->
                     if (e != null) return@addSnapshotListener
@@ -110,6 +165,7 @@ class MainActivity : BaseActivity() {
                         runOnUiThread { updateMenuForBusinessType() }
                     }
                 }
+            registrations.add(regCollab)
         }
     }
 
@@ -189,7 +245,9 @@ class MainActivity : BaseActivity() {
                 val collabRole = collabPrefs.getString("collab_role", "EQUIPO")
                 tvHeaderTitle?.text = "$collabName ($collabRole)\n@ $businessName"
             } else {
-                tvHeaderTitle?.text = if (businessType == "LOANS") "GoMezMart Préstamos" else prefs.getString("${businessType}_name", "Mi Negocio")
+                // CORRECCIÓN: Mostrar SOLO el nombre del negocio en el Menú Lateral
+                val bizName = prefs.getString("${businessType}_name", null) ?: prefs.getString("business_name", "Mi Negocio")
+                tvHeaderTitle?.text = bizName
             }
 
             if (isCollabMode) {
@@ -197,9 +255,14 @@ class MainActivity : BaseActivity() {
                 if (!collabLogo.isNullOrEmpty()) Glide.with(this).load(collabLogo).circleCrop().into(ivDrawerLogo!!)
                 else ivDrawerLogo?.setImageResource(R.drawable.logotipo_de_gomezmart)
             } else {
+                val logoUrl = prefs.getString("${businessType}_logo_url", null)
                 val logoPath = prefs.getString("${businessType}_logo_local", null)
-                if (!logoPath.isNullOrEmpty()) Glide.with(this).load(File(logoPath)).circleCrop().into(ivDrawerLogo!!)
-                else ivDrawerLogo?.setImageResource(R.drawable.logotipo_de_gomezmart)
+                
+                when {
+                    !logoUrl.isNullOrEmpty() -> Glide.with(this).load(logoUrl).circleCrop().into(ivDrawerLogo!!)
+                    !logoPath.isNullOrEmpty() -> Glide.with(this).load(File(logoPath)).circleCrop().into(ivDrawerLogo!!)
+                    else -> ivDrawerLogo?.setImageResource(R.drawable.logotipo_de_gomezmart)
+                }
             }
 
             btnPublish?.setOnClickListener { 
@@ -211,7 +274,13 @@ class MainActivity : BaseActivity() {
                     if (isOnline) startToolActivity(Intent(this, LoanStoreProfileActivity::class.java).apply { putExtra("STORE_ID", auth.currentUser?.uid); putExtra("IS_OWNER", true) })
                     else startToolActivity(Intent(this, LoanStoreEditorActivity::class.java))
                 } else {
-                    startActivity(Intent(this, MyBusinessesActivity::class.java).apply { putExtra("MANAGE_STORE_MODE", true) }) 
+                    // Abrir perfil de la tienda actual directamente para vista previa y gestión
+                    startToolActivity(Intent(this, StoreProfileActivity::class.java).apply { 
+                        putExtra("STORE_ID", auth.currentUser?.uid)
+                        putExtra("IS_OWNER", true)
+                        putExtra("FORCE_RUBRO", businessType)
+                        putExtra("STORE_NAME", prefs.getString("${businessType}_name", "Mi Negocio"))
+                    })
                 }
             }
             btnTeam?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startToolActivity(Intent(this, HotelManageTeamActivity::class.java)) }
@@ -250,6 +319,18 @@ class MainActivity : BaseActivity() {
         val hasBiz = hasHotel || hasProducts || hasLoans || !prefs.getString("business_type", "").isNullOrEmpty()
         
         binding.btnNavMarket.isVisible = isCollabMode || hasBiz
+        
+        // CORRECCIÓN: Labels dinámicos para el menú inferior
+        binding.tvLabelStock.text = when(businessType) { 
+            "HOTEL" -> "Hotel"
+            "LOANS" -> "Clientes"
+            else -> "Productos" 
+        }
+        binding.tvIconStock.text = when(businessType) { 
+            "HOTEL" -> "🏨"
+            "LOANS" -> "👥"
+            else -> "📦" 
+        }
 
         // Sincronización del indicador
         refreshIndicatorPosition()
@@ -270,14 +351,6 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun refreshIndicatorPosition() {
-        val icons = listOf(binding.tvIconInicio, binding.tvIconStock, binding.tvIconMetricas, binding.tvIconConfig, binding.tvIconMarket)
-        val activeIdx = icons.indexOfFirst { it.alpha == 1.0f }
-        if (activeIdx != -1) {
-            updateCustomNavUI(activeIdx, animate = false)
-        }
-    }
-
     private fun updateCustomNavUI(index: Int, animate: Boolean = true) {
         val activeColor = Color.WHITE
         val inactiveColor = Color.parseColor("#94A3B8")
@@ -294,7 +367,7 @@ class MainActivity : BaseActivity() {
             targetIdx = buttons.indexOf(visibleButtons.firstOrNull() ?: buttons[0])
         }
 
-        // 2. Sincronización visual inmediata (Solo si cambió el estado)
+        // 2. Sincronización visual inmediata (Evita jank visual)
         labels.forEachIndexed { i, tv -> 
             val color = if (i == targetIdx) activeColor else inactiveColor
             if (tv.currentTextColor != color) tv.setTextColor(color)
@@ -306,8 +379,8 @@ class MainActivity : BaseActivity() {
 
         val targetView = buttons[targetIdx]
         
-        // Función de alineación milimétrica
-        val alignAction = Runnable {
+        // Función de alineación milimétrica optimizada
+        val r = Runnable {
             if (!this::binding.isInitialized) return@Runnable
             
             val w = targetView.width
@@ -323,7 +396,7 @@ class MainActivity : BaseActivity() {
                 if (animate) {
                     binding.navIndicatorCustom.animate()
                         .translationX(x)
-                        .setDuration(150) // Reducido para más agilidad
+                        .setDuration(120) // Más rápido para mejor sensación
                         .setInterpolator(AccelerateDecelerateInterpolator())
                         .start()
                 } else {
@@ -332,7 +405,18 @@ class MainActivity : BaseActivity() {
             }
         }
 
-        if (targetView.width > 0) alignAction.run() else targetView.post(alignAction)
+        if (targetView.width > 0) r.run() else targetView.post(r)
+    }
+
+    private fun replaceFragment(fragment: Fragment) {
+        val transaction = supportFragmentManager.beginTransaction()
+        // Animaciones suaves y ligeras para evitar congelamientos al navegar
+        transaction.setCustomAnimations(
+            android.R.anim.fade_in, 
+            android.R.anim.fade_out
+        )
+        transaction.replace(R.id.mainFragmentContainer, fragment)
+        transaction.commit()
     }
 
     fun navigateToInicio() {
@@ -356,12 +440,7 @@ class MainActivity : BaseActivity() {
 
     fun navigateToSettings() { replaceFragment(SettingsFragment()); updateCustomNavUI(3) }
 
-    private fun replaceFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction()
-            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
-            .replace(R.id.mainFragmentContainer, fragment)
-            .commit()
-    }
+
     fun openSideMenu() = binding.drawerLayoutMain.openDrawer(GravityCompat.START)
     fun navigateToGestion() = binding.drawerLayoutMain.openDrawer(GravityCompat.START)
     private fun startSyncService() { startService(Intent(this, GoMezMartSyncService::class.java)) }
@@ -439,6 +518,32 @@ class MainActivity : BaseActivity() {
             if (name != null) getSharedPreferences("CollabPermissions", MODE_PRIVATE).edit().putString("collab_business_name", name).apply()
             startSyncService(); updateMenuForBusinessType(); navigateToInicio(); SyncManager(this@MainActivity).scheduleOfflineSync()
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Activar sincronización en tiempo real al entrar al app
+        val intent = Intent(this, GoMezMartSyncService::class.java)
+        startService(intent)
+        startCloudSyncListeners()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Detener escuchadores pesados al salir a segundo plano para ahorrar batería y evitar calentamiento
+        val intent = Intent(this, GoMezMartSyncService::class.java)
+        intent.action = "STOP_LISTENERS"
+        startService(intent)
+        
+        // Limpiar escuchadores de la actividad
+        registrations.forEach { it.remove() }
+        registrations.clear()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Detener el servicio por completo al cerrar el app
+        stopService(Intent(this, GoMezMartSyncService::class.java))
     }
 
     private fun schedulePeriodicSync() { val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).setBackoffCriteria(BackoffPolicy.EXPONENTIAL, WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS).build(); WorkManager.getInstance(this).enqueueUniquePeriodicWork("periodic_sync", ExistingPeriodicWorkPolicy.KEEP, syncRequest) }

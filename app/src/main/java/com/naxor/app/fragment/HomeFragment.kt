@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -30,6 +31,7 @@ import com.naxor.app.data.AppMessage
 import com.naxor.app.data.QuickAction
 import com.naxor.app.databinding.FragmentHomeBinding
 import kotlinx.coroutines.*
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -50,11 +52,25 @@ class HomeFragment : Fragment() {
         return homeBinding.root
     }
 
+    override fun onStart() {
+        super.onStart()
+        listenForNewMessages()
+        val sm = SyncManager(requireContext())
+        sm.startRealtimeSalesSync { loadDashboardData() }?.let { registrations.add(it) }
+        sm.startRealtimeLogsSync { setupRealtimeActivityFeed() }?.let { registrations.add(it) }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Limpieza agresiva de escuchadores para evitar calentamiento en segundo plano
+        registrations.forEach { it.remove() }
+        registrations.clear()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
         loadUserLogo()
-
         loadActivityFilters()
         updateUIForBusinessType()
         setupListeners()
@@ -64,11 +80,6 @@ class HomeFragment : Fragment() {
         setupRecentActivityRecyclerView()
         renderQuickActions()
         loadDashboardData()
-        listenForNewMessages()
-
-        val sm = SyncManager(requireContext())
-        sm.startRealtimeSalesSync { loadDashboardData() }?.let { registrations.add(it) }
-        sm.startRealtimeLogsSync { setupRealtimeActivityFeed() }?.let { registrations.add(it) }
     }
 
     private fun listenForNewMessages() {
@@ -215,18 +226,37 @@ class HomeFragment : Fragment() {
         if (_binding == null || !isAdded) return
         
         val prefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val businessType = prefs.getString("business_type", "PRODUCTS") ?: "PRODUCTS"
+        val cloudLogo = prefs.getString("${businessType}_logo_url", null)
         val localPath = prefs.getString("business_logo_local", null)
         
-        if (!localPath.isNullOrEmpty()) {
-            val file = java.io.File(localPath)
-            if (file.exists()) {
-                Glide.with(this).load(file).circleCrop().into(homeBinding.ivLogoHome)
-                return
+        val glide = Glide.with(this)
+        
+        when {
+            // 1. Prioridad: Logo en la nube
+            !cloudLogo.isNullOrEmpty() -> {
+                glide.load(cloudLogo)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .circleCrop()
+                    .into(homeBinding.ivLogoHome)
+            }
+            // 2. Respaldo: Logo local
+            !localPath.isNullOrEmpty() -> {
+                val file = File(localPath)
+                if (file.exists()) {
+                    glide.load(file)
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .circleCrop()
+                        .into(homeBinding.ivLogoHome)
+                }
+            }
+            // 3. Fallback: Logo por defecto
+            else -> {
+                glide.load(R.drawable.gomezmart_icon)
+                    .circleCrop()
+                    .into(homeBinding.ivLogoHome)
             }
         }
-        
-        // Fallback al logo de GoMezMart
-        Glide.with(this).load(R.drawable.gomezmart_icon).circleCrop().into(homeBinding.ivLogoHome)
     }
 
     private fun startToolActivity(intent: Intent) {
@@ -254,20 +284,17 @@ class HomeFragment : Fragment() {
             else -> "Mi Negocio"
         }
 
+        val userFullName = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE).getString("user_full_name", null) ?: FirebaseAuth.getInstance().currentUser?.displayName ?: "Usuario"
+
         if (isCollab) {
             val collabName = collabPrefs.getString("collab_name", "Colaborador")
             val collabRole = collabPrefs.getString("collab_role", "EQUIPO")
-            homeBinding.tvMainBusinessName.text = collabName
-            homeBinding.tvWelcomeSubtitle.text = "Has ingresado como $collabRole en $finalBusinessName"
+            homeBinding.tvMainBusinessName.text = "¡Bienvenido, $collabName!"
+            homeBinding.tvWelcomeSubtitle.visibility = View.GONE
         } else {
-            val ownerName = bizPrefs.getString("${businessType}_owner_name", "") ?: ""
-            if (ownerName.isNotEmpty()) {
-                homeBinding.tvMainBusinessName.text = ownerName
-                homeBinding.tvWelcomeSubtitle.text = if (finalBusinessName != "Mi Negocio") "Bienvenido al sistema de $finalBusinessName" else "Bienvenido a Naxor"
-            } else {
-                homeBinding.tvMainBusinessName.text = finalBusinessName
-                homeBinding.tvWelcomeSubtitle.text = "GoMezMart le da la bienvenida a la gestión inteligente"
-            }
+            // CORRECCIÓN: Mostrar solo "¡Bienvenido [Nombre]!"
+            homeBinding.tvMainBusinessName.text = "¡Bienvenido, $userFullName!"
+            homeBinding.tvWelcomeSubtitle.visibility = View.GONE
         }
         
         val currency = bizPrefs.getString("currency_symbol", "S/") ?: "S/"
@@ -440,12 +467,6 @@ class HomeFragment : Fragment() {
             }
             .setPositiveButton("Aplicar") { _, _ -> setupRealtimeActivityFeed() }
             .show()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        registrations.forEach { it.remove() }
-        registrations.clear()
     }
 
     override fun onDestroyView() {

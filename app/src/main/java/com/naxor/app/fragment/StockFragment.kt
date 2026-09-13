@@ -69,7 +69,6 @@ class StockFragment : Fragment() {
     private var currentCategory: String = "Todos"
     private var currentSearchQuery: String = ""
     private var filterLowStock: Boolean = false
-    private var isEditorMode: Boolean = false
     private var isMultiSelectMode: Boolean = false
     private val voiceHelper by lazy { VoiceRecognitionHelper(requireContext()) }
     private var syncStatusText: String = "Sincronizado"
@@ -81,6 +80,23 @@ class StockFragment : Fragment() {
         if (_binding != null) {
             binding.drawerLayoutInventario.openDrawer(GravityCompat.START)
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        loadProducts()
+        if (inventoryRegistration == null) {
+            inventoryRegistration = SyncManager(requireContext()).startRealtimeInventorySync { 
+                loadProducts()
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        inventoryRegistration?.remove()
+        inventoryRegistration = null
+        loadJob?.cancel()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -98,10 +114,6 @@ class StockFragment : Fragment() {
         setupSyncIndicator()
         setupRecyclerView()
         setupListeners()
-
-        inventoryRegistration = SyncManager(requireContext()).startRealtimeInventorySync { 
-            loadProducts()
-        }
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
@@ -183,6 +195,10 @@ class StockFragment : Fragment() {
         binding.btnHelpInventario.setOnClickListener { showHelpDialog() }
         binding.btnSyncIndicator.setOnClickListener { updateSyncIconState(true) }
         
+        binding.btnOpenFilters.setOnClickListener { 
+            binding.drawerLayoutInventario.openDrawer(GravityCompat.START)
+        }
+
         binding.btnVoiceSearch.setOnClickListener {
             voiceHelper.startListening { text ->
                 binding.etSearchInventario.setText(text)
@@ -194,10 +210,9 @@ class StockFragment : Fragment() {
         binding.fabAddProducto.setOnClickListener { 
             startActivity(Intent(requireContext(), AddProductActivity::class.java))
         }
-        binding.fabToggleEditor.setOnClickListener { toggleEditorMode(!isEditorMode) }
+        
         binding.btnExitEditorMode.setOnClickListener { 
             if (isMultiSelectMode) toggleMultiSelectMode(false)
-            else toggleEditorMode(false) 
         }
 
         binding.etSearchInventario.addTextChangedListener { 
@@ -213,45 +228,33 @@ class StockFragment : Fragment() {
             hideKeyboard()
         }
 
+        // Filtros en el Drawer
         binding.chipGroupFilters.setOnCheckedStateChangeListener { _, checkedIds ->
             filterLowStock = checkedIds.contains(R.id.chipFilterLowStock)
             loadProducts()
         }
 
         binding.btnFilterCategory.setOnClickListener { showCategorySelector() }
-
-        binding.navigationViewInventario.setNavigationItemSelectedListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.menu_check_code -> { checkProductByCode(); true }
-                R.id.menu_export_excel -> { Toast.makeText(requireContext(), "Exportando...", Toast.LENGTH_SHORT).show(); true }
-                R.id.menu_import_excel -> { Toast.makeText(requireContext(), "Importando...", Toast.LENGTH_SHORT).show(); true }
-                R.id.menu_multi_delete -> { toggleMultiSelectMode(true); true }
-                R.id.menu_sort_options -> { showSortAttributeSelector(); true }
-                R.id.menu_settings_inventario -> { startActivity(Intent(requireContext(), SettingsActivity::class.java)); true }
-                else -> false
-            }.also { binding.drawerLayoutInventario.closeDrawer(GravityCompat.START) }
+        binding.btnSortAttribute.setOnClickListener { showSortAttributeSelector() }
+        binding.btnSortOrder.setOnClickListener { 
+            isAscending = !isAscending
+            binding.btnSortOrder.text = if (isAscending) "Orden: Ascendente" else "Orden: Descendente"
+            binding.btnSortOrder.setIconResource(if (isAscending) android.R.drawable.arrow_up_float else android.R.drawable.arrow_down_float)
+            loadProducts()
         }
-    }
 
-    private fun toggleEditorMode(enabled: Boolean) {
-        if (isMultiSelectMode) toggleMultiSelectMode(false)
-        isEditorMode = enabled
-        adapter.setEditorMode(enabled)
-        binding.cardEditorBanner.visibility = if (enabled) View.VISIBLE else View.GONE
-        
-        if (isEditorMode) {
-            binding.fabToggleEditor.setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
-            binding.fabToggleEditor.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#C026D3"))
-        } else {
-            binding.fabToggleEditor.setImageResource(android.R.drawable.ic_menu_edit)
-            binding.fabToggleEditor.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#F1F5F9"))
+        binding.btnMultiDelete.setOnClickListener { 
+            binding.drawerLayoutInventario.closeDrawer(GravityCompat.START)
+            toggleMultiSelectMode(true) 
         }
         
-        loadProducts()
+        binding.btnExportExcel.setOnClickListener {
+            binding.drawerLayoutInventario.closeDrawer(GravityCompat.START)
+            Toast.makeText(requireContext(), "Exportando...", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun toggleMultiSelectMode(enabled: Boolean) {
-        if (isEditorMode) toggleEditorMode(false)
         isMultiSelectMode = enabled
         adapter.setMultiSelectMode(enabled)
         binding.cardEditorBanner.visibility = if (enabled) View.VISIBLE else View.GONE
@@ -261,13 +264,11 @@ class StockFragment : Fragment() {
                      binding.cardEditorBanner.getChildAt(0).let { if(it is android.view.ViewGroup) it.getChildAt(1) as? TextView else null }
             tv?.text = "Seleccione los productos para eliminar"
             binding.btnExitEditorMode.text = "CANCELAR"
-            binding.fabToggleEditor.visibility = View.GONE
             binding.fabAddProducto.setImageResource(android.R.drawable.ic_menu_delete)
             binding.fabAddProducto.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#DC2626"))
             binding.fabAddProducto.setOnClickListener { showMultiDeleteConfirmation() }
         } else {
             binding.btnExitEditorMode.text = "SALIR"
-            binding.fabToggleEditor.visibility = View.VISIBLE
             binding.fabAddProducto.setImageResource(android.R.drawable.ic_input_add)
             binding.fabAddProducto.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#9333EA"))
             binding.fabAddProducto.setOnClickListener { startActivity(Intent(requireContext(), AddProductActivity::class.java)) }
@@ -308,7 +309,8 @@ class StockFragment : Fragment() {
                 val searchPattern = if (currentSearchQuery.isBlank()) "%%" else "%$currentSearchQuery%"
                 var dbList = database.productDao().getFilteredAndSorted(searchPattern, currentCategory)
                 
-                val totalInversion = dbList.sumOf { it.precioCosto * it.stock }
+                val totalInvestment = dbList.sumOf { it.precioCosto * it.stock }
+                val totalSaleValue = dbList.sumOf { it.precioVenta * it.stock }
 
                 if (filterLowStock) {
                     dbList = dbList.filter { it.stock <= 5 && !it.isDeleted }
@@ -331,7 +333,7 @@ class StockFragment : Fragment() {
                         adapter.updateList(fullList)
                         lastLoadedList = fullList
                         
-                        updateDrawerHeader(totalInversion) // Simplificado
+                        updateDrawerHeader(totalSaleValue, totalInvestment)
                         updateSyncIconState()
                     }
                 }
@@ -341,11 +343,11 @@ class StockFragment : Fragment() {
         }
     }
 
-    private fun updateDrawerHeader(total: Double) {
+    private fun updateDrawerHeader(totalSale: Double, investment: Double) {
         try {
-            if (_binding != null && binding.navigationViewInventario.headerCount > 0) {
-                val h = binding.navigationViewInventario.getHeaderView(0)
-                h.findViewById<TextView>(R.id.tvDrawerValorTotal)?.text = String.format(Locale.getDefault(), "S/ %.2f", total)
+            if (_binding != null) {
+                binding.includedDrawerHeader.tvDrawerValorTotal.text = String.format(Locale.getDefault(), "S/ %.2f", totalSale)
+                binding.includedDrawerHeader.tvDrawerInversionTotal.text = String.format(Locale.getDefault(), "S/ %.2f", investment)
             }
         } catch (e: Exception) {}
     }
@@ -441,6 +443,7 @@ class StockFragment : Fragment() {
             .setTitle("Ordenar por")
             .setItems(options) { _, which ->
                 currentSortAttribute = values[which]
+                binding.btnSortAttribute.text = "Ordenar por: ${options[which]}"
                 loadProducts()
             }.show()
     }
@@ -508,6 +511,13 @@ class StockFragment : Fragment() {
             }
         }
 
+        db.btnEditProductFromLabel.setOnClickListener {
+            d.dismiss()
+            val intent = Intent(requireContext(), AddProductActivity::class.java)
+            intent.putExtra("PRODUCT_ID", p.id)
+            startActivity(intent)
+        }
+
         db.btnShareLabel.setOnClickListener { currentBitmap?.let { shareLabelBitmap(it, p.nombre) } }
         db.tvLabelProdCode.text = if (!p.codigo.isNullOrBlank()) p.codigo!!.replace(",", "\n• ") else "---"
         db.btnCloseLabel.setOnClickListener { d.dismiss() }
@@ -529,11 +539,6 @@ class StockFragment : Fragment() {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) 
             }, "Compartir"))
         } catch (e: Exception) {}
-    }
-
-    override fun onStop() {
-        super.onStop()
-        inventoryRegistration?.remove()
     }
 
     override fun onDestroyView() {

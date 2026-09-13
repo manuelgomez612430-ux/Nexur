@@ -1,9 +1,11 @@
 package com.naxor.app
 
+import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
@@ -20,7 +22,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -70,6 +74,17 @@ class StoreProfileActivity : BaseActivity() {
     private var storePhone = ""
     private var businessType = "PRODUCTS"
     private val paymentMethods = mutableListOf<PaymentMethod>()
+
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions.entries.all { it.value }
+        if (granted) {
+            setupMapWithUserLocation()
+        } else {
+            Toast.makeText(this, "Se requiere permiso de ubicación para mostrar tu posición en el mapa", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -121,6 +136,7 @@ class StoreProfileActivity : BaseActivity() {
         }
         
         storeProfileBinding.tvProfileStoreAddress.setOnClickListener { openGoogleMaps() }
+        storeProfileBinding.btnHowToGetThere.setOnClickListener { openGoogleMaps() }
 
         storeProfileBinding.btnContactWhatsApp.setOnClickListener {
             if (storePhone.isNotEmpty()) {
@@ -277,15 +293,42 @@ class StoreProfileActivity : BaseActivity() {
 
     private fun openGoogleMaps() {
         if (currentLat != 0.0 && currentLng != 0.0) {
-            val uri = "google.navigation:q=$currentLat,$currentLng"
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+            // "google.navigation:q=lat,lng" abre directamente la navegación en Google Maps
+            val uri = Uri.parse("google.navigation:q=$currentLat,$currentLng")
+            val intent = Intent(Intent.ACTION_VIEW, uri)
             intent.setPackage("com.google.android.apps.maps")
+            
             try {
                 startActivity(intent)
             } catch (e: Exception) {
+                // Fallback: Abrir en el navegador si no hay Google Maps instalado
                 val webUri = "https://www.google.com/maps/dir/?api=1&destination=$currentLat,$currentLng"
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(webUri)))
             }
+        } else {
+            Toast.makeText(this, "Ubicación del negocio no disponible", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun checkLocationPermissions() {
+        val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+        
+        if (fine != PackageManager.PERMISSION_GRANTED || coarse != PackageManager.PERMISSION_GRANTED) {
+            locationPermissionLauncher.launch(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+            )
+        } else {
+            setupMapWithUserLocation()
+        }
+    }
+
+    private fun setupMapWithUserLocation() {
+        // Aquí podríamos activar el overlay de "MyLocation" de osmdroid si fuera necesario
+        // Por ahora, solo aseguramos que el mapa esté centrado en el negocio
+        if (currentLat != 0.0 && currentLng != 0.0) {
+            val point = GeoPoint(currentLat, currentLng)
+            storeProfileBinding.mvStoreProfile.controller.setCenter(point)
         }
     }
 
@@ -315,6 +358,9 @@ class StoreProfileActivity : BaseActivity() {
         marker.title = businessName
         marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
         storeProfileBinding.mvStoreProfile.overlays.add(marker)
+        
+        // Solicitar permisos cuando el mapa se muestra para mejorar la experiencia
+        checkLocationPermissions()
     }
 
     private fun renderExtraSections(sections: List<Map<String, Any>>) {
@@ -404,12 +450,19 @@ class StoreProfileActivity : BaseActivity() {
     private fun startStoreListener(sId: String, forcedRubro: String?) {
         if (sId.isEmpty()) return
         val docId = forcedRubro ?: "business"
+        val intentName = intent.getStringExtra("STORE_NAME") ?: "Tienda GoMezMart"
 
         storeRegistration = db.collection("users").document(sId)
             .collection("settings").document(docId)
             .addSnapshotListener { doc, e ->
                 if (e != null || doc == null || !doc.exists()) {
-                    if (forcedRubro != null && docId != "business") startStoreListener(sId, null)
+                    // Si el documento específico no existe, probar con el genérico 'business'
+                    if (forcedRubro != null && docId != "business") {
+                        startStoreListener(sId, null)
+                    } else {
+                        // Si nada existe, mostrar al menos el nombre que tenemos
+                        storeProfileBinding.tvProfileStoreName.text = intentName
+                    }
                     return@addSnapshotListener
                 }
                 
@@ -418,14 +471,22 @@ class StoreProfileActivity : BaseActivity() {
                 if (currentData == lastStoreData) return@addSnapshotListener
                 lastStoreData = currentData
 
-                val name = doc.getString("business_name") ?: "Tienda GoMezMart"
+                val name = doc.getString("business_name") ?: doc.getString("${docId}_name") ?: intentName
                 val desc = doc.getString("business_description") ?: ""
                 val addr = doc.getString("business_address") ?: ""
                 val logo = doc.getString("business_logo_url")
                 val cover = doc.getString("business_cover_url")
                 val owner = doc.getString("business_owner_name") ?: "Propietario GoMezMart"
                 val bType = doc.getString("business_type") ?: forcedRubro ?: "PRODUCTS"
-                val rubro = doc.getString("business_category") ?: "Tienda"
+                var rubro = doc.getString("business_category") ?: "Tienda"
+                
+                if (bType == "PRODUCTS" && (rubro == "Tienda" || rubro.isEmpty())) {
+                    rubro = "TIENDA DE PRODUCTOS"
+                } else if (bType == "HOTEL" && (rubro == "Tienda" || rubro.isEmpty())) {
+                    rubro = "HOSPEDAJE / TURISMO"
+                } else if (bType == "LOANS" && (rubro == "Tienda" || rubro.isEmpty())) {
+                    rubro = "SERVICIOS FINANCIEROS"
+                }
                 
                 businessType = bType
                 storePhone = doc.getString("business_phone") ?: ""

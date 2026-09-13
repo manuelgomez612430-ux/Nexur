@@ -563,6 +563,13 @@ class StoreEditorActivity : BaseActivity() {
                 db.collection("users").document(ownerId).collection("settings").document(bType)
                     .set(data, SetOptions.merge()).await()
 
+                // 4. CORRECCIÓN: Actualizar también el Perfil del Usuario si cambió el nombre del dueño
+                if (owner.isNotEmpty()) {
+                    val profileData = mapOf("name" to owner)
+                    db.collection("users").document(ownerId).collection("profile").document("info")
+                        .set(profileData, SetOptions.merge()).await()
+                }
+
                 withContext(Dispatchers.Main) {
                     progress.dismiss()
                     Toast.makeText(this@StoreEditorActivity, "¡Tienda y fotos guardadas! 🌐✨", Toast.LENGTH_SHORT).show()

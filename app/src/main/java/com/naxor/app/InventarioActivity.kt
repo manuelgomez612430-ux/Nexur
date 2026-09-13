@@ -63,7 +63,6 @@ class InventarioActivity : BaseActivity() {
     private var currentSearchQuery: String = ""
     private var filterLowStock: Boolean = false
     private var businessCurrency: String = "S/"
-    private var isEditorMode: Boolean = false
     private var isMultiSelectMode: Boolean = false
     private val voiceHelper by lazy { VoiceRecognitionHelper(this) }
     private var syncStatusText: String = "Sincronizado"
@@ -172,6 +171,10 @@ class InventarioActivity : BaseActivity() {
         binding.btnHelpInventario.setOnClickListener { showHelpDialog() }
         binding.btnSyncIndicator.setOnClickListener { updateSyncIconState(true) }
         
+        binding.btnOpenFilters.setOnClickListener { 
+            binding.drawerLayoutInventario.openDrawer(GravityCompat.START)
+        }
+
         binding.btnVoiceSearch.setOnClickListener {
             voiceHelper.startListening { text ->
                 binding.etSearchInventario.setText(text)
@@ -183,10 +186,9 @@ class InventarioActivity : BaseActivity() {
         binding.fabAddProducto.setOnClickListener { 
             startActivity(Intent(this, AddProductActivity::class.java))
         }
-        binding.fabToggleEditor.setOnClickListener { toggleEditorMode(!isEditorMode) }
+        
         binding.btnExitEditorMode.setOnClickListener { 
             if (isMultiSelectMode) toggleMultiSelectMode(false)
-            else toggleEditorMode(false) 
         }
 
         binding.etSearchInventario.addTextChangedListener { 
@@ -202,30 +204,30 @@ class InventarioActivity : BaseActivity() {
             hideKeyboard()
         }
 
+        // Filtros en el Drawer
         binding.chipGroupFilters.setOnCheckedStateChangeListener { _, checkedIds ->
             filterLowStock = checkedIds.contains(R.id.chipFilterLowStock)
             loadProducts()
         }
 
         binding.btnFilterCategory.setOnClickListener { showCategorySelector() }
-
-        binding.navigationViewInventario.setNavigationItemSelectedListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.menu_export_excel -> { Toast.makeText(this, "Exportando...", Toast.LENGTH_SHORT).show(); true }
-                R.id.menu_import_excel -> { Toast.makeText(this, "Importando...", Toast.LENGTH_SHORT).show(); true }
-                R.id.menu_multi_delete -> { toggleMultiSelectMode(true); true }
-                R.id.menu_sort_options -> { showSortAttributeSelector(); true }
-                R.id.menu_settings_inventario -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
-                else -> false
-            }.also { binding.drawerLayoutInventario.closeDrawer(GravityCompat.START) }
+        binding.btnSortAttribute.setOnClickListener { showSortAttributeSelector() }
+        binding.btnSortOrder.setOnClickListener { 
+            isAscending = !isAscending
+            binding.btnSortOrder.text = if (isAscending) "Orden: Ascendente" else "Orden: Descendente"
+            binding.btnSortOrder.setIconResource(if (isAscending) android.R.drawable.arrow_up_float else android.R.drawable.arrow_down_float)
+            loadProducts()
         }
-    }
 
-    private fun toggleEditorMode(enabled: Boolean) {
-        isEditorMode = enabled
-        adapter.setEditorMode(enabled)
-        binding.cardEditorBanner.visibility = if (enabled) View.VISIBLE else View.GONE
-        binding.fabToggleEditor.alpha = if (enabled) 1.0f else 0.5f
+        binding.btnMultiDelete.setOnClickListener { 
+            binding.drawerLayoutInventario.closeDrawer(GravityCompat.START)
+            toggleMultiSelectMode(true) 
+        }
+        
+        binding.btnExportExcel.setOnClickListener {
+            binding.drawerLayoutInventario.closeDrawer(GravityCompat.START)
+            Toast.makeText(this, "Exportando...", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun toggleMultiSelectMode(enabled: Boolean) {
@@ -245,9 +247,8 @@ class InventarioActivity : BaseActivity() {
             binding.btnHelpInventario.setImageResource(android.R.drawable.ic_menu_delete)
             binding.btnHelpInventario.setOnClickListener { showMultiDeleteConfirmation() }
         } else {
-            toggleEditorMode(false)
             binding.btnExitEditorMode.text = "SALIR"
-            binding.cardEditorBanner.setCardBackgroundColor(getColor(R.color.vibrant_purple_light))
+            binding.cardEditorBanner.visibility = View.GONE
             binding.btnHelpInventario.setImageResource(android.R.drawable.ic_menu_help)
             binding.btnHelpInventario.setOnClickListener { showHelpDialog() }
         }
@@ -278,9 +279,8 @@ class InventarioActivity : BaseActivity() {
                     val search = if (currentSearchQuery.isBlank()) "%%" else "%$currentSearchQuery%"
                     var dbList = database.productDao().getFilteredAndSorted(search, currentCategory)
                     
-                    val totalInvValue = dbList.sumOf { it.stock * it.precioCosto }
-                    val lowStockItems = dbList.count { it.stock <= 5 && !it.isDeleted }
-                    val totalProducts = dbList.count { !it.isDeleted }
+                    val totalInvestment = dbList.sumOf { it.stock * it.precioCosto }
+                    val totalSaleValue = dbList.sumOf { it.stock * it.precioVenta }
 
                     if (filterLowStock) {
                         dbList = dbList.filter { it.stock <= 5 && !it.isDeleted }
@@ -296,17 +296,25 @@ class InventarioActivity : BaseActivity() {
                         }
                     }
                     
-                    Triple(sortedList, totalInvValue, Pair(lowStockItems, totalProducts))
+                    Triple(sortedList, totalInvestment, totalSaleValue)
                 }
                 
                 if (!isActive) return@launch
 
                 adapter.updateList(result.first)
+                updateDrawerHeader(result.third, result.second)
                 updateSyncIconState()
             } catch (e: Exception) {
                 android.util.Log.e("INVENTARIO", "Error cargando productos", e)
             }
         }
+    }
+
+    private fun updateDrawerHeader(totalSale: Double, investment: Double) {
+        try {
+            binding.includedDrawerHeader.tvDrawerValorTotal.text = String.format(Locale.getDefault(), "S/ %.2f", totalSale)
+            binding.includedDrawerHeader.tvDrawerInversionTotal.text = String.format(Locale.getDefault(), "S/ %.2f", investment)
+        } catch (e: Exception) {}
     }
 
     private fun updateStatsUI(totalValue: Double, lowStock: Int, totalProducts: Int) {
@@ -391,6 +399,7 @@ class InventarioActivity : BaseActivity() {
             .setTitle("Ordenar por")
             .setItems(options) { _, which ->
                 currentSortAttribute = values[which]
+                binding.btnSortAttribute.text = "Ordenar por: ${options[which]}"
                 loadProducts()
             }.show()
     }
@@ -457,6 +466,13 @@ class InventarioActivity : BaseActivity() {
                 db.ivProductBarcode.visibility = View.VISIBLE
                 currentBitmap = barBitmap
             }
+        }
+
+        db.btnEditProductFromLabel.setOnClickListener {
+            d.dismiss()
+            val intent = Intent(this, AddProductActivity::class.java)
+            intent.putExtra("PRODUCT_ID", p.id)
+            startActivity(intent)
         }
 
         db.btnShareLabel.setOnClickListener { currentBitmap?.let { shareLabelBitmap(it, p.nombre) } }

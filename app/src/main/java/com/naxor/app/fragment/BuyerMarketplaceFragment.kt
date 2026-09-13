@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -211,7 +212,8 @@ class BuyerMarketplaceFragment : Fragment() {
                     binding.layoutRecentlyViewedHeader.visibility = View.VISIBLE
                     binding.rvRecentlyViewed.visibility = View.VISIBLE
                 }
-                recentlyViewedAdapter.updateData(list)
+                // Mostrar solo los primeros 4 elementos
+                recentlyViewedAdapter.updateData(list.take(4))
             }
         } catch (e: Exception) {}
     }
@@ -219,6 +221,9 @@ class BuyerMarketplaceFragment : Fragment() {
     private fun setupListeners() {
         binding.swipeRefreshMarketplace.setOnRefreshListener { loadData() }
         binding.btnOpenMenu.setOnClickListener { (activity as? BuyerHomeActivity)?.openDrawer() }
+        binding.tvViewHistory.setOnClickListener {
+            startActivity(Intent(requireContext(), ViewedHistoryActivity::class.java))
+        }
     }
 
     private fun isNetworkAvailable(): Boolean {
@@ -239,37 +244,48 @@ class BuyerMarketplaceFragment : Fragment() {
         
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val storesSnap = db.collectionGroup("settings").limit(100).get().await()
-                val newStoresMap = mutableMapOf<String, StoreModel>()
+                // 1. Obtener todos los documentos de configuración
+                val storesSnap = db.collectionGroup("settings").limit(200).get().await()
                 
                 if (_binding == null) return@launch
 
+                // Agrupar documentos por ID de usuario para decidir qué mostrar
+                val userDocsMap = mutableMapOf<String, MutableList<DocumentSnapshot>>()
                 for (doc in storesSnap.documents) {
-                    if (doc.get("is_online") != true) continue
-                    val sName = doc.getString("business_name") ?: continue
-                    if (sName.equals("Mi Negocio", ignoreCase = true) || sName.isEmpty()) continue
-                    
                     val pathParts = doc.reference.path.split("/")
                     if (pathParts.size < 2) continue
                     val sId = pathParts[1]
+                    userDocsMap.getOrPut(sId) { mutableListOf() }.add(doc)
+                }
+
+                val newStoresMap = mutableMapOf<String, StoreModel>()
+
+                for ((sId, docs) in userDocsMap) {
+                    // Priorizar documentos que NO sean el genérico 'business'
+                    val rubroDoc = docs.find { it.id != "business" }
+                    val businessDoc = docs.find { it.id == "business" }
                     
-                    val sType = doc.getString("business_type") ?: doc.id
+                    // El documento principal es el de rubro, o el de business si no hay otro
+                    val mainDoc = rubroDoc ?: businessDoc ?: continue
+                    
+                    // REGLA DE ORO: Si el documento principal dice que NO está online, se oculta
+                    if (mainDoc.get("is_online") != true) continue
+                    
+                    val sName = mainDoc.getString("business_name") ?: continue
+                    if (sName.equals("Mi Negocio", ignoreCase = true) || sName.isEmpty()) continue
+                    
+                    val sType = mainDoc.getString("business_type") ?: mainDoc.id
                     val store = StoreModel(
                         id = sId, 
                         name = sName, 
-                        address = doc.getString("business_address") ?: "Sin dirección", 
-                        logoUrl = doc.getString("business_logo_url"), 
-                        description = doc.getString("business_description") ?: "", 
-                        ownerName = doc.getString("business_owner_name") ?: "", 
-                        creationDate = doc.getLong("creation_date") ?: 0L, 
+                        address = mainDoc.getString("business_address") ?: "Sin dirección", 
+                        logoUrl = mainDoc.getString("business_logo_url"), 
+                        description = mainDoc.getString("business_description") ?: "", 
+                        ownerName = mainDoc.getString("business_owner_name") ?: "", 
+                        creationDate = mainDoc.getLong("creation_date") ?: 0L, 
                         businessType = sType
                     )
-
-                    // Evitar duplicados por usuario: 
-                    // Priorizamos el documento que NO sea el genérico 'business'
-                    if (!newStoresMap.containsKey(sId) || doc.id != "business") {
-                        newStoresMap[sId] = store
-                    }
+                    newStoresMap[sId] = store
                 }
                 
                 allStores.clear()
@@ -364,7 +380,15 @@ class BuyerMarketplaceFragment : Fragment() {
             with(holder.b) {
                 tvRecentProductName.text = p.name
                 tvRecentProductPrice.text = "S/ ${String.format(Locale.US, "%.2f", p.price)}"
-                if (!p.photoUrl.isNullOrEmpty()) Glide.with(ivRecentProductImage.context).load(p.photoUrl).into(ivRecentProductImage) else ivRecentProductImage.setImageResource(R.drawable.gomezmart_icon)
+                
+                Glide.with(ivRecentProductImage.context)
+                    .load(p.photoUrl)
+                    .placeholder(R.drawable.gomezmart_icon)
+                    .error(R.drawable.gomezmart_icon)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .centerCrop()
+                    .into(ivRecentProductImage)
+                    
                 root.setOnClickListener { onClick(p) }
             }
         }

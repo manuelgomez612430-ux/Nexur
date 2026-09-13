@@ -83,7 +83,7 @@ class DeudoresActivity : BaseActivity() {
     private var lastUnsyncedCount = 0
     private var currentIsSyncing = false
     private var syncStatusText = "Conectado"
-    private var debtorsRegistrations: List<ListenerRegistration> = emptyList()
+    private var debtorsRegistration: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,12 +96,12 @@ class DeudoresActivity : BaseActivity() {
         setupSyncIndicator()
         loadDebtors()
         
-        debtorsRegistrations = SyncManager(this).startRealtimeDebtorsSync { loadDebtors() }
+        debtorsRegistration = SyncManager(this).startRealtimeDebtorsSync { loadDebtors() }
     }
 
     override fun onStop() {
         super.onStop()
-        debtorsRegistrations.forEach { it.remove() }
+        debtorsRegistration?.remove()
     }
 
     private fun setupNetworkMonitoring() {

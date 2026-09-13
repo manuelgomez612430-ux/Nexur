@@ -57,15 +57,6 @@
                     android:contentDescription="Estado de sincronización" />
 
                 <ImageButton
-                    android:id="@+id/btnMailboxInventario"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_dialog_email"
-                    app:tint="?attr/colorOnSurface"
-                    android:contentDescription="Buzón" />
-
-                <ImageButton
                     android:id="@+id/btnHelpInventario"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
@@ -128,6 +119,18 @@
                 android:layout_marginHorizontal="20dp"
                 android:layout_marginBottom="12dp">
 
+                <ImageButton
+                    android:id="@+id/btnOpenFilters"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_sort_by_size"
+                    app:tint="?attr/colorPrimary"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:contentDescription="Abrir Filtros" />
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/layoutVentaBusqueda"
                     style="?attr/textInputOutlinedStyle"
@@ -137,8 +140,9 @@
                     app:endIconMode="clear_text"
                     app:cornerRadius="16dp"
                     app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent">
+                    app:layout_constraintStart_toEndOf="@id/btnOpenFilters"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:layout_marginStart="8dp">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etSearchInventario"
                         android:layout_width="match_parent"
@@ -182,76 +186,6 @@
                         android:contentDescription="Voz" />
                 </LinearLayout>
 
-                <androidx.constraintlayout.widget.Barrier
-                    android:id="@+id/barrierButtons"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:barrierDirection="start"
-                    app:constraint_referenced_ids="btnFilterCategory,btnSortAttribute,btnSortOrder" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnFilterCategory"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="52dp"
-                    android:text="Categoría"
-                    android:textSize="11sp"
-                    android:paddingHorizontal="12dp"
-                    app:cornerRadius="12dp"
-                    app:layout_constraintTop_toBottomOf="@+id/layoutVentaBusqueda"
-                    app:layout_constraintStart_toStartOf="parent"
-                    android:layout_marginTop="8dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSortAttribute"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="52dp"
-                    android:text="Nombre"
-                    android:textSize="11sp"
-                    android:paddingHorizontal="12dp"
-                    app:cornerRadius="12dp"
-                    app:layout_constraintTop_toBottomOf="@+id/layoutVentaBusqueda"
-                    app:layout_constraintStart_toEndOf="@+id/btnFilterCategory"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginTop="8dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSortOrder"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="48dp"
-                    android:layout_height="52dp"
-                    android:padding="0dp"
-                    app:icon="@android:drawable/arrow_up_float"
-                    app:iconGravity="textStart"
-                    app:iconPadding="0dp"
-                    app:cornerRadius="12dp"
-                    app:layout_constraintTop_toBottomOf="@+id/layoutVentaBusqueda"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    android:layout_marginTop="8dp" />
-
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chipGroupFilters"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:singleSelection="true"
-                    app:layout_constraintTop_toBottomOf="@id/btnFilterCategory"
-                    android:layout_marginTop="8dp">
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipFilterAll"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Todos"
-                        android:checked="true" />
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipFilterLowStock"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Stock Bajo" />
-                </com.google.android.material.chip.ChipGroup>
-
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <!-- Cabecera de Tabla -->
@@ -260,39 +194,40 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:paddingHorizontal="16dp"
-                android:paddingVertical="8dp"
+                android:paddingVertical="10dp"
                 android:background="?attr/colorSurfaceContainer"
-                android:baselineAligned="false">
+                android:gravity="center_vertical">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="2.2"
+                    android:layout_weight="2"
                     android:text="PRODUCTO"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="?attr/colorOnSurfaceVariant"
-                    android:paddingStart="4dp" />
+                    android:letterSpacing="0.1"
+                    android:layout_marginStart="52dp" />
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="100dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="0.6"
                     android:text="STOCK"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="?attr/colorOnSurfaceVariant"
-                    android:gravity="center" />
+                    android:gravity="center"
+                    android:letterSpacing="0.1" />
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="80dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1.0"
                     android:text="PRECIO"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textColor="?attr/colorOnSurfaceVariant"
-                    android:gravity="end" />
+                    android:gravity="end"
+                    android:letterSpacing="0.1" />
             </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
@@ -304,51 +239,157 @@
 
         </LinearLayout>
 
-        <LinearLayout
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabAddProducto"
+            style="?attr/floatingActionButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_margin="16dp"
-            android:orientation="horizontal">
-
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/fabToggleEditor"
-                style="?attr/floatingActionButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:src="@android:drawable/ic_menu_edit"
-                app:fabSize="mini"
-                app:elevation="0dp"
-                app:pressedTranslationZ="0dp"
-                app:backgroundTint="?attr/colorSurfaceContainer"
-                app:tint="?attr/colorPrimary"
-                android:contentDescription="Activar Edición" />
-
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/fabAddProducto"
-                style="?attr/floatingActionButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@android:drawable/ic_input_add"
-                app:fabSize="mini"
-                app:elevation="0dp"
-                app:pressedTranslationZ="0dp"
-                app:backgroundTint="?attr/colorPrimary"
-                app:tint="@android:color/white"
-                android:contentDescription="Añadir Producto" />
-
-        </LinearLayout>
+            android:src="@android:drawable/ic_input_add"
+            app:fabSize="normal"
+            app:elevation="4dp"
+            app:backgroundTint="?attr/colorPrimary"
+            app:tint="@android:color/white"
+            android:contentDescription="Añadir Producto" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <!-- Barra Lateral (Drawer) -->
-    <com.google.android.material.navigation.NavigationView
-        android:id="@+id/navigationViewInventario"
-        android:layout_width="wrap_content"
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="320dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        app:menu="@menu/menu_inventario_drawer"
-        app:headerLayout="@layout/drawer_header_inventario" />
+        android:background="?attr/colorSurface"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <include
+                android:id="@+id/includedDrawerHeader"
+                layout="@layout/drawer_header_inventario" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="FILTROS Y ORDEN"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1"
+                    android:textColor="?attr/colorPrimary"
+                    android:layout_marginBottom="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFilterCategory"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Filtrar por Categoría"
+                    android:gravity="start|center_vertical"
+                    app:icon="@android:drawable/ic_menu_agenda"
+                    app:cornerRadius="12dp"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSortAttribute"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Ordenar por: Nombre"
+                    android:gravity="start|center_vertical"
+                    app:icon="@android:drawable/ic_menu_sort_alphabetically"
+                    app:cornerRadius="12dp"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSortOrder"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Orden: Ascendente"
+                    android:gravity="start|center_vertical"
+                    app:icon="@android:drawable/arrow_up_float"
+                    app:cornerRadius="12dp"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ESTADO DE STOCK"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_400"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupFilters"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true">
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipFilterAll"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Todos los productos"
+                        android:checked="true" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipFilterLowStock"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Solo Stock Bajo" />
+                </com.google.android.material.chip.ChipGroup>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/slate_100"
+                    android:layout_marginVertical="24dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ACCIONES"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1"
+                    android:textColor="@color/slate_400"
+                    android:layout_marginBottom="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMultiDelete"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="Borrar varios productos"
+                    android:gravity="start|center_vertical"
+                    android:textColor="@color/red_600"
+                    app:icon="@android:drawable/ic_menu_delete"
+                    app:iconTint="@color/red_600" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExportExcel"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="Exportar a Excel"
+                    android:gravity="start|center_vertical"
+                    android:textColor="@color/slate_600"
+                    app:icon="@android:drawable/ic_menu_save"
+                    app:iconTint="@color/slate_600" />
+
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
 </androidx.drawerlayout.widget.DrawerLayout>

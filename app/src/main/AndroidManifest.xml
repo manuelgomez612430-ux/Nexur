@@ -143,6 +143,7 @@
         <activity android:name=".AddLocationActivity" android:exported="false" android:label="Agregar Ubicación" />
         <activity android:name=".BusinessMapSelectorActivity" android:exported="false" android:label="Seleccionar Ubicación del Negocio" />
         <activity android:name=".CollabAccountActivity" android:exported="false" android:label="Mi Cuenta" />
+        <activity android:name=".ViewedHistoryActivity" android:exported="false" android:label="Historial de navegación" />
         <activity android:name=".TutorialActivity" android:exported="false" android:theme="@style/Theme.GoMezMart" />
 
         <!-- Actividad para Recorte de Imágenes -->

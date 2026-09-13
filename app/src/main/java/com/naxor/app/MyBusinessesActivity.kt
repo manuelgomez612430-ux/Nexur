@@ -105,15 +105,8 @@ class MyBusinessesActivity : BaseActivity() {
                     // FILTRO DE SEGURIDAD: Evitar mostrar negocios "vacíos" o borrados
                     if (name.isEmpty() || name.equals("Mi Negocio", ignoreCase = true)) return@mapNotNull null
                     
-                    // Si estamos en modo GESTIONAR TIENDA, filtrar negocios sin datos mínimos vitales
-                    if (isManageStoreMode) {
-                        val desc = doc.getString("business_description") ?: ""
-                        val owner = doc.getString("business_owner_name") ?: ""
-                        val addr = doc.getString("business_address") ?: ""
-                        
-                        // Si le falta información crítica, no se considera una tienda válida para el mercado aún
-                        if (desc.isEmpty() || owner.isEmpty() || addr.isEmpty()) return@mapNotNull null
-                    }
+                    // Si estamos en modo GESTIONAR TIENDA, NO filtrar tan agresivamente para permitir edición
+                    // Solo filtramos si el nombre está vacío (ya manejado arriba)
 
                     StoreModel(
                         id = userId, // El dueño es el userId actual

@@ -17,7 +17,6 @@ import java.util.Date
 import java.util.Locale
 
 class ProductAdapter(
-    private var isEditorMode: Boolean = false,
     private val onEdit: (ProductEntity) -> Unit,
     private val onViewLabel: (ProductEntity) -> Unit,
     private val onStockQuickChange: (ProductEntity, Int) -> Unit,
@@ -52,12 +51,6 @@ class ProductAdapter(
     private val differ = androidx.recyclerview.widget.AsyncListDiffer(this, differCallback)
 
     class ViewHolder(val binding: ItemProductoBinding) : RecyclerView.ViewHolder(binding.root)
-
-    fun setEditorMode(enabled: Boolean) {
-        if (this.isEditorMode == enabled) return
-        this.isEditorMode = enabled
-        notifyItemRangeChanged(0, itemCount)
-    }
 
     fun setMultiSelectMode(enabled: Boolean) {
         if (this.isMultiSelectMode == enabled) return
@@ -101,7 +94,6 @@ class ProductAdapter(
                 if (payload == "STOCK") {
                     holder.binding.tvProdItemStock.text = item.stock.toString()
                     updateStockVisuals(holder.binding, item.stock)
-                    updateUtility(holder.binding, item)
                 }
                 if (payload == "SELECTION") {
                     holder.binding.cbProdSelected.isChecked = selectedIds.contains(item.id)
@@ -118,7 +110,7 @@ class ProductAdapter(
                 Glide.with(context)
                     .load(item.photoPath)
                     .override(200, 200)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL) // Cachear todo para velocidad
+                    .diskCacheStrategy(DiskCacheStrategy.ALL) 
                     .placeholder(android.R.drawable.ic_menu_gallery)
                     .error(android.R.drawable.ic_menu_camera)
                     .transform(CenterCrop(), RoundedCorners(12))
@@ -129,24 +121,16 @@ class ProductAdapter(
                 ivProdItemPhoto.alpha = 0.2f
             }
 
-            // 2. Información Central
+            // 2. Información Central: Solo Nombre
             tvProdItemNombre.text = item.nombre
-            tvProdItemCategoria.text = item.categoria
-            
-            updateUtility(this, item)
 
             // 3. Stock y Precios
             if (businessType == "SERVICES") {
                 layoutStockControls.visibility = View.GONE
-                tvProdItemPrecioCosto.visibility = View.GONE
             } else {
                 layoutStockControls.visibility = View.VISIBLE
-                tvProdItemPrecioCosto.visibility = View.VISIBLE
                 tvProdItemStock.text = item.stock.toString()
                 updateStockVisuals(this, item.stock)
-                
-                // Asumiendo que precioCosto es el costo unitario según ProductEntity.java constructor
-                tvProdItemPrecioCosto.text = "Costo: S/ ${String.format(Locale.US, "%.2f", item.precioCosto)}"
             }
 
             tvProdItemPrecioVenta.text = "S/ ${String.format(Locale.US, "%.2f", item.precioVenta)}"
@@ -158,7 +142,6 @@ class ProductAdapter(
             root.setOnClickListener {
                 when {
                     isMultiSelectMode -> toggleSelection(item.id, holder.adapterPosition)
-                    isEditorMode -> onEdit(item)
                     else -> onViewLabel(item)
                 }
             }
@@ -167,7 +150,7 @@ class ProductAdapter(
             btnProdItemMinus.setOnClickListener { if (item.stock > 0) onStockQuickChange(item, -1) }
 
             root.setOnLongClickListener {
-                if (!isMultiSelectMode && !isEditorMode) {
+                if (!isMultiSelectMode) {
                     onSelectionChanged?.invoke(-1) 
                     toggleSelection(item.id, holder.adapterPosition)
                 } else {
@@ -178,25 +161,13 @@ class ProductAdapter(
         }
     }
 
-    private fun updateUtility(binding: ItemProductoBinding, item: ProductEntity) {
-        if (item.precioVenta > 0) {
-            val ganancia = item.precioVenta - item.precioCosto
-            val porcentaje = (ganancia / item.precioVenta) * 100
-            binding.tvProdItemUtility.text = String.format(Locale.US, "+%.0f%% utilidad (S/ %.2f)", porcentaje, ganancia)
-            binding.tvProdItemUtility.visibility = View.VISIBLE
-        } else {
-            binding.tvProdItemUtility.visibility = View.GONE
-        }
-    }
-
     private fun updateStockVisuals(binding: ItemProductoBinding, stock: Int) {
         val context = binding.root.context
-        val (bgColor, textColor) = when {
-            stock <= 0 -> Pair(R.color.red_700, R.color.white)
-            stock <= 5 -> Pair(R.color.orange_50, R.color.orange_600)
-            else -> Pair(R.color.emerald_50, R.color.emerald_600)
+        val textColor = when {
+            stock <= 0 -> R.color.red_600
+            stock <= 5 -> R.color.orange_600
+            else -> R.color.slate_700
         }
-        binding.cardStockStatus.setCardBackgroundColor(context.getColor(bgColor))
         binding.tvProdItemStock.setTextColor(context.getColor(textColor))
     }
 

@@ -23,9 +23,7 @@ import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -50,6 +48,17 @@ class MetricasFragment : Fragment() {
         if (_binding != null) {
             binding.drawerLayoutResumen.openDrawer(GravityCompat.START)
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        loadStatistics()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Cancelar cualquier trabajo de IA o carga en curso
+        viewLifecycleOwner.lifecycleScope.coroutineContext.cancelChildren()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -81,10 +90,6 @@ class MetricasFragment : Fragment() {
 
         binding.btnOpenMenuResumen.setOnClickListener {
             openDrawer()
-        }
-
-        binding.btnMailboxResumen.setOnClickListener {
-            startActivity(Intent(requireContext(), com.naxor.app.MailboxActivity::class.java))
         }
 
         binding.btnRefreshAiAnalysis.setOnClickListener {

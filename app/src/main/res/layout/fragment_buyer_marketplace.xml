@@ -225,11 +225,15 @@
                         android:textStyle="bold"
                         android:textSize="17sp" />
                     <TextView
+                        android:id="@+id/tvViewHistory"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Ver historial"
                         android:textColor="@color/sky_600"
-                        android:textSize="13sp" />
+                        android:textSize="13sp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackground" />
                 </LinearLayout>
 
                 <!-- Horizontal Recently Viewed List -->

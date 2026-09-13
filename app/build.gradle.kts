@@ -21,7 +21,7 @@ android {
         applicationId = "com.naxor.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 18 // Sube esto cada vez que envíes una actualización
+        versionCode = 19 // Sube esto cada vez que envíes una actualización
         versionName = "1.5.7" // Nombre visual de la versión
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

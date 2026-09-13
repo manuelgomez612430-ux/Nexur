@@ -41,16 +41,22 @@ class BusinessDebtsActivity : BaseActivity() {
         setupRecyclerView()
         setupListeners()
         loadDebts()
+    }
 
-        // Activar sincronización en tiempo real
-        hotelRegistrations = SyncManager(this).startRealtimeHotelSync {
-            loadDebts()
+    override fun onStart() {
+        super.onStart()
+        // Activar sincronización en tiempo real al entrar al app
+        if (hotelRegistrations.isEmpty()) {
+            hotelRegistrations = SyncManager(this).startRealtimeHotelSync {
+                loadDebts()
+            }
         }
     }
 
     override fun onStop() {
         super.onStop()
         hotelRegistrations.forEach { it.remove() }
+        hotelRegistrations = emptyList()
     }
 
     private fun setupRecyclerView() {

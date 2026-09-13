@@ -36,7 +36,7 @@ class SyncManager(private val context: Context) {
         }
     }
 
-    // --- SUBIDAS INDIVIDUALES ---
+    // --- SUBIDAS INDIVIDUALES (OPTIMIZADAS CON SCOPE ÚNICO) ---
 
     fun syncProductToCloud(product: ProductEntity) {
         val userId = getEffectiveUserId() ?: return
@@ -232,6 +232,16 @@ class SyncManager(private val context: Context) {
         val userId = getEffectiveUserId() ?: return
         syncScope.launch {
             try {
+                // 0. Descargar Perfil del Usuario
+                val profileDoc = db.collection("users").document(userId).collection("profile").document("info").get().await()
+                if (profileDoc.exists()) {
+                    val name = profileDoc.getString("name")
+                    if (!name.isNullOrEmpty()) {
+                        context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE).edit().putString("user_full_name", name).apply()
+                    }
+                }
+
+                // 1. Descargar Inventario
                 val inventory = db.collection("users").document(userId).collection("inventory").get().await()
                 inventory.documents.forEach { doc ->
                     val p = doc.toObject(ProductEntity::class.java)
@@ -556,6 +566,72 @@ class SyncManager(private val context: Context) {
         val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
         val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(constraints).build()
         WorkManager.getInstance(context).enqueueUniqueWork("offline_sync", ExistingWorkPolicy.KEEP, syncRequest)
+    }
+
+    fun deleteProductFromCloud(productId: String) {
+        val userId = getEffectiveUserId() ?: return
+        syncScope.launch {
+            try {
+                db.collection("users").document(userId).collection("inventory").document(productId).delete().await()
+            } catch (e: Exception) { Log.e("SyncManager", "Error delete product: ${e.message}") }
+        }
+    }
+
+    fun deleteLoanClientFromCloud(clientId: String) {
+        val userId = getEffectiveUserId() ?: return
+        syncScope.launch {
+            try {
+                db.collection("users").document(userId).collection("loan_clients").document(clientId).delete().await()
+            } catch (e: Exception) { Log.e("SyncManager", "Error delete loan client: ${e.message}") }
+        }
+    }
+
+    fun downloadBusinessSettingsFromCloud(businessType: String) {
+        val userId = getEffectiveUserId() ?: return
+        syncScope.launch {
+            try {
+                val doc = db.collection("users").document(userId).collection("settings").document(businessType).get().await()
+                if (doc.exists()) {
+                    val prefs = context.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+                    val editor = prefs.edit()
+                    doc.data?.forEach { (key, value) -> 
+                        if (value is String) editor.putString(key, value)
+                        else if (value is Boolean) editor.putBoolean(key, value)
+                        else if (value is Long) editor.putLong(key, value)
+                    }
+                    editor.apply()
+                }
+            } catch (e: Exception) { Log.e("SyncManager", "Error download settings: ${e.message}") }
+        }
+    }
+
+    fun deleteCollectionFromCloud(collectionName: String, onComplete: (() -> Unit)? = null) {
+        val userId = getEffectiveUserId() ?: return
+        syncScope.launch {
+            try {
+                val snapshot = db.collection("users").document(userId).collection(collectionName).get().await()
+                val batch = db.batch()
+                snapshot.documents.forEach { batch.delete(it.reference) }
+                batch.commit().await()
+                withContext(Dispatchers.Main) { onComplete?.invoke() }
+            } catch (e: Exception) { withContext(Dispatchers.Main) { onComplete?.invoke() } }
+        }
+    }
+
+    fun deleteEverythingFromCloud(onComplete: () -> Unit) {
+        val userId = auth.currentUser?.uid ?: return
+        syncScope.launch {
+            try {
+                val collections = listOf("inventory", "sales", "expenses", "debtors", "customers", "providers", "movement_logs", "cash_sessions", "hotel_bookings", "hotel_rooms", "hotel_maintenance", "loan_clients", "loans")
+                for (coll in collections) {
+                    val snapshot = db.collection("users").document(userId).collection(coll).get().await()
+                    val batch = db.batch()
+                    snapshot.documents.forEach { batch.delete(it.reference) }
+                    batch.commit().await()
+                }
+                withContext(Dispatchers.Main) { onComplete() }
+            } catch (e: Exception) { withContext(Dispatchers.Main) { onComplete() } }
+        }
     }
 
     fun uploadAllLocalToCloud(onComplete: () -> Unit) {
