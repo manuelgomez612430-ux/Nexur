@@ -36,7 +36,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="32dp"
-            app:cardCornerRadius="20dp"
+            app:cardCornerRadius="28dp"
             app:cardElevation="2dp"
             app:cardBackgroundColor="?attr/colorSurfaceContainer"
             app:strokeWidth="0dp">
@@ -44,63 +44,71 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp"
-                android:gravity="center_vertical">
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:gravity="center">
 
                 <com.google.android.material.card.MaterialCardView
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    app:cardCornerRadius="28dp"
+                    android:id="@+id/cardProfileImageSettings"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    app:cardCornerRadius="40dp"
                     app:cardElevation="0dp"
-                    app:cardBackgroundColor="@color/slate_100">
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:layout_gravity="center"
-                        android:src="@android:drawable/ic_menu_my_calendar"
-                        app:tint="@color/purple_600" />
+                    app:cardBackgroundColor="@color/purple_100">
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+                        <TextView
+                            android:id="@+id/tvProfileInitialSettings"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:text="U"
+                            android:gravity="center"
+                            android:textSize="32sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/purple_600" />
+                        <ImageView
+                            android:id="@+id/ivProfileImageSettings"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop"
+                            android:visibility="gone" />
+                    </FrameLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:id="@+id/tvUserNameSettings"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:layout_marginStart="16dp">
+                    android:layout_marginTop="16dp"
+                    android:text="Nombre de Usuario"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_900" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Sesión iniciada como"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/slate_500"
-                        android:letterSpacing="0.05" />
+                <TextView
+                    android:id="@+id/tvUserEmailSettings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="correo@ejemplo.com"
+                    android:textColor="@color/slate_500"
+                    android:textSize="14sp" />
 
-                    <TextView
-                        android:id="@+id/tvUserEmailSettings"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="correo@ejemplo.com"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/slate_900" />
-                </LinearLayout>
+                <TextView
+                    android:id="@+id/tvUserAccountTypeSettings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="TIPO DE CUENTA"
+                    android:textColor="@color/purple_600"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.05"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="4dp"
+                    android:background="@drawable/bg_pill_purple_light" />
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    app:cardBackgroundColor="@color/emerald_50">
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_gravity="center"
-                        android:src="@android:drawable/checkbox_on_background"
-                        app:tint="@color/emerald_600" />
-                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

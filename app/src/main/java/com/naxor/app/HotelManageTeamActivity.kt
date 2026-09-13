@@ -12,6 +12,8 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.materialswitch.MaterialSwitch
@@ -20,10 +22,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.naxor.app.adapter.CollaboratorAdapter
 import com.naxor.app.data.CollaboratorEntity
-import com.naxor.app.databinding.ActivityHotelManageTeamBinding
-import com.naxor.app.databinding.DialogAddCollaboratorBinding
+import com.naxor.app.databinding.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.*
 
 class HotelManageTeamActivity : BaseActivity() {
 
@@ -34,6 +37,7 @@ class HotelManageTeamActivity : BaseActivity() {
     private val registrations = mutableListOf<ListenerRegistration>()
 
     private val availableRoles = listOf("RECEPCIONISTA", "LIMPIADOR", "SEGURIDAD", "ADMINISTRACIÓN", "CONTADOR")
+    private var currentRequests = listOf<Map<String, Any>>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,129 +64,11 @@ class HotelManageTeamActivity : BaseActivity() {
         binding.rvCollaborators.adapter = adapter
     }
 
-    private fun showCollabOptionsDialog(collab: CollaboratorEntity) {
-        showEditCollabDialog(collab)
-    }
-
-    private fun showEditCollabDialog(collab: CollaboratorEntity) {
-        val scrollView = ScrollView(this)
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(60, 40, 60, 40)
-        }
-        scrollView.addView(container)
-        
-        val etName = EditText(this).apply {
-            hint = "Nombre Completo"
-            setText(collab.name)
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                setMargins(0, 0, 0, 16)
-            }
-        }
-        val etDni = EditText(this).apply {
-            hint = "DNI"
-            setText(collab.dni)
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                setMargins(0, 0, 0, 16)
-            }
-        }
-        
-        container.addView(etName)
-        container.addView(etDni)
-
-        // --- SECCIÓN DE ROLES ---
-        container.addView(TextView(this).apply {
-            text = "ROLES ASIGNADOS"
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(getColor(R.color.purple_600))
-            textSize = 12f
-            setPadding(0, 20, 0, 10)
-        })
-
-        val selectedRoles = collab.roles.toMutableSet()
-        availableRoles.forEach { roleName ->
-            val cb = MaterialCheckBox(this).apply {
-                text = roleName
-                isChecked = selectedRoles.contains(roleName)
-                setOnCheckedChangeListener { _, isChecked ->
-                    if (isChecked) selectedRoles.add(roleName) else selectedRoles.remove(roleName)
-                }
-            }
-            container.addView(cb)
-        }
-
-        // --- SECCIÓN DE PERMISOS ---
-        container.addView(TextView(this).apply {
-            text = "PERMISOS DE ACCESO"
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(getColor(R.color.purple_600))
-            textSize = 12f
-            setPadding(0, 20, 0, 10)
-        })
-
-        val currentPermissions = collab.permissions.toMutableMap()
-        val permissionsLayout = createPermissionsLayout(currentPermissions) { key, value ->
-            currentPermissions[key] = value
-        }
-        container.addView(permissionsLayout)
-
-        val btnRemove = MaterialButton(this, null, com.google.android.material.R.attr.materialButtonStyle).apply {
-            text = "Remover del Equipo ❌"
-            setTextColor(Color.RED)
-            setBackgroundColor(Color.TRANSPARENT)
-            setOnClickListener { 
-                showDeleteConfirmation(collab)
-            }
-        }
-        container.addView(btnRemove)
-
-        AlertDialog.Builder(this)
-            .setTitle("Configurar Colaborador")
-            .setView(scrollView)
-            .setPositiveButton("Guardar") { _, _ ->
-                val updated = collab.copy(
-                    name = etName.text.toString().trim(),
-                    dni = etDni.text.toString().trim(),
-                    roles = selectedRoles.toList(),
-                    permissions = currentPermissions
-                )
-                updateCollaborator(updated)
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-
-    private fun updateCollaborator(collab: CollaboratorEntity, silent: Boolean = false) {
-        val ownerId = auth.currentUser?.uid ?: return
-        val collabEmail = collab.email.lowercase().trim()
-        lifecycleScope.launch {
-            try {
-                // Asegurar que el objeto interno tenga el email en minúsculas
-                val fixedCollab = collab.copy(email = collabEmail)
-                
-                db.collection("users").document(ownerId)
-                    .collection("collaborators").document(collabEmail)
-                    .set(fixedCollab).await()
-                
-                // Actualizar Access Key con el rol principal
-                val primaryRole = if (fixedCollab.roles.isNotEmpty()) fixedCollab.roles[0] else "COLABORADOR"
-                db.collection("access_keys").document(collabEmail)
-                    .update("role", primaryRole).await()
-
-                if (!silent) Toast.makeText(this@HotelManageTeamActivity, "Datos actualizados", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                if (!silent) Toast.makeText(this@HotelManageTeamActivity, "Error al sincronizar", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
     private fun setupListeners() {
         binding.fabAddCollaborator.setOnClickListener { showAddCollabDialog() }
-        binding.btnViewRequests.setOnClickListener { showRequestsDialog() }
-        binding.btnManageRequests.setOnClickListener { showRequestsDialog() }
+        binding.btnViewRequests.setOnClickListener { showRequestsBottomSheet() }
+        binding.btnManageRequests.setOnClickListener { showRequestsBottomSheet() }
     }
-
-    private var currentRequests = listOf<Map<String, Any>>()
 
     private fun loadRequests() {
         val userId = auth.currentUser?.uid ?: return
@@ -209,47 +95,46 @@ class HotelManageTeamActivity : BaseActivity() {
         registrations.add(reg)
     }
 
-    private fun showRequestsDialog() {
-        val items = currentRequests.map { "${it["requesterName"]} (${it["requesterEmail"]})" }.toTypedArray()
-        AlertDialog.Builder(this)
-            .setTitle("Solicitudes de Colaboración")
-            .setItems(items) { _, which ->
-                val request = currentRequests[which]
-                showAcceptRequestDialog(request)
+    private fun showRequestsBottomSheet() {
+        val dialog = BottomSheetDialog(this, R.style.Theme_GoMezMart_Dialog)
+        val bsBinding = LayoutBottomSheetRequestsBinding.inflate(layoutInflater)
+        dialog.setContentView(bsBinding.root)
+
+        bsBinding.tvRequestsTotal.text = "${currentRequests.size} pendientes"
+        bsBinding.rvRequestsList.layoutManager = LinearLayoutManager(this)
+        
+        val requestAdapter = RequestAdapter(
+            items = currentRequests,
+            onAccept = { req -> 
+                dialog.dismiss()
+                showAcceptRequestDialog(req) 
+            },
+            onReject = { req -> 
+                val requesterId = req["requesterId"] as? String ?: ""
+                rejectCollaborator(requesterId)
             }
-            .setNegativeButton("Cerrar", null)
-            .show()
+        )
+        bsBinding.rvRequestsList.adapter = requestAdapter
+        
+        bsBinding.tvEmptyRequests.visibility = if (currentRequests.isEmpty()) View.VISIBLE else View.GONE
+
+        dialog.show()
     }
 
     private fun showAcceptRequestDialog(request: Map<String, Any>) {
+        val dialogBinding = DialogAcceptCollaboratorBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this, R.style.Theme_GoMezMart_Dialog)
+            .setView(dialogBinding.root)
+            .create()
+
         val name = request["requesterName"] as? String ?: ""
         val email = request["requesterEmail"] as? String ?: ""
         val dni = request["requesterDni"] as? String ?: ""
         val requesterId = request["requesterId"] as? String ?: ""
 
-        val scrollView = ScrollView(this)
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(60, 40, 60, 40)
-        }
-        scrollView.addView(container)
+        dialogBinding.tvCollabInfoSummary.text = "👤 Colaborador: $name\n🆔 DNI: $dni\n📧 Email: $email"
 
-        val tvInfo = TextView(this).apply {
-            val info = "👤 Colaborador: $name\n🆔 DNI: $dni\n📧 Email: $email\n\nConfigura los permisos para este colaborador:"
-            text = info
-            textSize = 14f
-            setTextColor(getColor(R.color.slate_700))
-        }
-        container.addView(tvInfo)
-
-        // --- SECCIÓN DE ROLES ---
-        container.addView(TextView(this).apply {
-            text = "ROLES"
-            setTypeface(null, Typeface.BOLD)
-            textSize = 12f
-            setPadding(0, 20, 0, 10)
-        })
-
+        // ROLES
         val selectedRoles = mutableSetOf("RECEPCIONISTA")
         availableRoles.forEach { roleName ->
             val cb = MaterialCheckBox(this).apply {
@@ -259,52 +144,23 @@ class HotelManageTeamActivity : BaseActivity() {
                     if (isChecked) selectedRoles.add(roleName) else selectedRoles.remove(roleName)
                 }
             }
-            container.addView(cb)
+            dialogBinding.layoutRolesContainer.addView(cb)
         }
 
-        // --- SECCIÓN DE PERMISOS ---
-        container.addView(TextView(this).apply {
-            text = "PERMISOS"
-            setTypeface(null, Typeface.BOLD)
-            textSize = 12f
-            setPadding(0, 20, 0, 10)
-        })
-
+        // PERMISOS
         val currentPermissions = mutableMapOf(
-            "can_view_metrics" to false,
-            "can_manage_debts" to false,
             "can_manage_rooms" to true,
             "can_edit_room_info" to false,
-            "can_delete_rooms" to false,
-            "can_view_history" to true,
             "can_manage_bookings" to true,
+            "can_view_history" to true,
             "can_manage_failures" to true,
             "can_manage_tools" to true,
-            "can_edit_map" to false,
+            "can_manage_debts" to false,
+            "can_view_metrics" to false,
             "can_view_cash" to false,
+            "can_edit_map" to false,
             "can_edit_store_info" to false
         )
-
-        val permissionsLayout = createPermissionsLayout(currentPermissions) { key, value ->
-            currentPermissions[key] = value
-        }
-        container.addView(permissionsLayout)
-
-        AlertDialog.Builder(this)
-            .setTitle("Aceptar Colaborador")
-            .setView(scrollView)
-            .setPositiveButton("Aceptar") { _, _ ->
-                acceptCollaborator(requesterId, email, name, dni, selectedRoles.toList(), currentPermissions)
-            }
-            .setNegativeButton("Rechazar") { _, _ -> rejectCollaborator(requesterId) }
-            .show()
-    }
-
-    private fun createPermissionsLayout(permissions: MutableMap<String, Boolean>, onUpdate: (String, Boolean) -> Unit): LinearLayout {
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, 10, 0, 10)
-        }
 
         val permissionNames = linkedMapOf(
             "can_manage_rooms" to "Gestión de Habitaciones (Check-in/out) 🏨",
@@ -317,26 +173,30 @@ class HotelManageTeamActivity : BaseActivity() {
             "can_view_metrics" to "Ver Metas y Rendimiento 📊",
             "can_view_cash" to "Ver Arqueo de Caja 💰",
             "can_edit_map" to "Editar Plano/Mapa del Hotel 🗺️",
-            "can_edit_store_info" to "Editar Tienda Virtual (Logo, Perfil, Online) 🌐"
+            "can_edit_store_info" to "Editar Tienda Virtual 🌐"
         )
 
         permissionNames.forEach { (key, label) ->
             val switch = MaterialSwitch(this).apply {
                 text = label
-                isChecked = permissions[key] ?: false
+                isChecked = currentPermissions[key] ?: false
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { setMargins(0, 6, 0, 6) }
-                
-                setOnCheckedChangeListener { _, isChecked ->
-                    onUpdate(key, isChecked)
-                }
+                ).apply { setMargins(0, 8, 0, 8) }
+                setOnCheckedChangeListener { _, isChecked -> currentPermissions[key] = isChecked }
             }
-            layout.addView(switch)
+            dialogBinding.layoutPermissionsContainer.addView(switch)
         }
 
-        return layout
+        dialogBinding.btnCancelAccept.setOnClickListener { dialog.dismiss() }
+        dialogBinding.btnConfirmAccept.setOnClickListener {
+            acceptCollaborator(requesterId, email, name, dni, selectedRoles.toList(), currentPermissions)
+            dialog.dismiss()
+        }
+
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
     }
 
     private fun acceptCollaborator(requesterId: String, email: String, name: String, dni: String, roles: List<String>, permissions: Map<String, Boolean>) {
@@ -346,42 +206,20 @@ class HotelManageTeamActivity : BaseActivity() {
             try {
                 val primaryRole = if (roles.isNotEmpty()) roles[0] else "RECEPCIONISTA"
                 val collab = CollaboratorEntity(
-                    id = requesterId,
-                    email = collabEmail,
-                    name = name,
-                    dni = dni,
-                    role = primaryRole,
-                    roles = roles,
-                    status = "ACTIVE",
-                    permissions = permissions
+                    id = requesterId, email = collabEmail, name = name, dni = dni,
+                    role = primaryRole, roles = roles, status = "ACTIVE", permissions = permissions
                 )
+                db.collection("users").document(ownerId).collection("collaborators").document(collabEmail).set(collab).await()
                 
-                // 1. Añadir a colaboradores usando el email como ID (Unificado)
-                db.collection("users").document(ownerId)
-                    .collection("collaborators").document(collabEmail)
-                    .set(collab).await()
+                // Borrar solicitud
+                db.collection("users").document(ownerId).collection("collaborator_requests").document(requesterId).delete().await()
 
-                // Borrar cualquier duplicado antiguo que pudiera existir con el requesterId (UID)
-                if (requesterId != collabEmail) {
-                    db.collection("users").document(ownerId)
-                        .collection("collaborators").document(requesterId)
-                        .delete().await()
-                }
-
-                // 2. Borrar solicitud
-                db.collection("users").document(ownerId)
-                    .collection("collaborator_requests").document(requesterId)
-                    .delete().await()
-
-                // 3. Crear Access Key
+                // Crear Access Key
                 val bizPrefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-                val businessType = bizPrefs.getString("business_type", "HOTEL") ?: "HOTEL"
+                val bType = bizPrefs.getString("business_type", "HOTEL") ?: "HOTEL"
                 val accessKey = mapOf(
-                    "ownerId" to ownerId,
-                    "email" to collabEmail,
-                    "role" to primaryRole,
-                    "businessType" to businessType,
-                    "businessName" to bizPrefs.getString("${businessType}_name", "Mi Negocio")
+                    "ownerId" to ownerId, "email" to collabEmail, "role" to primaryRole,
+                    "businessType" to bType, "businessName" to bizPrefs.getString("${bType}_name", "Mi Negocio")
                 )
                 db.collection("access_keys").document(collabEmail).set(accessKey).await()
 
@@ -395,33 +233,22 @@ class HotelManageTeamActivity : BaseActivity() {
     private fun rejectCollaborator(requesterId: String) {
         val ownerId = auth.currentUser?.uid ?: return
         lifecycleScope.launch {
-            db.collection("users").document(ownerId)
-                .collection("collaborator_requests").document(requesterId)
-                .delete().await()
-            Toast.makeText(this@HotelManageTeamActivity, "Solicitud rechazada", Toast.LENGTH_SHORT).show()
+            try {
+                db.collection("users").document(ownerId)
+                    .collection("collaborator_requests").document(requesterId)
+                    .delete().await()
+                Toast.makeText(this@HotelManageTeamActivity, "Solicitud rechazada", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {}
         }
     }
 
     private fun loadCollaborators() {
         val userId = auth.currentUser?.uid ?: return
-        
-        val reg = db.collection("users").document(userId)
-            .collection("collaborators")
+        val reg = db.collection("users").document(userId).collection("collaborators")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
-                
                 lifecycleScope.launch(Dispatchers.IO) {
                     val list = snapshot.documents.mapNotNull { it.toObject(CollaboratorEntity::class.java) }
-                    
-                    // --- LIMPIEZA DE SEGURIDAD: Borrar duplicados antiguos que no usen el email como ID ---
-                    snapshot.documents.forEach { doc ->
-                        if (!doc.id.contains("@")) {
-                            db.collection("users").document(userId)
-                                .collection("collaborators").document(doc.id)
-                                .delete()
-                        }
-                    }
-
                     withContext(Dispatchers.Main) {
                         adapter.submitList(list)
                         binding.layoutEmptyTeam.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
@@ -431,6 +258,131 @@ class HotelManageTeamActivity : BaseActivity() {
         registrations.add(reg)
     }
 
+    private fun showCollabOptionsDialog(collab: CollaboratorEntity) {
+        showEditCollabDialog(collab)
+    }
+
+    private fun showEditCollabDialog(collab: CollaboratorEntity) {
+        val dialogBinding = DialogAcceptCollaboratorBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this, R.style.Theme_GoMezMart_Dialog)
+            .setView(dialogBinding.root)
+            .create()
+
+        dialogBinding.tvCollabInfoSummary.text = "👤 Colaborador: ${collab.name}\n🆔 DNI: ${collab.dni}\n📧 Email: ${collab.email}"
+
+        // ROLES
+        val selectedRoles = collab.roles.toMutableSet()
+        availableRoles.forEach { roleName ->
+            val cb = MaterialCheckBox(this).apply {
+                text = roleName
+                isChecked = selectedRoles.contains(roleName)
+                setOnCheckedChangeListener { _, isChecked ->
+                    if (isChecked) selectedRoles.add(roleName) else selectedRoles.remove(roleName)
+                }
+            }
+            dialogBinding.layoutRolesContainer.addView(cb)
+        }
+
+        // PERMISOS
+        val currentPermissions = collab.permissions.toMutableMap()
+        val permissionNames = linkedMapOf(
+            "can_manage_rooms" to "Gestión de Habitaciones (Check-in/out) 🏨",
+            "can_edit_room_info" to "Editar Precios/Números de Hab. ✏️",
+            "can_manage_bookings" to "Gestionar Reservas 🛎️",
+            "can_view_history" to "Ver Historial de Huéspedes 📋",
+            "can_manage_failures" to "Reportar/Gestionar Averías 🛠️",
+            "can_manage_tools" to "Gestionar Herramientas 🧰",
+            "can_manage_debts" to "Gestionar Cuentas por Pagar 💸",
+            "can_view_metrics" to "Ver Metas y Rendimiento 📊",
+            "can_view_cash" to "Ver Arqueo de Caja 💰",
+            "can_edit_map" to "Editar Plano/Mapa del Hotel 🗺️",
+            "can_edit_store_info" to "Editar Tienda Virtual 🌐"
+        )
+
+        permissionNames.forEach { (key, label) ->
+            val switch = MaterialSwitch(this).apply {
+                text = label
+                isChecked = currentPermissions[key] ?: false
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { setMargins(0, 8, 0, 8) }
+                setOnCheckedChangeListener { _, isChecked -> currentPermissions[key] = isChecked }
+            }
+            dialogBinding.layoutPermissionsContainer.addView(switch)
+        }
+
+        dialogBinding.btnConfirmAccept.text = "GUARDAR CAMBIOS"
+        dialogBinding.btnCancelAccept.setOnClickListener { dialog.dismiss() }
+        dialogBinding.btnConfirmAccept.setOnClickListener {
+            val updated = collab.copy(roles = selectedRoles.toList(), permissions = currentPermissions)
+            updateCollaborator(updated)
+            dialog.dismiss()
+        }
+
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+    }
+
+    private fun updateCollaborator(collab: CollaboratorEntity, silent: Boolean = false) {
+        val ownerId = auth.currentUser?.uid ?: return
+        lifecycleScope.launch {
+            try {
+                db.collection("users").document(ownerId).collection("collaborators").document(collab.email).set(collab).await()
+                if (!silent) Toast.makeText(this@HotelManageTeamActivity, "Datos actualizados", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {}
+        }
+    }
+
+    private fun showAddCollabDialog() {
+        val dialogBinding = DialogAddCollaboratorBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this, R.style.Theme_GoMezMart_Dialog).setView(dialogBinding.root).create()
+        dialogBinding.btnCancelCollab.setOnClickListener { dialog.dismiss() }
+        dialogBinding.btnSaveCollab.setOnClickListener {
+            val email = dialogBinding.etCollabEmail.text.toString().trim().lowercase()
+            val name = dialogBinding.etCollabName.text.toString().trim()
+            val role = when(dialogBinding.toggleCollabRole.checkedButtonId) {
+                R.id.btnRoleReception -> "RECEPCIONISTA"
+                R.id.btnRoleCleaner -> "LIMPIADOR"
+                R.id.btnRoleAdmin -> "ADMINISTRACIÓN"
+                else -> "RECEPCIONISTA"
+            }
+            if (email.isNotEmpty() && name.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                inviteCollaborator(email, name, listOf(role))
+                dialog.dismiss()
+            } else Toast.makeText(this, "Datos inválidos", Toast.LENGTH_SHORT).show()
+        }
+        dialog.show()
+        dialog.window?.let {
+            it.setLayout((resources.displayMetrics.widthPixels * 0.95).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+            it.setBackgroundDrawableResource(android.R.color.transparent)
+        }
+    }
+
+    private fun inviteCollaborator(email: String, name: String, roles: List<String>) {
+        val ownerId = auth.currentUser?.uid ?: return
+        lifecycleScope.launch {
+            try {
+                val primaryRole = if (roles.isNotEmpty()) roles[0] else "RECEPCIONISTA"
+                val collab = CollaboratorEntity(email = email, name = name, role = primaryRole, roles = roles, status = "PENDING")
+                db.collection("users").document(ownerId).collection("collaborators").document(email).set(collab).await()
+                val bizPrefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+                val bType = bizPrefs.getString("business_type", "HOTEL") ?: "HOTEL"
+                val accessKey = mapOf("ownerId" to ownerId, "email" to email, "role" to primaryRole, "businessType" to bType, "businessName" to bizPrefs.getString("${bType}_name", "Mi Negocio"))
+                db.collection("access_keys").document(email).set(accessKey).await()
+                Toast.makeText(this@HotelManageTeamActivity, "Invitación enviada ✨", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {}
+        }
+    }
+
+    private fun showDeleteConfirmation(collab: CollaboratorEntity) {
+        AlertDialog.Builder(this).setTitle("¿Remover?").setMessage("¿Quitar a ${collab.name}?").setPositiveButton("Sí") { _, _ ->
+            lifecycleScope.launch {
+                db.collection("users").document(auth.currentUser!!.uid).collection("collaborators").document(collab.email).delete().await()
+                db.collection("access_keys").document(collab.email).delete().await()
+            }
+        }.setNegativeButton("No", null).show()
+    }
 
     override fun onStop() {
         super.onStop()
@@ -438,104 +390,36 @@ class HotelManageTeamActivity : BaseActivity() {
         registrations.clear()
     }
 
-    private fun showAddCollabDialog() {
-        val dialogBinding = DialogAddCollaboratorBinding.inflate(layoutInflater)
-        val dialog = AlertDialog.Builder(this, R.style.Theme_GoMezMart_Dialog)
-            .setView(dialogBinding.root)
-            .create()
+    // --- ADAPTER PARA SOLICITUDES ---
+    inner class RequestAdapter(
+        private val items: List<Map<String, Any>>,
+        private val onAccept: (Map<String, Any>) -> Unit,
+        private val onReject: (Map<String, Any>) -> Unit
+    ) : RecyclerView.Adapter<RequestAdapter.ViewHolder>() {
 
-        dialogBinding.btnCancelCollab.setOnClickListener { dialog.dismiss() }
+        inner class ViewHolder(val b: ItemCollaboratorRequestBinding) : RecyclerView.ViewHolder(b.root)
 
-        dialogBinding.btnSaveCollab.setOnClickListener {
-            val email = dialogBinding.etCollabEmail.text.toString().trim().lowercase()
-            val name = dialogBinding.etCollabName.text.toString().trim()
-            
-            val role = when(dialogBinding.toggleCollabRole.checkedButtonId) {
-                R.id.btnRoleReception -> "RECEPCIONISTA"
-                R.id.btnRoleCleaner -> "LIMPIADOR"
-                R.id.btnRoleAdmin -> "ADMINISTRACIÓN"
-                else -> "RECEPCIONISTA"
-            }
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = 
+            ViewHolder(ItemCollaboratorRequestBinding.inflate(LayoutInflater.from(parent.context), parent, false))
 
-            if (email.isEmpty() || name.isEmpty()) {
-                Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val req = items[position]
+            val name = req["requesterName"] as? String ?: "Usuario"
+            val email = req["requesterEmail"] as? String ?: ""
+            val timestamp = req["timestamp"] as? Long ?: 0L
 
-            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                Toast.makeText(this, "Correo inválido", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            inviteCollaborator(email, name, listOf(role))
-            dialog.dismiss()
-        }
-
-        dialog.show()
-        dialog.window?.let {
-            val width = (resources.displayMetrics.widthPixels * 0.95).toInt()
-            it.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
-            it.setBackgroundDrawableResource(android.R.color.transparent)
-        }
-    }
-
-    private fun inviteCollaborator(email: String, name: String, roles: List<String>) {
-        val ownerId = auth.currentUser?.uid ?: return
-        val collabEmail = email.lowercase().trim()
-        
-        lifecycleScope.launch {
-            try {
-                val primaryRole = if (roles.isNotEmpty()) roles[0] else "RECEPCIONISTA"
-                val collab = CollaboratorEntity(
-                    email = collabEmail,
-                    name = name,
-                    role = primaryRole,
-                    roles = roles,
-                    status = "PENDING"
-                )
+            with(holder.b) {
+                tvReqName.text = name
+                tvReqEmail.text = email
+                tvReqInitial.text = if (name.isNotEmpty()) name[0].uppercaseChar().toString() else "U"
                 
-                // 1. Guardar en el perfil del dueño usando el email como ID
-                db.collection("users").document(ownerId)
-                    .collection("collaborators").document(collabEmail)
-                    .set(collab).await()
+                val sdf = SimpleDateFormat("dd/MM", Locale.getDefault())
+                tvReqDate.text = if (timestamp > 0) sdf.format(Date(timestamp)) else ""
 
-                // 2. Registrar en la colección global de llaves de acceso (Access Keys)
-                val bizPrefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-                val businessType = bizPrefs.getString("business_type", "HOTEL") ?: "HOTEL"
-                val accessKey = mapOf(
-                    "ownerId" to ownerId,
-                    "email" to collabEmail,
-                    "role" to primaryRole,
-                    "businessType" to businessType,
-                    "businessName" to bizPrefs.getString("${businessType}_name", "Mi Negocio")
-                )
-                
-                db.collection("access_keys").document(collabEmail).set(accessKey).await()
-                
-                Toast.makeText(this@HotelManageTeamActivity, "Invitación enviada ✨", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Toast.makeText(this@HotelManageTeamActivity, "Error al invitar", Toast.LENGTH_SHORT).show()
+                btnAcceptReq.setOnClickListener { onAccept(req) }
+                btnRejectReq.setOnClickListener { onReject(req) }
             }
         }
-    }
-
-    private fun showDeleteConfirmation(collab: CollaboratorEntity) {
-        AlertDialog.Builder(this)
-            .setTitle("¿Remover colaborador?")
-            .setMessage("¿Estás seguro de quitar a ${collab.name} del equipo? Perderá el acceso de inmediato.")
-            .setPositiveButton("Remover") { _, _ ->
-                val ownerId = auth.currentUser?.uid ?: return@setPositiveButton
-                val collabEmail = collab.email.lowercase().trim()
-                lifecycleScope.launch {
-                    db.collection("users").document(ownerId)
-                        .collection("collaborators").document(collabEmail)
-                        .delete().await()
-                    
-                    db.collection("access_keys").document(collabEmail).delete().await()
-                    Toast.makeText(this@HotelManageTeamActivity, "Colaborador removido", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
+        override fun getItemCount() = items.size
     }
 }

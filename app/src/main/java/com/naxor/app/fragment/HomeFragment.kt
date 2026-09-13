@@ -234,7 +234,12 @@ class HomeFragment : Fragment() {
         activity?.overridePendingTransition(R.anim.slide_in_up, R.anim.stay)
     }
 
+    private var lastDashboardLoad: Long = 0
     private fun loadDashboardData() {
+        val now = System.currentTimeMillis()
+        if (now - lastDashboardLoad < 1000) return // Throttle a 1 segundo
+        lastDashboardLoad = now
+        
         val bizPrefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
         val collabPrefs = requireContext().getSharedPreferences("CollabPermissions", Context.MODE_PRIVATE)
         val isCollab = bizPrefs.getBoolean("is_collaborator_mode", false)
@@ -268,9 +273,9 @@ class HomeFragment : Fragment() {
         val currency = bizPrefs.getString("currency_symbol", "S/") ?: "S/"
         val capital = bizPrefs.getFloat("business_capital", 0f)
 
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.Main) {
             try {
-                // Calcular el inicio del día actual (00:00:00)
+                // Calcular el inicio del día actual (00:00:00) de forma eficiente
                 val calendar = Calendar.getInstance()
                 calendar.set(Calendar.HOUR_OF_DAY, 0)
                 calendar.set(Calendar.MINUTE, 0)
@@ -278,21 +283,15 @@ class HomeFragment : Fragment() {
                 calendar.set(Calendar.MILLISECOND, 0)
                 val startOfToday = calendar.timeInMillis
 
-                val totalSalesAsync = async(Dispatchers.IO) { database.saleDao().getSalesAmountFrom(startOfToday) }
-                val totalProfitAsync = async(Dispatchers.IO) { database.saleDao().getProfitFrom(startOfToday) }
-                val totalExpensesAsync = async(Dispatchers.IO) { database.expenseDao().getExpensesAmountFrom(startOfToday) ?: 0.0 }
+                val totalSales = withContext(Dispatchers.IO) { database.saleDao().getSalesAmountFrom(startOfToday) }
+                val totalProfit = withContext(Dispatchers.IO) { database.saleDao().getProfitFrom(startOfToday) }
+                val totalExpenses = withContext(Dispatchers.IO) { database.expenseDao().getExpensesAmountFrom(startOfToday) ?: 0.0 }
 
-                val totalSales = totalSalesAsync.await() ?: 0.0
-                val totalProfit = totalProfitAsync.await() ?: 0.0
-                val totalExpenses = totalExpensesAsync.await() ?: 0.0
-
-                withContext(Dispatchers.Main) {
-                    if (_binding != null) {
-                        homeBinding.tvVentasHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", totalSales)}"
-                        homeBinding.tvUtilidadHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", totalProfit)}"
-                        homeBinding.tvGastosHoyMain.text = "- $currency ${String.format(Locale.getDefault(), "%.2f", totalExpenses)}"
-                        homeBinding.tvCapitalMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", capital)}"
-                    }
+                if (_binding != null) {
+                    homeBinding.tvVentasHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", totalSales)}"
+                    homeBinding.tvUtilidadHoyMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", totalProfit)}"
+                    homeBinding.tvGastosHoyMain.text = "- $currency ${String.format(Locale.getDefault(), "%.2f", totalExpenses)}"
+                    homeBinding.tvCapitalMain.text = "$currency ${String.format(Locale.getDefault(), "%.2f", capital)}"
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

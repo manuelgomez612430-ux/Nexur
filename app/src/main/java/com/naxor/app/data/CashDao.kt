@@ -16,6 +16,9 @@ interface CashDao {
     @Update
     suspend fun update(session: CashSessionEntity)
 
+    @Delete
+    suspend fun delete(session: CashSessionEntity)
+
     @Query("SELECT COUNT(*) FROM cash_sessions WHERE isSynced = 0")
     fun getUnsyncedCount(): androidx.lifecycle.LiveData<Int>
 

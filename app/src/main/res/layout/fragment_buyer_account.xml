@@ -14,7 +14,7 @@
             android:id="@+id/toolbarAccount"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="Mi Perfil de Comprador"
+            app:title="Mi Cuenta"
             app:titleCentered="true" />
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -126,11 +126,11 @@
                         android:textSize="14sp" />
 
                     <TextView
-                        android:id="@+id/tvUserCurrentLocation"
+                        android:id="@+id/tvUserAccountType"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="📍 Sin ubicación configurada"
+                        android:text="Cargando perfil..."
                         android:textColor="@color/purple_600"
                         android:textSize="13sp"
                         android:textStyle="bold"
@@ -222,6 +222,28 @@
                         android:gravity="start|center_vertical"
                         android:textColor="@color/slate_700"
                         android:textSize="15sp"
+                        app:icon="@android:drawable/ic_menu_revert"
+                        app:iconGravity="end"
+                        app:iconTint="@color/slate_300" />
+
+                    <View
+                        android:id="@+id/dividerSwitchRole"
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:background="@color/slate_100"
+                        android:visibility="gone" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRevertToBuyer"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:text="🔄  Volver a modo Comprador"
+                        android:gravity="start|center_vertical"
+                        android:textColor="@color/purple_600"
+                        android:textSize="15sp"
+                        android:visibility="gone"
                         app:icon="@android:drawable/ic_menu_revert"
                         app:iconGravity="end"
                         app:iconTint="@color/slate_300" />

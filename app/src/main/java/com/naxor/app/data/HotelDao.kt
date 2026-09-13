@@ -143,6 +143,21 @@ interface HotelDao {
     @Query("UPDATE hotel_room_layouts SET isSynced = 1 WHERE id = :id")
     suspend fun markLayoutSynced(id: String)
 
+    @Delete
+    suspend fun deleteRoom(room: HotelRoomEntity)
+
+    @Delete
+    suspend fun deleteBooking(booking: HotelBookingEntity)
+
+    @Delete
+    suspend fun deleteCharge(charge: HotelChargeEntity)
+
+    @Delete
+    suspend fun deletePayment(payment: HotelPaymentEntity)
+
+    @Delete
+    suspend fun deleteMaintenance(report: HotelMaintenanceEntity)
+
     @Query("SELECT * FROM hotel_rooms WHERE isDeleted = 1")
     suspend fun getDeletedRooms(): List<HotelRoomEntity>
 

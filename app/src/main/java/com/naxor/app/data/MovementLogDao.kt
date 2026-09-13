@@ -16,6 +16,9 @@ interface MovementLogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(logs: List<MovementLogEntity>)
 
+    @Delete
+    suspend fun delete(log: MovementLogEntity)
+
     @Query("SELECT * FROM movement_logs WHERE isSynced = 0")
     suspend fun getUnsyncedLogs(): List<MovementLogEntity>
 

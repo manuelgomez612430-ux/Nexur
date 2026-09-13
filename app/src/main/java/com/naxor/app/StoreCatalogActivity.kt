@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.firebase.firestore.FirebaseFirestore
 import com.naxor.app.data.CartManager
 import com.naxor.app.data.ProductEntity
@@ -223,8 +224,9 @@ class StoreCatalogActivity : BaseActivity() {
         }
 
         fun filter(query: String) {
+            val lowerQuery = query.lowercase()
             filteredProducts = if (query.isEmpty()) allProducts
-            else allProducts.filter { it.nombre.lowercase().contains(query.lowercase()) }
+            else allProducts.filter { it.nombre.lowercase().contains(lowerQuery) || it.categoria.lowercase().contains(lowerQuery) }
             notifyDataSetChanged()
         }
 
@@ -267,7 +269,12 @@ class StoreCatalogActivity : BaseActivity() {
                 }
                 
                 if (!product.photoUrl.isNullOrEmpty()) {
-                    Glide.with(ivProductImage.context).load(product.photoUrl).into(ivProductImage)
+                    Glide.with(ivProductImage.context)
+                        .load(product.photoUrl)
+                        .placeholder(R.drawable.gomezmart_full_bg)
+                        .thumbnail(0.2f)
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .into(ivProductImage)
                 } else {
                     ivProductImage.setImageResource(R.drawable.gomezmart_icon)
                 }

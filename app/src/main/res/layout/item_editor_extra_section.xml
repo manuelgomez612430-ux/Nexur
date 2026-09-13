@@ -96,22 +96,13 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAddImageToSection"
                 style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🖼️ Añadir Foto"
-                android:textSize="11sp"
-                app:cornerRadius="8dp" />
+                android:text="🖼️ AÑADIR FOTOGRAFÍA"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                app:cornerRadius="12dp" />
 
-            <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnChangeAspectRatio"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Formato: 16:9"
-                android:textSize="11sp"
-                app:icon="@android:drawable/ic_menu_crop" />
         </LinearLayout>
 
     </LinearLayout>

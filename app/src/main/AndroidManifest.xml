@@ -132,6 +132,8 @@
         <activity android:name=".ProductDetailActivity" android:exported="false" android:label="Detalle del Producto" />
         <activity android:name=".StoreProfileActivity" android:exported="false" android:label="Perfil del Negocio" />
         <activity android:name=".StoreEditorActivity" android:exported="false" android:label="Editor de Tienda" />
+        <activity android:name=".LoanStoreProfileActivity" android:exported="false" android:label="Perfil de Servicios Financieros" />
+        <activity android:name=".LoanStoreEditorActivity" android:exported="false" android:label="Configurar Negocio de Préstamos" />
         <activity android:name=".HotelInteractiveMapActivity" android:exported="false" android:label="Mapa del Hotel" />
         <activity android:name=".HotelManageTeamActivity" android:exported="false" android:label="Gestionar Colaboradores" />
         <activity android:name=".SearchBusinessActivity" android:exported="false" android:label="Buscar Negocio" />

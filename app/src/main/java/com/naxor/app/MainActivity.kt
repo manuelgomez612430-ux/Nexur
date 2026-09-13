@@ -3,21 +3,19 @@ package com.naxor.app
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.util.Log
-import android.view.GestureDetector
-import android.view.MotionEvent
 import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.EditText
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.GravityCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.work.*
@@ -77,6 +75,14 @@ class MainActivity : BaseActivity() {
         schedulePeriodicSync()
     }
 
+    private fun refreshIndicatorPosition() {
+        val icons = listOf(binding.tvIconInicio, binding.tvIconStock, binding.tvIconMetricas, binding.tvIconConfig, binding.tvIconMarket)
+        val activeIdx = icons.indexOfFirst { it.alpha == 1.0f }
+        if (activeIdx != -1) {
+            updateCustomNavUI(activeIdx, animate = false)
+        }
+    }
+
     private fun checkCollaboratorAccess() {
         val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val isCollab = prefs.getBoolean("is_collaborator_mode", false)
@@ -87,13 +93,8 @@ class MainActivity : BaseActivity() {
             db.collection("users").document(ownerId)
                 .collection("collaborators").document(userEmail)
                 .addSnapshotListener { snapshot, e ->
-                    if (e != null) {
-                        Log.e("MainActivity", "Error collab listener: ${e.message}")
-                        return@addSnapshotListener
-                    }
-
+                    if (e != null) return@addSnapshotListener
                     if (snapshot == null || !snapshot.exists()) {
-                        // BLOQUEO INMEDIATO: El colaborador ha sido removido
                         handleCollaboratorLockout(ownerId)
                         return@addSnapshotListener
                     }
@@ -106,10 +107,7 @@ class MainActivity : BaseActivity() {
                         editor.putString("collab_name", it.name)
                         editor.putString("collab_role", if (it.roles.isNotEmpty()) it.roles.joinToString(", ") else it.role)
                         editor.commit() 
-                        
-                        runOnUiThread {
-                            updateMenuForBusinessType()
-                        }
+                        runOnUiThread { updateMenuForBusinessType() }
                     }
                 }
         }
@@ -117,54 +115,38 @@ class MainActivity : BaseActivity() {
 
     private fun handleCollaboratorLockout(ownerId: String) {
         lifecycleScope.launch(Dispatchers.Main) {
-            // 1. Obtener nombre del dueño antes de cerrar todo
             var ownerName = "el administrador"
             try {
                 val ownerDoc = db.collection("users").document(ownerId).get().await()
                 ownerName = ownerDoc.getString("business_owner_name") ?: ownerDoc.getString("business_name") ?: ownerName
             } catch (e: Exception) {}
 
-            // 2. Limpiar rastro de colaboración
             val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-            prefs.edit().apply {
-                putBoolean("is_collaborator_mode", false)
-                remove("collaborator_owner_id")
-                apply()
-            }
-            
-            // 3. Limpiar base de datos local (SEGURIDAD CRÍTICA - Previene ver datos del dueño en sistema personal)
-            withContext(Dispatchers.IO) {
-                AppDatabase.getDatabase(this@MainActivity).clearAllTables()
-            }
-            
-            // Reiniciar servicio de sincronización para que tome el nuevo ID de usuario
+            prefs.edit().apply { putBoolean("is_collaborator_mode", false); remove("collaborator_owner_id"); apply() }
+            withContext(Dispatchers.IO) { AppDatabase.getDatabase(this@MainActivity).clearAllTables() }
             startSyncService()
 
-            // 4. Mostrar aviso y redirigir
             AlertDialog.Builder(this@MainActivity)
                 .setTitle("Acceso Revocado 🚫")
-                .setMessage("Has sido retirado del sistema como colaborador por: $ownerName.\n\nSe ha cerrado el acceso al negocio y se han limpiado todos los datos compartidos de este dispositivo para proteger la privacidad del dueño.")
+                .setMessage("Has sido retirado del sistema por: $ownerName.")
                 .setCancelable(false)
                 .setPositiveButton("Entendido") { _, _ ->
                     updateMenuForBusinessType()
                     navigateToInicio()
-                    // Re-instanciar actividad para asegurar limpieza total de memoria y estados
                     val intent = Intent(this@MainActivity, MainActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
                     finish()
-                }
-                .show()
+                }.show()
         }
     }
 
-    private fun updateMenuForBusinessType() {
+    fun updateMenuForBusinessType() {
         val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-        val businessType = prefs.getString("business_type", "PRODUCTS")
+        val businessType = prefs.getString("business_type", "PRODUCTS") ?: "PRODUCTS"
         val isCollabMode = prefs.getBoolean("is_collaborator_mode", false)
         val collabPrefs = getSharedPreferences("CollabPermissions", MODE_PRIVATE)
 
-        // --- 1. Botones de la Cabecera del Menú (Drawer Header) ---
         if (binding.navigationViewMain.headerCount > 0) {
             val headerView = binding.navigationViewMain.getHeaderView(0)
             val tvHeaderTitle = headerView.findViewById<TextView>(R.id.tvHeaderTitle)
@@ -173,28 +155,24 @@ class MainActivity : BaseActivity() {
             val btnTeam = headerView.findViewById<View>(R.id.btnDrawerManageTeam)
             val btnCollab = headerView.findViewById<View>(R.id.btnDrawerSearchToCollab)
             val btnSwitchSystem = headerView.findViewById<View>(R.id.btnDrawerSwitchSystem)
-            val btnMarket = headerView.findViewById<View>(R.id.btnDrawerGoToMarket)
             val btnMyCollabs = headerView.findViewById<View>(R.id.btnDrawerMyCollaborations)
             val btnCollabAccount = headerView.findViewById<View>(R.id.btnDrawerCollabAccount)
             val tvCollabTitle = headerView.findViewById<TextView>(R.id.tvDrawerCollabTitle)
             val tvCollabDesc = headerView.findViewById<TextView>(R.id.tvDrawerCollabDesc)
+            val tvPublishTitle = headerView.findViewById<TextView>(R.id.tvDrawerPublishTitle)
 
-            // Configurar visibilidad según el modo
+            val isOnline = prefs.getBoolean("is_online_store", false)
+
             if (isCollabMode) {
                 btnTeam?.visibility = View.GONE
-                
-                // Permitir a colaboradores con permiso editar la tienda del dueño
-                // Si es ADMINISTRACIÓN, habilitamos por defecto para facilitar la transición
                 val collabRole = collabPrefs.getString("collab_role", "") ?: ""
-                val canEditStore = collabPrefs.getBoolean("can_edit_store_info", false) || 
-                                   collabRole.contains("ADMINISTRACIÓN")
-                
+                val canEditStore = collabPrefs.getBoolean("can_edit_store_info", false) || collabRole.contains("ADMINISTRACIÓN")
                 btnPublish?.visibility = if (canEditStore) View.VISIBLE else View.GONE
-                
                 btnSwitchSystem?.visibility = View.GONE
                 btnCollabAccount?.visibility = View.VISIBLE
                 tvCollabTitle?.text = "🏠 Volver a mi Negocio"
                 tvCollabDesc?.text = "Regresa a tu panel de gestión personal."
+                tvPublishTitle?.text = "🌐 Ver tienda del dueño"
             } else {
                 btnTeam?.visibility = if (businessType == "HOTEL") View.VISIBLE else View.GONE
                 btnPublish?.visibility = View.VISIBLE
@@ -202,218 +180,193 @@ class MainActivity : BaseActivity() {
                 btnCollabAccount?.visibility = View.GONE
                 tvCollabTitle?.text = "🤝 Mis Colaboraciones"
                 tvCollabDesc?.text = "Accede a los negocios donde eres parte del equipo."
+                tvPublishTitle?.text = if (businessType == "LOANS" && isOnline) "👁️ Ver negocio online" else if (businessType == "LOANS") "🚀 Abrir negocio en mercado" else "🌐 Gestionar tienda online"
             }
 
-            // Asignar listeners una sola vez o re-asignarlos (es seguro en Android)
-            btnPublish?.setOnClickListener { 
-                binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
-                if (isCollabMode) {
-                    val ownerId = prefs.getString("collaborator_owner_id", null)
-                    startToolActivity(Intent(this, StoreProfileActivity::class.java).apply {
-                        putExtra("STORE_ID", ownerId)
-                        putExtra("IS_OWNER", true)
-                        putExtra("FORCE_RUBRO", businessType)
-                    })
-                } else {
-                    startActivity(Intent(this, MyBusinessesActivity::class.java).apply {
-                        putExtra("MANAGE_STORE_MODE", true)
-                    }) 
-                }
-            }
-            btnTeam?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startToolActivity(Intent(this, HotelManageTeamActivity::class.java)) }
-            btnCollab?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startToolActivity(Intent(this, SearchBusinessActivity::class.java)) }
-            btnSwitchSystem?.setOnClickListener { 
-                binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
-                startActivity(Intent(this, MyBusinessesActivity::class.java)) 
-            }
-            btnMarket?.setOnClickListener { 
-                binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
-                startToolActivity(Intent(this, BuyerHomeActivity::class.java)) 
-            }
-            btnMyCollabs?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); if (isCollabMode) switchToPersonalBusiness() else showCollaborationsDialog() }
-            btnCollabAccount?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startToolActivity(Intent(this, CollabAccountActivity::class.java)) }
-
-            // Identidad del Negocio
-            val businessName = when(businessType) {
-                "HOTEL" -> prefs.getString("HOTEL_name", "Mi Hospedaje")
-                "LOANS" -> prefs.getString("LOANS_name", "Nexur Préstamos")
-                else -> prefs.getString("PRODUCTS_name", "Mi Tienda")
-            }
             if (isCollabMode) {
+                val businessName = collabPrefs.getString("collab_business_name", "Negocio Externo")
                 val collabName = collabPrefs.getString("collab_name", "Colaborador")
                 val collabRole = collabPrefs.getString("collab_role", "EQUIPO")
                 tvHeaderTitle?.text = "$collabName ($collabRole)\n@ $businessName"
             } else {
-                tvHeaderTitle?.text = businessName
+                tvHeaderTitle?.text = if (businessType == "LOANS") "GoMezMart Préstamos" else prefs.getString("${businessType}_name", "Mi Negocio")
             }
 
-            // Logo
-            val logoPath = prefs.getString("${businessType}_logo_local", null)
-            if (!logoPath.isNullOrEmpty()) {
-                val file = File(logoPath)
-                if (file.exists()) Glide.with(this).load(file).into(ivDrawerLogo!!)
+            if (isCollabMode) {
+                val collabLogo = collabPrefs.getString("collab_business_logo", null)
+                if (!collabLogo.isNullOrEmpty()) Glide.with(this).load(collabLogo).circleCrop().into(ivDrawerLogo!!)
                 else ivDrawerLogo?.setImageResource(R.drawable.logotipo_de_gomezmart)
             } else {
-                ivDrawerLogo?.setImageResource(R.drawable.logotipo_de_gomezmart)
+                val logoPath = prefs.getString("${businessType}_logo_local", null)
+                if (!logoPath.isNullOrEmpty()) Glide.with(this).load(File(logoPath)).circleCrop().into(ivDrawerLogo!!)
+                else ivDrawerLogo?.setImageResource(R.drawable.logotipo_de_gomezmart)
             }
+
+            btnPublish?.setOnClickListener { 
+                binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
+                if (isCollabMode) {
+                    val ownerId = prefs.getString("collaborator_owner_id", null)
+                    startToolActivity(Intent(this, StoreProfileActivity::class.java).apply { putExtra("STORE_ID", ownerId); putExtra("IS_OWNER", true); putExtra("FORCE_RUBRO", businessType) })
+                } else if (businessType == "LOANS") {
+                    if (isOnline) startToolActivity(Intent(this, LoanStoreProfileActivity::class.java).apply { putExtra("STORE_ID", auth.currentUser?.uid); putExtra("IS_OWNER", true) })
+                    else startToolActivity(Intent(this, LoanStoreEditorActivity::class.java))
+                } else {
+                    startActivity(Intent(this, MyBusinessesActivity::class.java).apply { putExtra("MANAGE_STORE_MODE", true) }) 
+                }
+            }
+            btnTeam?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startToolActivity(Intent(this, HotelManageTeamActivity::class.java)) }
+            btnCollab?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startToolActivity(Intent(this, SearchBusinessActivity::class.java)) }
+            btnSwitchSystem?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startActivity(Intent(this, MyBusinessesActivity::class.java)) }
+            btnMyCollabs?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); if (isCollabMode) switchToPersonalBusiness() else showCollaborationsDialog() }
+            btnCollabAccount?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startToolActivity(Intent(this, CollabAccountActivity::class.java)) }
         }
 
-        // --- 2. Menú Lateral (Drawer Menu Items) ---
         binding.navigationViewMain.menu.clear()
-        if (isCollabMode) {
-            if (businessType == "HOTEL") {
-                binding.navigationViewMain.inflateMenu(R.menu.menu_hotel_drawer)
-                val menu = binding.navigationViewMain.menu
-                menu.findItem(R.id.menu_hotel_guests)?.isVisible = collabPrefs.getBoolean("can_view_history", true)
-                menu.findItem(R.id.menu_hotel_bookings)?.isVisible = collabPrefs.getBoolean("can_manage_bookings", true)
-                menu.findItem(R.id.menu_hotel_payments)?.isVisible = collabPrefs.getBoolean("can_manage_debts", false)
-                menu.findItem(R.id.menu_hotel_maintenance)?.isVisible = collabPrefs.getBoolean("can_manage_failures", true)
-                menu.findItem(R.id.menu_hotel_tools)?.isVisible = collabPrefs.getBoolean("can_manage_tools", true)
-                menu.findItem(R.id.menu_hotel_rooms_graph)?.isVisible = collabPrefs.getBoolean("can_manage_rooms", true)
-            } else if (businessType == "LOANS") {
-                binding.navigationViewMain.inflateMenu(R.menu.menu_loans_drawer)
-            } else {
-                binding.navigationViewMain.inflateMenu(R.menu.menu_main_drawer)
-            }
+        if (isCollabMode && businessType == "HOTEL") {
+            binding.navigationViewMain.inflateMenu(R.menu.menu_hotel_drawer)
+            val menu = binding.navigationViewMain.menu
+            menu.findItem(R.id.menu_hotel_guests)?.isVisible = collabPrefs.getBoolean("can_view_history", true)
+            menu.findItem(R.id.menu_hotel_bookings)?.isVisible = collabPrefs.getBoolean("can_manage_bookings", true)
+            menu.findItem(R.id.menu_hotel_rooms_graph)?.isVisible = collabPrefs.getBoolean("can_manage_rooms", true)
         } else {
-            if (businessType == "HOTEL") binding.navigationViewMain.inflateMenu(R.menu.menu_hotel_drawer)
-            else if (businessType == "LOANS") binding.navigationViewMain.inflateMenu(R.menu.menu_loans_drawer)
-            else binding.navigationViewMain.inflateMenu(R.menu.menu_main_drawer)
+            binding.navigationViewMain.inflateMenu(if(businessType == "HOTEL") R.menu.menu_hotel_drawer else if(businessType == "LOANS") R.menu.menu_loans_drawer else R.menu.menu_main_drawer)
         }
 
-        // --- 3. Navegación Inferior (Bottom Nav) ---
+        // --- Navegación Inferior Dinámica (PESO EXACTO) ---
+        binding.btnNavInicio.isVisible = true
+        binding.btnNavConfig.isVisible = true
+
         if (isCollabMode) {
-            val canViewMetrics = collabPrefs.getBoolean("can_view_metrics", false)
-            val canManageRooms = collabPrefs.getBoolean("can_manage_rooms", true)
-            val canManageInventory = collabPrefs.getBoolean("can_manage_inventory", false)
-            binding.btnNavMetricas.visibility = if (canViewMetrics) View.VISIBLE else View.GONE
-            binding.btnNavStock.visibility = if (canManageRooms || canManageInventory) View.VISIBLE else View.GONE
-            val visibleCount = 2 + (if (canViewMetrics) 1 else 0) + (if (canManageRooms || canManageInventory) 1 else 0)
-            binding.layoutCustomNav.weightSum = visibleCount.toFloat()
+            binding.btnNavMetricas.isVisible = collabPrefs.getBoolean("can_view_metrics", false)
+            binding.btnNavStock.isVisible = collabPrefs.getBoolean("can_manage_rooms", true) || collabPrefs.getBoolean("can_manage_inventory", false)
         } else {
-            binding.btnNavMetricas.visibility = View.VISIBLE
-            binding.btnNavStock.visibility = View.VISIBLE
-            binding.layoutCustomNav.weightSum = 4f
+            binding.btnNavMetricas.isVisible = true
+            binding.btnNavStock.isVisible = true
         }
 
-        // Labels dinámicos
-        binding.tvLabelStock.text = when(businessType) {
-            "HOTEL" -> "Hotel"; "LOANS" -> "Clientes"; else -> "Stock"
-        }
-        binding.tvIconStock.text = when(businessType) {
-            "HOTEL" -> "🏨"; "LOANS" -> "👥"; else -> "📦"
-        }
+        val hasHotel = !prefs.getString("HOTEL_name", "").isNullOrEmpty()
+        val hasProducts = !prefs.getString("PRODUCTS_name", "").isNullOrEmpty()
+        val hasLoans = !prefs.getString("LOANS_name", "").isNullOrEmpty()
+        val hasBiz = hasHotel || hasProducts || hasLoans || !prefs.getString("business_type", "").isNullOrEmpty()
+        
+        binding.btnNavMarket.isVisible = isCollabMode || hasBiz
+
+        // Sincronización del indicador
+        refreshIndicatorPosition()
     }
 
     private fun setupCustomBottomNav() {
-        binding.btnNavInicio.setOnClickListener { navigateToInicio() }
-        binding.btnNavStock.setOnClickListener { navigateToStock() }
-        binding.btnNavMetricas.setOnClickListener { navigateToMetricas() }
-        binding.btnNavConfig.setOnClickListener { navigateToSettings() }
+        binding.btnNavInicio.setOnClickListener { navigateToInicio(); updateCustomNavUI(0) }
+        binding.btnNavStock.setOnClickListener { navigateToStock(); updateCustomNavUI(1) }
+        binding.btnNavMetricas.setOnClickListener { navigateToMetricas(); updateCustomNavUI(2) }
+        binding.btnNavConfig.setOnClickListener { navigateToSettings(); updateCustomNavUI(3) }
+        binding.btnNavMarket.setOnClickListener { 
+            binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
+            startToolActivity(Intent(this, BuyerHomeActivity::class.java)) 
+        }
 
-        binding.layoutCustomNav.post { updateCustomNavUI(0) }
+        binding.layoutCustomNav.post {
+            refreshIndicatorPosition()
+        }
     }
 
-    private fun updateCustomNavUI(index: Int) {
+    private fun refreshIndicatorPosition() {
+        val icons = listOf(binding.tvIconInicio, binding.tvIconStock, binding.tvIconMetricas, binding.tvIconConfig, binding.tvIconMarket)
+        val activeIdx = icons.indexOfFirst { it.alpha == 1.0f }
+        if (activeIdx != -1) {
+            updateCustomNavUI(activeIdx, animate = false)
+        }
+    }
+
+    private fun updateCustomNavUI(index: Int, animate: Boolean = true) {
         val activeColor = Color.WHITE
         val inactiveColor = Color.parseColor("#94A3B8")
-        listOf(binding.tvLabelInicio, binding.tvLabelStock, binding.tvLabelMetricas, binding.tvLabelConfig).forEach { it.setTextColor(inactiveColor) }
-        listOf(binding.tvIconInicio, binding.tvIconStock, binding.tvIconMetricas, binding.tvIconConfig).forEach { it.alpha = 0.6f }
-        when(index) {
-            0 -> { binding.tvLabelInicio.setTextColor(activeColor); binding.tvIconInicio.alpha = 1.0f }
-            1 -> { binding.tvLabelStock.setTextColor(activeColor); binding.tvIconStock.alpha = 1.0f }
-            2 -> { binding.tvLabelMetricas.setTextColor(activeColor); binding.tvIconMetricas.alpha = 1.0f }
-            3 -> { binding.tvLabelConfig.setTextColor(activeColor); binding.tvIconConfig.alpha = 1.0f }
+        val buttons = listOf(binding.btnNavInicio, binding.btnNavStock, binding.btnNavMetricas, binding.btnNavConfig, binding.btnNavMarket)
+        val icons = listOf(binding.tvIconInicio, binding.tvIconStock, binding.tvIconMetricas, binding.tvIconConfig, binding.tvIconMarket)
+        val labels = listOf(binding.tvLabelInicio, binding.tvLabelStock, binding.tvLabelMetricas, binding.tvLabelConfig, binding.tvLabelMarket)
+        
+        // 1. Identificar el botón objetivo real (debe ser visible)
+        val visibleButtons = buttons.filter { it.isVisible }
+        if (visibleButtons.isEmpty()) return
+
+        var targetIdx = index
+        if (targetIdx !in buttons.indices || !buttons[targetIdx].isVisible) {
+            targetIdx = buttons.indexOf(visibleButtons.firstOrNull() ?: buttons[0])
         }
 
-        val totalWidth = binding.layoutCustomNav.width
-        val count = if (binding.layoutCustomNav.weightSum > 0) binding.layoutCustomNav.weightSum.toInt() else 4
-        if (count > 0 && totalWidth > 0) {
-            val step = totalWidth / count
+        // 2. Sincronización visual inmediata (Solo si cambió el estado)
+        labels.forEachIndexed { i, tv -> 
+            val color = if (i == targetIdx) activeColor else inactiveColor
+            if (tv.currentTextColor != color) tv.setTextColor(color)
+        }
+        icons.forEachIndexed { i, iv -> 
+            val alpha = if (i == targetIdx) 1.0f else 0.6f
+            if (iv.alpha != alpha) iv.alpha = alpha
+        }
+
+        val targetView = buttons[targetIdx]
+        
+        // Función de alineación milimétrica
+        val alignAction = Runnable {
+            if (!this::binding.isInitialized) return@Runnable
             
-            // Ajustar el ancho del indicador dinámicamente según la cantidad de botones visibles
-            val params = binding.navIndicatorCustom.layoutParams as ConstraintLayout.LayoutParams
-            params.width = step
-            params.matchConstraintPercentWidth = 1.0f / count // Alternativa para ConstraintLayout
-            binding.navIndicatorCustom.layoutParams = params
-
-            val visibleButtons = mutableListOf<View>()
-            if (binding.btnNavInicio.visibility == View.VISIBLE) visibleButtons.add(binding.btnNavInicio)
-            if (binding.btnNavStock.visibility == View.VISIBLE) visibleButtons.add(binding.btnNavStock)
-            if (binding.btnNavMetricas.visibility == View.VISIBLE) visibleButtons.add(binding.btnNavMetricas)
-            if (binding.btnNavConfig.visibility == View.VISIBLE) visibleButtons.add(binding.btnNavConfig)
-            val actualIndex = when(index) {
-                0 -> visibleButtons.indexOf(binding.btnNavInicio)
-                1 -> visibleButtons.indexOf(binding.btnNavStock)
-                2 -> visibleButtons.indexOf(binding.btnNavMetricas)
-                3 -> visibleButtons.indexOf(binding.btnNavConfig)
-                else -> 0
-            }
-            if (actualIndex >= 0) {
-                binding.navIndicatorCustom.animate().translationX((actualIndex * step).toFloat()).setDuration(250).start()
+            val w = targetView.width
+            val x = targetView.x
+            
+            if (w > 0) {
+                val params = binding.navIndicatorCustom.layoutParams
+                if (params.width != w) {
+                    params.width = w
+                    binding.navIndicatorCustom.layoutParams = params
+                }
+                
+                if (animate) {
+                    binding.navIndicatorCustom.animate()
+                        .translationX(x)
+                        .setDuration(150) // Reducido para más agilidad
+                        .setInterpolator(AccelerateDecelerateInterpolator())
+                        .start()
+                } else {
+                    binding.navIndicatorCustom.translationX = x
+                }
             }
         }
+
+        if (targetView.width > 0) alignAction.run() else targetView.post(alignAction)
     }
 
     fun navigateToInicio() {
-        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-        val businessType = prefs.getString("business_type", "PRODUCTS")
-        val fragment = when(businessType) {
-            "HOTEL" -> HotelHomeFragment(); "LOANS" -> LoansHomeFragment(); else -> HomeFragment()
-        }
-        replaceFragment(fragment)
+        val bType = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("business_type", "PRODUCTS")
+        replaceFragment(when(bType) { "HOTEL" -> HotelHomeFragment(); "LOANS" -> LoansHomeFragment(); else -> HomeFragment() })
         updateCustomNavUI(0)
     }
 
     fun navigateToStock(forceGraph: Boolean = false) {
         if (forceGraph) getSharedPreferences("HotelPrefs", MODE_PRIVATE).edit().putBoolean("FORCE_MAP_VIEW", true).apply()
-        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-        val businessType = prefs.getString("business_type", "PRODUCTS")
-        val fragment = when(businessType) {
-            "HOTEL" -> HotelRoomsFragment(); "LOANS" -> LoansClientsFragment(); else -> StockFragment()
-        }
-        replaceFragment(fragment)
+        val bType = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("business_type", "PRODUCTS")
+        replaceFragment(when(bType) { "HOTEL" -> HotelRoomsFragment(); "LOANS" -> LoansClientsFragment(); else -> StockFragment() })
         updateCustomNavUI(1)
     }
 
     fun navigateToMetricas() {
-        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-        val businessType = prefs.getString("business_type", "PRODUCTS")
-        val fragment = when(businessType) {
-            "HOTEL" -> HotelMetricsFragment(); "LOANS" -> LoansMetricsFragment(); else -> MetricasFragment()
-        }
-        replaceFragment(fragment)
+        val bType = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("business_type", "PRODUCTS")
+        replaceFragment(when(bType) { "HOTEL" -> HotelMetricsFragment(); "LOANS" -> LoansMetricsFragment(); else -> MetricasFragment() })
         updateCustomNavUI(2)
     }
 
-    fun navigateToSettings() {
-        replaceFragment(SettingsFragment())
-        updateCustomNavUI(3)
-    }
+    fun navigateToSettings() { replaceFragment(SettingsFragment()); updateCustomNavUI(3) }
 
     private fun replaceFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction().replace(R.id.mainFragmentContainer, fragment).commit()
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+            .replace(R.id.mainFragmentContainer, fragment)
+            .commit()
     }
-
     fun openSideMenu() = binding.drawerLayoutMain.openDrawer(GravityCompat.START)
     fun navigateToGestion() = binding.drawerLayoutMain.openDrawer(GravityCompat.START)
-
-    private fun startSyncService() {
-        val serviceIntent = Intent(this, GoMezMartSyncService::class.java)
-        // Cambiado a startService normal para evitar la notificación persistente
-        startService(serviceIntent)
-    }
-
-    private fun subscribeToSalesTopic() {
-        val userId = auth.currentUser?.uid ?: return
-        FirebaseMessaging.getInstance().subscribeToTopic("sales_$userId")
-    }
-
-    override fun onResume() {
-        super.onResume()
-        updateMenuForBusinessType()
-        SyncManager(this).scheduleOfflineSync()
-    }
+    private fun startSyncService() { startService(Intent(this, GoMezMartSyncService::class.java)) }
+    private fun subscribeToSalesTopic() { val userId = auth.currentUser?.uid ?: return; FirebaseMessaging.getInstance().subscribeToTopic("sales_$userId") }
+    override fun onResume() { super.onResume(); updateMenuForBusinessType(); SyncManager(this).scheduleOfflineSync() }
 
     private fun setupListeners() {
         binding.navigationViewMain.setNavigationItemSelectedListener { menuItem ->
@@ -436,62 +389,34 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun startToolActivity(intent: Intent) {
-        startActivity(intent)
-        overridePendingTransition(R.anim.slide_in_up, R.anim.stay)
-    }
+    private fun startToolActivity(intent: Intent) { startActivity(intent); overridePendingTransition(R.anim.slide_in_up, R.anim.stay) }
 
     fun checkPinAndNavigate(onSuccess: () -> Unit) {
-        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-        val savedPin = prefs.getString("user_pin", "") ?: ""
+        val savedPin = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("user_pin", "") ?: ""
         if (savedPin.isEmpty()) { onSuccess(); return }
-        val etPin = EditText(this).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
-            hint = "Escribe el PIN"
-        }
-        AlertDialog.Builder(this)
-            .setTitle("Acceso Restringido")
-            .setMessage("Para ver esta sección, ingresa tu PIN de seguridad:")
-            .setView(etPin)
-            .setPositiveButton("Entrar") { _, _ ->
-                if (etPin.text.toString() == savedPin) onSuccess()
-                else Toast.makeText(this, "PIN Incorrecto", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Cancelar", null).show()
+        val etPin = EditText(this).apply { inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD; hint = "Escribe el PIN" }
+        AlertDialog.Builder(this).setTitle("Acceso Restringido").setMessage("Ingresa tu PIN:").setView(etPin).setPositiveButton("Entrar") { _, _ -> if (etPin.text.toString() == savedPin) onSuccess() else Toast.makeText(this, "PIN Incorrecto", Toast.LENGTH_SHORT).show() }.setNegativeButton("Cancelar", null).show()
     }
 
     private fun showLogoutDialog() {
-        AlertDialog.Builder(this).setTitle("Cerrar Sesión").setMessage("¿Deseas salir?")
-            .setPositiveButton("Salir") { _, _ ->
-                lifecycleScope.launch {
-                    SessionManager.clearSessionData(this@MainActivity)
-                    startActivity(Intent(this@MainActivity, WelcomeRoleActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
-                    finish()
-                }
-            }.setNegativeButton("Cancelar", null).show()
+        AlertDialog.Builder(this).setTitle("Cerrar Sesión").setMessage("¿Deseas salir?").setPositiveButton("Salir") { _, _ -> lifecycleScope.launch { SessionManager.clearSessionData(this@MainActivity); startActivity(Intent(this@MainActivity, WelcomeRoleActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)); finish() } }.setNegativeButton("Cancelar", null).show()
     }
 
     private fun switchToPersonalBusiness() {
-        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-        
+        val user = auth.currentUser ?: return
         lifecycleScope.launch {
-            // 1. Limpiar base de datos local antes de volver a modo personal
-            withContext(Dispatchers.IO) {
-                AppDatabase.getDatabase(this@MainActivity).clearAllTables()
-            }
-            
-            // 2. Cambiar modo
-            prefs.edit().putBoolean("is_collaborator_mode", false).apply()
-            
-            // Reiniciar servicio de sincronización
-            startSyncService()
-            
-            // 3. Refrescar UI y Sincronizar datos personales
-            updateMenuForBusinessType()
-            navigateToInicio()
-            
-            Toast.makeText(this@MainActivity, "Volviendo a tu negocio personal. Sincronizando...", Toast.LENGTH_SHORT).show()
-            SyncManager(this@MainActivity).scheduleOfflineSync()
+            val loading = AlertDialog.Builder(this@MainActivity).setMessage("Cambiando...").setCancelable(false).show()
+            try {
+                val settingsSnap = db.collection("users").document(user.uid).collection("settings").get().await()
+                val ownBusinesses = settingsSnap.documents.filter { doc -> doc.id != "business" && (doc.getString("business_name") ?: "").isNotEmpty() }
+                withContext(Dispatchers.IO) { AppDatabase.getDatabase(this@MainActivity).clearAllTables() }
+                getSharedPreferences("CollabPermissions", MODE_PRIVATE).edit().clear().apply()
+                getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit().putBoolean("is_collaborator_mode", false).apply()
+                loading.dismiss()
+                if (ownBusinesses.size == 1) { getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit().putString("business_type", ownBusinesses[0].id).apply(); startSyncService(); updateMenuForBusinessType(); navigateToInicio(); SyncManager(this@MainActivity).scheduleOfflineSync() }
+                else if (ownBusinesses.size > 1) { val intent = Intent(this@MainActivity, MyBusinessesActivity::class.java); intent.putExtra("OWN_ONLY_MODE", true); intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK; startActivity(intent); finish() }
+                else { startActivity(Intent(this@MainActivity, BusinessSelectionActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)); finish() }
+            } catch (e: Exception) { loading.dismiss() }
         }
     }
 
@@ -500,70 +425,27 @@ class MainActivity : BaseActivity() {
             try {
                 val email = auth.currentUser?.email?.lowercase() ?: return@launch
                 val accessKeys = db.collection("access_keys").whereEqualTo("email", email).get().await()
-                if (accessKeys.isEmpty) {
-                    Toast.makeText(this@MainActivity, "No tienes invitaciones activas", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-                val items = accessKeys.documents.map { doc -> "${doc.getString("businessName")} (${doc.getString("role")})" }.toTypedArray()
-                AlertDialog.Builder(this@MainActivity).setTitle("Tus Colaboraciones").setItems(items) { _, which ->
-                    val doc = accessKeys.documents[which]
-                    switchToCollaborativeEnvironment(doc.getString("ownerId") ?: "", doc.getString("businessType") ?: "HOTEL")
-                }.setNegativeButton("Cancelar", null).show()
+                if (accessKeys.isEmpty) { Toast.makeText(this@MainActivity, "No tienes invitaciones", Toast.LENGTH_SHORT).show(); return@launch }
+                val items = accessKeys.documents.map { "${it.getString("businessName")} (${it.getString("role")})" }.toTypedArray()
+                AlertDialog.Builder(this@MainActivity).setTitle("Tus Colaboraciones").setItems(items) { _, which -> val doc = accessKeys.documents[which]; switchToCollaborativeEnvironment(doc.getString("ownerId") ?: "", doc.getString("businessType") ?: "HOTEL", doc.getString("businessName")) }.setNegativeButton("Cancelar", null).show()
             } catch (e: Exception) { }
         }
     }
 
-    private fun switchToCollaborativeEnvironment(ownerId: String, businessType: String) {
-        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-        
+    private fun switchToCollaborativeEnvironment(ownerId: String, businessType: String, name: String? = null) {
         lifecycleScope.launch {
-            // 1. Limpiar base de datos local para no mezclar datos personales con los del dueño
-            withContext(Dispatchers.IO) {
-                AppDatabase.getDatabase(this@MainActivity).clearAllTables()
-            }
-            
-            // 2. Establecer nuevo entorno
-            prefs.edit().apply {
-                putBoolean("is_collaborator_mode", true)
-                putString("collaborator_owner_id", ownerId)
-                putString("business_type", businessType)
-                apply()
-            }
-            
-            // Reiniciar servicio de sincronización
-            startSyncService()
-            
-            // 3. Actualizar UI y Sincronizar datos del dueño
-            updateMenuForBusinessType()
-            navigateToInicio()
-            SyncManager(this@MainActivity).scheduleOfflineSync()
-            
-            Toast.makeText(this@MainActivity, "Entorno de equipo activado ✨", Toast.LENGTH_SHORT).show()
+            withContext(Dispatchers.IO) { AppDatabase.getDatabase(this@MainActivity).clearAllTables() }
+            getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit().apply { putBoolean("is_collaborator_mode", true); putString("collaborator_owner_id", ownerId); putString("business_type", businessType); apply() }
+            if (name != null) getSharedPreferences("CollabPermissions", MODE_PRIVATE).edit().putString("collab_business_name", name).apply()
+            startSyncService(); updateMenuForBusinessType(); navigateToInicio(); SyncManager(this@MainActivity).scheduleOfflineSync()
         }
     }
 
-    private fun schedulePeriodicSync() {
-        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS)
-            .build()
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork("periodic_sync", ExistingPeriodicWorkPolicy.KEEP, syncRequest)
-    }
-
+    private fun schedulePeriodicSync() { val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).setBackoffCriteria(BackoffPolicy.EXPONENTIAL, WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS).build(); WorkManager.getInstance(this).enqueueUniquePeriodicWork("periodic_sync", ExistingPeriodicWorkPolicy.KEEP, syncRequest) }
     fun startInteractiveTutorial() { showTutorialDialog() }
-    fun startDirectScanner() = Toast.makeText(this, "Iniciando Escáner...", Toast.LENGTH_SHORT).show()
-    fun generatePDFCatalog() = Toast.makeText(this, "Generando Catálogo PDF...", Toast.LENGTH_SHORT).show()
-    fun manualSync() { Toast.makeText(this, "Sincronizando...", Toast.LENGTH_SHORT).show(); SyncManager(this).scheduleOfflineSync() }
-
+    fun startDirectScanner() = Toast.makeText(this, "Escáner...", Toast.LENGTH_SHORT).show()
+    fun generatePDFCatalog() = Toast.makeText(this, "PDF...", Toast.LENGTH_SHORT).show()
+    fun manualSync() { SyncManager(this).scheduleOfflineSync() }
     private fun showTutorialDialog() { currentTutorialStep = 0; showNextTutorialStep() }
-
-    private fun showNextTutorialStep() {
-        if (currentTutorialStep < tutorialSteps.size) {
-            val step = tutorialSteps[currentTutorialStep]
-            val builder = AlertDialog.Builder(this, R.style.Theme_GoMezMart_Dialog)
-            builder.setTitle(step.first).setMessage(step.second).setCancelable(false)
-                .setPositiveButton(if (currentTutorialStep == tutorialSteps.size - 1) "Empezar" else "Siguiente") { _, _ -> currentTutorialStep++; showNextTutorialStep() }
-            if (currentTutorialStep > 0) builder.setNeutralButton("Atrás") { _, _ -> currentTutorialStep--; showNextTutorialStep() }
-            builder.create().show()
-        } else { getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putBoolean("tutorial_shown_v5", true).apply() }
-    }
+    private fun showNextTutorialStep() { if (currentTutorialStep < tutorialSteps.size) { val step = tutorialSteps[currentTutorialStep]; AlertDialog.Builder(this, R.style.Theme_GoMezMart_Dialog).setTitle(step.first).setMessage(step.second).setCancelable(false).setPositiveButton(if (currentTutorialStep == tutorialSteps.size - 1) "Empezar" else "Siguiente") { _, _ -> currentTutorialStep++; showNextTutorialStep() }.create().show() } }
 }

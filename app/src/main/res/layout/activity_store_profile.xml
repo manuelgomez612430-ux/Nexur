@@ -87,7 +87,7 @@
                 android:layout_height="match_parent">
 
                 <View
-                    android:id="@+id/viewDecorCircle1"
+                    android:id="@+id/viewDecor1"
                     android:layout_width="300dp"
                     android:layout_height="300dp"
                     android:background="@drawable/bg_deco_circle"
@@ -98,7 +98,7 @@
                     android:translationY="-50dp" />
 
                 <View
-                    android:id="@+id/viewDecorCircle2"
+                    android:id="@+id/viewDecor2"
                     android:layout_width="200dp"
                     android:layout_height="200dp"
                     android:background="@drawable/bg_deco_circle"
@@ -275,12 +275,52 @@
                     app:tint="@color/slate_400" />
                 <TextView
                     android:id="@+id/tvProfileStoreAddress"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:text="Ubicación no especificada"
                     android:textColor="@color/slate_600"
                     android:textSize="13sp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnContactWhatsApp"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:padding="0dp"
+                    android:insetLeft="0dp"
+                    android:insetTop="0dp"
+                    android:insetRight="0dp"
+                    android:insetBottom="0dp"
+                    android:visibility="gone"
+                    app:icon="@android:drawable/stat_sys_phone_call"
+                    app:iconTint="@color/emerald_600"
+                    app:iconGravity="textStart"
+                    app:cornerRadius="22dp" />
+            </LinearLayout>
+
+            <!-- SECCIÓN: MÉTODOS DE PAGO (Público: Solo títulos) -->
+            <LinearLayout
+                android:id="@+id/layoutPublicPaymentMethods"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="20dp"
+                android:visibility="gone">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ACEPTAMOS"
+                    android:textColor="@color/slate_400"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1" />
+                <LinearLayout
+                    android:id="@+id/layoutPaymentIconsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp" />
             </LinearLayout>
 
             <!-- SECCIÓN: EXTRA DETAILS (Dynamic) -->
@@ -406,6 +446,43 @@
                 android:layout_marginTop="24dp"
                 android:gravity="center"
                 android:text="Sé el primero en calificar este negocio ✨"
+                android:textColor="@color/slate_400"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/slate_100"
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="24dp" />
+
+            <!-- SECCIÓN DE RECOMENDACIONES -->
+            <TextView
+                android:id="@+id/tvLabelRecommendations"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OTROS NEGOCIOS RECOMENDADOS"
+                android:textColor="@color/slate_500"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvStoreRecommendations"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:nestedScrollingEnabled="false"
+                tools:listitem="@layout/item_store_horizontal" />
+
+            <TextView
+                android:id="@+id/tvNoRecommendations"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:text="Hospedaje no encontrado"
                 android:textColor="@color/slate_400"
                 android:textSize="14sp"
                 android:visibility="gone" />

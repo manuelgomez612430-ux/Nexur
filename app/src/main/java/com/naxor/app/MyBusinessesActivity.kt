@@ -29,6 +29,7 @@ class MyBusinessesActivity : BaseActivity() {
     private val auth = FirebaseAuth.getInstance()
     private lateinit var adapter: BusinessesAdapter
     private var isManageStoreMode = false
+    private var isOwnOnlyMode = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,9 +37,12 @@ class MyBusinessesActivity : BaseActivity() {
         setContentView(binding.root)
 
         isManageStoreMode = intent.getBooleanExtra("MANAGE_STORE_MODE", false)
+        isOwnOnlyMode = intent.getBooleanExtra("OWN_ONLY_MODE", false)
         
         if (isManageStoreMode) {
             binding.toolbarMyBusinesses.title = "Mis Tiendas Online"
+        } else if (isOwnOnlyMode) {
+            binding.toolbarMyBusinesses.title = "Selecciona tu Negocio"
         }
 
         binding.toolbarMyBusinesses.setNavigationOnClickListener { finish() }
@@ -69,7 +73,8 @@ class MyBusinessesActivity : BaseActivity() {
     }
 
     private fun openStoreEditor(store: StoreModel) {
-        val intent = Intent(this, StoreProfileActivity::class.java).apply {
+        val targetClass = if (store.businessType == "LOANS") LoanStoreEditorActivity::class.java else StoreProfileActivity::class.java
+        val intent = Intent(this, targetClass).apply {
             putExtra("STORE_ID", auth.currentUser?.uid)
             putExtra("STORE_NAME", store.name)
             putExtra("IS_OWNER", true)
@@ -85,20 +90,33 @@ class MyBusinessesActivity : BaseActivity() {
         
         lifecycleScope.launch {
             try {
-                // 1. Cargar Negocios Propios
+                // 1. Cargar Negocios Propios (Donde yo soy el dueño)
                 val settingsSnap = db.collection("users").document(userId)
                     .collection("settings").get().await()
                 
                 val ownBusinesses = settingsSnap.documents.mapNotNull { doc ->
-                    val name = doc.getString("${doc.id}_name") ?: doc.getString("business_name") ?: "Mi Negocio"
+                    if (doc.id == "business") return@mapNotNull null
+                    
+                    val name = doc.getString("business_name") ?: doc.getString("${doc.id}_name") ?: ""
                     val type = doc.getString("business_type") ?: doc.id
                     val logo = doc.getString("business_logo_url")
                     val isOnline = doc.getBoolean("is_online") ?: false
                     
-                    if (doc.id == "business") return@mapNotNull null
+                    // FILTRO DE SEGURIDAD: Evitar mostrar negocios "vacíos" o borrados
+                    if (name.isEmpty() || name.equals("Mi Negocio", ignoreCase = true)) return@mapNotNull null
+                    
+                    // Si estamos en modo GESTIONAR TIENDA, filtrar negocios sin datos mínimos vitales
+                    if (isManageStoreMode) {
+                        val desc = doc.getString("business_description") ?: ""
+                        val owner = doc.getString("business_owner_name") ?: ""
+                        val addr = doc.getString("business_address") ?: ""
+                        
+                        // Si le falta información crítica, no se considera una tienda válida para el mercado aún
+                        if (desc.isEmpty() || owner.isEmpty() || addr.isEmpty()) return@mapNotNull null
+                    }
 
                     StoreModel(
-                        id = doc.id,
+                        id = userId, // El dueño es el userId actual
                         name = name,
                         businessType = type,
                         logoUrl = logo,
@@ -107,18 +125,27 @@ class MyBusinessesActivity : BaseActivity() {
                     )
                 }
 
-                // 2. Cargar Colaboraciones
-                val colabsSnap = db.collection("access_keys")
-                    .whereEqualTo("email", userEmail).get().await()
-                
-                val collaborations = colabsSnap.documents.map { doc ->
-                    StoreModel(
-                        id = doc.getString("ownerId") ?: "",
-                        name = doc.getString("businessName") ?: "Colaboración",
-                        businessType = doc.getString("businessType") ?: "HOTEL",
-                        phone = "COLLAB", // Marca especial
-                        description = doc.getString("role") ?: "EQUIPO"
-                    )
+                // 2. Cargar Colaboraciones (Donde soy invitado)
+                // Solo si NO estamos en modo GESTIONAR TIENDA PROPIA y NO estamos en modo SOLO PROPIOS
+                val collaborations = if (!isManageStoreMode && !isOwnOnlyMode) {
+                    val colabsSnap = db.collection("access_keys")
+                        .whereEqualTo("email", userEmail).get().await()
+                    
+                    colabsSnap.documents.mapNotNull { doc ->
+                        val ownerId = doc.getString("ownerId")
+                        if (ownerId == userId) return@mapNotNull null // Evitar duplicados si por error se invitó a sí mismo
+
+                        StoreModel(
+                            id = ownerId ?: "",
+                            name = doc.getString("businessName") ?: "Colaboración",
+                            businessType = doc.getString("businessType") ?: "HOTEL",
+                            phone = "COLLAB", // Marca especial para identificar colaboración
+                            description = doc.getString("role") ?: "EQUIPO",
+                            logoUrl = doc.getString("collab_business_logo") // Intentar usar logo cacheado si existe
+                        )
+                    }
+                } else {
+                    emptyList()
                 }
                 
                 val fullList = ownBusinesses + collaborations
@@ -138,7 +165,7 @@ class MyBusinessesActivity : BaseActivity() {
 
     private fun switchSystem(store: StoreModel) {
         if (store.phone == "COLLAB") {
-            switchToCollaborativeEnvironment(store.id, store.businessType)
+            switchToCollaborativeEnvironment(store.id, store.businessType, store.name, store.logoUrl)
             return
         }
 
@@ -157,6 +184,11 @@ class MyBusinessesActivity : BaseActivity() {
                 prefs.edit().apply {
                     putString("business_type", store.businessType)
                     putBoolean("is_collaborator_mode", false)
+                    // Guardar nombre y logo locales para evitar flashes mientras descarga el resto
+                    putString("${store.businessType}_name", store.name)
+                    if (!store.logoUrl.isNullOrEmpty()) {
+                        putString("${store.businessType}_logo_url", store.logoUrl)
+                    }
                     apply()
                 }
 
@@ -175,7 +207,7 @@ class MyBusinessesActivity : BaseActivity() {
         }
     }
 
-    private fun switchToCollaborativeEnvironment(ownerId: String, businessType: String) {
+    private fun switchToCollaborativeEnvironment(ownerId: String, businessType: String, name: String? = null, logo: String? = null) {
         val loading = AlertDialog.Builder(this)
             .setMessage("Entrando como colaborador...")
             .setCancelable(false)
@@ -191,6 +223,14 @@ class MyBusinessesActivity : BaseActivity() {
                     putBoolean("is_collaborator_mode", true)
                     putString("collaborator_owner_id", ownerId)
                     putString("business_type", businessType)
+                    apply()
+                }
+
+                val collabPrefs = getSharedPreferences("CollabPermissions", MODE_PRIVATE)
+                collabPrefs.edit().clear().apply() // Limpiar datos de colaboración previa
+                collabPrefs.edit().apply {
+                    if (name != null) putString("collab_business_name", name)
+                    if (logo != null) putString("collab_business_logo", logo)
                     apply()
                 }
                 

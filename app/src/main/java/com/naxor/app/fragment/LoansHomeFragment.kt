@@ -1,23 +1,32 @@
 package com.naxor.app.fragment
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.firebase.firestore.ListenerRegistration
 import com.naxor.app.MainActivity
 import com.naxor.app.R
+import com.naxor.app.SyncManager
 import com.naxor.app.data.AppDatabase
+import com.naxor.app.data.LoanBudgetEntity
 import com.naxor.app.databinding.FragmentLoansHomeBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -132,22 +141,56 @@ class LoansHomeFragment : Fragment() {
                     return@collectLatest
                 }
 
-                val startTime = budget.startDate
                 val loansFlow = database.loanDao().getAllLoans()
                 val expensesFlow = database.loanDao().getAllExpenses()
+                val paymentsFlow = database.loanDao().getAllPaymentsFlowV2()
+                val installmentsFlow = database.loanDao().getAllInstallmentsFlow()
 
-                kotlinx.coroutines.flow.combine(loansFlow, expensesFlow) { loans, expenses ->
-                    val totalLent = loans.filter { it.startDate >= startTime }.sumOf { it.amount }
+                combine(loansFlow, expensesFlow, paymentsFlow, installmentsFlow) { loans, expenses, payments, installments ->
+                    // Filtrar por periodo actual si el budget lo requiere
+                    val startTime = budget.startDate
+
+                    // 1. Calcular Ganancia Cobrada Total
+                    var collectedProfit = 0.0
+                    payments.forEach { p ->
+                        val loan = loans.find { it.id == p.loanId }
+                        loan?.let {
+                            val profitRatio = (it.totalToPay - it.amount) / it.totalToPay
+                            collectedProfit += (p.amount * profitRatio) + p.lateFeeAmount
+                        }
+                    }
+
+                    // 2. Calcular Capital en la Calle ACTUAL
+                    var capitalInStreet = 0.0
+                    installments.filter { it.status != "PAID" }.forEach { inst ->
+                        val loan = loans.find { it.id == inst.loanId }
+                        loan?.let {
+                            val capitalRatio = it.amount / it.totalToPay
+                            capitalInStreet += (inst.amount - inst.amountPaid) * capitalRatio
+                        }
+                    }
+
+                    // 3. Gastos registrados DESDE que se inició este presupuesto
                     val totalSpent = expenses.filter { it.timestamp >= startTime }.sumOf { it.amount }
                     
-                    val used = totalLent + totalSpent
-                    val remaining = budget.amount - used
-                    val percent = if (budget.amount > 0) (used / budget.amount * 100).toInt() else 0
+                    // 4. Calcular presupuesto disponible y uso
+                    // El capital total disponible para el negocio es Presupuesto + Ganancias
+                    val totalCapital = budget.amount + collectedProfit
+                    
+                    // El capital usado es lo que está prestado actualmente + gastos del periodo
+                    val used = capitalInStreet + totalSpent
+                    
+                    // Lo disponible es el capital total menos lo que ya está fuera
+                    val remaining = (totalCapital - used).coerceAtLeast(0.0)
+                    
+                    val percent = if (totalCapital > 0) (used / totalCapital * 100).toInt() else 0
 
                     withContext(Dispatchers.Main) {
+                        if (_binding == null) return@withContext
+                        
                         binding.tvBudgetTitle.text = "Presupuesto ${if(budget.period == "MONTHLY") "Mensual" else "Semanal"}"
-                        binding.tvBudgetRemaining.text = String.format(Locale.US, "S/ %.2f disponibles", if(remaining > 0) remaining else 0.0)
-                        binding.tvBudgetDetail.text = String.format(Locale.US, "Has usado S/ %.2f de S/ %.2f", used, budget.amount)
+                        binding.tvBudgetRemaining.text = String.format(Locale.US, "S/ %.2f disponibles", remaining)
+                        binding.tvBudgetDetail.text = String.format(Locale.US, "Has usado S/ %.2f de S/ %.2f", used, totalCapital)
                         
                         binding.progressBudget.progress = percent.coerceIn(0, 100)
                         if (percent >= 90) {
@@ -164,71 +207,142 @@ class LoansHomeFragment : Fragment() {
     }
 
     private fun showBudgetConfigDialog() {
-        val layout = android.widget.LinearLayout(requireContext()).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(60, 40, 60, 40)
-        }
-        
-        val etAmount = android.widget.EditText(requireContext()).apply { 
-            hint = "Monto del presupuesto (S/)"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL 
-        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            // Obtenemos el presupuesto actual para pre-rellenar el campo
+            val currentBudget = withContext(Dispatchers.IO) {
+                database.loanDao().getLatestBudgetOnce()
+            }
+            
+            withContext(Dispatchers.Main) {
+                val layout = LinearLayout(requireContext()).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(60, 40, 60, 20)
+                }
+                
+                val tvExplanation = TextView(requireContext()).apply {
+                    text = "Ingresa tu Capital Total de inversión. El sistema sumará las ganancias automáticamente."
+                    textSize = 13f
+                    setTextColor(Color.GRAY)
+                    setPadding(0, 0, 0, 20)
+                }
 
-        // Usaremos botones para una selección más clara y evitar errores del spinner
-        val toggleGroup = com.google.android.material.button.MaterialButtonToggleGroup(requireContext()).apply {
-            id = View.generateViewId()
-            isSingleSelection = true
-            isSelectionRequired = true
-            layoutParams = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { setMargins(0, 20, 0, 20) }
+                val etAmount = EditText(requireContext()).apply {
+                    hint = "Ej: 1500.00"
+                    setTextColor(Color.BLACK) // Asegurar visibilidad
+                    inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+                    // PRE-RELLENAR con el valor actual
+                    currentBudget?.let { 
+                        setText(it.amount.toString())
+                        setSelection(text.length)
+                    }
+                }
+
+                // Usaremos botones para una selección más clara
+                val toggleGroup = MaterialButtonToggleGroup(requireContext()).apply {
+                    id = View.generateViewId()
+                    isSingleSelection = true
+                    isSelectionRequired = true
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply { setMargins(0, 20, 0, 20) }
+                }
+
+                val btnWeekly = MaterialButton(requireContext(), null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                    id = View.generateViewId()
+                    text = "Semanal"
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }
+                val btnMonthly = MaterialButton(requireContext(), null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                    id = View.generateViewId()
+                    text = "Mensual"
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }
+
+                toggleGroup.addView(btnWeekly)
+                toggleGroup.addView(btnMonthly)
+                
+                // Seleccionar periodo actual o mensual por defecto
+                if (currentBudget?.period == "WEEKLY") toggleGroup.check(btnWeekly.id)
+                else toggleGroup.check(btnMonthly.id)
+
+                layout.addView(tvExplanation)
+                layout.addView(TextView(requireContext()).apply { text = "Monto de Capital:"; setPadding(0,10,0,10); setTextColor(Color.BLACK) })
+                layout.addView(etAmount)
+                layout.addView(TextView(requireContext()).apply { text = "Periodo de Revisión:"; setPadding(0,30,0,10); setTextColor(Color.BLACK) })
+                layout.addView(toggleGroup)
+
+                val builder = AlertDialog.Builder(requireContext())
+                    .setTitle("Configurar Capital de Trabajo")
+                    .setView(layout)
+                    .setPositiveButton("Guardar") { _, _ ->
+                        val amount = etAmount.text.toString().toDoubleOrNull() ?: 0.0
+                        val period = if (toggleGroup.checkedButtonId == btnWeekly.id) "WEEKLY" else "MONTHLY"
+                        saveBudget(amount, period)
+                    }
+                    .setNegativeButton("Cancelar", null)
+
+                // Botón neutral para eliminar solo si existe
+                if (currentBudget != null) {
+                    builder.setNeutralButton("Eliminar") { _, _ ->
+                        showDeleteBudgetConfirmation()
+                    }
+                }
+                
+                builder.show()
+            }
         }
+    }
 
-        val btnWeekly = com.google.android.material.button.MaterialButton(requireContext(), null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
-            id = View.generateViewId()
-            text = "Semanal"
-            layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        val btnMonthly = com.google.android.material.button.MaterialButton(requireContext(), null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
-            id = View.generateViewId()
-            text = "Mensual"
-            layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
+    private fun showDeleteBudgetConfirmation() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("¿Eliminar presupuesto?")
+            .setMessage("Se borrará tu capital de trabajo configurado. Los cálculos de disponibilidad volverán a cero.")
+            .setPositiveButton("Eliminar") { _, _ -> deleteBudget() }
+            .setNegativeButton("No, mantener", null)
+            .show()
+    }
 
-        toggleGroup.addView(btnWeekly)
-        toggleGroup.addView(btnMonthly)
-        toggleGroup.check(btnMonthly.id) // Mensual por defecto
-
-        layout.addView(android.widget.TextView(requireContext()).apply { text = "Monto Total:"; setPadding(0,10,0,10) })
-        layout.addView(etAmount)
-        layout.addView(android.widget.TextView(requireContext()).apply { text = "Periodo:"; setPadding(0,30,0,10) })
-        layout.addView(toggleGroup)
-
-        androidx.appcompat.app.AlertDialog.Builder(requireContext())
-            .setTitle("Configurar Presupuesto")
-            .setView(layout)
-            .setPositiveButton("Guardar") { _, _ ->
-                val amount = etAmount.text.toString().toDoubleOrNull() ?: 0.0
-                if (amount > 0) {
-                    val period = if (toggleGroup.checkedButtonId == btnWeekly.id) "WEEKLY" else "MONTHLY"
-                    saveBudget(amount, period)
+    private fun deleteBudget() {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            val currentBudget = database.loanDao().getLatestBudgetOnce()
+            currentBudget?.let {
+                val deletedBudget = it.copy(isDeleted = true, isSynced = false)
+                database.loanDao().updateBudget(deletedBudget)
+                SyncManager(requireContext()).scheduleOfflineSync()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(requireContext(), "Presupuesto eliminado 🗑️", Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("Cancelar", null)
-            .show()
+        }
     }
 
     private fun saveBudget(amount: Double, period: String) {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val budget = com.naxor.app.data.LoanBudgetEntity(
+            // Buscamos si ya existe uno para mantener la fecha de inicio si es el mismo periodo
+            val existing = database.loanDao().getLatestBudgetOnce()
+            
+            val newStartDate = if (existing != null && existing.period == period) {
+                existing.startDate // Mantener fecha de inicio si solo actualiza monto
+            } else {
+                // Si cambia de periodo (ej: de Semanal a Mensual), resetear a hoy
+                System.currentTimeMillis()
+            }
+
+            val budget = LoanBudgetEntity(
+                id = "active_loan_budget", // ID FIJO para evitar duplicados y errores de sincronización
                 amount = amount,
                 period = period,
-                startDate = System.currentTimeMillis()
+                startDate = newStartDate,
+                timestamp = System.currentTimeMillis()
             )
             database.loanDao().insertBudget(budget)
+            
+            // Sincronización inmediata
+            SyncManager(requireContext()).scheduleOfflineSync()
+
             withContext(Dispatchers.Main) {
-                Toast.makeText(requireContext(), "Presupuesto guardado", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Presupuesto guardado ✨", Toast.LENGTH_SHORT).show()
             }
         }
     }

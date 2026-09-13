@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.activity.addCallback
+import androidx.appcompat.app.AlertDialog
 import com.naxor.app.databinding.ActivityBusinessSelectionBinding
 
 class BusinessSelectionActivity : BaseActivity() {
@@ -124,6 +125,17 @@ class BusinessSelectionActivity : BaseActivity() {
     }
 
     private fun saveAndContinue() {
+        AlertDialog.Builder(this)
+            .setTitle("Cambio de Perfil ⚠️")
+            .setMessage("Al entrar en un sistema de gestión, tu cuenta cambiará al rol de 'Dueño de Negocio'.\n\nEsto aplicará cambios automáticos en tu interfaz y habilitará funciones administrativas. Ten en cuenta que estamos optimizando el sistema y corrigiendo posibles errores en cada actualización.\n\n¿Deseas proceder?")
+            .setPositiveButton("Sí, Aceptar") { _, _ ->
+                checkCloudDataAndProceed()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun checkCloudDataAndProceed() {
         val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
         if (userId == null) {
             proceedToMain()
@@ -186,6 +198,10 @@ class BusinessSelectionActivity : BaseActivity() {
     }
 
     private fun proceedToMain() {
+        // Actualizar Rol a Vendedor (Gestor)
+        val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        appPrefs.edit().putString("user_role", "SELLER").apply()
+
         val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
         prefs.edit().putString("business_type", selectedType).apply()
         

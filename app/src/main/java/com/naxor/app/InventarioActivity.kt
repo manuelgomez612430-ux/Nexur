@@ -202,13 +202,8 @@ class InventarioActivity : BaseActivity() {
             hideKeyboard()
         }
 
-        binding.chipFilterAll.setOnClickListener {
-            filterLowStock = false
-            loadProducts()
-        }
-
-        binding.chipFilterLowStock.setOnClickListener {
-            filterLowStock = true
+        binding.chipGroupFilters.setOnCheckedStateChangeListener { _, checkedIds ->
+            filterLowStock = checkedIds.contains(R.id.chipFilterLowStock)
             loadProducts()
         }
 

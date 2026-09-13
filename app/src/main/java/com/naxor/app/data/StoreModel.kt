@@ -15,7 +15,14 @@ data class StoreModel(
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
     val extraSections: List<StoreSection> = emptyList(),
-    val theme: StoreTheme = StoreTheme()
+    val theme: StoreTheme = StoreTheme(),
+    val paymentMethods: List<PaymentMethod> = emptyList()
+)
+
+data class PaymentMethod(
+    val type: String = "BANK", // "YAPE", "PLIN", "BANK"
+    val title: String = "",    // Ej: "BCP Ahorros"
+    val accountInfo: String = "" // El número de cuenta
 )
 
 data class StoreTheme(

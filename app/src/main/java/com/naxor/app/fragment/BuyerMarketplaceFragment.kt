@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -134,7 +135,8 @@ class BuyerMarketplaceFragment : Fragment() {
     private fun setupRecyclerViews() {
         marketplaceAdapter = MarketplaceAdapter { openProductDetail(it) }
         storesAdapter = StoreAdapter { 
-            val intent = Intent(requireContext(), StoreProfileActivity::class.java).apply {
+            val targetClass = if (it.businessType == "LOANS") LoanStoreProfileActivity::class.java else StoreProfileActivity::class.java
+            val intent = Intent(requireContext(), targetClass).apply {
                 putExtra("STORE_ID", it.id)
                 putExtra("STORE_NAME", it.name)
                 putExtra("FORCE_RUBRO", it.businessType)
@@ -142,7 +144,8 @@ class BuyerMarketplaceFragment : Fragment() {
             startActivity(intent)
         }
         recentShopsAdapter = RecentShopsAdapter { 
-            val intent = Intent(requireContext(), StoreProfileActivity::class.java).apply {
+            val targetClass = if (it.businessType == "LOANS") LoanStoreProfileActivity::class.java else StoreProfileActivity::class.java
+            val intent = Intent(requireContext(), targetClass).apply {
                 putExtra("STORE_ID", it.id)
                 putExtra("STORE_NAME", it.name)
                 putExtra("FORCE_RUBRO", it.businessType)
@@ -323,8 +326,28 @@ class BuyerMarketplaceFragment : Fragment() {
                 tvProductName.text = p.name
                 tvProductStore.text = p.storeName
                 tvProductPrice.text = if (p.storeType == "HOTEL") "S/ ${String.format(Locale.US, "%.2f", p.price)} noche" else "S/ ${String.format(Locale.US, "%.2f", p.price)}"
-                if (!p.photoUrl.isNullOrEmpty()) Glide.with(ivProductImage.context).load(p.photoUrl).into(ivProductImage) else ivProductImage.setImageResource(R.drawable.gomezmart_icon)
-                if (!p.storeLogoUrl.isNullOrEmpty()) Glide.with(ivProductStoreLogo.context).load(p.storeLogoUrl).into(ivProductStoreLogo) else ivProductStoreLogo.setImageResource(R.drawable.gomezmart_icon)
+                if (!p.photoUrl.isNullOrEmpty()) {
+                    Glide.with(ivProductImage.context)
+                        .load(p.photoUrl)
+                        .placeholder(R.drawable.gomezmart_icon)
+                        .error(R.drawable.gomezmart_icon)
+                        .thumbnail(0.1f)
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .into(ivProductImage)
+                } else {
+                    ivProductImage.setImageResource(R.drawable.gomezmart_icon)
+                }
+                
+                if (!p.storeLogoUrl.isNullOrEmpty()) {
+                    Glide.with(ivProductStoreLogo.context)
+                        .load(p.storeLogoUrl)
+                        .placeholder(R.drawable.gomezmart_icon)
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .circleCrop()
+                        .into(ivProductStoreLogo)
+                } else {
+                    ivProductStoreLogo.setImageResource(R.drawable.gomezmart_icon)
+                }
                 root.setOnClickListener { onClick(p) }
             }
         }
@@ -359,7 +382,17 @@ class BuyerMarketplaceFragment : Fragment() {
                 tvStoreName.text = s.name
                 tvStoreCategory.text = if (s.businessType == "HOTEL") "Hospedaje y Turismo" else "Tienda de Productos"
                 tvStoreAddress.text = "📍 ${s.address}"
-                if (!s.logoUrl.isNullOrEmpty()) Glide.with(ivStoreLogo.context).load(s.logoUrl).into(ivStoreLogo) else ivStoreLogo.setImageResource(R.drawable.gomezmart_icon)
+                if (!s.logoUrl.isNullOrEmpty()) {
+                    Glide.with(ivStoreLogo.context)
+                        .load(s.logoUrl)
+                        .placeholder(R.drawable.gomezmart_icon)
+                        .error(R.drawable.gomezmart_icon)
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .circleCrop()
+                        .into(ivStoreLogo)
+                } else {
+                    ivStoreLogo.setImageResource(R.drawable.gomezmart_icon)
+                }
                 root.setOnClickListener { onClick(s) }
             }
         }

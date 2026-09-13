@@ -13,18 +13,17 @@ class SplashActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
-        // Pequeña pausa para mostrar la marca (reducida para mejor experiencia)
-        Handler(Looper.getMainLooper()).postDelayed({
-            val user = FirebaseAuth.getInstance().currentUser
-            if (user != null) {
-                // Usuario logueado, verificar si ya tiene rol y rubro configurado
-                checkPreferencesAndNavigate()
-            } else {
-                // No logueado, ir al Login
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            // Usuario logueado, verificación de preferencias instantánea para reducir tiempo de apertura
+            checkPreferencesAndNavigate()
+        } else {
+            // No logueado, ir al Login tras una breve pausa para la marca
+            Handler(Looper.getMainLooper()).postDelayed({
                 startActivity(Intent(this, LoginActivity::class.java))
-            }
-            finish()
-        }, 1000) // Reducido de 2000ms a 1000ms para un inicio más ágil
+                finish()
+            }, 500)
+        }
     }
 
     private fun checkPreferencesAndNavigate() {

@@ -7,10 +7,14 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.databinding.ActivitySystemSettingsBinding
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.tasks.await
 import java.io.File
 import java.util.*
 
@@ -213,18 +217,24 @@ class SystemSettingsActivity : BaseActivity() {
                         apply()
                     }
                     
-                    // Sincronizar reseteo a la nube
-                    syncManager.syncBusinessSettingsToCloud()
-                    
+                    // Sincronizar reseteo a la nube y BORRAR el documento para evitar duplicados vacíos
+                    try {
+                        val userId = FirebaseAuth.getInstance().currentUser?.uid
+                        if (userId != null) {
+                            FirebaseFirestore.getInstance()
+                                .collection("users").document(userId)
+                                .collection("settings").document("HOTEL")
+                                .delete().await()
+                        }
+                    } catch (e: Exception) { }
+
                     getSharedPreferences("HotelToolsPrefs", MODE_PRIVATE).edit().clear().apply()
                     getSharedPreferences("HotelPrefs", MODE_PRIVATE).edit().clear().apply()
                     
                     loading.dismiss()
-                    Toast.makeText(this@SystemSettingsActivity, "Datos de Hotelería borrados ✅", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@SystemSettingsActivity, "Sistema de Hotelería eliminado por completo 🗑️", Toast.LENGTH_LONG).show()
                     
-                    if (prefs.getString("business_type", "") == "HOTEL") {
-                        restartApp()
-                    }
+                    handleSystemExit()
                 }
             }
         }
@@ -250,8 +260,22 @@ class SystemSettingsActivity : BaseActivity() {
                     
                     // 3. Limpiar configuraciones
                     val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+                    val rubros = listOf("PRODUCTS", "SERVICES")
+                    
+                    // 4. Borrar documentos en la nube
+                    try {
+                        val userId = FirebaseAuth.getInstance().currentUser?.uid
+                        if (userId != null) {
+                            val db = FirebaseFirestore.getInstance()
+                            rubros.forEach { r ->
+                                db.collection("users").document(userId)
+                                    .collection("settings").document(r)
+                                    .delete().await()
+                            }
+                        }
+                    } catch (e: Exception) { }
+
                     prefs.edit().apply {
-                        val rubros = listOf("PRODUCTS", "SERVICES")
                         rubros.forEach { r ->
                             val keys = listOf(
                                 "name", "ruc", "address", "phone", "owner_name", "owner_dni", 
@@ -276,16 +300,10 @@ class SystemSettingsActivity : BaseActivity() {
                         apply()
                     }
                     
-                    // Sincronizar reseteo a la nube
-                    syncManager.syncBusinessSettingsToCloud()
-                    
                     loading.dismiss()
-                    Toast.makeText(this@SystemSettingsActivity, "Datos de Productos borrados ✅", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@SystemSettingsActivity, "Sistema de Productos eliminado ✅", Toast.LENGTH_SHORT).show()
                     
-                    val current = prefs.getString("business_type", "")
-                    if (current == "PRODUCTS" || current == "SERVICES") {
-                        restartApp()
-                    }
+                    handleSystemExit()
                 }
             }
         }
@@ -312,7 +330,18 @@ class SystemSettingsActivity : BaseActivity() {
                     database.systemMaintenanceDao().clearLoanBudgets()
                     database.systemMaintenanceDao().clearCommitments()
                     
-                    // 3. Limpiar configuraciones personales del rubro Préstamos
+                    // 3. Borrar documento en la nube
+                    try {
+                        val userId = FirebaseAuth.getInstance().currentUser?.uid
+                        if (userId != null) {
+                            FirebaseFirestore.getInstance()
+                                .collection("users").document(userId)
+                                .collection("settings").document("LOANS")
+                                .delete().await()
+                        }
+                    } catch (e: Exception) { }
+
+                    // 4. Limpiar configuraciones personales del rubro Préstamos
                     val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
                     prefs.edit().apply {
                         val keysToRemove = listOf(
@@ -339,14 +368,10 @@ class SystemSettingsActivity : BaseActivity() {
                         apply()
                     }
                     
-                    // Sincronizar reseteo a la nube
-                    syncManager.syncBusinessSettingsToCloud()
-                    
                     loading.dismiss()
-                    Toast.makeText(this@SystemSettingsActivity, "Datos y ajustes de Préstamos borrados ✅", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@SystemSettingsActivity, "Sistema de Préstamos eliminado ✅", Toast.LENGTH_SHORT).show()
                     
-                    // IMPORTANTE: REINICIAR APP PARA LIMPIAR TODO EL ESTADO EN MEMORIA
-                    restartApp()
+                    handleSystemExit()
                 }
             }
         }
@@ -497,5 +522,53 @@ class SystemSettingsActivity : BaseActivity() {
             .setPositiveButton("Sí, Borrar todo") { _, _ -> onConfirm() }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    private fun handleSystemExit() {
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        
+        // Limpiar el rubro activo localmente para forzar selección
+        prefs.edit().remove("business_type").apply()
+
+        lifecycleScope.launch {
+            try {
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                if (userId != null) {
+                    val db = FirebaseFirestore.getInstance()
+                    val settingsSnap = db.collection("users").document(userId).collection("settings").get().await()
+                    
+                    // Contar negocios válidos (que no sean el genérico y tengan nombre)
+                    val ownBusinesses = settingsSnap.documents.filter { doc: DocumentSnapshot ->
+                        if (doc.id == "business") return@filter false
+                        val name = doc.getString("business_name") ?: doc.getString("${doc.id}_name") ?: ""
+                        name.isNotEmpty() && !name.equals("Mi Negocio", ignoreCase = true)
+                    }
+
+                    if (ownBusinesses.isEmpty()) {
+                        // No le quedan negocios: Volver a ser comprador por defecto
+                        appPrefs.edit().putString("user_role", "BUYER").apply()
+                        val intent = Intent(this@SystemSettingsActivity, BuyerHomeActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    } else {
+                        // Le quedan otros negocios: Ir a la pantalla de "Mis Sistemas" para que elija uno
+                        val intent = Intent(this@SystemSettingsActivity, MyBusinessesActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    }
+                } else {
+                    restartApp()
+                }
+            } catch (e: Exception) {
+                // Fallback de seguridad: Ir al selector de rol
+                val intent = Intent(this@SystemSettingsActivity, WelcomeRoleActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+            }
+        }
     }
 }

@@ -75,6 +75,7 @@ class BuyerAccountFragment : Fragment() {
             binding.tvProfileName.text = "Modo Invitado"
             binding.tvProfileEmail.text = "Inicia sesión para una mejor experiencia"
             binding.tvProfileInitial.text = "?"
+            binding.tvUserAccountType.text = "COMPRADOR"
             return
         }
 
@@ -104,19 +105,40 @@ class BuyerAccountFragment : Fragment() {
                 }
             }
 
-        // Cargar ubicación predeterminada
-        locationRegistration?.remove()
-        locationRegistration = db.collection("users").document(user.uid).collection("locations")
-            .limit(1)
-            .addSnapshotListener { snapshot, _ ->
-                if (_binding == null || snapshot == null) return@addSnapshotListener
-                if (!snapshot.isEmpty) {
-                    val location = snapshot.documents[0].toObject(UserLocation::class.java)
-                    binding.tvUserCurrentLocation.text = "📍 ${location?.address ?: "Ubicación guardada"}"
-                } else {
-                    binding.tvUserCurrentLocation.text = "📍 Sin ubicación configurada"
+        // --- NUEVA LÓGICA: Determinar Tipo de Cuenta (Rol) ---
+        lifecycleScope.launch {
+            try {
+                // 1. Verificar si es Dueño (si tiene algún setting guardado)
+                val settingsSnap = db.collection("users").document(user.uid).collection("settings").get().await()
+                val isOwner = settingsSnap.documents.any { it.id != "business" && (it.getString("business_name")?.isNotEmpty() == true || it.getString("${it.id}_name")?.isNotEmpty() == true) }
+
+                // 2. Verificar si es Colaborador
+                val email = user.email?.lowercase() ?: ""
+                val collabSnap = db.collection("access_keys").whereEqualTo("email", email).get().await()
+                val isCollab = !collabSnap.isEmpty
+
+                withContext(Dispatchers.Main) {
+                    if (_binding == null) return@withContext
+                    val roleText = when {
+                        isOwner && isCollab -> "👑 DUEÑO Y COLABORADOR 🤝"
+                        isOwner -> "👑 DUEÑO DE NEGOCIO"
+                        isCollab -> "🤝 COLABORADOR"
+                        else -> "🛒 COMPRADOR"
+                    }
+                    binding.tvUserAccountType.text = roleText
+                    
+                    // Mostrar opción de revertir solo si no es un comprador puro
+                    val canRevert = isOwner || isCollab
+                    binding.btnRevertToBuyer.visibility = if (canRevert) View.VISIBLE else View.GONE
+                    binding.dividerSwitchRole.visibility = if (canRevert) View.VISIBLE else View.GONE
+                    
+                    // Si ya es dueño/colab, ocultamos el botón de "Vender en GoMezMart" para no duplicar
+                    binding.btnSwitchToSeller.visibility = if (isOwner) View.GONE else View.VISIBLE
                 }
+            } catch (e: Exception) {
+                binding.tvUserAccountType.text = "🛒 COMPRADOR"
             }
+        }
     }
 
     private fun setupListeners() {
@@ -144,6 +166,60 @@ class BuyerAccountFragment : Fragment() {
 
         binding.btnEditProfile.setOnClickListener {
             showEditProfileDialog()
+        }
+
+        binding.btnRevertToBuyer.setOnClickListener {
+            showRevertToBuyerDialog()
+        }
+    }
+
+    private fun showRevertToBuyerDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("¿Cambiar a modo Comprador?")
+            .setMessage("Se restablecerá tu cuenta al perfil de comprador. Si tienes configuraciones de negocio incompletas, se limpiarán para que tu perfil sea 100% personal otra vez.\n\nNota: Esto ocultará las opciones de gestión administrativa.")
+            .setPositiveButton("Sí, Restablecer") { _, _ -> resetToBuyerMode() }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun resetToBuyerMode() {
+        val userId = auth.currentUser?.uid ?: return
+        val loading = AlertDialog.Builder(requireContext()).setMessage("Restableciendo perfil...").setCancelable(false).show()
+
+        lifecycleScope.launch {
+            try {
+                // 1. Limpiar documentos de settings en Firestore (Esto quita el estado de 'Dueño')
+                val settingsSnap = db.collection("users").document(userId).collection("settings").get().await()
+                for (doc in settingsSnap.documents) {
+                    doc.reference.delete().await()
+                }
+
+                // 2. Limpiar preferencias locales
+                val bizPrefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+                bizPrefs.edit().clear().apply()
+
+                val collabPrefs = requireContext().getSharedPreferences("CollabPermissions", Context.MODE_PRIVATE)
+                collabPrefs.edit().clear().apply()
+
+                val appPrefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+                appPrefs.edit().putString("user_role", "BUYER").apply()
+
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    Toast.makeText(requireContext(), "Cuenta restablecida a modo Comprador 🛒", Toast.LENGTH_LONG).show()
+                    
+                    // Notificar a la actividad para que refresque el menú inferior de inmediato
+                    (activity as? BuyerHomeActivity)?.let { 
+                        // Necesitamos una forma de que la actividad refresque su UI
+                        it.recreate() 
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    Toast.makeText(requireContext(), "Error al restablecer perfil", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 

@@ -30,6 +30,8 @@
             app:cardElevation="12dp"
             app:strokeWidth="0dp"
             app:cardBackgroundColor="@color/white"
+            app:cardUseCompatPadding="false"
+            app:cardPreventCornerOverlap="false"
             app:layout_constraintBottom_toBottomOf="parent">
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -49,10 +51,11 @@
                 <!-- Custom Navigation Layout for perfect alignment -->
                 <LinearLayout
                     android:id="@+id/layoutCustomNav"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:orientation="horizontal"
-                    android:weightSum="4">
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent">
 
                     <!-- INICIO -->
                     <LinearLayout
@@ -157,6 +160,34 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Ajustes"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_500" />
+                    </LinearLayout>
+
+                    <!-- IR AL MERCADO (DINÁMICO) -->
+                    <LinearLayout
+                        android:id="@+id/btnNavMarket"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:visibility="gone"> <!-- Se habilita para dueños/colaboradores -->
+                        <TextView
+                            android:id="@+id/tvIconMarket"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🛒"
+                            android:textSize="22sp" />
+                        <TextView
+                            android:id="@+id/tvLabelMarket"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Mercado"
                             android:textSize="10sp"
                             android:textStyle="bold"
                             android:textColor="@color/slate_500" />

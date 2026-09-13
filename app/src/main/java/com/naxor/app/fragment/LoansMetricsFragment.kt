@@ -192,13 +192,19 @@ class LoansMetricsFragment : Fragment() {
                     }
                 }
 
-                // 4. Calcular presupuesto disponible
+                // 4. Calcular presupuesto disponible (Caja disponible)
+                // Fórmula: Capital Inicial + Ganancia Cobrada - Capital en la Calle - Gastos
                 var availableBudget = 0.0
                 budget?.let {
+                    // Consideramos el presupuesto como el "Capital de Trabajo" inicial
+                    val initialCapital = it.amount
+                    
+                    // Calculamos gastos totales registrados desde el inicio de este presupuesto
                     val startTime = it.startDate
-                    val totalLentInPeriod = loans.filter { l -> l.startDate >= startTime }.sumOf { l -> l.amount }
-                    val totalSpentInPeriod = database.loanDao().getAllLoanExpensesOnce().filter { e -> e.timestamp >= startTime }.sumOf { e -> e.amount }
-                    availableBudget = (it.amount - totalLentInPeriod - totalSpentInPeriod).coerceAtLeast(0.0)
+                    val totalExpensesInPeriod = database.loanDao().getAllLoanExpensesOnce().filter { e -> e.timestamp >= startTime }.sumOf { e -> e.amount }
+                    
+                    // La caja disponible es lo que queda del capital inicial + ganancias - lo que está en la calle - gastos
+                    availableBudget = (initialCapital + collectedProfit - capitalInStreet - totalExpensesInPeriod).coerceAtLeast(0.0)
                 }
 
                 withContext(Dispatchers.Main) {
@@ -244,7 +250,9 @@ class LoansMetricsFragment : Fragment() {
                         }
                         binding.chartMetricsRisk.data = com.github.mikephil.charting.data.PieData(dataSet)
                         
-                        val totalGeneral = capitalInStreet + pendingProfit + collectedProfit + expenses + availableBudget
+                        // El Total es el valor actual del negocio (Capital Inicial + Ganancias - Gastos)
+                        // Que es igual a: capitalInStreet + availableBudget + pendingProfit
+                        val totalGeneral = capitalInStreet + pendingProfit + availableBudget
                         binding.chartMetricsRisk.setCenterText("S/ ${String.format(Locale.US, "%.2f", totalGeneral)}\nTotal")
                     }
 
