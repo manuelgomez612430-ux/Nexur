@@ -1,12 +1,15 @@
 package com.naxor.app.data
 
+import com.google.firebase.firestore.Exclude
+
 data class CartItem(
-    val productId: String,
-    val productName: String,
-    val price: Double,
+    val productId: String = "",
+    val productName: String = "",
+    val price: Double = 0.0,
     var quantity: Int = 1,
     val category: String = ""
 ) {
+    @get:Exclude
     val total: Double get() = price * quantity
 }
 

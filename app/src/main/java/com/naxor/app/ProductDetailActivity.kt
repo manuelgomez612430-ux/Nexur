@@ -219,23 +219,7 @@ class ProductDetailActivity : BaseActivity() {
             }
         }
 
-        binding.cardDetailStoreInfo.setOnClickListener {
-            val intent = Intent(this, StoreCatalogActivity::class.java).apply {
-                putExtra("STORE_ID", sId)
-                putExtra("STORE_NAME", sName)
-                putExtra("FORCE_RUBRO", storeType)
-            }
-            startActivity(intent)
-        }
-
-        binding.btnViewAllFromStore.setOnClickListener {
-            val intent = Intent(this, StoreCatalogActivity::class.java).apply {
-                putExtra("STORE_ID", sId)
-                putExtra("STORE_NAME", sName)
-                putExtra("FORCE_RUBRO", storeType)
-            }
-            startActivity(intent)
-        }
+        // Navegación al catálogo eliminada
     }
 
     private fun loadSimilarAndRecommended(currentProdId: String, sId: String, category: String, sType: String) {

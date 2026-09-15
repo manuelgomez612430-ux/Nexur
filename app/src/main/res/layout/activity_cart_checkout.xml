@@ -48,6 +48,53 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
+                android:layout_marginBottom="16dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="¿Solicitar Delivery?"
+                    android:textColor="@color/slate_900"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switchDelivery"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutDeliveryInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:layout_marginBottom="16dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSetDeliveryLocation"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📍 Establecer Ubicación GPS"
+                    app:cornerRadius="12dp" />
+
+                <TextView
+                    android:id="@+id/tvDeliveryAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Dirección no seleccionada"
+                    android:textColor="@color/slate_500"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:layout_marginBottom="16dp">
 
                 <TextView
@@ -70,12 +117,23 @@
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSendOrderWhatsApp"
+                android:id="@+id/btnPlaceOrderGoMezMart"
                 android:layout_width="match_parent"
                 android:layout_height="64dp"
-                android:text="Enviar Pedido por WhatsApp"
+                android:text="Realizar Pedido"
                 android:textSize="16sp"
                 android:textStyle="bold"
+                app:cornerRadius="16dp"
+                app:icon="@android:drawable/ic_menu_add"
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSendOrderWhatsApp"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="Enviar por WhatsApp"
+                android:textSize="14sp"
                 app:cornerRadius="16dp"
                 app:icon="@android:drawable/ic_menu_send" />
 

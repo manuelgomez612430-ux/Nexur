@@ -10,9 +10,13 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.activity.result.contract.ActivityResultContracts
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.naxor.app.data.CartItem
 import com.naxor.app.data.CartManager
+import com.naxor.app.data.OrderModel
 import com.naxor.app.databinding.ActivityCartCheckoutBinding
 import com.naxor.app.databinding.ItemCartItemBinding
 import java.util.*
@@ -23,6 +27,20 @@ class CartCheckoutActivity : BaseActivity() {
     private lateinit var adapter: CartAdapter
     private var storeId: String = ""
     private var storeName: String = ""
+    
+    private var deliveryLat = 0.0
+    private var deliveryLng = 0.0
+    private var deliveryAddress = ""
+
+    private val mapSelectorLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val data = result.data
+            deliveryLat = data?.getDoubleExtra("LAT", 0.0) ?: 0.0
+            deliveryLng = data?.getDoubleExtra("LNG", 0.0) ?: 0.0
+            deliveryAddress = data?.getStringExtra("ADDRESS") ?: ""
+            binding.tvDeliveryAddress.text = if (deliveryAddress.isNotEmpty()) deliveryAddress else "Ubicación fijada por GPS"
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,9 +74,71 @@ class CartCheckoutActivity : BaseActivity() {
     }
 
     private fun setupListeners() {
+        binding.switchDelivery.setOnCheckedChangeListener { _, isChecked ->
+            binding.layoutDeliveryInfo.visibility = if (isChecked) View.VISIBLE else View.GONE
+        }
+
+        binding.btnSetDeliveryLocation.setOnClickListener {
+            mapSelectorLauncher.launch(Intent(this, BusinessMapSelectorActivity::class.java))
+        }
+
+        binding.btnPlaceOrderGoMezMart.setOnClickListener {
+            if (binding.switchDelivery.isChecked && deliveryLat == 0.0) {
+                Toast.makeText(this, "Por favor selecciona tu ubicación para el delivery", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            placeOrder()
+        }
+
         binding.btnSendOrderWhatsApp.setOnClickListener {
             fetchStoreContactAndSend()
         }
+    }
+
+    private fun placeOrder() {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user == null) {
+            Toast.makeText(this, "Debes iniciar sesión para realizar un pedido", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val buyerName = prefs.getString("user_full_name", user.displayName ?: "Comprador") ?: "Comprador"
+        val buyerPhone = prefs.getString("user_phone", "") ?: ""
+
+        val orderId = UUID.randomUUID().toString()
+        val order = OrderModel(
+            id = orderId,
+            buyerId = user.uid,
+            buyerName = buyerName,
+            buyerPhone = buyerPhone,
+            storeId = storeId,
+            storeName = storeName,
+            items = CartManager.getItems(),
+            totalAmount = CartManager.getTotalPrice(),
+            deliveryFee = if (binding.switchDelivery.isChecked) 5.0 else 0.0, // Costo base de delivery
+            status = "PENDING",
+            timestamp = FieldValue.serverTimestamp(),
+            deliveryAddress = deliveryAddress,
+            deliveryLat = deliveryLat,
+            deliveryLng = deliveryLng
+        )
+
+        val loading = AlertDialog.Builder(this).setMessage("Procesando pedido...").setCancelable(false).show()
+
+        FirebaseFirestore.getInstance().collection("orders").document(orderId)
+            .set(order)
+            .addOnSuccessListener {
+                loading.dismiss()
+                Toast.makeText(this, "¡Pedido realizado con éxito! 🎉", Toast.LENGTH_LONG).show()
+                CartManager.clear()
+                // Aquí podrías ir a una pantalla de "Mis Pedidos"
+                finish()
+            }
+            .addOnFailureListener { e ->
+                loading.dismiss()
+                Toast.makeText(this, "Error al procesar pedido: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun updateTotal() {

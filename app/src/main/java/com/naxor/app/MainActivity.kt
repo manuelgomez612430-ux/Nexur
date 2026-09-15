@@ -1,8 +1,11 @@
 package com.naxor.app
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.util.Log
@@ -14,6 +17,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -64,19 +69,55 @@ class MainActivity : BaseActivity() {
 
         setupListeners()
         setupCustomBottomNav()
+        checkNotificationPermission()
         
         if (savedInstanceState == null) {
             navigateToInicio()
         }
 
-        if (intent.getBooleanExtra("START_UPDATE", false)) {
-            Updater(this).checkAndDownload(autoDownload = true)
+        lifecycleScope.launch {
+            try {
+                delay(5000) // Mucho más margen para el Updater
+                if (intent.getBooleanExtra("START_UPDATE", false)) {
+                    Updater(this@MainActivity).checkAndDownload(autoDownload = true)
+                }
+                subscribeToSalesTopic()
+                schedulePeriodicSync()
+            } catch (e: Exception) {}
+        }
+    }
+
+    private fun updatePublicIdentity() {
+        val user = auth.currentUser ?: return
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val businessType = prefs.getString("business_type", "") ?: ""
+        
+        val bizName = prefs.getString("${businessType}_name", null) ?: prefs.getString("business_name", "") ?: ""
+        val bizLogo = prefs.getString("${businessType}_logo_url", null) ?: prefs.getString("business_logo_url", "") ?: ""
+        
+        val collabPrefs = getSharedPreferences("CollabPermissions", MODE_PRIVATE)
+        val collabBizName = collabPrefs.getString("collab_business_name", "") ?: ""
+        val collabBizLogo = collabPrefs.getString("collab_business_logo", "") ?: ""
+
+        val title = when {
+            bizName.isNotEmpty() && collabBizName.isNotEmpty() -> "Gestionando y Colaborando"
+            bizName.isNotEmpty() -> "Dueño de $bizName"
+            collabBizName.isNotEmpty() -> "Colaborador en $collabBizName"
+            else -> "Comprador"
         }
 
-        checkCollaboratorAccess()
-        startSyncService()
-        subscribeToSalesTopic()
-        schedulePeriodicSync()
+        val publicLogo = if (bizLogo.isNotEmpty()) bizLogo else collabBizLogo
+
+        val updates = mutableMapOf<String, Any>(
+            "businessTitle" to title
+        )
+        if (publicLogo.isNotEmpty()) updates["businessLogoUrl"] = publicLogo
+        
+        val userPhoto = prefs.getString("user_photo_url", "") ?: ""
+        if (userPhoto.isNotEmpty()) updates["photoUrl"] = userPhoto
+
+        db.collection("users").document(user.uid).collection("profile").document("info")
+            .update(updates)
     }
 
     private fun startCloudSyncListeners() {
@@ -87,10 +128,20 @@ class MainActivity : BaseActivity() {
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot != null && snapshot.exists()) {
                     val name = snapshot.getString("name")
-                    if (!name.isNullOrEmpty()) {
-                        getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putString("user_full_name", name).apply()
-                        runOnUiThread { updateMenuForBusinessType() }
+                    val photo = snapshot.getString("photoUrl")
+                    
+                    // Asegurar que Firestore tenga la foto de Google si está vacía
+                    if (photo.isNullOrEmpty() && user.photoUrl != null) {
+                        db.collection("users").document(user.uid).collection("profile").document("info")
+                            .update("photoUrl", user.photoUrl.toString())
                     }
+
+                    val edit = getSharedPreferences("AppPrefs", MODE_PRIVATE).edit()
+                    if (!name.isNullOrEmpty()) edit.putString("user_full_name", name)
+                    if (!photo.isNullOrEmpty()) edit.putString("user_photo_url", photo)
+                    edit.apply()
+                    updatePublicIdentity()
+                    runOnUiThread { updateMenuForBusinessType() }
                 }
             }
         registrations.add(regProfile)
@@ -178,8 +229,20 @@ class MainActivity : BaseActivity() {
             } catch (e: Exception) {}
 
             val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-            prefs.edit().apply { putBoolean("is_collaborator_mode", false); remove("collaborator_owner_id"); apply() }
-            withContext(Dispatchers.IO) { AppDatabase.getDatabase(this@MainActivity).clearAllTables() }
+            prefs.edit().apply { 
+                putBoolean("is_collaborator_mode", false)
+                remove("collaborator_owner_id")
+                apply() 
+            }
+            
+            withContext(Dispatchers.IO) { 
+                AppDatabase.getDatabase(this@MainActivity).clearAllTables() 
+            }
+            
+            // Cerrar escuchadores activos antes de reiniciar
+            registrations.forEach { it.remove() }
+            registrations.clear()
+            
             startSyncService()
 
             AlertDialog.Builder(this@MainActivity)
@@ -187,9 +250,7 @@ class MainActivity : BaseActivity() {
                 .setMessage("Has sido retirado del sistema por: $ownerName.")
                 .setCancelable(false)
                 .setPositiveButton("Entendido") { _, _ ->
-                    updateMenuForBusinessType()
-                    navigateToInicio()
-                    val intent = Intent(this@MainActivity, MainActivity::class.java)
+                    val intent = Intent(this@MainActivity, WelcomeRoleActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
                     finish()
@@ -252,16 +313,25 @@ class MainActivity : BaseActivity() {
 
             if (isCollabMode) {
                 val collabLogo = collabPrefs.getString("collab_business_logo", null)
-                if (!collabLogo.isNullOrEmpty()) Glide.with(this).load(collabLogo).circleCrop().into(ivDrawerLogo!!)
-                else ivDrawerLogo?.setImageResource(R.drawable.logotipo_de_gomezmart)
+                if (!collabLogo.isNullOrEmpty()) {
+                    ivDrawerLogo?.let { Glide.with(this).load(collabLogo).circleCrop().into(it) }
+                } else {
+                    ivDrawerLogo?.setImageResource(R.drawable.logotipo_de_gomezmart)
+                }
             } else {
                 val logoUrl = prefs.getString("${businessType}_logo_url", null)
                 val logoPath = prefs.getString("${businessType}_logo_local", null)
                 
                 when {
-                    !logoUrl.isNullOrEmpty() -> Glide.with(this).load(logoUrl).circleCrop().into(ivDrawerLogo!!)
-                    !logoPath.isNullOrEmpty() -> Glide.with(this).load(File(logoPath)).circleCrop().into(ivDrawerLogo!!)
-                    else -> ivDrawerLogo?.setImageResource(R.drawable.logotipo_de_gomezmart)
+                    !logoUrl.isNullOrEmpty() -> {
+                        ivDrawerLogo?.let { Glide.with(this).load(logoUrl).circleCrop().into(it) }
+                    }
+                    !logoPath.isNullOrEmpty() -> {
+                        ivDrawerLogo?.let { Glide.with(this).load(File(logoPath)).circleCrop().into(it) }
+                    }
+                    else -> {
+                        ivDrawerLogo?.setImageResource(R.drawable.logotipo_de_gomezmart)
+                    }
                 }
             }
 
@@ -443,7 +513,14 @@ class MainActivity : BaseActivity() {
 
     fun openSideMenu() = binding.drawerLayoutMain.openDrawer(GravityCompat.START)
     fun navigateToGestion() = binding.drawerLayoutMain.openDrawer(GravityCompat.START)
-    private fun startSyncService() { startService(Intent(this, GoMezMartSyncService::class.java)) }
+    private fun startSyncService() {
+        val intent = Intent(this, GoMezMartSyncService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+    }
     private fun subscribeToSalesTopic() { val userId = auth.currentUser?.uid ?: return; FirebaseMessaging.getInstance().subscribeToTopic("sales_$userId") }
     override fun onResume() { super.onResume(); updateMenuForBusinessType(); SyncManager(this).scheduleOfflineSync() }
 
@@ -453,7 +530,7 @@ class MainActivity : BaseActivity() {
             when (menuItem.itemId) {
                 R.id.menu_hotel_guests -> { startToolActivity(Intent(this, HotelGuestHistoryActivity::class.java)); true }
                 R.id.menu_hotel_bookings -> { startToolActivity(Intent(this, HotelBookingsActivity::class.java)); true }
-                R.id.menu_hotel_payments, R.id.menu_business_debts -> { startToolActivity(Intent(this, BusinessDebtsActivity::class.java)); true }
+                R.id.menu_hotel_payments -> { startToolActivity(Intent(this, BusinessDebtsActivity::class.java)); true }
                 R.id.menu_hotel_rooms_graph -> { navigateToStock(true); true }
                 R.id.menu_hotel_maintenance -> { startToolActivity(Intent(this, HotelMaintenanceActivity::class.java)); true }
                 R.id.menu_hotel_tools -> { startToolActivity(Intent(this, HotelToolsActivity::class.java)); true }
@@ -464,6 +541,14 @@ class MainActivity : BaseActivity() {
                 R.id.menu_settings -> { navigateToSettings(); true }
                 R.id.menu_logout -> { showLogoutDialog(); true }
                 else -> false
+            }
+        }
+    }
+
+    private fun checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
             }
         }
     }
@@ -522,34 +607,41 @@ class MainActivity : BaseActivity() {
 
     override fun onStart() {
         super.onStart()
-        // Activar sincronización en tiempo real al entrar al app
-        val intent = Intent(this, GoMezMartSyncService::class.java)
-        startService(intent)
-        startCloudSyncListeners()
+        
+        lifecycleScope.launch {
+            try {
+                // Retardo de seguridad para dispositivos con GMS inestable (Honor/Huawei)
+                delay(2500)
+                
+                // Activar sincronización en segundo plano
+                startSyncService()
+                
+                checkCollaboratorAccess()
+                startCloudSyncListeners()
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error starting background services: ${e.message}")
+            }
+        }
     }
 
     override fun onStop() {
         super.onStop()
-        // Detener escuchadores pesados al salir a segundo plano para ahorrar batería y evitar calentamiento
-        val intent = Intent(this, GoMezMartSyncService::class.java)
-        intent.action = "STOP_LISTENERS"
-        startService(intent)
+        // Ya NO detenemos los escuchadores al salir, para que lleguen notificaciones en segundo plano
         
-        // Limpiar escuchadores de la actividad
+        // Limpiar escuchadores de la actividad para evitar fugas
         registrations.forEach { it.remove() }
         registrations.clear()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // Detener el servicio por completo al cerrar el app
-        stopService(Intent(this, GoMezMartSyncService::class.java))
+        // Ya no detenemos el servicio para que siga notificando
     }
 
     private fun schedulePeriodicSync() { val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).setBackoffCriteria(BackoffPolicy.EXPONENTIAL, WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS).build(); WorkManager.getInstance(this).enqueueUniquePeriodicWork("periodic_sync", ExistingPeriodicWorkPolicy.KEEP, syncRequest) }
     fun startInteractiveTutorial() { showTutorialDialog() }
     fun startDirectScanner() = Toast.makeText(this, "Escáner...", Toast.LENGTH_SHORT).show()
-    fun generatePDFCatalog() = Toast.makeText(this, "PDF...", Toast.LENGTH_SHORT).show()
+
     fun manualSync() { SyncManager(this).scheduleOfflineSync() }
     private fun showTutorialDialog() { currentTutorialStep = 0; showNextTutorialStep() }
     private fun showNextTutorialStep() { if (currentTutorialStep < tutorialSteps.size) { val step = tutorialSteps[currentTutorialStep]; AlertDialog.Builder(this, R.style.Theme_GoMezMart_Dialog).setTitle(step.first).setMessage(step.second).setCancelable(false).setPositiveButton(if (currentTutorialStep == tutorialSteps.size - 1) "Empezar" else "Siguiente") { _, _ -> currentTutorialStep++; showNextTutorialStep() }.create().show() } }

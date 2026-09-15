@@ -351,13 +351,6 @@ class LoansHomeFragment : Fragment() {
         binding.toolbarLoansHome.setNavigationOnClickListener {
             (activity as? MainActivity)?.openSideMenu()
         }
-        binding.toolbarLoansHome.inflateMenu(R.menu.menu_mailbox)
-        binding.toolbarLoansHome.setOnMenuItemClickListener {
-            if (it.itemId == R.id.action_mailbox) {
-                startActivity(Intent(requireContext(), com.naxor.app.MailboxActivity::class.java))
-                true
-            } else false
-        }
     }
 
     private fun updateWelcomeMessage() {

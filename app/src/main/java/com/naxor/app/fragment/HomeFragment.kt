@@ -3,6 +3,9 @@ package com.naxor.app.fragment
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.util.Log
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
 import android.view.GestureDetector
 import android.view.LayoutInflater
@@ -28,8 +31,10 @@ import com.naxor.app.*
 import com.naxor.app.adapter.RecentActivityAdapter
 import com.naxor.app.data.AppDatabase
 import com.naxor.app.data.AppMessage
+import com.naxor.app.data.OrderModel
 import com.naxor.app.data.QuickAction
 import com.naxor.app.databinding.FragmentHomeBinding
+import com.naxor.app.databinding.ItemOrderCardBinding
 import kotlinx.coroutines.*
 import java.io.File
 import java.text.SimpleDateFormat
@@ -42,9 +47,9 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val homeBinding get() = _binding!!
     private val database by lazy { AppDatabase.getDatabase(requireContext()) }
+    private val db = FirebaseFirestore.getInstance()
     private var activityFilters = mutableSetOf<String>()
     private lateinit var quickActionsAdapter: QuickActionsAdapter
-    private lateinit var recentActivityAdapter: RecentActivityAdapter
     private val registrations = mutableListOf<ListenerRegistration>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -57,7 +62,16 @@ class HomeFragment : Fragment() {
         listenForNewMessages()
         val sm = SyncManager(requireContext())
         sm.startRealtimeSalesSync { loadDashboardData() }?.let { registrations.add(it) }
-        sm.startRealtimeLogsSync { setupRealtimeActivityFeed() }?.let { registrations.add(it) }
+        sm.startRealtimeUnreadCountSync { count ->
+            if (_binding != null) {
+                if (count > 0) {
+                    homeBinding.tvUnreadBadgeHome.visibility = View.VISIBLE
+                    homeBinding.tvUnreadBadgeHome.text = if (count > 9) "9+" else count.toString()
+                } else {
+                    homeBinding.tvUnreadBadgeHome.visibility = View.GONE
+                }
+            }
+        }?.let { registrations.add(it) }
     }
 
     override fun onStop() {
@@ -75,10 +89,6 @@ class HomeFragment : Fragment() {
         updateUIForBusinessType()
         setupListeners()
         setupActivityListeners()
-        setupRealtimeActivityFeed()
-        setupQuickActionsRecyclerView()
-        setupRecentActivityRecyclerView()
-        renderQuickActions()
         loadDashboardData()
     }
 
@@ -133,15 +143,12 @@ class HomeFragment : Fragment() {
         if (hasNew) {
             requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
                 .edit().putBoolean("has_new_message", true).apply()
-            updateMailboxBadge()
         }
     }
 
     override fun onResume() {
         super.onResume()
-        updateMailboxBadge()
         updateCollabBadge()
-        renderQuickActions()
         loadUserLogo()
     }
 
@@ -160,16 +167,11 @@ class HomeFragment : Fragment() {
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
         if (!hidden) {
-            renderQuickActions()
             loadDashboardData()
         }
     }
 
-    private fun updateMailboxBadge() {
-        val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        val hasNew = prefs.getBoolean("has_new_message", false)
-        homeBinding.viewMailboxBadge.visibility = if (hasNew) View.VISIBLE else View.GONE
-    }
+
 
     private fun loadActivityFilters() {
         val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
@@ -193,16 +195,6 @@ class HomeFragment : Fragment() {
         homeBinding.btnIrVentas.setOnClickListener { startToolActivity(Intent(requireContext(), VentasActivity::class.java)) }
         homeBinding.btnScanVenta.setOnClickListener { (activity as? MainActivity)?.startDirectScanner() }
 
-        homeBinding.btnMailboxHome.setOnClickListener {
-            requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-                .edit()
-                .putBoolean("has_new_message", false)
-                .putLong("last_mailbox_read_time", System.currentTimeMillis())
-                .apply()
-            updateMailboxBadge()
-            startToolActivity(Intent(requireContext(), MailboxActivity::class.java))
-        }
-
         homeBinding.ivLogoHome.setOnClickListener { 
             clearCollabBadge()
             (activity as? MainActivity)?.navigateToGestion()
@@ -212,9 +204,35 @@ class HomeFragment : Fragment() {
             (activity as? MainActivity)?.navigateToGestion()
         }
         homeBinding.btnInfoDashboard.setOnClickListener { showFinancialInfoDialog() }
-        homeBinding.btnFilterActivityMain.setOnClickListener { showActivityFilterDialog() }
-        homeBinding.cardActivityPreview.setOnClickListener { startToolActivity(Intent(requireContext(), MovementsActivity::class.java)) }
-        homeBinding.btnViewAllActivity.setOnClickListener { startToolActivity(Intent(requireContext(), MovementsActivity::class.java)) }
+        
+        homeBinding.btnMensajesCentral.setOnClickListener { 
+            startToolActivity(Intent(requireContext(), MailboxActivity::class.java)) 
+        }
+
+        homeBinding.btnGastosCentral.setOnClickListener {
+            startToolActivity(Intent(requireContext(), GastosActivity::class.java))
+        }
+
+        homeBinding.btnDeliveriesCentral.setOnClickListener {
+            startToolActivity(Intent(requireContext(), DeliveriesActivity::class.java))
+        }
+
+        homeBinding.btnCompromisosCentral.setOnClickListener {
+            startToolActivity(Intent(requireContext(), CommitmentsActivity::class.java))
+        }
+
+        homeBinding.btnCajaCentral.setOnClickListener {
+            startToolActivity(Intent(requireContext(), CajaActivity::class.java))
+        }
+
+        homeBinding.btnDeudoresCentral.setOnClickListener {
+            startToolActivity(Intent(requireContext(), DeudoresActivity::class.java))
+        }
+
+        homeBinding.btnHistorialCentral.setOnClickListener {
+            startToolActivity(Intent(requireContext(), SalesHistoryActivity::class.java))
+        }
+
         homeBinding.cardDashboard.setOnClickListener { 
             (activity as? MainActivity)?.checkPinAndNavigate { 
                 (activity as? MainActivity)?.navigateToMetricas()
@@ -267,7 +285,7 @@ class HomeFragment : Fragment() {
     private var lastDashboardLoad: Long = 0
     private fun loadDashboardData() {
         val now = System.currentTimeMillis()
-        if (now - lastDashboardLoad < 1000) return // Throttle a 1 segundo
+        if (now - lastDashboardLoad < 1000) return
         lastDashboardLoad = now
         
         val bizPrefs = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
@@ -278,21 +296,13 @@ class HomeFragment : Fragment() {
         val systemName = bizPrefs.getString("${businessType}_name", "") ?: ""
         val businessName = bizPrefs.getString("business_name", "") ?: ""
 
-        val finalBusinessName = when {
-            systemName.isNotEmpty() -> systemName
-            businessName.isNotEmpty() -> businessName
-            else -> "Mi Negocio"
-        }
-
         val userFullName = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE).getString("user_full_name", null) ?: FirebaseAuth.getInstance().currentUser?.displayName ?: "Usuario"
 
         if (isCollab) {
             val collabName = collabPrefs.getString("collab_name", "Colaborador")
-            val collabRole = collabPrefs.getString("collab_role", "EQUIPO")
             homeBinding.tvMainBusinessName.text = "¡Bienvenido, $collabName!"
             homeBinding.tvWelcomeSubtitle.visibility = View.GONE
         } else {
-            // CORRECCIÓN: Mostrar solo "¡Bienvenido [Nombre]!"
             homeBinding.tvMainBusinessName.text = "¡Bienvenido, $userFullName!"
             homeBinding.tvWelcomeSubtitle.visibility = View.GONE
         }
@@ -302,7 +312,6 @@ class HomeFragment : Fragment() {
 
         lifecycleScope.launch(Dispatchers.Main) {
             try {
-                // Calcular el inicio del día actual (00:00:00) de forma eficiente
                 val calendar = Calendar.getInstance()
                 calendar.set(Calendar.HOUR_OF_DAY, 0)
                 calendar.set(Calendar.MINUTE, 0)
@@ -326,102 +335,9 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun setupRealtimeActivityFeed() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val logs = database.movementLogDao().getLastMovementsOnce().take(6)
-            withContext(Dispatchers.Main) {
-                if (_binding != null) {
-                    recentActivityAdapter.updateData(logs)
-                    homeBinding.tvEmptyRecentActivity.visibility = if (logs.isEmpty()) View.VISIBLE else View.GONE
-                    homeBinding.rvRecentActivity.visibility = if (logs.isEmpty()) View.GONE else View.VISIBLE
-                }
-            }
-        }
-    }
-
-    private fun setupRecentActivityRecyclerView() {
-        recentActivityAdapter = RecentActivityAdapter(emptyList())
-        homeBinding.rvRecentActivity.layoutManager = LinearLayoutManager(requireContext())
-        homeBinding.rvRecentActivity.adapter = recentActivityAdapter
-    }
-
-    private fun setupQuickActionsRecyclerView() {
-        homeBinding.containerQuickActions.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
-        quickActionsAdapter = QuickActionsAdapter(mutableListOf()) { newOrder ->
-            requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-                .edit()
-                .putString("quick_actions_list", newOrder.joinToString(","))
-                .apply()
-        }
-        homeBinding.containerQuickActions.adapter = quickActionsAdapter
-
-        // Re-implementar el reordenamiento por arrastre
-        val touchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0) {
-            override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
-                quickActionsAdapter.moveItem(viewHolder.adapterPosition, target.adapterPosition)
-                return true
-            }
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {}
-        })
-        touchHelper.attachToRecyclerView(homeBinding.containerQuickActions)
-    }
-
     fun refreshQuickActions() {
         if (!isAdded) return
-        renderQuickActions()
         loadDashboardData()
-        setupRealtimeActivityFeed()
-    }
-
-    private fun renderQuickActions() {
-        if (!isAdded) return
-        val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        
-        // Usar un valor por defecto consistente
-        val defaultActions = "gastos,caja,fiados,business_debts,proveedores"
-        val savedActions = prefs.getString("quick_actions_list", defaultActions) ?: defaultActions
-        val selectedActions = savedActions.split(",").filter { it.isNotEmpty() }
-
-        val actionDefinitions = mapOf(
-            "gastos" to Triple("💸 GASTOS", "#E11D48") { (activity as? MainActivity)?.checkPinAndNavigate { startToolActivity(Intent(requireContext(), GastosActivity::class.java)) } },
-            "caja" to Triple("💰 CAJA", "#F59E0B") { startToolActivity(Intent(requireContext(), CajaActivity::class.java)) },
-            "fiados" to Triple("👥 DEUDORES", "#4F46E5") { startToolActivity(Intent(requireContext(), DeudoresActivity::class.java)) },
-            "business_debts" to Triple("💸 CUENTAS", "#E11D48") { startToolActivity(Intent(requireContext(), BusinessDebtsActivity::class.java)) },
-            "proveedores" to Triple("🚚 PROVEED.", "#0284C7") { startToolActivity(Intent(requireContext(), ProveedoresActivity::class.java)) },
-            "clientes" to Triple("👤 CLIENTES", "#059669") { startToolActivity(Intent(requireContext(), CustomersActivity::class.java)) },
-            "catalogo" to Triple("📖 CATÁLOGO", "#D946EF") { (activity as? MainActivity)?.generatePDFCatalog() },
-            "sync" to Triple("🔄 SYNC", "#10B981") { (activity as? MainActivity)?.manualSync() },
-            "mailbox" to Triple("📬 MENSAJES", "#6366F1") { startToolActivity(Intent(requireContext(), MailboxActivity::class.java)) },
-            "lista_compras" to Triple("🛒 COMPRAS", "#F97316") { startToolActivity(Intent(requireContext(), ListaComprasActivity::class.java)) },
-            "asignador" to Triple("⚖️ PRECIOS", "#64748B") { startToolActivity(Intent(requireContext(), AsignadorDePreciosActivity::class.java)) },
-            "sales_history" to Triple("📜 VENTAS", "#3B82F6") { (activity as? MainActivity)?.checkPinAndNavigate { startToolActivity(Intent(requireContext(), SalesHistoryActivity::class.java)) } },
-            "view_history" to Triple("🕒 CÁLCULOS", "#8B5CF6") { startToolActivity(Intent(requireContext(), HistorialActivity::class.java)) },
-            "commitments" to Triple("🤝 COMPROM.", "#7C3AED") { startToolActivity(Intent(requireContext(), CommitmentsActivity::class.java)) },
-            "instructions" to Triple("💡 AYUDA", "#14B8A6") { startToolActivity(Intent(requireContext(), InstruccionesActivity::class.java)) }
-        )
-
-        // Filtrar solo las que existen en las definiciones actuales
-        val quickActionList = selectedActions.mapNotNull { actionId ->
-            actionDefinitions[actionId]?.let { (name, color, action) ->
-                QuickAction(actionId, name, color, { action() })
-            }
-        }.toMutableList()
-        
-        // Si por alguna razón (cambio de versión) quedaron menos de 5, rellenar con las de por defecto
-        if (quickActionList.size < 5) {
-            val currentIds = quickActionList.map { it.id }
-            defaultActions.split(",").forEach { defId ->
-                if (quickActionList.size < 5 && !currentIds.contains(defId)) {
-                    actionDefinitions[defId]?.let { (name, color, action) ->
-                        quickActionList.add(QuickAction(defId, name, color, { action() }))
-                    }
-                }
-            }
-        }
-
-        if (::quickActionsAdapter.isInitialized) {
-            quickActionsAdapter.updateData(quickActionList.take(5))
-        }
     }
 
     private fun showFinancialInfoDialog() {
@@ -455,18 +371,6 @@ class HomeFragment : Fragment() {
         homeBinding.btnSupportCreatorMain.setOnClickListener {
             startToolActivity(Intent(requireContext(), com.naxor.app.SupportCreatorActivity::class.java))
         }
-    }
-
-    private fun showActivityFilterDialog() {
-        val options = arrayOf("TODOS", "VENTAS", "GASTOS", "STOCK", "SISTEMA")
-        val checked = options.map { activityFilters.contains(it) }.toBooleanArray()
-        AlertDialog.Builder(requireContext())
-            .setTitle("Filtrar Actividad")
-            .setMultiChoiceItems(options, checked) { _, which, isChecked ->
-                if (isChecked) activityFilters.add(options[which]) else activityFilters.remove(options[which])
-            }
-            .setPositiveButton("Aplicar") { _, _ -> setupRealtimeActivityFeed() }
-            .show()
     }
 
     override fun onDestroyView() {

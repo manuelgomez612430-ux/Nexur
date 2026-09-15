@@ -8,6 +8,7 @@ import com.naxor.app.data.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
 import com.naxor.app.network.SupabaseManager
@@ -15,31 +16,59 @@ import com.naxor.app.util.NotificationHelper
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
 import androidx.room.withTransaction
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.firestore.firestoreSettings
 import java.io.File
 import java.net.URL
 import java.util.Locale
 
 class SyncManager(private val context: Context) {
 
-    private val db = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
-    private val localDb = AppDatabase.getDatabase(context)
+    private val db: FirebaseFirestore? by lazy {
+        try {
+            val firestore = FirebaseFirestore.getInstance()
+            val settings = firestoreSettings {
+                isPersistenceEnabled = true
+                cacheSizeBytes = FirebaseFirestoreSettings.CACHE_SIZE_UNLIMITED
+            }
+            firestore.setFirestoreSettings(settings)
+            firestore
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Firestore initialization failed: ${e.message}")
+            null
+        }
+    }
+    
+    private val auth: FirebaseAuth? by lazy {
+        try {
+            FirebaseAuth.getInstance()
+        } catch (e: Exception) {
+            Log.e("SyncManager", "FirebaseAuth initialization failed: ${e.message}")
+            null
+        }
+    }
+    
+    private val localDb = try { AppDatabase.getDatabase(context) } catch (e: Exception) { null }
     private val syncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private fun getEffectiveUserId(): String? {
-        val prefs = context.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
-        val isCollaborator = prefs.getBoolean("is_collaborator_mode", false)
-        return if (isCollaborator) {
-            prefs.getString("collaborator_owner_id", null)
-        } else {
-            auth.currentUser?.uid
-        }
+        try {
+            val prefs = context.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+            val isCollaborator = prefs.getBoolean("is_collaborator_mode", false)
+            return if (isCollaborator) {
+                prefs.getString("collaborator_owner_id", null)
+            } else {
+                auth?.currentUser?.uid
+            }
+        } catch (e: Exception) { return null }
     }
 
     // --- SUBIDAS INDIVIDUALES (OPTIMIZADAS CON SCOPE ÚNICO) ---
 
     fun syncProductToCloud(product: ProductEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
                 if (!product.photoPath.isNullOrEmpty() && product.photoUrl.isNullOrEmpty()) {
@@ -50,169 +79,184 @@ class SyncManager(private val context: Context) {
                         if (downloadUrl != null) product.photoUrl = downloadUrl
                     }
                 }
-                db.collection("users").document(userId).collection("inventory").document(product.id).set(product).await()
+                firestore.collection("users").document(userId).collection("inventory").document(product.id).set(product).await()
                 product.isSynced = true
-                localDb.productDao().update(product)
+                localDb?.productDao()?.update(product)
             } catch (e: Exception) { Log.e("SyncManager", "Error product: ${e.message}") }
         }
     }
 
     fun syncSaleToCloud(sale: SaleEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("sales").document(sale.id).set(sale, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("sales").document(sale.id).set(sale, SetOptions.merge()).await()
                 sale.isSynced = true
-                localDb.saleDao().update(sale)
+                localDb?.saleDao()?.update(sale)
             } catch (e: Exception) { Log.e("SyncManager", "Error sale: ${e.message}") }
         }
     }
 
     fun syncExpenseToCloud(expense: ExpenseEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("expenses").document(expense.id).set(expense, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("expenses").document(expense.id).set(expense, SetOptions.merge()).await()
                 expense.isSynced = true
-                localDb.expenseDao().update(expense)
+                localDb?.expenseDao()?.update(expense)
             } catch (e: Exception) { Log.e("SyncManager", "Error expense: ${e.message}") }
         }
     }
 
     fun syncLogToCloud(log: MovementLogEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("movement_logs").document(log.id).set(log, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("movement_logs").document(log.id).set(log, SetOptions.merge()).await()
                 log.isSynced = true
-                localDb.movementLogDao().insert(log)
+                localDb?.movementLogDao()?.insert(log)
             } catch (e: Exception) { Log.e("SyncManager", "Error log: ${e.message}") }
         }
     }
 
     fun syncProviderToCloud(provider: ProviderEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("providers").document(provider.id).set(provider, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("providers").document(provider.id).set(provider, SetOptions.merge()).await()
                 provider.isSynced = true
-                localDb.providerDao().update(provider)
+                localDb?.providerDao()?.update(provider)
             } catch (e: Exception) { Log.e("SyncManager", "Error provider: ${e.message}") }
         }
     }
 
     fun syncDebtorToCloud(debtor: DebtorEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("debtors").document(debtor.id).set(debtor, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("debtors").document(debtor.id).set(debtor, SetOptions.merge()).await()
                 debtor.isSynced = true
-                localDb.debtorDao().updateDebtor(debtor)
+                localDb?.debtorDao()?.updateDebtor(debtor)
             } catch (e: Exception) { Log.e("SyncManager", "Error debtor: ${e.message}") }
         }
     }
 
     fun syncBusinessDebtToCloud(debt: BusinessDebtEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("business_debts").document(debt.id).set(debt, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("business_debts").document(debt.id).set(debt, SetOptions.merge()).await()
                 debt.isSynced = true
-                localDb.businessDebtDao().update(debt)
+                localDb?.businessDebtDao()?.update(debt)
             } catch (e: Exception) { Log.e("SyncManager", "Error business debt: ${e.message}") }
         }
     }
 
     fun syncCashSessionToCloud(session: CashSessionEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("cash_sessions").document(session.id.toString()).set(session, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("cash_sessions").document(session.id.toString()).set(session, SetOptions.merge()).await()
                 session.isSynced = true
-                localDb.cashDao().update(session)
+                localDb?.cashDao()?.update(session)
             } catch (e: Exception) { Log.e("SyncManager", "Error cash session: ${e.message}") }
         }
     }
 
     fun syncHotelBookingToCloud(booking: HotelBookingEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("hotel_bookings").document(booking.id).set(booking, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("hotel_bookings").document(booking.id).set(booking, SetOptions.merge()).await()
                 booking.isSynced = true
-                localDb.hotelDao().updateBooking(booking)
+                localDb?.hotelDao()?.updateBooking(booking)
             } catch (e: Exception) { Log.e("SyncManager", "Error hotel booking: ${e.message}") }
         }
     }
 
     fun syncHotelRoomToCloud(room: HotelRoomEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("hotel_rooms").document(room.id).set(room, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("hotel_rooms").document(room.id).set(room, SetOptions.merge()).await()
                 room.isSynced = true
-                localDb.hotelDao().updateRoom(room)
+                localDb?.hotelDao()?.updateRoom(room)
             } catch (e: Exception) { Log.e("SyncManager", "Error hotel room: ${e.message}") }
         }
     }
 
     fun syncHotelMaintenanceToCloud(report: HotelMaintenanceEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("hotel_maintenance").document(report.id).set(report, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("hotel_maintenance").document(report.id).set(report, SetOptions.merge()).await()
                 report.isSynced = true
-                localDb.hotelDao().updateMaintenanceReport(report)
+                localDb?.hotelDao()?.updateMaintenanceReport(report)
             } catch (e: Exception) { Log.e("SyncManager", "Error maintenance: ${e.message}") }
         }
     }
 
     fun syncHotelChargeToCloud(charge: HotelChargeEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("hotel_charges").document(charge.id).set(charge, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("hotel_charges").document(charge.id).set(charge, SetOptions.merge()).await()
                 charge.isSynced = true
-                localDb.hotelDao().insertCharge(charge)
+                localDb?.hotelDao()?.insertCharge(charge)
             } catch (e: Exception) { Log.e("SyncManager", "Error charge: ${e.message}") }
         }
     }
 
     fun syncHotelPaymentToCloud(payment: HotelPaymentEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("hotel_payments").document(payment.id).set(payment, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("hotel_payments").document(payment.id).set(payment, SetOptions.merge()).await()
                 payment.isSynced = true
-                localDb.hotelDao().insertPayment(payment)
+                localDb?.hotelDao()?.insertPayment(payment)
             } catch (e: Exception) { Log.e("SyncManager", "Error payment: ${e.message}") }
         }
     }
 
     fun syncHotelLayoutToCloud(layout: HotelRoomLayoutEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("hotel_layouts").document(layout.id).set(layout, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("hotel_layouts").document(layout.id).set(layout, SetOptions.merge()).await()
                 layout.isSynced = true
-                localDb.hotelDao().updateLayout(layout)
+                localDb?.hotelDao()?.updateLayout(layout)
             } catch (e: Exception) { Log.e("SyncManager", "Error layout: ${e.message}") }
         }
     }
 
     fun syncHotelToolToCloud(tool: HotelToolEntity) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("hotel_tools").document(tool.id).set(tool, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("hotel_tools").document(tool.id).set(tool, SetOptions.merge()).await()
                 tool.isSynced = true
-                localDb.hotelToolDao().updateTool(tool)
+                localDb?.hotelToolDao()?.updateTool(tool)
             } catch (e: Exception) { Log.e("SyncManager", "Error tool: ${e.message}") }
         }
     }
 
     fun syncBusinessSettingsToCloud() {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         val prefs = context.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
         val settings = mapOf(
             "business_name" to prefs.getString("business_name", ""),
@@ -221,7 +265,7 @@ class SyncManager(private val context: Context) {
         )
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("settings").document("business_info").set(settings, SetOptions.merge()).await()
+                firestore.collection("users").document(userId).collection("settings").document("business_info").set(settings, SetOptions.merge()).await()
             } catch (e: Exception) { Log.e("SyncManager", "Error settings: ${e.message}") }
         }
     }
@@ -230,10 +274,11 @@ class SyncManager(private val context: Context) {
 
     fun downloadEverythingFromCloud(onComplete: () -> Unit) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
                 // 0. Descargar Perfil del Usuario
-                val profileDoc = db.collection("users").document(userId).collection("profile").document("info").get().await()
+                val profileDoc = firestore.collection("users").document(userId).collection("profile").document("info").get().await()
                 if (profileDoc.exists()) {
                     val name = profileDoc.getString("name")
                     if (!name.isNullOrEmpty()) {
@@ -242,22 +287,22 @@ class SyncManager(private val context: Context) {
                 }
 
                 // 1. Descargar Inventario
-                val inventory = db.collection("users").document(userId).collection("inventory").get().await()
+                val inventory = firestore.collection("users").document(userId).collection("inventory").get().await()
                 inventory.documents.forEach { doc ->
                     val p = doc.toObject(ProductEntity::class.java)
-                    if (p != null) { p.isSynced = true; localDb.productDao().insert(p) }
+                    if (p != null) { p.isSynced = true; localDb?.productDao()?.insert(p) }
                 }
 
-                val sales = db.collection("users").document(userId).collection("sales").get().await()
+                val sales = firestore.collection("users").document(userId).collection("sales").get().await()
                 sales.documents.forEach { doc ->
                     val s = doc.toObject(SaleEntity::class.java)
-                    if (s != null) { s.isSynced = true; localDb.saleDao().insert(s) }
+                    if (s != null) { s.isSynced = true; localDb?.saleDao()?.insert(s) }
                 }
 
-                val expenses = db.collection("users").document(userId).collection("expenses").get().await()
+                val expenses = firestore.collection("users").document(userId).collection("expenses").get().await()
                 expenses.documents.forEach { doc ->
                     val ex = doc.toObject(ExpenseEntity::class.java)
-                    if (ex != null) { ex.isSynced = true; localDb.expenseDao().insert(ex) }
+                    if (ex != null) { ex.isSynced = true; localDb?.expenseDao()?.insert(ex) }
                 }
 
                 withContext(Dispatchers.Main) { onComplete() }
@@ -272,7 +317,8 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeSalesSync(onNewSale: () -> Unit): ListenerRegistration? {
         val userId = getEffectiveUserId() ?: return null
-        return db.collection("users").document(userId).collection("sales")
+        val firestore = db ?: return null
+        return firestore.collection("users").document(userId).collection("sales")
             .whereGreaterThan("timestamp", System.currentTimeMillis() - 86400000)
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
@@ -280,8 +326,8 @@ class SyncManager(private val context: Context) {
                     snapshot.documentChanges.forEach { change ->
                         if (change.type == DocumentChange.Type.ADDED) {
                             val sale = change.document.toObject(SaleEntity::class.java)
-                            if (localDb.saleDao().getSaleById(sale.id) == null) {
-                                localDb.saleDao().insert(sale)
+                            if (localDb?.saleDao()?.getSaleById(sale.id) == null) {
+                                localDb?.saleDao()?.insert(sale)
                                 withContext(Dispatchers.Main) { onNewSale() }
                             }
                         }
@@ -292,15 +338,16 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeInventorySync(onUpdate: () -> Unit): ListenerRegistration? {
         val userId = getEffectiveUserId() ?: return null
-        return db.collection("users").document(userId).collection("inventory")
+        val firestore = db ?: return null
+        return firestore.collection("users").document(userId).collection("inventory")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         val product = change.document.toObject(ProductEntity::class.java)
                         when (change.type) {
-                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb.productDao().insert(product)
-                            DocumentChange.Type.REMOVED -> localDb.productDao().delete(product)
+                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb?.productDao()?.insert(product)
+                            DocumentChange.Type.REMOVED -> localDb?.productDao()?.delete(product)
                         }
                     }
                     withContext(Dispatchers.Main) { onUpdate() }
@@ -310,15 +357,16 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeLogsSync(onUpdate: () -> Unit): ListenerRegistration? {
         val userId = getEffectiveUserId() ?: return null
-        return db.collection("users").document(userId).collection("movement_logs")
+        val firestore = db ?: return null
+        return firestore.collection("users").document(userId).collection("movement_logs")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         val log = change.document.toObject(MovementLogEntity::class.java)
                         when (change.type) {
-                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb.movementLogDao().insert(log)
-                            DocumentChange.Type.REMOVED -> localDb.movementLogDao().delete(log)
+                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb?.movementLogDao()?.insert(log)
+                            DocumentChange.Type.REMOVED -> localDb?.movementLogDao()?.delete(log)
                         }
                     }
                     withContext(Dispatchers.Main) { onUpdate() }
@@ -328,15 +376,16 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeExpensesSync(onUpdate: () -> Unit): ListenerRegistration? {
         val userId = getEffectiveUserId() ?: return null
-        return db.collection("users").document(userId).collection("expenses")
+        val firestore = db ?: return null
+        return firestore.collection("users").document(userId).collection("expenses")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         val expense = change.document.toObject(ExpenseEntity::class.java)
                         when (change.type) {
-                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb.expenseDao().insert(expense)
-                            DocumentChange.Type.REMOVED -> localDb.expenseDao().delete(expense)
+                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb?.expenseDao()?.insert(expense)
+                            DocumentChange.Type.REMOVED -> localDb?.expenseDao()?.delete(expense)
                         }
                     }
                     withContext(Dispatchers.Main) { onUpdate() }
@@ -346,15 +395,16 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeDebtorsSync(onUpdate: () -> Unit): ListenerRegistration? {
         val userId = getEffectiveUserId() ?: return null
-        return db.collection("users").document(userId).collection("debtors")
+        val firestore = db ?: return null
+        return firestore.collection("users").document(userId).collection("debtors")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         val debtor = change.document.toObject(DebtorEntity::class.java)
                         when (change.type) {
-                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb.debtorDao().insertDebtor(debtor)
-                            DocumentChange.Type.REMOVED -> localDb.debtorDao().deleteDebtor(debtor)
+                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb?.debtorDao()?.insertDebtor(debtor)
+                            DocumentChange.Type.REMOVED -> localDb?.debtorDao()?.deleteDebtor(debtor)
                         }
                     }
                     withContext(Dispatchers.Main) { onUpdate() }
@@ -364,15 +414,16 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeProvidersSync(onUpdate: () -> Unit): ListenerRegistration? {
         val userId = getEffectiveUserId() ?: return null
-        return db.collection("users").document(userId).collection("providers")
+        val firestore = db ?: return null
+        return firestore.collection("users").document(userId).collection("providers")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         val provider = change.document.toObject(ProviderEntity::class.java)
                         when (change.type) {
-                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb.providerDao().insert(provider)
-                            DocumentChange.Type.REMOVED -> localDb.providerDao().delete(provider)
+                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb?.providerDao()?.insert(provider)
+                            DocumentChange.Type.REMOVED -> localDb?.providerDao()?.delete(provider)
                         }
                     }
                     withContext(Dispatchers.Main) { onUpdate() }
@@ -382,15 +433,16 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeCashSync(onUpdate: () -> Unit): ListenerRegistration? {
         val userId = getEffectiveUserId() ?: return null
-        return db.collection("users").document(userId).collection("cash_sessions")
+        val firestore = db ?: return null
+        return firestore.collection("users").document(userId).collection("cash_sessions")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         val session = change.document.toObject(CashSessionEntity::class.java)
                         when (change.type) {
-                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb.cashDao().insert(session)
-                            DocumentChange.Type.REMOVED -> localDb.cashDao().delete(session)
+                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb?.cashDao()?.insert(session)
+                            DocumentChange.Type.REMOVED -> localDb?.cashDao()?.delete(session)
                         }
                     }
                     withContext(Dispatchers.Main) { onUpdate() }
@@ -400,17 +452,18 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeHotelSync(onUpdate: () -> Unit): List<ListenerRegistration> {
         val userId = getEffectiveUserId() ?: return emptyList()
+        val firestore = db ?: return emptyList()
         val regs = mutableListOf<ListenerRegistration>()
         
-        val r1 = db.collection("users").document(userId).collection("hotel_bookings")
+        val r1 = firestore.collection("users").document(userId).collection("hotel_bookings")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         val booking = change.document.toObject(HotelBookingEntity::class.java)
                         when (change.type) {
-                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb.hotelDao().insertBooking(booking)
-                            DocumentChange.Type.REMOVED -> localDb.hotelDao().deleteBooking(booking)
+                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb?.hotelDao()?.insertBooking(booking)
+                            DocumentChange.Type.REMOVED -> localDb?.hotelDao()?.deleteBooking(booking)
                         }
                     }
                     withContext(Dispatchers.Main) { onUpdate() }
@@ -418,15 +471,15 @@ class SyncManager(private val context: Context) {
             }
         regs.add(r1)
 
-        val r2 = db.collection("users").document(userId).collection("hotel_rooms")
+        val r2 = firestore.collection("users").document(userId).collection("hotel_rooms")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         val room = change.document.toObject(HotelRoomEntity::class.java)
                         when (change.type) {
-                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb.hotelDao().insertRoom(room)
-                            DocumentChange.Type.REMOVED -> localDb.hotelDao().deleteRoom(room)
+                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb?.hotelDao()?.insertRoom(room)
+                            DocumentChange.Type.REMOVED -> localDb?.hotelDao()?.deleteRoom(room)
                         }
                     }
                     withContext(Dispatchers.Main) { onUpdate() }
@@ -439,15 +492,16 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeLoanClientsSync(onUpdate: () -> Unit): ListenerRegistration? {
         val userId = getEffectiveUserId() ?: return null
-        return db.collection("users").document(userId).collection("loan_clients")
+        val firestore = db ?: return null
+        return firestore.collection("users").document(userId).collection("loan_clients")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         val client = change.document.toObject(LoanClientEntity::class.java)
                         when (change.type) {
-                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb.loanDao().insertClient(client)
-                            DocumentChange.Type.REMOVED -> localDb.loanDao().deleteClient(client)
+                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb?.loanDao()?.insertClient(client)
+                            DocumentChange.Type.REMOVED -> localDb?.loanDao()?.deleteClient(client)
                         }
                     }
                     withContext(Dispatchers.Main) { onUpdate() }
@@ -457,15 +511,16 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeLoansSync(onUpdate: () -> Unit): ListenerRegistration? {
         val userId = getEffectiveUserId() ?: return null
-        return db.collection("users").document(userId).collection("loans")
+        val firestore = db ?: return null
+        return firestore.collection("users").document(userId).collection("loans")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         val loan = change.document.toObject(LoanEntity::class.java)
                         when (change.type) {
-                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb.loanDao().insertLoan(loan)
-                            DocumentChange.Type.REMOVED -> localDb.loanDao().deleteLoan(loan)
+                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb?.loanDao()?.insertLoan(loan)
+                            DocumentChange.Type.REMOVED -> localDb?.loanDao()?.deleteLoan(loan)
                         }
                     }
                     withContext(Dispatchers.Main) { onUpdate() }
@@ -475,15 +530,16 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeInstallmentsSync(onUpdate: () -> Unit): ListenerRegistration? {
         val userId = getEffectiveUserId() ?: return null
-        return db.collection("users").document(userId).collection("loan_installments")
+        val firestore = db ?: return null
+        return firestore.collection("users").document(userId).collection("loan_installments")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         val installment = change.document.toObject(LoanInstallmentEntity::class.java)
                         when (change.type) {
-                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb.loanDao().insertInstallments(listOf(installment))
-                            DocumentChange.Type.REMOVED -> localDb.loanDao().deleteInstallment(installment)
+                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb?.loanDao()?.insertInstallments(listOf(installment))
+                            DocumentChange.Type.REMOVED -> localDb?.loanDao()?.deleteInstallment(installment)
                         }
                     }
                     withContext(Dispatchers.Main) { onUpdate() }
@@ -493,15 +549,16 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeLoanPaymentsSync(onUpdate: () -> Unit): ListenerRegistration? {
         val userId = getEffectiveUserId() ?: return null
-        return db.collection("users").document(userId).collection("loan_payments")
+        val firestore = db ?: return null
+        return firestore.collection("users").document(userId).collection("loan_payments")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         val payment = change.document.toObject(LoanPaymentEntity::class.java)
                         when (change.type) {
-                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb.loanDao().insertPayment(payment)
-                            DocumentChange.Type.REMOVED -> localDb.loanDao().deletePayment(payment)
+                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb?.loanDao()?.insertPayment(payment)
+                            DocumentChange.Type.REMOVED -> localDb?.loanDao()?.deletePayment(payment)
                         }
                     }
                     withContext(Dispatchers.Main) { onUpdate() }
@@ -511,15 +568,16 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeLoanExpensesSystemSync(onUpdate: () -> Unit): ListenerRegistration? {
         val userId = getEffectiveUserId() ?: return null
-        return db.collection("users").document(userId).collection("loan_expenses")
+        val firestore = db ?: return null
+        return firestore.collection("users").document(userId).collection("loan_expenses")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         val expense = change.document.toObject(LoanExpenseEntity::class.java)
                         when (change.type) {
-                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb.loanDao().insertExpense(expense)
-                            DocumentChange.Type.REMOVED -> localDb.loanDao().deleteExpense(expense)
+                            DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> localDb?.loanDao()?.insertExpense(expense)
+                            DocumentChange.Type.REMOVED -> localDb?.loanDao()?.deleteExpense(expense)
                         }
                     }
                     withContext(Dispatchers.Main) { onUpdate() }
@@ -529,14 +587,93 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeRequestsSync(): ListenerRegistration? {
         val userId = getEffectiveUserId() ?: return null
-        return db.collection("users").document(userId).collection("booking_requests")
+        val firestore = db ?: return null
+        val startTime = System.currentTimeMillis()
+        
+        return firestore.collection("users").document(userId).collection("booking_requests")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         if (change.type == DocumentChange.Type.ADDED) {
                             val req = change.document.toObject(HotelBookingRequest::class.java)
-                            NotificationHelper.showRequestNotification(context, req.guestName)
+                            
+                            val ts = when (val t = req.timestamp) {
+                                is Timestamp -> t.toDate().time
+                                is Long -> t
+                                else -> System.currentTimeMillis()
+                            }
+
+                            if (ts >= startTime - 10000) {
+                                NotificationHelper.showRequestNotification(context, req.guestName)
+                            }
+                        }
+                    }
+                }
+            }
+    }
+
+    fun startRealtimeCollaboratorRequestsSync(): ListenerRegistration? {
+        val userId = getEffectiveUserId() ?: return null
+        val firestore = db ?: return null
+        val startTime = System.currentTimeMillis()
+        
+        return firestore.collection("users").document(userId).collection("collaborator_requests")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null) return@addSnapshotListener
+                syncScope.launch {
+                    snapshot.documentChanges.forEach { change ->
+                        if (change.type == DocumentChange.Type.ADDED) {
+                            val name = change.document.getString("requesterName") ?: "Alguien"
+                            val ts = change.document.get("timestamp") as? Long ?: System.currentTimeMillis()
+
+                            if (ts >= startTime - 10000) {
+                                NotificationHelper.showRequestNotification(context, name)
+                            }
+                        }
+                    }
+                }
+            }
+    }
+
+    fun startRealtimeOrdersSync(onNewOrder: () -> Unit): ListenerRegistration? {
+        val userId = getEffectiveUserId() ?: return null
+        val firestore = db ?: return null
+        val startTime = System.currentTimeMillis()
+        
+        return firestore.collection("orders")
+            .whereEqualTo("storeId", userId)
+            .whereEqualTo("status", "PENDING")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    Log.e("SyncManager", "Error orders listener: ${e.message}")
+                    return@addSnapshotListener
+                }
+                if (snapshot == null) return@addSnapshotListener
+                syncScope.launch {
+                    snapshot.documentChanges.forEach { change ->
+                        if (change.type == DocumentChange.Type.ADDED) {
+                            try {
+                                val order = change.document.toObject(OrderModel::class.java)
+                                if (order != null) {
+                                    // Solo notificar si el pedido es nuevo (creado después de iniciar la escucha)
+                                    // O si no tiene timestamp (recién creado en el cliente)
+                                    val orderTime = when (val t = order.timestamp) {
+                                        is Timestamp -> t.toDate().time
+                                        is Long -> t
+                                        else -> System.currentTimeMillis()
+                                    }
+                                    
+                                    if (orderTime >= startTime - 5000) { // Margen de 5 seg
+                                        try {
+                                            NotificationHelper.showOrderNotification(context.applicationContext, order.buyerName)
+                                        } catch (err: Exception) { Log.e("SyncManager", "Error notification: ${err.message}") }
+                                    }
+                                    withContext(Dispatchers.Main) { onNewOrder() }
+                                }
+                            } catch (e: Exception) {
+                                Log.e("SyncManager", "Error deserializing order: ${e.message}")
+                            }
                         }
                     }
                 }
@@ -545,21 +682,72 @@ class SyncManager(private val context: Context) {
 
     fun startRealtimeMessagesSync(): List<ListenerRegistration> {
         val userId = getEffectiveUserId() ?: return emptyList()
+        val firestore = db ?: return emptyList()
         val regs = mutableListOf<ListenerRegistration>()
-        val r = db.collection("users").document(userId).collection("messages")
+        
+        val startTime = System.currentTimeMillis()
+
+        val r = firestore.collection("users").document(userId).collection("messages")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .limit(5)
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
+                
                 syncScope.launch {
                     snapshot.documentChanges.forEach { change ->
                         if (change.type == DocumentChange.Type.ADDED) {
-                            val msg = change.document.toObject(AppMessage::class.java)
-                            NotificationHelper.showMessageNotification(context, msg.title, msg.content)
+                            val doc = change.document
+                            val msg = doc.toObject(AppMessage::class.java)
+                            
+                            val ts = when (val t = msg.timestamp) {
+                                is Timestamp -> t.toDate().time
+                                is Long -> t
+                                else -> 0L
+                            }
+                            
+                            // 1. Verificar que sea un mensaje realmente nuevo
+                            // Usamos un margen de 10 segundos para cubrir posibles desincronizaciones de reloj
+                            if (ts > startTime - 10000) {
+                                // 2. Verificar si el usuario está ya dentro de ese chat específico
+                                val prefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+                                val currentChatId = prefs.getString("current_chat_id", null)
+                                val senderId = doc.getString("senderId") ?: ""
+                                
+                                // ID de chat determinista para comparar
+                                val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                                val deterministicChatId = if (myUid < senderId) "${myUid}_$senderId" else "${senderId}_$myUid"
+
+                                Log.d("SyncManager", "Comparando: currentChat=$currentChatId, deterministic=$deterministicChatId, sender=$senderId")
+
+                                if (currentChatId != deterministicChatId && currentChatId != senderId) {
+                                    Log.d("SyncManager", "Disparando notificación...")
+                                    NotificationHelper.showMessageNotification(context, msg.title, msg.content)
+                                }
+                            }
                         }
                     }
                 }
             }
         regs.add(r)
         return regs
+    }
+
+    fun startRealtimeUnreadCountSync(onCountChanged: (Int) -> Unit): ListenerRegistration? {
+        val userId = getEffectiveUserId() ?: return null
+        val firestore = db ?: return null
+
+        return firestore.collection("direct_chats")
+            .whereArrayContains("participants", userId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null) return@addSnapshotListener
+                
+                var totalUnread = 0
+                snapshot.documents.forEach { doc ->
+                    val unreadMap = doc.get("unreadCount") as? Map<String, Long>
+                    totalUnread += unreadMap?.get(userId)?.toInt() ?: 0
+                }
+                onCountChanged(totalUnread)
+            }
     }
 
     fun scheduleOfflineSync() {
@@ -570,27 +758,30 @@ class SyncManager(private val context: Context) {
 
     fun deleteProductFromCloud(productId: String) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("inventory").document(productId).delete().await()
+                firestore.collection("users").document(userId).collection("inventory").document(productId).delete().await()
             } catch (e: Exception) { Log.e("SyncManager", "Error delete product: ${e.message}") }
         }
     }
 
     fun deleteLoanClientFromCloud(clientId: String) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                db.collection("users").document(userId).collection("loan_clients").document(clientId).delete().await()
+                firestore.collection("users").document(userId).collection("loan_clients").document(clientId).delete().await()
             } catch (e: Exception) { Log.e("SyncManager", "Error delete loan client: ${e.message}") }
         }
     }
 
     fun downloadBusinessSettingsFromCloud(businessType: String) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                val doc = db.collection("users").document(userId).collection("settings").document(businessType).get().await()
+                val doc = firestore.collection("users").document(userId).collection("settings").document(businessType).get().await()
                 if (doc.exists()) {
                     val prefs = context.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
                     val editor = prefs.edit()
@@ -607,10 +798,11 @@ class SyncManager(private val context: Context) {
 
     fun deleteCollectionFromCloud(collectionName: String, onComplete: (() -> Unit)? = null) {
         val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
-                val snapshot = db.collection("users").document(userId).collection(collectionName).get().await()
-                val batch = db.batch()
+                val snapshot = firestore.collection("users").document(userId).collection(collectionName).get().await()
+                val batch = firestore.batch()
                 snapshot.documents.forEach { batch.delete(it.reference) }
                 batch.commit().await()
                 withContext(Dispatchers.Main) { onComplete?.invoke() }
@@ -619,13 +811,14 @@ class SyncManager(private val context: Context) {
     }
 
     fun deleteEverythingFromCloud(onComplete: () -> Unit) {
-        val userId = auth.currentUser?.uid ?: return
+        val userId = auth?.currentUser?.uid ?: return
+        val firestore = db ?: return
         syncScope.launch {
             try {
                 val collections = listOf("inventory", "sales", "expenses", "debtors", "customers", "providers", "movement_logs", "cash_sessions", "hotel_bookings", "hotel_rooms", "hotel_maintenance", "loan_clients", "loans")
                 for (coll in collections) {
-                    val snapshot = db.collection("users").document(userId).collection(coll).get().await()
-                    val batch = db.batch()
+                    val snapshot = firestore.collection("users").document(userId).collection(coll).get().await()
+                    val batch = firestore.batch()
                     snapshot.documents.forEach { batch.delete(it.reference) }
                     batch.commit().await()
                 }
@@ -639,16 +832,16 @@ class SyncManager(private val context: Context) {
         syncScope.launch {
             try {
                 // Sincronizar productos no sincronizados
-                val unsyncedProducts = localDb.productDao().getAllUnsyncedProducts()
-                unsyncedProducts.forEach { syncProductToCloud(it) }
+                val unsyncedProducts = localDb?.productDao()?.getAllUnsyncedProducts()
+                unsyncedProducts?.forEach { syncProductToCloud(it) }
 
                 // Sincronizar deudores no sincronizados
-                val unsyncedDebtors = localDb.debtorDao().getAllUnsyncedDebtors()
-                unsyncedDebtors.forEach { syncDebtorToCloud(it) }
+                val unsyncedDebtors = localDb?.debtorDao()?.getAllUnsyncedDebtors()
+                unsyncedDebtors?.forEach { syncDebtorToCloud(it) }
 
                 // Sincronizar gastos no sincronizados
-                val unsyncedExpenses = localDb.expenseDao().getAllUnsyncedExpenses()
-                unsyncedExpenses.forEach { syncExpenseToCloud(it) }
+                val unsyncedExpenses = localDb?.expenseDao()?.getAllUnsyncedExpenses()
+                unsyncedExpenses?.forEach { syncExpenseToCloud(it) }
 
                 withContext(Dispatchers.Main) { onComplete() }
             } catch (e: Exception) {

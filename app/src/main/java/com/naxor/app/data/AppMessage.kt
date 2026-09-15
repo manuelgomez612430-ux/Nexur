@@ -11,6 +11,8 @@ data class AppMessage(
     @set:PropertyName("content")
     var content: String = "",
     
-    val timestamp: Any? = null
+    val timestamp: Any? = null,
+    val type: String = "SYSTEM",
+    val senderId: String = ""
 )
 

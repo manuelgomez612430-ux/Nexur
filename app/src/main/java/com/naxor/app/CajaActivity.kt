@@ -35,9 +35,6 @@ class CajaActivity : BaseActivity() {
 
         binding.btnBackCaja.setOnClickListener { finish() }
         binding.btnHelpCaja.setOnClickListener { showHelpDialog() }
-        binding.btnMailboxCaja.setOnClickListener {
-            startActivity(Intent(this, MailboxActivity::class.java))
-        }
         setupNetworkMonitoring()
         setupSyncIndicator()
         checkSession()

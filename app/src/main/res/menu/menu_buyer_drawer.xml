@@ -6,6 +6,10 @@
             android:icon="@android:drawable/ic_menu_today"
             android:title="Mis reservas" />
         <item
+            android:id="@+id/buyer_menu_orders"
+            android:icon="@android:drawable/ic_menu_send"
+            android:title="Mis pedidos / Delivery" />
+        <item
             android:id="@+id/buyer_menu_categories"
             android:icon="@android:drawable/ic_menu_sort_by_size"
             android:title="Categorías" />

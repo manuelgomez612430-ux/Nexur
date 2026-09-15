@@ -57,8 +57,12 @@ class MetricasFragment : Fragment() {
 
     override fun onStop() {
         super.onStop()
-        // Cancelar cualquier trabajo de IA o carga en curso
-        viewLifecycleOwner.lifecycleScope.coroutineContext.cancelChildren()
+        // Cancelar cualquier trabajo de IA o carga en curso de forma segura
+        if (_binding != null) {
+            try {
+                viewLifecycleOwner.lifecycleScope.coroutineContext[Job]?.cancelChildren()
+            } catch (e: Exception) {}
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {

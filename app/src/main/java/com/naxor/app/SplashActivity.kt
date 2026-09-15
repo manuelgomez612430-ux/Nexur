@@ -9,25 +9,36 @@ import com.google.firebase.auth.FirebaseAuth
 
 class SplashActivity : BaseActivity() {
 
+    private var hasNavigated = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
-        val user = FirebaseAuth.getInstance().currentUser
-        if (user != null) {
-            // Usuario logueado, verificación instantánea para un inicio más ágil
-            checkPreferencesAndNavigate()
-            finish()
-        } else {
-            // No logueado, ir al Login tras una breve pausa para la marca
-            Handler(Looper.getMainLooper()).postDelayed({
-                startActivity(Intent(this, LoginActivity::class.java))
-                finish()
-            }, 500)
-        }
+        // Pequeño delay de seguridad para que el sistema y Firebase se asienten
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (isFinishing || isDestroyed) return@postDelayed
+            
+            val user = try { FirebaseAuth.getInstance().currentUser } catch (e: Exception) { null }
+            if (user != null) {
+                checkPreferencesAndNavigate()
+            } else {
+                navigateToLogin()
+            }
+        }, 1000) // 1 segundo de splash para todos asegura estabilidad
+    }
+
+    private fun navigateToLogin() {
+        if (hasNavigated) return
+        hasNavigated = true
+        startActivity(Intent(this, LoginActivity::class.java))
+        finish()
     }
 
     private fun checkPreferencesAndNavigate() {
+        if (hasNavigated) return
+        hasNavigated = true
+
         val appPrefs = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
         val role = appPrefs.getString("user_role", null)
         val bizPrefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
@@ -35,34 +46,30 @@ class SplashActivity : BaseActivity() {
         
         val startUpdate = intent.getBooleanExtra("START_UPDATE", false)
 
-        when {
+        val nextIntent = when {
             // Caso 1: Vendedor con rubro ya activo
             role == "SELLER" && bizType != null -> {
-                val intent = Intent(this, MainActivity::class.java)
-                if (startUpdate) intent.putExtra("START_UPDATE", true)
-                startActivity(intent)
+                Intent(this, MainActivity::class.java)
             }
             
             // Caso 2: Comprador activo
             role == "BUYER" -> {
-                val intent = Intent(this, BuyerHomeActivity::class.java)
-                if (startUpdate) intent.putExtra("START_UPDATE", true)
-                startActivity(intent)
+                Intent(this, BuyerHomeActivity::class.java)
             }
             
             // Caso 3: Colaborador activo
             role == "COLLABORATOR" && bizType != null -> {
-                val intent = Intent(this, MainActivity::class.java)
-                if (startUpdate) intent.putExtra("START_UPDATE", true)
-                startActivity(intent)
+                Intent(this, MainActivity::class.java)
             }
 
             // Fallback: Ir al portal de bienvenida/detección de datos
             else -> {
-                val intent = Intent(this, WelcomeRoleActivity::class.java)
-                if (startUpdate) intent.putExtra("START_UPDATE", true)
-                startActivity(intent)
+                Intent(this, WelcomeRoleActivity::class.java)
             }
         }
+
+        if (startUpdate) nextIntent.putExtra("START_UPDATE", true)
+        startActivity(nextIntent)
+        finish()
     }
 }

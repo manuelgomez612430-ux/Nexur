@@ -23,10 +23,7 @@
                 android:id="@+id/menu_fiados"
                 android:icon="@android:drawable/ic_menu_my_calendar"
                 android:title="Control de Deudores" />
-            <item
-                android:id="@+id/menu_business_debts"
-                android:icon="@android:drawable/ic_menu_edit"
-                android:title="Mis Cuentas por Pagar" />
+
             <item
                 android:id="@+id/menu_commitments"
                 android:icon="@android:drawable/ic_menu_today"
@@ -44,10 +41,7 @@
 
     <item android:title="Herramientas de Compra">
         <menu>
-            <item
-                android:id="@+id/menu_catalogo"
-                android:icon="@android:drawable/ic_menu_gallery"
-                android:title="Catálogo de Productos" />
+
             <item
                 android:id="@+id/menu_lista_compras"
                 android:icon="@android:drawable/checkbox_on_background"

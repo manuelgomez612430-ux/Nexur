@@ -6,17 +6,25 @@ import androidx.appcompat.app.AppCompatActivity
 
 open class BaseActivity : AppCompatActivity() {
 
-    override fun attachBaseContext(newBase: Context) {
-        val config = Configuration(newBase.resources.configuration)
+    override fun attachBaseContext(newBase: Context?) {
+        if (newBase == null) {
+            super.attachBaseContext(newBase)
+            return
+        }
         
-        // Bloquear escala de fuente al 100% (Ignora configuración del sistema)
-        config.fontScale = 1.0f
-        
-        // Si quisiéramos bloquear también la densidad (tamaño de elementos),
-        // pero dp usualmente maneja esto. Lo más común es fontScale.
-        
-        val context = newBase.createConfigurationContext(config)
-        super.attachBaseContext(context)
+        try {
+            val res = newBase.resources
+            if (res != null) {
+                val config = Configuration(res.configuration)
+                config.fontScale = 1.0f
+                val context = newBase.createConfigurationContext(config)
+                super.attachBaseContext(context)
+            } else {
+                super.attachBaseContext(newBase)
+            }
+        } catch (e: Exception) {
+            super.attachBaseContext(newBase)
+        }
     }
 
     // Asegurar que si la configuración cambia dinámicamente, se mantenga el bloqueo

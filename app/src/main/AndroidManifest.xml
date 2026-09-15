@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
@@ -81,7 +82,7 @@
             android:name=".MainActivity"
             android:exported="false"
             android:label="GoMezMart"
-            android:windowSoftInputMode="adjustResize" />
+            android:windowSoftInputMode="adjustPan" />
 
         <activity android:name=".AsignadorDePreciosActivity" android:label="@string/title_asignador_precios" />
         <activity android:name=".HistorialActivity" android:label="Historial" />
@@ -125,8 +126,11 @@
         <activity android:name=".MessageDetailActivity" android:label="Detalle de Mensaje" />
         <activity android:name=".BusinessDebtsActivity" android:label="Mis Cuentas por Pagar" />
         <activity android:name=".CommitmentsActivity" android:exported="false" android:label="Mis Compromisos" />
-        <activity android:name=".BuyerHomeActivity" android:exported="false" android:label="GoMezMart: Compras" />
-        <activity android:name=".StoreCatalogActivity" android:exported="false" android:label="Catálogo" />
+        <activity android:name=".BuyerHomeActivity"
+            android:exported="false"
+            android:label="GoMezMart: Compras"
+            android:windowSoftInputMode="adjustPan" />
+
         <activity android:name=".HotelBookingRequestActivity" android:exported="false" android:label="Reservar Habitación" />
         <activity android:name=".CartCheckoutActivity" android:exported="false" android:label="Mi Pedido" />
         <activity android:name=".ProductDetailActivity" android:exported="false" android:label="Detalle del Producto" />
@@ -144,6 +148,10 @@
         <activity android:name=".BusinessMapSelectorActivity" android:exported="false" android:label="Seleccionar Ubicación del Negocio" />
         <activity android:name=".CollabAccountActivity" android:exported="false" android:label="Mi Cuenta" />
         <activity android:name=".ViewedHistoryActivity" android:exported="false" android:label="Historial de navegación" />
+        <activity android:name=".DeliveriesActivity" android:exported="false" android:label="Gestión de Entregas" />
+        <activity android:name=".BuyerOrdersActivity" android:exported="false" android:label="Mis Pedidos" />
+        <activity android:name=".ChatActivity" android:exported="false" android:label="Chat con Negocio" />
+        <activity android:name=".SearchUsersActivity" android:exported="false" android:label="Agregar Usuario" />
         <activity android:name=".TutorialActivity" android:exported="false" android:theme="@style/Theme.GoMezMart" />
 
         <!-- Actividad para Recorte de Imágenes -->
@@ -162,7 +170,18 @@
 
         <service
             android:name=".network.GoMezMartSyncService"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <receiver
+            android:name=".network.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

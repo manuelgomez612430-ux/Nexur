@@ -118,7 +118,6 @@ class HotelHomeFragment : Fragment() {
 
     private fun setupHeader() {
         binding.btnMenuHotel.setOnClickListener { (activity as? MainActivity)?.openSideMenu() }
-        binding.btnMailboxHotel.setOnClickListener { startToolActivity(Intent(requireContext(), MailboxActivity::class.java)) }
         binding.cardRoomsMap.setOnClickListener { startActivity(Intent(requireContext(), HotelInteractiveMapActivity::class.java)) }
         binding.btnSupportCreatorHotel.setOnClickListener { startActivity(Intent(requireContext(), SupportCreatorActivity::class.java)) }
     }

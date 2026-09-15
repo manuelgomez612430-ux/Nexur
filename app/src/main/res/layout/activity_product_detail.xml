@@ -192,24 +192,12 @@
 
                 <TextView
                     android:id="@+id/tvSimilarStoreTitle"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="Más de esta tienda"
                     android:textSize="17sp"
                     android:textStyle="bold"
                     android:textColor="@color/slate_900" />
-
-                <TextView
-                    android:id="@+id/btnViewAllFromStore"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Ver todo"
-                    android:textColor="@color/sky_600"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:clickable="true"
-                    android:focusable="true" />
             </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView

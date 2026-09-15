@@ -15,6 +15,10 @@
                 android:id="@+id/menu_hotel_payments"
                 android:icon="@android:drawable/ic_menu_save"
                 android:title="Cuentas por Pagar" />
+            <item
+                android:id="@+id/menu_manage_orders"
+                android:icon="@android:drawable/ic_menu_send"
+                android:title="Pedidos de Restaurante / Room Service" />
         </menu>
     </item>
 

@@ -18,24 +18,44 @@ import java.io.File
 class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
     CoroutineWorker(appContext, workerParams) {
 
-    private val db = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
-    private val localDb = AppDatabase.getDatabase(appContext)
+    private val db: FirebaseFirestore? by lazy {
+        try {
+            FirebaseFirestore.getInstance()
+        } catch (e: Exception) {
+            Log.e("SyncWorker", "Firestore init failed: ${e.message}")
+            null
+        }
+    }
+    
+    private val auth: FirebaseAuth? by lazy {
+        try {
+            FirebaseAuth.getInstance()
+        } catch (e: Exception) {
+            Log.e("SyncWorker", "Auth init failed: ${e.message}")
+            null
+        }
+    }
+    
+    private val localDb = try { AppDatabase.getDatabase(appContext) } catch (e: Exception) { null }
 
     private fun getEffectiveUserId(): String? {
-        val prefs = applicationContext.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
-        val isCollaborator = prefs.getBoolean("is_collaborator_mode", false)
-        return if (isCollaborator) {
-            prefs.getString("collaborator_owner_id", null)
-        } else {
-            auth.currentUser?.uid
-        }
+        try {
+            val prefs = applicationContext.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+            val isCollaborator = prefs.getBoolean("is_collaborator_mode", false)
+            return if (isCollaborator) {
+                prefs.getString("collaborator_owner_id", null)
+            } else {
+                auth?.currentUser?.uid
+            }
+        } catch (e: Exception) { return null }
     }
 
     override suspend fun doWork(): Result {
         Log.d("SyncWorker", "Iniciando sincronización en segundo plano...")
+        
+        val firestore = db ?: return Result.success()
         val userId = getEffectiveUserId() ?: return Result.success()
-        val userRef = db.collection("users").document(userId)
+        val userRef = firestore.collection("users").document(userId)
 
         return try {
             processAllDeletions(userRef)
@@ -49,91 +69,92 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
     }
 
     private suspend fun processAllDeletions(userRef: DocumentReference) {
-        deleteProducts(userRef)
-        deleteSales(userRef)
-        deleteDebtors(userRef)
-        deleteExpenses(userRef)
-        deleteContacts(userRef)
-        deleteLoans(userRef)
-        deleteCommitments(userRef)
-        deleteHotelData(userRef)
+        val ldb = localDb ?: return
+        deleteProducts(ldb, userRef)
+        deleteSales(ldb, userRef)
+        deleteDebtors(ldb, userRef)
+        deleteExpenses(ldb, userRef)
+        deleteContacts(ldb, userRef)
+        deleteLoans(ldb, userRef)
+        deleteCommitments(ldb, userRef)
+        deleteHotelData(ldb, userRef)
     }
 
-    private suspend fun deleteProducts(userRef: DocumentReference) {
-        localDb.productDao().deletedProducts.forEach {
+    private suspend fun deleteProducts(ldb: AppDatabase, userRef: DocumentReference) {
+        ldb.productDao().deletedProducts.forEach {
             userRef.collection("inventory").document(it.id).delete().await()
-            localDb.productDao().delete(it)
+            ldb.productDao().delete(it)
         }
     }
 
-    private suspend fun deleteSales(userRef: DocumentReference) {
-        localDb.saleDao().deletedSales.forEach {
+    private suspend fun deleteSales(ldb: AppDatabase, userRef: DocumentReference) {
+        ldb.saleDao().deletedSales.forEach {
             userRef.collection("sales").document(it.id).delete().await()
-            localDb.saleDao().delete(it)
+            ldb.saleDao().delete(it)
         }
     }
 
-    private suspend fun deleteDebtors(userRef: DocumentReference) {
-        localDb.debtorDao().getDeletedDebtors().forEach {
+    private suspend fun deleteDebtors(ldb: AppDatabase, userRef: DocumentReference) {
+        ldb.debtorDao().getDeletedDebtors().forEach {
             userRef.collection("debtors").document(it.id).delete().await()
-            localDb.debtorDao().deleteDebtor(it)
+            ldb.debtorDao().deleteDebtor(it)
         }
-        localDb.debtorDao().getDeletedDebtDetails().forEach {
+        ldb.debtorDao().getDeletedDebtDetails().forEach {
             userRef.collection("debt_details").document(it.id).delete().await()
-            localDb.debtorDao().deleteDebtDetail(it)
+            ldb.debtorDao().deleteDebtDetail(it)
         }
     }
 
-    private suspend fun deleteExpenses(userRef: DocumentReference) {
-        localDb.expenseDao().getDeletedExpenses().forEach {
+    private suspend fun deleteExpenses(ldb: AppDatabase, userRef: DocumentReference) {
+        ldb.expenseDao().getDeletedExpenses().forEach {
             userRef.collection("expenses").document(it.id).delete().await()
-            localDb.expenseDao().delete(it)
+            ldb.expenseDao().delete(it)
         }
     }
 
-    private suspend fun deleteContacts(userRef: DocumentReference) {
-        localDb.customerDao().getDeletedCustomers().forEach {
+    private suspend fun deleteContacts(ldb: AppDatabase, userRef: DocumentReference) {
+        ldb.customerDao().getDeletedCustomers().forEach {
             userRef.collection("customers").document(it.id).delete().await()
-            localDb.customerDao().delete(it)
+            ldb.customerDao().delete(it)
         }
-        localDb.providerDao().getDeletedProviders().forEach {
+        ldb.providerDao().getDeletedProviders().forEach {
             userRef.collection("providers").document(it.id).delete().await()
-            localDb.providerDao().delete(it)
+            ldb.providerDao().delete(it)
         }
     }
 
-    private suspend fun deleteLoans(userRef: DocumentReference) {
-        localDb.loanDao().getDeletedClients().forEach {
+    private suspend fun deleteLoans(ldb: AppDatabase, userRef: DocumentReference) {
+        ldb.loanDao().getDeletedClients().forEach {
             userRef.collection("loan_clients").document(it.id).delete().await()
-            localDb.loanDao().deleteClient(it)
+            ldb.loanDao().deleteClient(it)
         }
-        localDb.loanDao().getDeletedLoans().forEach {
+        ldb.loanDao().getDeletedLoans().forEach {
             userRef.collection("loans").document(it.id).delete().await()
-            localDb.loanDao().deleteLoan(it)
+            ldb.loanDao().deleteLoan(it)
         }
-        localDb.loanDao().getDeletedInstallments().forEach {
+        ldb.loanDao().getDeletedInstallments().forEach {
             userRef.collection("loan_installments").document(it.id).delete().await()
-            localDb.loanDao().deleteInstallment(it)
+            ldb.loanDao().deleteInstallment(it)
         }
-        localDb.loanDao().getDeletedLoanExpenses().forEach {
+        ldb.loanDao().getDeletedLoanExpenses().forEach {
             userRef.collection("loan_expenses_system").document(it.id).delete().await()
-            localDb.loanDao().deleteExpense(it)
+            ldb.loanDao().deleteExpense(it)
         }
-        localDb.loanDao().getDeletedPayments().forEach {
+        ldb.loanDao().getDeletedPayments().forEach {
             userRef.collection("loan_payments").document(it.id).delete().await()
-            localDb.loanDao().deletePayment(it)
+            ldb.loanDao().deletePayment(it)
         }
     }
 
-    private suspend fun deleteCommitments(userRef: DocumentReference) {
-        localDb.commitmentDao().getDeletedCommitments().forEach {
+    private suspend fun deleteCommitments(ldb: AppDatabase, userRef: DocumentReference) {
+        ldb.commitmentDao().getDeletedCommitments().forEach {
             userRef.collection("commitments").document(it.id).delete().await()
-            localDb.commitmentDao().delete(it)
+            ldb.commitmentDao().delete(it)
         }
     }
 
-    private suspend fun deleteHotelData(userRef: DocumentReference) {
-        val hotel = localDb.hotelDao()
+    private suspend fun deleteHotelData(ldb: AppDatabase, userRef: DocumentReference) {
+        val hotel = ldb.hotelDao()
         hotel.getDeletedRooms().forEach {
             userRef.collection("hotel_rooms").document(it.id).delete().await()
             hotel.deleteRoomHard(it.id)
@@ -158,22 +179,23 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
             userRef.collection("hotel_room_layouts").document(it.id).delete().await()
             hotel.deleteLayoutHard(it.id)
         }
-        localDb.hotelToolDao().getDeletedTools().forEach {
+        ldb.hotelToolDao().getDeletedTools().forEach {
             userRef.collection("hotel_tools").document(it.id).delete().await()
-            localDb.hotelToolDao().deleteToolHard(it.id)
+            ldb.hotelToolDao().deleteToolHard(it.id)
         }
     }
 
     private suspend fun processAllUpserts(userRef: DocumentReference, userId: String) {
-        syncInventory(userRef, userId)
-        syncSalesAndExpenses(userRef)
-        syncBusinessContactsAndLogs(userRef)
-        syncLoansSystem(userRef)
-        syncHotelSystem(userRef)
+        val ldb = localDb ?: return
+        syncInventory(ldb, userRef, userId)
+        syncSalesAndExpenses(ldb, userRef)
+        syncBusinessContactsAndLogs(ldb, userRef)
+        syncLoansSystem(ldb, userRef)
+        syncHotelSystem(ldb, userRef)
     }
 
-    private suspend fun syncInventory(userRef: DocumentReference, userId: String) {
-        val products = localDb.productDao().allUnsyncedProducts
+    private suspend fun syncInventory(ldb: AppDatabase, userRef: DocumentReference, userId: String) {
+        val products = ldb.productDao().allUnsyncedProducts
         for (p in products) {
             if (!p.photoPath.isNullOrEmpty() && p.photoUrl.isNullOrEmpty()) {
                 try {
@@ -183,122 +205,122 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
                         val downloadUrl = SupabaseManager.uploadImage("gomezmart-imagenes-usuarios", path, file)
                         if (downloadUrl != null) {
                             p.photoUrl = downloadUrl
-                            localDb.productDao().update(p)
+                            ldb.productDao().update(p)
                         }
                     }
                 } catch (e: Exception) {}
             }
             userRef.collection("inventory").document(p.id).set(p, SetOptions.merge()).await()
-            localDb.productDao().markSynced(p.id)
+            ldb.productDao().markSynced(p.id)
         }
     }
 
-    private suspend fun syncSalesAndExpenses(userRef: DocumentReference) {
-        localDb.saleDao().allUnsyncedSales.forEach {
+    private suspend fun syncSalesAndExpenses(ldb: AppDatabase, userRef: DocumentReference) {
+        ldb.saleDao().allUnsyncedSales.forEach {
             userRef.collection("sales").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.saleDao().markSynced(it.id)
+            ldb.saleDao().markSynced(it.id)
         }
-        localDb.expenseDao().getAllUnsyncedExpenses().forEach {
+        ldb.expenseDao().getAllUnsyncedExpenses().forEach {
             userRef.collection("expenses").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.expenseDao().markSynced(it.id)
+            ldb.expenseDao().markSynced(it.id)
         }
-        localDb.debtorDao().getAllUnsyncedDebtors().forEach {
+        ldb.debtorDao().getAllUnsyncedDebtors().forEach {
             userRef.collection("debtors").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.debtorDao().markDebtorSynced(it.id)
+            ldb.debtorDao().markDebtorSynced(it.id)
         }
-        localDb.debtorDao().getAllUnsyncedDebtDetails().forEach {
+        ldb.debtorDao().getAllUnsyncedDebtDetails().forEach {
             userRef.collection("debt_details").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.debtorDao().markDebtDetailSynced(it.id)
+            ldb.debtorDao().markDebtDetailSynced(it.id)
         }
     }
 
-    private suspend fun syncBusinessContactsAndLogs(userRef: DocumentReference) {
-        localDb.customerDao().getAllUnsyncedCustomers().forEach {
+    private suspend fun syncBusinessContactsAndLogs(ldb: AppDatabase, userRef: DocumentReference) {
+        ldb.customerDao().getAllUnsyncedCustomers().forEach {
             userRef.collection("customers").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.customerDao().markSynced(it.id)
+            ldb.customerDao().markSynced(it.id)
         }
-        localDb.providerDao().getAllUnsyncedProviders().forEach {
+        ldb.providerDao().getAllUnsyncedProviders().forEach {
             userRef.collection("providers").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.providerDao().markSynced(it.id)
+            ldb.providerDao().markSynced(it.id)
         }
-        localDb.movementLogDao().getUnsyncedLogs().forEach {
+        ldb.movementLogDao().getUnsyncedLogs().forEach {
             userRef.collection("movement_logs").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.movementLogDao().markSynced(it.id)
+            ldb.movementLogDao().markSynced(it.id)
         }
-        localDb.cashDao().getAllUnsyncedSessions().forEach {
+        ldb.cashDao().getAllUnsyncedSessions().forEach {
             userRef.collection("cash_sessions").document(it.id.toString()).set(it, SetOptions.merge()).await()
-            localDb.cashDao().markSynced(it.id.toString())
+            ldb.cashDao().markSynced(it.id.toString())
         }
-        localDb.businessDebtDao().getPendingDebts().filter { !it.isSynced }.forEach {
+        ldb.businessDebtDao().getPendingDebts().filter { !it.isSynced }.forEach {
             userRef.collection("business_debts").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.businessDebtDao().markSynced(it.id)
+            ldb.businessDebtDao().markSynced(it.id)
         }
-        localDb.businessDebtDao().getPaidDebts().filter { !it.isSynced }.forEach {
+        ldb.businessDebtDao().getPaidDebts().filter { !it.isSynced }.forEach {
             userRef.collection("business_debts").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.businessDebtDao().markSynced(it.id)
+            ldb.businessDebtDao().markSynced(it.id)
         }
     }
 
-    private suspend fun syncLoansSystem(userRef: DocumentReference) {
-        localDb.loanDao().getUnsyncedClients().forEach {
+    private suspend fun syncLoansSystem(ldb: AppDatabase, userRef: DocumentReference) {
+        ldb.loanDao().getUnsyncedClients().forEach {
             userRef.collection("loan_clients").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.loanDao().markLoanClientSynced(it.id)
+            ldb.loanDao().markLoanClientSynced(it.id)
         }
-        localDb.loanDao().getUnsyncedLoans().forEach {
+        ldb.loanDao().getUnsyncedLoans().forEach {
             userRef.collection("loans").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.loanDao().markLoanSynced(it.id)
+            ldb.loanDao().markLoanSynced(it.id)
         }
-        localDb.loanDao().getUnsyncedInstallments().forEach {
+        ldb.loanDao().getUnsyncedInstallments().forEach {
             userRef.collection("loan_installments").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.loanDao().markInstallmentSynced(it.id)
+            ldb.loanDao().markInstallmentSynced(it.id)
         }
-        localDb.loanDao().getUnsyncedLoanExpenses().forEach {
+        ldb.loanDao().getUnsyncedLoanExpenses().forEach {
             userRef.collection("loan_expenses_system").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.loanDao().markLoanExpenseSynced(it.id)
+            ldb.loanDao().markLoanExpenseSynced(it.id)
         }
-        localDb.loanDao().getUnsyncedPayments().forEach {
+        ldb.loanDao().getUnsyncedPayments().forEach {
             userRef.collection("loan_payments").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.loanDao().markLoanPaymentSynced(it.id)
+            ldb.loanDao().markLoanPaymentSynced(it.id)
         }
-        localDb.loanDao().getUnsyncedBudgets().forEach {
+        ldb.loanDao().getUnsyncedBudgets().forEach {
             userRef.collection("loan_budgets").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.loanDao().markLoanBudgetSynced(it.id)
+            ldb.loanDao().markLoanBudgetSynced(it.id)
         }
-        localDb.commitmentDao().getUnsynced().forEach {
+        ldb.commitmentDao().getUnsynced().forEach {
             val updated = it.copy(isSynced = true)
             userRef.collection("commitments").document(it.id).set(updated, SetOptions.merge()).await()
-            localDb.commitmentDao().updateCommitment(updated)
+            ldb.commitmentDao().updateCommitment(updated)
         }
     }
 
-    private suspend fun syncHotelSystem(userRef: DocumentReference) {
-        localDb.hotelDao().getUnsyncedRooms().forEach {
+    private suspend fun syncHotelSystem(ldb: AppDatabase, userRef: DocumentReference) {
+        ldb.hotelDao().getUnsyncedRooms().forEach {
             userRef.collection("hotel_rooms").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.hotelDao().markRoomSynced(it.id)
+            ldb.hotelDao().markRoomSynced(it.id)
         }
-        localDb.hotelDao().getUnsyncedBookings().forEach {
+        ldb.hotelDao().getUnsyncedBookings().forEach {
             userRef.collection("hotel_bookings").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.hotelDao().markBookingSynced(it.id)
+            ldb.hotelDao().markBookingSynced(it.id)
         }
-        localDb.hotelDao().getUnsyncedCharges().forEach {
+        ldb.hotelDao().getUnsyncedCharges().forEach {
             userRef.collection("hotel_charges").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.hotelDao().markChargeSynced(it.id)
+            ldb.hotelDao().markChargeSynced(it.id)
         }
-        localDb.hotelDao().getUnsyncedPayments().forEach {
+        ldb.hotelDao().getUnsyncedPayments().forEach {
             userRef.collection("hotel_payments").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.hotelDao().markPaymentSynced(it.id)
+            ldb.hotelDao().markPaymentSynced(it.id)
         }
-        localDb.hotelDao().getUnsyncedMaintenance().forEach {
+        ldb.hotelDao().getUnsyncedMaintenance().forEach {
             userRef.collection("hotel_maintenance").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.hotelDao().markMaintenanceSynced(it.id)
+            ldb.hotelDao().markMaintenanceSynced(it.id)
         }
-        localDb.hotelDao().getUnsyncedLayouts().forEach {
+        ldb.hotelDao().getUnsyncedLayouts().forEach {
             userRef.collection("hotel_room_layouts").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.hotelDao().markLayoutSynced(it.id)
+            ldb.hotelDao().markLayoutSynced(it.id)
         }
-        localDb.hotelToolDao().getUnsyncedTools().forEach {
+        ldb.hotelToolDao().getUnsyncedTools().forEach {
             userRef.collection("hotel_tools").document(it.id).set(it, SetOptions.merge()).await()
-            localDb.hotelToolDao().markToolSynced(it.id)
+            ldb.hotelToolDao().markToolSynced(it.id)
         }
     }
 }

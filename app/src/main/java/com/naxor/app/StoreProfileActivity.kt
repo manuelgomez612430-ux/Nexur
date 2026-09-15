@@ -116,15 +116,6 @@ class StoreProfileActivity : BaseActivity() {
         startStoreListener(storeId, forcedRubro)
         startReviewsListener(storeId)
 
-        storeProfileBinding.btnViewFullCatalog.setOnClickListener {
-            val intent = Intent(this, StoreCatalogActivity::class.java).apply {
-                putExtra("STORE_ID", storeId)
-                putExtra("STORE_NAME", storeName)
-                putExtra("FORCE_RUBRO", forcedRubro)
-            }
-            startActivity(intent)
-        }
-
         storeProfileBinding.btnSubmitReview.setOnClickListener { submitReview() }
         
         storeProfileBinding.btnCancelReview.setOnClickListener {
@@ -571,7 +562,6 @@ class StoreProfileActivity : BaseActivity() {
             storeProfileBinding.nsvStoreProfile.setBackgroundColor(bgColor)
             storeProfileBinding.tvProfileStoreName.setTextColor(textColor)
             storeProfileBinding.tvProfileStoreDesc.setTextColor(textColor)
-            storeProfileBinding.btnViewFullCatalog.backgroundTintList = ColorStateList.valueOf(primaryColor)
             
             val typeface = when(font) {
                 "CLASSIC" -> Typeface.SERIF

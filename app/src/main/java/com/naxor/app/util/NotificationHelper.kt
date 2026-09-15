@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.naxor.app.R
 import com.naxor.app.SplashActivity
@@ -44,6 +45,7 @@ object NotificationHelper {
     }
 
     fun showMessageNotification(context: Context, title: String, message: String) {
+        Log.d("NotificationHelper", "Mostrando notificación: $title - $message")
         val notificationId = (title.hashCode() + message.hashCode() + System.currentTimeMillis().toInt()) % 1000000
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.gomezmart_icon)
@@ -52,6 +54,15 @@ object NotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
+
+        val intent = Intent(context, SplashActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        builder.setContentIntent(pendingIntent)
 
         getManager(context).notify(notificationId, builder.build())
     }
@@ -90,5 +101,17 @@ object NotificationHelper {
             .setAutoCancel(true)
 
         getManager(context).notify(2002, builder.build())
+    }
+
+    fun showOrderNotification(context: Context, name: String) {
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.gomezmart_icon)
+            .setContentTitle("¡Nuevo Pedido! 🛵")
+            .setContentText("$name ha realizado un pedido en tu tienda.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setAutoCancel(true)
+
+        getManager(context).notify(3003, builder.build())
     }
 }
