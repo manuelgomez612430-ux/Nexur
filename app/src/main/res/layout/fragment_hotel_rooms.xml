@@ -183,7 +183,7 @@
             app:strokeWidth="1dp"
             app:strokeColor="@color/slate_100">
 
-            <com.naxor.app.util.HotelMapView
+            <com.gomezmart.app.util.HotelMapView
                 android:id="@+id/mapView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />

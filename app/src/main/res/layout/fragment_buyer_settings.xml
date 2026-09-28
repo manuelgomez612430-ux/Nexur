@@ -85,6 +85,25 @@
                         app:iconGravity="end"
                         app:iconTint="@color/slate_300" />
 
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:background="@color/slate_100" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAccountSettings"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:text="👤  Configuración de Cuenta"
+                        android:gravity="start|center_vertical"
+                        android:textColor="@color/slate_700"
+                        android:textSize="15sp"
+                        app:icon="@android:drawable/ic_menu_revert"
+                        app:iconGravity="end"
+                        app:iconTint="@color/slate_300" />
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -96,6 +115,17 @@
                 android:textAlignment="center"
                 android:textColor="@color/slate_400"
                 android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tvAppVersion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="GoMezMart v1.5.10"
+                android:textAlignment="center"
+                android:textColor="@color/slate_400"
+                android:textSize="12sp"
+                android:textStyle="bold" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

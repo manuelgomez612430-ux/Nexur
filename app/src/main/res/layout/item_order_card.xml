@@ -56,12 +56,40 @@
             android:textColor="@color/slate_600" />
 
         <TextView
+            android:id="@+id/tvOrderReference"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Ref: Al lado de la bodega"
+            android:textSize="12sp"
+            android:textColor="@color/slate_400"
+            android:visibility="gone" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="PRODUCTOS"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="@color/slate_400"
+            android:letterSpacing="0.1" />
+
+        <LinearLayout
+            android:id="@+id/layoutOrderItemsList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="8dp" />
+
+        <TextView
             android:id="@+id/tvOrderItemsSummary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="4dp"
             android:text="2 productos seleccionados"
-            android:textSize="14sp"
+            android:textSize="13sp"
+            android:textStyle="bold"
             android:textColor="@color/slate_700" />
 
         <View
@@ -73,36 +101,106 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:orientation="vertical">
 
+            <!-- TOTAL CENTRADO -->
             <TextView
                 android:id="@+id/tvOrderTotal"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_marginBottom="24dp"
+                android:gravity="center"
                 android:text="Total: S/ 0.00"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/purple_600" />
+                android:textColor="@color/purple_600"
+                android:textSize="26sp"
+                android:textStyle="bold" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnOrderChat"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
+            <!-- FILA 1: CHAT Y UBICACIÓN -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Chat"
-                app:icon="@android:drawable/ic_dialog_email"
-                app:cornerRadius="10dp"
-                android:layout_marginEnd="8dp" />
+                android:orientation="horizontal"
+                android:weightSum="2">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnOrderAction"
-                android:layout_width="wrap_content"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOrderChat"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp"
+                    android:layout_height="60dp"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:padding="0dp"
+                    android:text="Chat"
+                    android:textSize="13sp"
+                    app:cornerRadius="16dp"
+                    app:icon="@android:drawable/ic_dialog_email"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOrderNavigate"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp"
+                    android:layout_height="60dp"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:padding="0dp"
+                    android:text="Ubicación"
+                    android:textSize="13sp"
+                    android:visibility="visible"
+                    app:cornerRadius="16dp"
+                    app:icon="@android:drawable/ic_menu_compass"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp" />
+            </LinearLayout>
+
+            <!-- FILA 2: RECHAZAR Y ACEPTAR -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Aceptar"
-                app:cornerRadius="10dp" />
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal"
+                android:weightSum="2">
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOrderCancel"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp"
+                    android:layout_height="60dp"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:padding="0dp"
+                    android:text="Rechazar"
+                    android:textColor="@color/red_600"
+                    android:textSize="13sp"
+                    app:cornerRadius="16dp"
+                    app:icon="@android:drawable/ic_menu_close_clear_cancel"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp"
+                    app:iconTint="@color/red_600" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOrderAction"
+                    android:layout_width="0dp"
+                    android:layout_height="60dp"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:padding="0dp"
+                    android:text="Aceptar"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="16dp"
+                    app:iconGravity="textStart" />
+
+            </LinearLayout>
         </LinearLayout>
 
     </LinearLayout>

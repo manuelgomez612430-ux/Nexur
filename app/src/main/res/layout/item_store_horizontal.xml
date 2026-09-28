@@ -26,12 +26,22 @@
             app:cardBackgroundColor="@color/slate_50"
             app:strokeWidth="1dp"
             app:strokeColor="@color/slate_200">
-            <ImageView
-                android:id="@+id/ivStoreLogoSmall"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:src="@drawable/gomezmart_icon" />
+                android:layout_height="match_parent">
+                <ImageView
+                    android:id="@+id/ivStoreLogoSmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop" />
+                <ProgressBar
+                    android:id="@+id/pbStoreLogoSmallLoading"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:indeterminateTint="@color/purple_600"
+                    android:visibility="gone" />
+            </FrameLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <TextView

@@ -14,6 +14,8 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <queries>
@@ -38,7 +40,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
-        android:name=".GoMezMartApplication"
+        android:name=".GomezmartApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -46,7 +48,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.GoMezMart"
+        android:theme="@style/Theme.Gomezmart"
         android:usesCleartextTraffic="true">
 
         <provider
@@ -63,7 +65,7 @@
         <activity
             android:name=".SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.GoMezMart.Splash">
+            android:theme="@style/Theme.Gomezmart.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -81,8 +83,13 @@
         <activity
             android:name=".MainActivity"
             android:exported="false"
-            android:label="GoMezMart"
+            android:label="Gomezmart"
             android:windowSoftInputMode="adjustPan" />
+
+        <activity android:name=".ProfileSetupActivity" android:exported="false" android:label="Configuración de Perfil" />
+        <activity android:name=".EditProfileActivity" android:exported="false" android:label="Editar mi Información" />
+        <activity android:name=".OrderTrackingActivity" android:exported="false" android:label="Seguimiento de Pedido" />
+        <activity android:name=".OrderTrackingFullscreenActivity" android:exported="false" android:label="Mapa a Pantalla Completa" />
 
         <activity android:name=".AsignadorDePreciosActivity" android:label="@string/title_asignador_precios" />
         <activity android:name=".HistorialActivity" android:label="Historial" />
@@ -100,7 +107,7 @@
         <activity android:name=".ListaComprasActivity" android:label="Mi Lista de Compras" />
         <activity android:name=".CajaActivity" android:label="Arqueo de Caja" />
         <activity android:name=".SettingsActivity" android:label="Configuración de Negocio Virtual" />
-        <activity android:name=".BusinessSelectionActivity" android:exported="false" android:theme="@style/Theme.GoMezMart" />
+        <activity android:name=".BusinessSelectionActivity" android:exported="false" android:theme="@style/Theme.Gomezmart" />
         <activity android:name=".HotelCheckInActivity" android:exported="false" android:label="Check-in" />
         <activity android:name=".HotelMapEditorActivity" android:exported="false" android:label="Editor de Plano" />
         <activity android:name=".HotelManageRoomActivity" android:exported="false" android:label="Gestión de Habitación" />
@@ -114,9 +121,10 @@
         <activity android:name=".LoansCollectionsActivity" android:exported="false" android:label="Cobros del Día" />
         <activity android:name=".LoansExpensesActivity" android:exported="false" android:label="Mis Gastos" />
         <activity android:name=".SystemSettingsActivity" android:exported="false" android:label="Ajustes del Sistema" />
+        <activity android:name=".AccountSettingsActivity" android:exported="false" android:label="Configuración de Cuenta" />
         <activity android:name=".PdfViewerActivity" android:exported="false" android:label="Vista Previa PDF" />
-        <activity android:name=".SupportCreatorActivity" android:exported="false" android:theme="@style/Theme.GoMezMart" />
-        <activity android:name=".FutureVisionActivity" android:exported="false" android:theme="@style/Theme.GoMezMart" />
+        <activity android:name=".SupportCreatorActivity" android:exported="false" android:theme="@style/Theme.Gomezmart" />
+        <activity android:name=".FutureVisionActivity" android:exported="false" android:theme="@style/Theme.Gomezmart" />
         <activity android:name=".CustomersActivity" android:label="Mis Clientes VIP" />
         <activity android:name=".SalesHistoryActivity" android:label="Historial de Ventas" />
         <activity android:name=".MovementsActivity" android:label="Historial de Movimientos" />
@@ -128,7 +136,7 @@
         <activity android:name=".CommitmentsActivity" android:exported="false" android:label="Mis Compromisos" />
         <activity android:name=".BuyerHomeActivity"
             android:exported="false"
-            android:label="GoMezMart: Compras"
+            android:label="Gomezmart: Compras"
             android:windowSoftInputMode="adjustPan" />
 
         <activity android:name=".HotelBookingRequestActivity" android:exported="false" android:label="Reservar Habitación" />
@@ -152,7 +160,8 @@
         <activity android:name=".BuyerOrdersActivity" android:exported="false" android:label="Mis Pedidos" />
         <activity android:name=".ChatActivity" android:exported="false" android:label="Chat con Negocio" />
         <activity android:name=".SearchUsersActivity" android:exported="false" android:label="Agregar Usuario" />
-        <activity android:name=".TutorialActivity" android:exported="false" android:theme="@style/Theme.GoMezMart" />
+        <activity android:name=".BuyerFavoritesActivity" android:exported="false" android:label="Mis Favoritos" />
+        <activity android:name=".TutorialActivity" android:exported="false" android:theme="@style/Theme.Gomezmart" />
 
         <!-- Actividad para Recorte de Imágenes -->
         <activity
@@ -169,9 +178,9 @@
         </service>
 
         <service
-            android:name=".network.GoMezMartSyncService"
+            android:name=".network.GomezmartSyncService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="dataSync|location" />
 
         <receiver
             android:name=".network.BootReceiver"

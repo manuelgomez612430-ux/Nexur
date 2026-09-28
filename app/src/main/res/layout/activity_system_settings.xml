@@ -331,7 +331,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="16dp"
-                        android:text="¿Cómo funciona Naxor?"
+                        android:text="¿Cómo funciona Gomezmart?"
                         android:textStyle="bold"
                         android:textSize="15sp"
                         android:textColor="?attr/colorOnSurface" />

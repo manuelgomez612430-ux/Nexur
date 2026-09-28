@@ -236,7 +236,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"
-            android:text="GoMezMart v1.5.8 - Acceso Anticipado"
+            android:text="GoMezMart v1.5.10 - Acceso Anticipado"
             android:textColor="@color/slate_400"
             android:textSize="11sp" />
 

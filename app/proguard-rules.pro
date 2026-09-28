@@ -1,10 +1,12 @@
 # --- REGLAS BASE ---
+-optimizationpasses 5
+-allowaccessmodification
 -keepattributes Signature,Annotation*,EnclosingMethod,InnerClasses
 -dontwarn javax.annotation.**
 
 # --- ENTIDADES Y MODELOS (CRÍTICO) ---
 # Mantenemos todas las clases en el paquete de datos para que Room y Firestore funcionen
--keep class com.naxor.app.data.** { *; }
+-keep class com.gomezmart.app.data.** { *; }
 
 # --- FIREBASE ---
 -keep class com.google.firebase.** { *; }
@@ -37,7 +39,7 @@
 -dontwarn com.github.mikephil.charting.**
 
 # --- VIEW BINDING ---
--keep class com.naxor.app.databinding.** { *; }
+-keep class com.gomezmart.app.databinding.** { *; }
 
 # --- KTOR (REGLAS GENERADAS POR R8) ---
 -dontwarn io.ktor.client.plugins.HttpTimeout$HttpTimeoutCapabilityConfiguration

@@ -24,12 +24,22 @@
             app:cardCornerRadius="36dp"
             app:cardElevation="0dp"
             app:cardBackgroundColor="@color/slate_100">
-            <ImageView
-                android:id="@+id/ivStoreLogo"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:src="@drawable/gomezmart_icon" />
+                android:layout_height="match_parent">
+                <ImageView
+                    android:id="@+id/ivStoreLogo"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop" />
+                <ProgressBar
+                    android:id="@+id/pbStoreLogoLoading"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:indeterminateTint="@color/purple_600"
+                    android:visibility="gone" />
+            </FrameLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout

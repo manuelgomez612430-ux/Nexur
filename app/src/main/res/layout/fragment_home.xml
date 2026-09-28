@@ -38,7 +38,7 @@
                 android:id="@+id/topHeaderBackground"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:background="#6B21A8"
+                android:background="@color/purple_600"
                 app:layout_constraintBottom_toBottomOf="@id/cardDashboard"
                 app:layout_constraintTop_toTopOf="parent" />
 
@@ -716,7 +716,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="GoMezMart v1.5.8"
+                android:text="GoMezMart v1.5.10"
                 android:textAlignment="center"
                 android:textSize="10sp"
                 android:textColor="?attr/colorOnSurfaceVariant"

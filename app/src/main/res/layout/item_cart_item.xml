@@ -3,8 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="16dp"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="6dp"
+    app:cardCornerRadius="20dp"
     app:cardElevation="2dp"
     app:strokeWidth="1dp"
     app:strokeColor="@color/slate_100">
@@ -16,10 +17,30 @@
         android:padding="12dp"
         android:gravity="center_vertical">
 
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp"
+                app:cardBackgroundColor="@color/slate_50">
+                <ImageView
+                    android:id="@+id/ivCartProductPhoto"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/gomezmart_icon" />
+            </com.google.android.material.card.MaterialCardView>
+        </FrameLayout>
+
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_marginStart="16dp"
             android:orientation="vertical">
 
             <TextView
@@ -27,62 +48,92 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Nombre del Producto"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textStyle="bold"
-                android:textColor="@color/slate_900" />
+                android:textColor="@color/slate_900"
+                android:maxLines="2"
+                android:ellipsize="end" />
 
             <TextView
                 android:id="@+id/tvCartProductPrice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="S/ 0.00"
+                android:layout_marginTop="2dp"
+                android:text="S/ 0.00 c/u"
                 android:textSize="13sp"
                 android:textColor="@color/slate_500" />
+
+            <TextView
+                android:id="@+id/tvCartItemTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Total: S/ 0.00"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/purple_600" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:background="@drawable/bg_filter_chip"
-            android:paddingHorizontal="4dp">
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginStart="8dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnDecreaseQty"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:padding="0dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                app:icon="@android:drawable/ic_menu_close_clear_cancel"
-                app:iconSize="16dp"
-                app:iconPadding="0dp"
-                app:iconGravity="textStart" />
-
-            <TextView
-                android:id="@+id/tvCartQty"
-                android:layout_width="32dp"
+            <LinearLayout
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1"
-                android:gravity="center"
-                android:textStyle="bold"
-                android:textColor="@color/slate_900" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_filter_chip"
+                android:paddingHorizontal="4dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnIncreaseQty"
-                style="@style/Widget.Material3.Button.TonalButton"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDecreaseQty"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    app:icon="@android:drawable/ic_menu_close_clear_cancel"
+                    app:iconSize="14dp"
+                    app:iconPadding="0dp"
+                    app:iconGravity="textStart" />
+
+                <TextView
+                    android:id="@+id/tvCartQty"
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:text="1"
+                    android:gravity="center"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_900" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnIncreaseQty"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    app:icon="@android:drawable/ic_input_add"
+                    app:iconSize="14dp"
+                    app:iconPadding="0dp"
+                    app:iconGravity="textStart" />
+
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btnRemoveItem"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:padding="0dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                app:icon="@android:drawable/ic_input_add"
-                app:iconSize="16dp"
-                app:iconPadding="0dp"
-                app:iconGravity="textStart" />
-
+                android:layout_marginTop="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_delete"
+                app:tint="@color/red_600" />
         </LinearLayout>
 
     </LinearLayout>

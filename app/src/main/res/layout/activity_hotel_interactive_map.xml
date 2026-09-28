@@ -83,7 +83,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <com.naxor.app.util.HotelMapView
+        <com.gomezmart.app.util.HotelMapView
             android:id="@+id/mapViewInteractive"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />

@@ -98,7 +98,7 @@
         app:layout_constraintTop_toBottomOf="@id/appBarEditor"
         app:layout_constraintBottom_toTopOf="@id/cardTools">
 
-        <com.naxor.app.util.HotelMapView
+        <com.gomezmart.app.util.HotelMapView
             android:id="@+id/editorMapView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />

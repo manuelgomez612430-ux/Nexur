@@ -1,20 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingHorizontal="24dp"
-    android:paddingTop="20dp"
-    android:paddingBottom="8dp">
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:paddingVertical="8dp"
+    android:paddingHorizontal="16dp">
 
-    <TextView
-        android:id="@+id/tvDateHeader"
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hoy"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:textColor="?attr/colorPrimary"
-        android:letterSpacing="0.1"
-        android:textAllCaps="true" />
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="@color/slate_100"
+        app:strokeWidth="0dp">
+
+        <TextView
+            android:id="@+id/tvDateHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            android:text="Hoy"
+            android:textColor="@color/slate_600"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+    </com.google.android.material.card.MaterialCardView>
+
 </LinearLayout>

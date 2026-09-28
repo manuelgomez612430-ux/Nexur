@@ -346,7 +346,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="GoMezMart Hotel v1.5.8"
+                    android:text="GoMezMart Hotel v1.5.10"
                     android:textAlignment="center"
                     android:textSize="10sp"
                     android:textColor="?attr/colorOutline"

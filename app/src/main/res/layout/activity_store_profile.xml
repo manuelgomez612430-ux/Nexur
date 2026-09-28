@@ -7,14 +7,18 @@
     android:background="@color/white">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarStoreProfile"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/white"
+        android:fitsSystemWindows="true"
         app:elevation="0dp">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
+            android:id="@+id/collapsingToolbarStoreProfile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:fitsSystemWindows="true"
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
             app:titleEnabled="false">
 
@@ -23,12 +27,22 @@
                 android:layout_height="wrap_content">
 
                 <!-- 1. PORTADA -->
-                <ImageView
-                    android:id="@+id/ivStoreCover"
+                <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="220dp"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/gomezmart_full_bg" />
+                    android:layout_height="220dp">
+                    <ImageView
+                        android:id="@+id/ivStoreCover"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop" />
+                    <ProgressBar
+                        android:id="@+id/pbCoverLoading"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_gravity="center"
+                        android:indeterminateTint="@color/white"
+                        android:visibility="gone" />
+                </FrameLayout>
 
                 <!-- 2. LOGO -->
                 <com.google.android.material.card.MaterialCardView
@@ -41,12 +55,22 @@
                     app:cardElevation="8dp"
                     app:strokeColor="@color/white"
                     app:strokeWidth="4dp">
-                    <ImageView
-                        android:id="@+id/ivProfileStoreLogo"
+                    <FrameLayout
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/gomezmart_icon" />
+                        android:layout_height="match_parent">
+                        <ImageView
+                            android:id="@+id/ivProfileStoreLogo"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop" />
+                        <ProgressBar
+                            android:id="@+id/pbLogoLoading"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:indeterminateTint="@color/purple_600"
+                            android:visibility="gone" />
+                    </FrameLayout>
                 </com.google.android.material.card.MaterialCardView>
 
                 <!-- Padding bottom to prevent overlap -->
@@ -62,8 +86,30 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 app:layout_collapseMode="pin"
-                app:navigationIcon="@android:drawable/ic_menu_revert"
-                app:navigationIconTint="@color/white" />
+                app:contentInsetStart="0dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnBackStoreProfile"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="16dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:strokeWidth="0dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="⬅️"
+                        android:textSize="20sp"
+                        android:includeFontPadding="false" />
+                </com.google.android.material.card.MaterialCardView>
+
+            </com.google.android.material.appbar.MaterialToolbar>
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
 
@@ -116,7 +162,7 @@
                 android:orientation="vertical"
                 android:paddingHorizontal="24dp"
                 android:paddingTop="16dp"
-                android:paddingBottom="48dp">
+                android:paddingBottom="100dp">
 
             <!-- ID SECTION -->
             <LinearLayout
@@ -180,7 +226,43 @@
                     android:textStyle="bold" />
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- SECCIÓN: PRODUCTOS DE LA TIENDA (Oculto en vista principal, disponible vía Catálogo Virtual) -->
+            <LinearLayout
+                android:id="@+id/layoutStoreProducts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="24dp"
+                android:visibility="gone">
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="NUESTROS PRODUCTOS"
+                    android:textColor="@color/slate_500"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvStoreProductsProfile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:nestedScrollingEnabled="false"
+                    tools:listitem="@layout/item_marketplace_grid_product" />
+
+                <TextView
+                    android:id="@+id/tvNoStoreProducts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:text="No hay productos disponibles por ahora"
+                    android:textColor="@color/slate_400"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
@@ -498,5 +580,63 @@
         </LinearLayout>
     </FrameLayout>
 </androidx.core.widget.NestedScrollView>
+
+    <!-- BOTÓN INFERIOR FIJO: VER CATÁLOGO VIRTUAL -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardBottomCatalogButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="@color/purple_600"
+        app:strokeWidth="0dp">
+
+        <LinearLayout
+            android:id="@+id/btnOpenStoreCatalog"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingHorizontal="20dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🛍️"
+                android:textSize="20sp"
+                android:layout_marginEnd="10dp" />
+
+            <TextView
+                android:id="@+id/tvCatalogButtonText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="VER CATÁLOGO VIRTUAL"
+                android:textColor="@color/white"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.05" />
+
+            <TextView
+                android:id="@+id/tvCatalogBadgeCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/bg_circle_surface"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:text="0"
+                android:textColor="@color/purple_600"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -12,8 +12,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <androidx.fragment.app.FragmentContainerView
-            android:id="@+id/buyerFragmentContainer"
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/buyerViewPager"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             app:layout_constraintTop_toTopOf="parent"
@@ -26,7 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="72dp"
             android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="8dp"
             app:cardCornerRadius="36dp"
             app:cardElevation="12dp"
             app:strokeWidth="0dp"
@@ -58,7 +58,6 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent">
 
-                    <!-- MERCADO -->
                     <LinearLayout
                         android:id="@+id/btnNavHome"
                         android:layout_width="0dp"
@@ -69,12 +68,34 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:background="?attr/selectableItemBackgroundBorderless">
-                        <TextView
-                            android:id="@+id/tvIconHome"
+
+                        <FrameLayout
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="🛒"
-                            android:textSize="22sp" />
+                            android:layout_height="wrap_content">
+
+                            <TextView
+                                android:id="@+id/tvIconHome"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🛒"
+                                android:textSize="22sp" />
+
+                            <TextView
+                                android:id="@+id/tvActiveOrdersBadge"
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:layout_gravity="top|end"
+                                android:layout_marginTop="-4dp"
+                                android:layout_marginEnd="-4dp"
+                                android:background="@drawable/bg_circle_green"
+                                android:gravity="center"
+                                android:text="1"
+                                android:textColor="@color/white"
+                                android:textSize="9sp"
+                                android:textStyle="bold"
+                                android:visibility="gone" />
+                        </FrameLayout>
+
                         <TextView
                             android:id="@+id/tvLabelHome"
                             android:layout_width="wrap_content"

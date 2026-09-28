@@ -45,66 +45,35 @@
                     android:padding="24dp"
                     android:gravity="center">
 
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content">
-
-                        <com.google.android.material.card.MaterialCardView
-                            android:id="@+id/cardProfileImage"
-                            android:layout_width="100dp"
-                            android:layout_height="100dp"
-                            app:cardCornerRadius="50dp"
-                            app:cardElevation="0dp"
-                            app:cardBackgroundColor="@color/purple_100"
-                            app:layout_constraintTop_toTopOf="parent"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent">
-                            <FrameLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent">
-                                <TextView
-                                    android:id="@+id/tvProfileInitial"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:text="U"
-                                    android:gravity="center"
-                                    android:textSize="40sp"
-                                    android:textStyle="bold"
-                                    android:textColor="@color/purple_600" />
-                                <ImageView
-                                    android:id="@+id/ivProfileImage"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:scaleType="centerCrop"
-                                    android:visibility="gone" />
-                            </FrameLayout>
-                        </com.google.android.material.card.MaterialCardView>
-
-                        <!-- Botón de Cámara tipo Badge -->
-                        <com.google.android.material.card.MaterialCardView
-                            android:id="@+id/btnChangePhotoBadge"
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            app:cardCornerRadius="18dp"
-                            app:cardElevation="4dp"
-                            app:strokeWidth="2dp"
-                            app:strokeColor="@color/white"
-                            app:cardBackgroundColor="@color/purple_600"
-                            app:layout_constraintBottom_toBottomOf="@id/cardProfileImage"
-                            app:layout_constraintEnd_toEndOf="@id/cardProfileImage"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:foreground="?attr/selectableItemBackground">
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardProfileImage"
+                        android:layout_width="100dp"
+                        android:layout_height="100dp"
+                        app:cardCornerRadius="50dp"
+                        app:cardElevation="2dp"
+                        app:strokeWidth="2.5dp"
+                        app:strokeColor="@color/purple_600"
+                        app:cardBackgroundColor="@color/purple_100">
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent">
                             <TextView
+                                android:id="@+id/tvProfileInitial"
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
-                                android:text="📷"
-                                android:textSize="14sp"
-                                android:gravity="center" />
-                        </com.google.android.material.card.MaterialCardView>
-
-                    </androidx.constraintlayout.widget.ConstraintLayout>
+                                android:text="U"
+                                android:gravity="center"
+                                android:textSize="40sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/purple_600" />
+                            <ImageView
+                                android:id="@+id/ivProfileImage"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:scaleType="centerCrop"
+                                android:visibility="gone" />
+                        </FrameLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
                     <TextView
                         android:id="@+id/tvProfileName"

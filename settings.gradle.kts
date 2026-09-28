@@ -23,6 +23,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Naxor"
+rootProject.name = "Gomezmart"
 include(":app")
  

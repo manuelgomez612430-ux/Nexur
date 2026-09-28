@@ -10,157 +10,169 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/gomezmart_primary"
+        android:fitsSystemWindows="false"
         app:elevation="0dp">
 
-        <com.google.android.material.appbar.CollapsingToolbarLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:titleEnabled="false">
+            android:orientation="vertical"
+            android:background="@color/gomezmart_primary">
 
+            <!-- 1. BARRA SUPERIOR: MENU, BÚSQUEDA Y FAVORITOS -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingTop="70dp"
-                app:layout_collapseMode="parallax">
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:gravity="center_vertical">
 
-                <!-- Location Bar -->
-                <LinearLayout
-                    android:id="@+id/btnLocationSelector"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="10dp"
-                    android:gravity="center_vertical"
-                    android:clickable="true"
-                    android:focusable="true">
+                <ImageButton
+                    android:id="@+id/btnOpenMenu"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_sort_by_size"
+                    app:tint="@color/white" />
 
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@android:drawable/ic_menu_mylocation"
-                        app:tint="@color/white" />
-
-                    <TextView
-                        android:id="@+id/tvCurrentLocation"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:text="Ingresa tu ubicación >"
-                        android:textSize="12sp"
-                        android:textColor="@color/white"
-                        android:alpha="0.9" />
-                </LinearLayout>
-
-                <!-- Category Tabs -->
-                <HorizontalScrollView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:scrollbars="none"
-                    android:paddingBottom="12dp">
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="12dp"
+                    app:cardCornerRadius="21dp"
+                    app:cardElevation="2dp"
+                    app:strokeWidth="0dp">
 
                     <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
                         android:orientation="horizontal"
-                        android:paddingHorizontal="16dp">
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="14dp">
 
-                        <TextView
-                            android:id="@+id/tabAll"
-                            style="@style/MarketplaceTab"
-                            android:text="Todo"
-                            android:textColor="@color/white"
-                            android:textStyle="bold" />
-                        <TextView
-                            android:id="@+id/tabHotel"
-                            style="@style/MarketplaceTab"
-                            android:text="Hotelería y Turismo"
-                            android:textColor="@color/white" />
-                        <TextView
-                            android:id="@+id/tabProducts"
-                            style="@style/MarketplaceTab"
-                            android:text="Productos"
-                            android:textColor="@color/white" />
-                        <TextView
-                            android:id="@+id/tabLoans"
-                            style="@style/MarketplaceTab"
-                            android:text="Préstamos"
-                            android:textColor="@color/white" />
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:src="@android:drawable/ic_menu_search"
+                            app:tint="@color/slate_400" />
 
+                        <EditText
+                            android:id="@+id/etSearchMarketplace"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:hint="Buscar en GoMezMart"
+                            android:paddingHorizontal="8dp"
+                            android:textSize="14sp"
+                            android:textColor="@color/slate_900"
+                            android:inputType="text" />
                     </LinearLayout>
-                </HorizontalScrollView>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnFavorites"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    app:cardCornerRadius="22dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#20FFFFFF"
+                    app:strokeWidth="0dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="⭐"
+                        android:textSize="20sp"
+                        android:includeFontPadding="false" />
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
-            <com.google.android.material.appbar.MaterialToolbar
+            <!-- 2. BARRA DE UBICACIÓN (EMOJI + CIUDAD Y CÓDIGO POSTAL + BOTÓN CAMBIAR AL COSTADO) -->
+            <LinearLayout
+                android:id="@+id/btnLocationSelector"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
+
+                <TextView
+                    android:id="@+id/tvLocationEmoji"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📍"
+                    android:textSize="15sp"
+                    android:layout_marginEnd="6dp" />
+
+                <TextView
+                    android:id="@+id/tvCurrentLocation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Seleccionar ubicación"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:id="@+id/tvChangeLocation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Cambiar >"
+                    android:textSize="12sp"
+                    android:textColor="@color/white"
+                    android:alpha="0.85" />
+            </LinearLayout>
+
+            <!-- 3. PESTAÑAS DE CATEGORÍA -->
+            <HorizontalScrollView
                 android:layout_width="match_parent"
-                android:layout_height="70dp"
-                android:background="@color/gomezmart_primary"
-                app:layout_collapseMode="pin"
-                app:contentInsetStart="0dp">
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:paddingBottom="10dp">
 
                 <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="16dp"
-                    android:gravity="center_vertical">
+                    android:paddingHorizontal="16dp">
 
-                    <ImageButton
-                        android:id="@+id/btnOpenMenu"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:src="@android:drawable/ic_menu_sort_by_size"
-                        app:tint="@color/white" />
+                    <TextView
+                        android:id="@+id/tabAll"
+                        style="@style/MarketplaceTab"
+                        android:text="Todo"
+                        android:textColor="@color/white"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tabHotel"
+                        style="@style/MarketplaceTab"
+                        android:text="Hotelería y Turismo"
+                        android:textColor="@color/white" />
+                    <TextView
+                        android:id="@+id/tabProducts"
+                        style="@style/MarketplaceTab"
+                        android:text="Productos"
+                        android:textColor="@color/white" />
+                    <TextView
+                        android:id="@+id/tabLoans"
+                        style="@style/MarketplaceTab"
+                        android:text="Préstamos"
+                        android:textColor="@color/white" />
 
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="44dp"
-                        android:layout_weight="1"
-                        android:layout_marginHorizontal="12dp"
-                        app:cardCornerRadius="22dp"
-                        app:cardElevation="2dp"
-                        app:strokeWidth="0dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:paddingHorizontal="16dp">
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@android:drawable/ic_menu_search"
-                                app:tint="@color/slate_400" />
-
-                            <EditText
-                                android:id="@+id/etSearchMarketplace"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:background="@null"
-                                android:hint="Buscar en GoMezMart"
-                                android:paddingHorizontal="12dp"
-                                android:textSize="14sp"
-                                android:textColor="@color/slate_900"
-                                android:inputType="text" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <ImageButton
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:src="@android:drawable/btn_star_big_off"
-                        app:tint="@color/white" />
                 </LinearLayout>
-            </com.google.android.material.appbar.MaterialToolbar>
+            </HorizontalScrollView>
 
-        </com.google.android.material.appbar.CollapsingToolbarLayout>
+        </LinearLayout>
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -265,6 +277,44 @@
                     android:paddingHorizontal="8dp"
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_marketplace_grid_product" />
+
+                <!-- Pagination / End Container -->
+                <LinearLayout
+                    android:id="@+id/layoutPaginationContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:paddingVertical="20dp"
+                    android:paddingHorizontal="24dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLoadMoreMarketplace"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Cargar más"
+                        android:textColor="@color/gomezmart_primary"
+                        app:strokeColor="@color/gomezmart_primary"
+                        app:strokeWidth="1.5dp"
+                        app:cornerRadius="20dp"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:paddingHorizontal="24dp"
+                        android:paddingVertical="10dp"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvNoMoreProductsMarketplace"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Llegaste hasta el final ✨"
+                        android:textColor="@color/slate_500"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:visibility="gone" />
+                </LinearLayout>
 
             </LinearLayout>
 

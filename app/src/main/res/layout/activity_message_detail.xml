@@ -5,12 +5,12 @@
     android:layout_height="match_parent"
     android:background="?attr/colorSurface">
 
-    <!-- Cabecera morada estilo Naxor -->
+    <!-- Cabecera morada estilo Gomezmart -->
     <View
         android:id="@+id/headerBackground"
         android:layout_width="match_parent"
         android:layout_height="120dp"
-        android:background="#6B21A8"
+        android:background="@color/purple_600"
         app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.card.MaterialCardView
@@ -21,18 +21,20 @@
         android:layout_marginTop="20dp"
         android:clickable="true"
         android:focusable="true"
-        app:cardBackgroundColor="#20FFFFFF"
+        app:cardBackgroundColor="@color/white"
         app:cardCornerRadius="20dp"
-        app:cardElevation="0dp"
+        app:cardElevation="4dp"
         app:strokeWidth="0dp"
+        android:foreground="?attr/selectableItemBackground"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
-        <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_gravity="center"
-            android:src="@android:drawable/ic_menu_revert"
-            app:tint="@android:color/white" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="⬅️"
+            android:textSize="20sp"
+            android:includeFontPadding="false" />
     </com.google.android.material.card.MaterialCardView>
 
     <TextView

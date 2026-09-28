@@ -106,6 +106,15 @@
                             android:textSize="28sp"
                             android:textStyle="bold"
                             android:textColor="@android:color/white" />
+                        <TextView
+                            android:id="@+id/tvTotalPersonal"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Personal: S/ 0.00"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:textColor="#FEE2E2"
+                            android:alpha="0.8" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.naxor.app"
+    namespace = "com.gomezmart.app"
     compileSdk = 35
 
     val localProperties = Properties()
@@ -21,15 +21,18 @@ android {
         applicationId = "com.naxor.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 20 // Sube esto cada vez que envíes una actualización
-        versionName = "1.5.8" // Nombre visual de la versión
+        versionCode = 22
+        versionName = "1.5.10"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
+        
+        // Optimización: Solo descargar recursos en español para reducir tamaño de librerías
+        resourceConfigurations.add("es")
     }
 
     signingConfigs {
-        val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "naxor.jks"
+        val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "gomezmart.jks"
         val keystoreFile = file(keystorePath)
         
         create("release") {
@@ -50,14 +53,14 @@ android {
                 abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a"))
             }
 
-            val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "naxor.jks"
+            val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "gomezmart.jks"
             if (file(keystorePath).exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
         debug {
             isMinifyEnabled = false
-            val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "naxor.jks"
+            val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "gomezmart.jks"
             if (file(keystorePath).exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }

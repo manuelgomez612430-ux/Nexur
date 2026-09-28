@@ -21,6 +21,7 @@
     <color name="red_600">#DC2626</color>
     <color name="red_700">#B91C1C</color>
     <color name="red_50">#FEF2F2</color>
+    <color name="red_200">#FECACA</color>
     <color name="indigo_500">#6366F1</color>
     <color name="purple_600">#7C3AED</color>
     <color name="purple_700">#6D28D9</color>
@@ -48,7 +49,7 @@
     <color name="purple_glow">#4C1D95</color>
     <color name="glass_white">#1AFFFFFF</color>
     <color name="glass_border">#40FFFFFF</color>
-    <color name="nav_indicator">#6B21A8</color>
+    <color name="nav_indicator">#7C3AED</color>
     <!-- GoMezMart E-commerce Palette (Purple Branding) -->
     <color name="gomezmart_primary">#7C3AED</color>
     <color name="gomezmart_primary_dark">#5B21B6</color>

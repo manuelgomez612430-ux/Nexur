@@ -15,6 +15,7 @@
             android:id="@+id/mainFragmentContainer"
             android:layout_width="match_parent"
             android:layout_height="0dp"
+            android:fitsSystemWindows="false"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toTopOf="@id/cardBottomNavContainer"
             app:layout_constraintStart_toStartOf="parent"
@@ -25,7 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="72dp"
             android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="8dp"
             app:cardCornerRadius="36dp"
             app:cardElevation="12dp"
             app:strokeWidth="0dp"
@@ -214,7 +215,7 @@
             android:clickable="true"
             android:focusable="true">
 
-            <com.naxor.app.util.TutorialSpotlightView
+            <com.gomezmart.app.util.TutorialSpotlightView
                 android:id="@+id/viewTutorialSpotlight"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
@@ -258,7 +259,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="12dp"
                             android:gravity="center"
-                            android:text="Toca para comenzar el recorrido por las funciones de GoMezMart."
+                            android:text="Toca para comenzar el recorrido por las funciones de Gomezmart."
                             android:textColor="?attr/colorOnSurface"
                             android:textSize="15sp" />
 

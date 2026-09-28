@@ -3,19 +3,18 @@
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/buyer_menu_bookings"
-            android:icon="@android:drawable/ic_menu_today"
-            android:title="Mis reservas" />
+            android:title="📅   Mis reservas" />
         <item
             android:id="@+id/buyer_menu_orders"
-            android:icon="@android:drawable/ic_menu_send"
-            android:title="Mis pedidos / Delivery" />
+            android:title="📦   Mis pedidos / Delivery" />
+        <item
+            android:id="@+id/buyer_menu_cart"
+            android:title="🛒   Carrito de compras" />
         <item
             android:id="@+id/buyer_menu_categories"
-            android:icon="@android:drawable/ic_menu_sort_by_size"
-            android:title="Categorías" />
+            android:title="🏷️   Categorías" />
         <item
             android:id="@+id/buyer_menu_report_error"
-            android:icon="@android:drawable/ic_menu_info_details"
-            android:title="Reportar errores" />
+            android:title="🛠️   Reportar errores" />
     </group>
 </menu>

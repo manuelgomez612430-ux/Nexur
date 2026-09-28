@@ -22,12 +22,22 @@
             app:cardCornerRadius="0dp"
             app:cardElevation="0dp"
             app:cardBackgroundColor="@color/slate_50">
-            <ImageView
-                android:id="@+id/ivProductImage"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:src="@drawable/gomezmart_icon" />
+                android:layout_height="match_parent">
+                <ImageView
+                    android:id="@+id/ivProductImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop" />
+                <ProgressBar
+                    android:id="@+id/pbProductLoadingGrid"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:indeterminateTint="@color/purple_600"
+                    android:visibility="gone" />
+            </FrameLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout
@@ -37,23 +47,23 @@
             android:padding="12dp">
 
             <TextView
-                android:id="@+id/tvProductPrice"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="S/ 0.00"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="@color/slate_900" />
-
-            <TextView
                 android:id="@+id/tvProductName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Nombre del Producto"
-                android:textSize="14sp"
-                android:textColor="@color/slate_700"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_900"
                 android:maxLines="2"
-                android:ellipsize="end"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/tvProductPrice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="S/ 0.00"
+                android:textSize="12sp"
+                android:textColor="@color/slate_500"
                 android:layout_marginTop="2dp" />
 
             <LinearLayout
@@ -61,7 +71,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginTop="4dp">
+                android:layout_marginTop="6dp">
 
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="16dp"
@@ -70,12 +80,22 @@
                     app:cardElevation="0dp"
                     app:strokeWidth="0dp"
                     app:cardBackgroundColor="@color/slate_100">
-                    <ImageView
-                        android:id="@+id/ivProductStoreLogo"
+                    <FrameLayout
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/gomezmart_icon" />
+                        android:layout_height="match_parent">
+                        <ImageView
+                            android:id="@+id/ivProductStoreLogo"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop" />
+                        <ProgressBar
+                            android:id="@+id/pbProductStoreLogoLoading"
+                            android:layout_width="10dp"
+                            android:layout_height="10dp"
+                            android:layout_gravity="center"
+                            android:indeterminateTint="@color/purple_600"
+                            android:visibility="gone" />
+                    </FrameLayout>
                 </com.google.android.material.card.MaterialCardView>
 
                 <TextView

@@ -7,6 +7,7 @@
     android:background="@color/slate_50">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarManageLocations"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/white">
@@ -14,8 +15,39 @@
             android:id="@+id/toolbarManageLocations"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="Mis Ubicaciones"
-            app:navigationIcon="@android:drawable/ic_menu_revert" />
+            app:contentInsetStart="0dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnBackManageLocations"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="16dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="@color/white"
+                app:strokeWidth="0dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="⬅️"
+                    android:textSize="20sp"
+                    android:includeFontPadding="false" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Mis Ubicaciones"
+                android:textColor="@color/slate_900"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+        </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
