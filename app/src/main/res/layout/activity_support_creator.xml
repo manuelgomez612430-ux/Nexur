@@ -6,6 +6,7 @@
     android:background="@color/purple_600">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarSupport"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/purple_600"
@@ -14,7 +15,8 @@
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarSupport"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
+            android:layout_height="wrap_content"
+            android:minHeight="?attr/actionBarSize"
             app:navigationIcon="@android:drawable/ic_menu_close_clear_cancel"
             app:navigationIconTint="@color/white" />
     </com.google.android.material.appbar.AppBarLayout>

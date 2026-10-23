@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/colorSurface">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarAiChat"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurfaceContainer"
+        app:elevation="0dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarAiChat"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Asesor IA GoMezMart"
+            app:subtitle="Inteligencia Artificial Financiera"
+            app:titleTextColor="?attr/colorOnSurface"
+            app:subtitleTextColor="?attr/colorOnSurfaceVariant"
+            app:navigationIcon="@android:drawable/ic_menu_revert" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvAiMessages"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:padding="16dp" />
+
+    <!-- CONTENEDOR INFERIOR (BARRA DE CHIPS + INPUT) -->
+    <LinearLayout
+        android:id="@+id/layoutAiBottomContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="?attr/colorSurfaceContainer">
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:paddingHorizontal="12dp"
+            android:paddingTop="8dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnActionWhatsapp"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="📲 Enviar WhatsApp de Cobranza"
+                    android:textSize="11sp"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnActionNewLoan"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="➕ Nuevo Préstamo"
+                    android:textSize="11sp"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnActionExpenses"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💸 Registrar Gasto"
+                    android:textSize="11sp"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <LinearLayout
+            android:id="@+id/layoutAiInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:gravity="center_vertical">
+
+            <EditText
+                android:id="@+id/etAiMessage"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:importantForAutofill="no"
+                android:background="@drawable/bg_rounded_8"
+                android:hint="Pregúntale a tu Asesor IA..."
+                android:inputType="textMultiLine|textNoSuggestions|textCapSentences"
+                android:maxLines="4"
+                android:padding="12dp"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="14sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSendAiMessage"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                app:backgroundTint="?attr/colorPrimary"
+                app:icon="@android:drawable/ic_menu_send"
+                app:iconTint="@color/white" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

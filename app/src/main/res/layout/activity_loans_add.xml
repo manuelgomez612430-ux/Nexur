@@ -39,7 +39,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="160dp"
+        android:paddingBottom="200dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -78,7 +78,7 @@
                         android:hint="¿A quién le prestas? (Nombre)"
                         app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
                         app:endIconMode="clear_text"
-                        android:layout_marginBottom="12dp">
+                        android:layout_marginBottom="6dp">
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/etLoanClientName"
                             android:layout_width="match_parent"
@@ -86,6 +86,17 @@
                             android:inputType="textCapWords"
                             android:imeOptions="actionNext" />
                     </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPickContact"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:layout_gravity="center_horizontal"
+                        android:text="👥 Elegir de Contactos"
+                        android:textSize="12sp"
+                        app:cornerRadius="12dp"
+                        android:layout_marginBottom="12dp" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -138,10 +149,8 @@
                         android:layout_height="wrap_content"
                         android:hint="Número de celular (Opcional)"
                         app:startIconDrawable="@android:drawable/ic_menu_call"
-                        app:endIconMode="custom"
-                        app:endIconDrawable="@android:drawable/ic_menu_my_calendar"
-                        app:endIconTint="?attr/colorPrimary"
-                        android:layout_marginBottom="8dp">
+                        app:endIconMode="clear_text"
+                        android:layout_marginBottom="12dp">
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etLoanClientPhone"
                             android:layout_width="match_parent"
@@ -149,10 +158,70 @@
                             android:inputType="phone"
                             android:imeOptions="actionDone" />
                     </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- FOTO DEL CLIENTE -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="4dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardClientPhotoPreview"
+                            android:layout_width="52dp"
+                            android:layout_height="52dp"
+                            app:cardCornerRadius="26dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="@color/purple_50"
+                            app:strokeWidth="1dp"
+                            app:strokeColor="@color/purple_200"
+                            android:layout_marginEnd="12dp">
+
+                            <ImageView
+                                android:id="@+id/ivClientPhotoPreview"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:scaleType="centerCrop"
+                                android:src="@android:drawable/ic_menu_camera"
+                                app:tint="@color/purple_600" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Foto del Cliente (Opcional)"
+                                android:textStyle="bold"
+                                android:textSize="13sp"
+                                android:textColor="?attr/colorOnSurface" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Toma foto para identificar al cliente"
+                                android:textSize="11sp"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCaptureClientPhoto"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:text="📸 Tomar Foto"
+                            android:textSize="11sp"
+                            app:cornerRadius="12dp" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- SECCIÓN 2: CONFIGURACIÓN RÁPIDA (CON VALORES POR DEFECTO) -->
+            <!-- SECCIÓN: ORIGEN DEL DINERO (PRESUPUESTO VS PERSONAL) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -170,295 +239,483 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Plan de Pago"
+                        android:text="¿De dónde sale el dinero del préstamo?"
                         android:textStyle="bold"
                         android:textColor="@color/slate_600"
                         android:textSize="14sp"
                         android:layout_marginBottom="12dp" />
 
                     <com.google.android.material.button.MaterialButtonToggleGroup
-                        android:id="@+id/toggleLoanFrequency"
+                        android:id="@+id/toggleFundingSource"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         app:singleSelection="true"
                         app:selectionRequired="true"
-                        app:checkedButton="@id/btnFreqDaily"
-                        android:layout_marginBottom="12dp">
+                        app:checkedButton="@id/btnFundingBudget">
                         <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnFreqNone"
+                            android:id="@+id/btnFundingBudget"
                             style="@style/Widget.App.Button.Toggle"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Única"
-                            android:paddingLeft="4dp"
-                            android:paddingRight="4dp"
+                            android:text="💼 Negocio (Presupuesto)"
                             android:textSize="11sp" />
                         <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnFreqDaily"
+                            android:id="@+id/btnFundingPersonal"
                             style="@style/Widget.App.Button.Toggle"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Diario"
-                            android:paddingLeft="4dp"
-                            android:paddingRight="4dp"
-                            android:textSize="11sp" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnFreqWeekly"
-                            style="@style/Widget.App.Button.Toggle"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Semanal"
-                            android:paddingLeft="4dp"
-                            android:paddingRight="4dp"
-                            android:textSize="11sp" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnFreqMonthly"
-                            style="@style/Widget.App.Button.Toggle"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Mensual"
-                            android:paddingLeft="4dp"
-                            android:paddingRight="4dp"
+                            android:text="👤 Bolsillo Personal"
                             android:textSize="11sp" />
                     </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                    <!-- CUENTAS VINCULADAS AL ORIGEN SELECCIONADO -->
+                    <TextView
+                        android:id="@+id/tvLinkedAccountsLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Cuentas vinculadas a este origen:"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/purple_700"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="8dp" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutAccountChipsContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="10dp" />
+
+                    <TextView
+                        android:id="@+id/tvAvailableFundsSummary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Saldo disponible en cuentas seleccionadas: S/ 0.00"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/emerald_600" />
+
+                    <TextView
+                        android:id="@+id/tvFundsWarning"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️ Fondos insuficientes en la(s) cuenta(s) seleccionada(s). Selecciona más cuentas o ajusta el saldo."
+                        android:textSize="12sp"
+                        android:textColor="@color/red_600"
+                        android:visibility="gone"
+                        android:layout_marginTop="6dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SECCIÓN 1.5: FECHA DE COBRO (OPCIONAL Y INDEPENDIENTE) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="1dp"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                app:strokeWidth="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- FECHA DEL PRÉSTAMO (SIEMPRE VISIBLE - HOY POR DEFECTO) -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Fecha del Préstamo"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_600"
+                        android:textSize="13sp"
+                        android:layout_marginBottom="6dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLoanStartDatePicker"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:text="📅 Fecha del Préstamo: Hoy"
+                        android:gravity="start|center_vertical"
+                        android:paddingHorizontal="16dp"
+                        android:layout_marginBottom="16dp"
+                        app:cornerRadius="14dp"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface" />
+
+                    <!-- FECHA DE COBRO DE LA CUOTA -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Fecha Límite de Cobro"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_600"
+                            android:textSize="13sp" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchEnableDueDate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="false" />
+                    </LinearLayout>
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnLoanDatePicker"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="match_parent"
-                        android:layout_height="60dp"
+                        android:layout_height="52dp"
                         android:text="📅 Seleccionar fecha de cobro"
-                        android:visibility="visible"
-                        android:layout_marginBottom="16dp"
-                        app:cornerRadius="16dp"
-                        android:textSize="15sp"
+                        android:visibility="gone"
+                        app:cornerRadius="14dp"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SECCIÓN 2: PLAN DE PAGO Y CUOTAS (OPCIONAL) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="1dp"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                app:strokeWidth="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
                     <LinearLayout
-                        android:id="@+id/layoutInstallmentConfig"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:baselineAligned="false">
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Plan de Pago / Cuotas"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_600"
+                            android:textSize="14sp" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchEnablePaymentPlan"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="false" />
+                    </LinearLayout>
 
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    <LinearLayout
+                        android:id="@+id/layoutPaymentPlanOptions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <com.google.android.material.button.MaterialButtonToggleGroup
+                            android:id="@+id/toggleLoanFrequency"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="Número de cuotas a pagar">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etLoanInstallments"
+                            app:singleSelection="true"
+                            app:selectionRequired="true"
+                            app:checkedButton="@id/btnFreqDaily"
+                            android:layout_marginBottom="12dp">
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnFreqNone"
+                                style="@style/Widget.App.Button.Toggle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Única"
+                                android:paddingLeft="4dp"
+                                android:paddingRight="4dp"
+                                android:textSize="11sp" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnFreqDaily"
+                                style="@style/Widget.App.Button.Toggle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Diario"
+                                android:paddingLeft="4dp"
+                                android:paddingRight="4dp"
+                                android:textSize="11sp" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnFreqWeekly"
+                                style="@style/Widget.App.Button.Toggle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Semanal"
+                                android:paddingLeft="4dp"
+                                android:paddingRight="4dp"
+                                android:textSize="11sp" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnFreqMonthly"
+                                style="@style/Widget.App.Button.Toggle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Mensual"
+                                android:paddingLeft="4dp"
+                                android:paddingRight="4dp"
+                                android:textSize="11sp" />
+                        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                        <LinearLayout
+                            android:id="@+id/layoutInstallmentConfig"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="number"
-                                android:text="24"
-                                android:imeOptions="actionDone" />
-                        </com.google.android.material.textfield.TextInputLayout>
+                                android:hint="Número de cuotas a pagar">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etLoanInstallments"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="number"
+                                    android:text="24"
+                                    android:imeOptions="actionDone" />
+                            </com.google.android.material.textfield.TextInputLayout>
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- BOTÓN PARA MOSTRAR OPCIONES AVANZADAS -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnToggleAdvancedOptions"
-                style="@style/Widget.Material3.Button.TextButton"
+            <!-- SECCIÓN 3: DETALLES ADICIONALES (FOTOS, DNI, GARANTÍA) - ACTIVABLE -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="➕ Añadir más detalles (Fotos, DNI, Dirección...)"
-                android:textColor="@color/indigo_500"
-                android:textSize="13sp" />
-
-            <!-- SECCIÓN 3: OPCIONES AVANZADAS (OCULTAS POR DEFECTO) -->
-            <LinearLayout
-                android:id="@+id/layoutAdvancedOptions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <com.google.android.material.card.MaterialCardView
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="1dp"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                app:strokeWidth="0dp">
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="1dp"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
-                    app:strokeWidth="0dp">
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="20dp">
-
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="4dp">
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="Seguridad y Fotos"
+                            android:layout_weight="1"
+                            android:text="Más detalles (Fotos, DNI, Garantía)"
                             android:textStyle="bold"
                             android:textColor="@color/slate_600"
-                            android:layout_marginBottom="12dp" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
+                            android:textSize="14sp" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchEnableAdvancedOptions"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="12dp">
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnCaptureClientPhoto"
-                                style="@style/Widget.Material3.Button.TonalButton"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="📷 Foto Rostro"
-                                android:layout_marginEnd="4dp"
-                                android:textSize="11sp" />
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnCaptureDocPhoto"
-                                style="@style/Widget.Material3.Button.TonalButton"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="🆔 Foto DNI"
-                                android:layout_marginStart="4dp"
-                                android:textSize="11sp" />
-                        </LinearLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="DNI / RUC del cliente"
-                            app:endIconMode="clear_text"
-                            android:layout_marginBottom="12dp">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etLoanClientDoc"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="number"
-                                android:imeOptions="actionNext" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/tilLoanClientAddress"
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Dirección o referencia"
-                            app:startIconDrawable="@android:drawable/ic_menu_mylocation"
-                            app:endIconMode="clear_text"
-                            android:layout_marginBottom="4dp">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etLoanClientAddress"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="textPostalAddress"
-                                android:imeOptions="actionNext" />
-                        </com.google.android.material.textfield.TextInputLayout>
+                            android:checked="false" />
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="1dp"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
-                    app:strokeWidth="0dp">
+                    <!-- OPCIONES AVANZADAS (OCULTAS POR DEFECTO) -->
                     <LinearLayout
+                        android:id="@+id/layoutAdvancedOptions"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="20dp">
+                        android:visibility="gone"
+                        android:layout_marginTop="12dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Mora y Garantía"
-                            android:textStyle="bold"
-                            android:textColor="?attr/colorOnSurface"
-                            android:layout_marginBottom="12dp" />
-
-                        <LinearLayout
+                        <com.google.android.material.card.MaterialCardView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-                            <com.google.android.material.textfield.TextInputLayout
-                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:hint="Mora Diaria"
-                                app:prefixText="S/ "
-                                android:layout_marginEnd="8dp">
-                                <com.google.android.material.textfield.TextInputEditText
-                                    android:id="@+id/etLoanLateFee"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal"
-                                    android:text="0"
-                                    android:imeOptions="actionNext" />
-                            </com.google.android.material.textfield.TextInputLayout>
-                            <com.google.android.material.textfield.TextInputLayout
-                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:hint="Días Gracia">
-                                <com.google.android.material.textfield.TextInputEditText
-                                    android:id="@+id/etLoanGraceDays"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:inputType="number"
-                                    android:text="0"
-                                    android:imeOptions="actionNext" />
-                            </com.google.android.material.textfield.TextInputLayout>
-                        </LinearLayout>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnCaptureCollateralPhoto"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:text="📷 Tomar foto a la Garantía (Prenda)"
-                            android:textSize="11sp" />
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:hint="¿Qué te dejó como garantía?">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etLoanCollateralDesc"
+                            android:layout_marginBottom="12dp"
+                            app:cardCornerRadius="20dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="?attr/colorSurface"
+                            app:strokeWidth="0dp">
+                            <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="textCapSentences"
-                                android:imeOptions="actionDone" />
-                        </com.google.android.material.textfield.TextInputLayout>
+                                android:orientation="vertical"
+                                android:padding="16dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Seguridad y Documentos"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/slate_600"
+                                    android:textSize="13sp"
+                                    android:layout_marginBottom="12dp" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:layout_marginBottom="12dp">
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnCaptureDocPhoto"
+                                        style="@style/Widget.Material3.Button.TonalButton"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="🆔 Foto DNI"
+                                        android:textSize="11sp" />
+                                </LinearLayout>
+
+                                <com.google.android.material.textfield.TextInputLayout
+                                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:hint="DNI / RUC del cliente"
+                                    app:endIconMode="clear_text"
+                                    android:layout_marginBottom="12dp">
+                                    <com.google.android.material.textfield.TextInputEditText
+                                        android:id="@+id/etLoanClientDoc"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:inputType="number"
+                                        android:imeOptions="actionNext" />
+                                </com.google.android.material.textfield.TextInputLayout>
+
+                                <com.google.android.material.textfield.TextInputLayout
+                                    android:id="@+id/tilLoanClientAddress"
+                                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:hint="Dirección o referencia"
+                                    app:startIconDrawable="@android:drawable/ic_menu_mylocation"
+                                    app:endIconMode="clear_text">
+                                    <com.google.android.material.textfield.TextInputEditText
+                                        android:id="@+id/etLoanClientAddress"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:inputType="textPostalAddress"
+                                        android:imeOptions="actionNext" />
+                                </com.google.android.material.textfield.TextInputLayout>
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="12dp"
+                            app:cardCornerRadius="20dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="?attr/colorSurface"
+                            app:strokeWidth="0dp">
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:padding="16dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Mora y Garantía"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/slate_600"
+                                    android:textSize="13sp"
+                                    android:layout_marginBottom="12dp" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal">
+                                    <com.google.android.material.textfield.TextInputLayout
+                                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:hint="Mora Diaria"
+                                        app:prefixText="S/ "
+                                        android:layout_marginEnd="8dp">
+                                        <com.google.android.material.textfield.TextInputEditText
+                                            android:id="@+id/etLoanLateFee"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="wrap_content"
+                                            android:inputType="numberDecimal"
+                                            android:text="0"
+                                            android:imeOptions="actionNext" />
+                                    </com.google.android.material.textfield.TextInputLayout>
+                                    <com.google.android.material.textfield.TextInputLayout
+                                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:hint="Días Gracia">
+                                        <com.google.android.material.textfield.TextInputEditText
+                                            android:id="@+id/etLoanGraceDays"
+                                            android:layout_width="match_parent"
+                                            android:layout_height="wrap_content"
+                                            android:inputType="number"
+                                            android:text="0"
+                                            android:imeOptions="actionNext" />
+                                    </com.google.android.material.textfield.TextInputLayout>
+                                </LinearLayout>
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnCaptureCollateralPhoto"
+                                    style="@style/Widget.Material3.Button.TonalButton"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="12dp"
+                                    android:text="📷 Tomar foto a la Garantía (Prenda)"
+                                    android:textSize="11sp" />
+
+                                <com.google.android.material.textfield.TextInputLayout
+                                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="12dp"
+                                    android:hint="¿Qué te dejó como garantía?">
+                                    <com.google.android.material.textfield.TextInputEditText
+                                        android:id="@+id/etLoanCollateralDesc"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:inputType="textCapSentences"
+                                        android:imeOptions="actionDone" />
+                                </com.google.android.material.textfield.TextInputLayout>
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cbSkipSundays"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Omitir Domingos en el cronograma"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="13sp" />
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.checkbox.MaterialCheckBox
-                    android:id="@+id/cbSkipSundays"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Omitir Domingos en el cronograma"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="13sp"
-                    android:layout_marginTop="12dp" />
-
-            </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <View
                 android:layout_width="match_parent"
-                android:layout_height="40dp" />
+                android:layout_height="140dp" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
@@ -481,8 +738,10 @@
 
             <!-- RESUMEN DE CÁLCULO -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardLoanCalculationSummary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:visibility="gone"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="0dp"
                 app:cardBackgroundColor="?attr/colorSurfaceContainer"
@@ -492,13 +751,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="14dp">
                     <TextView
                         android:id="@+id/tvLoanCalculatedQuota"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Cuota: S/ 0.00"
-                        android:textSize="20sp"
+                        android:textSize="18sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorPrimary" />
                     <TextView
@@ -506,21 +765,29 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Total a devolver: S/ 0.00"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:textColor="?attr/colorOnSurfaceVariant"
-                        android:layout_marginTop="2dp" />
+                        android:layout_marginTop="1dp" />
+                    <TextView
+                        android:id="@+id/tvLoanCalculatedDetails"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Préstamo directo (Sin fecha ni cuotas)"
+                        android:textSize="11sp"
+                        android:textColor="@color/slate_500"
+                        android:layout_marginTop="1dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSaveLoan"
                 android:layout_width="match_parent"
-                android:layout_height="64dp"
-                android:layout_marginTop="12dp"
+                android:layout_height="56dp"
+                android:layout_marginTop="10dp"
                 android:text="GUARDAR PRÉSTAMO"
                 android:textStyle="bold"
-                android:textSize="16sp"
-                app:cornerRadius="20dp"
+                android:textSize="15sp"
+                app:cornerRadius="16dp"
                 app:backgroundTint="@color/emerald_600" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

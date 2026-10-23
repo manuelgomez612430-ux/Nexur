@@ -7,13 +7,18 @@
     android:background="@color/slate_50">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarMyBusinesses"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white">
+        android:background="@color/white"
+        android:fitsSystemWindows="true"
+        app:elevation="0dp">
+
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarMyBusinesses"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
+            android:layout_height="wrap_content"
+            android:minHeight="?attr/actionBarSize"
             app:title="Mis Sistemas de Gestión"
             app:navigationIcon="@android:drawable/ic_menu_revert" />
     </com.google.android.material.appbar.AppBarLayout>
@@ -30,12 +35,36 @@
             android:padding="20dp">
 
             <TextView
+                android:id="@+id/tvSubtitleMyBusinesses"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Selecciona un sistema para trabajar o añade uno nuevo para expandir tu negocio."
                 android:textColor="@color/slate_500"
                 android:textSize="14sp"
-                android:layout_marginBottom="24dp" />
+                android:layout_marginBottom="16dp" />
+
+            <!-- BUSCADOR DE NEGOCIOS O COLABORACIONES -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilSearchBusiness"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="Buscar negocio o colaboración..."
+                app:startIconDrawable="@android:drawable/ic_menu_search"
+                app:endIconMode="clear_text"
+                app:boxCornerRadiusTopStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusBottomEnd="16dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etSearchBusiness"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName"
+                    android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <!-- List of active systems -->
             <androidx.recyclerview.widget.RecyclerView

@@ -4,8 +4,10 @@
     android:id="@+id/cardProductoRoot"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="0dp"
-    android:layout_marginVertical="0.5dp"
+    android:layout_marginStart="0dp"
+    android:layout_marginEnd="0dp"
+    android:layout_marginTop="0.5dp"
+    android:layout_marginBottom="0.5dp"
     app:cardBackgroundColor="?attr/colorSurface"
     app:cardCornerRadius="0dp"
     app:cardElevation="0dp">

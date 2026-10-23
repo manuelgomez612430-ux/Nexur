@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="start"
+    android:orientation="vertical"
+    android:paddingVertical="3dp">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="64dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="1dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/slate_100">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="8dp">
+
+            <TextView
+                android:id="@+id/tvMessageText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mensaje recibido"
+                android:textColor="@color/slate_900"
+                android:textSize="14sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSendWhatsappBubble"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="📲 Enviar por WhatsApp"
+                android:textSize="11sp"
+                android:visibility="gone"
+                app:cornerRadius="10dp" />
+
+            <TextView
+                android:id="@+id/tvMessageTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="4dp"
+                android:text="4:56 p.m."
+                android:textColor="@color/slate_400"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>

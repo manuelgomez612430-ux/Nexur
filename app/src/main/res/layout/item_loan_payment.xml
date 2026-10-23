@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginVertical="4dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="4dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="0dp"
     app:strokeWidth="1dp"
@@ -55,6 +56,27 @@
                 android:visibility="gone" />
         </LinearLayout>
 
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardPaymentVoucher"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="8dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <ImageView
+                android:id="@+id/ivPaymentReceiptPreview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop" />
+        </com.google.android.material.card.MaterialCardView>
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDownloadReceipt"
             style="@style/Widget.Material3.Button.TonalButton"
@@ -67,5 +89,23 @@
             app:iconSize="14dp"
             app:backgroundTint="?attr/colorPrimaryContainer"
             android:textColor="?attr/colorPrimary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnReversePayment"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="4dp"
+            android:contentDescription="Deshacer cobro"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:padding="0dp"
+            app:cornerRadius="18dp"
+            app:icon="@android:drawable/ic_menu_revert"
+            app:iconSize="16dp"
+            app:iconPadding="0dp"
+            app:iconGravity="textStart"
+            app:backgroundTint="#FEE2E2"
+            app:iconTint="#DC2626" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

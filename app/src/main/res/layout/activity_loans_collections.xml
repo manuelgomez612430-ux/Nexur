@@ -6,6 +6,7 @@
     android:background="?attr/colorSurface">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarCollections"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurfaceContainer"
@@ -74,7 +75,8 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="20dp"
             app:cardElevation="0dp"

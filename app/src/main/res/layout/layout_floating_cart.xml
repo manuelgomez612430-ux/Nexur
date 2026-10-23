@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardFloatingCart"
+    android:layout_width="80dp"
+    android:layout_height="80dp"
+    android:padding="5dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="70dp"
+        android:layout_height="70dp"
+        android:layout_gravity="center"
+        app:cardCornerRadius="35dp"
+        app:cardElevation="8dp"
+        app:strokeWidth="3dp"
+        app:strokeColor="@color/purple_600"
+        app:cardBackgroundColor="@color/white">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="🛒"
+            android:textSize="28sp" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardCartBadge"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="top|end"
+        app:cardCornerRadius="12dp"
+        app:cardBackgroundColor="@color/red_600"
+        app:cardElevation="10dp"
+        app:strokeWidth="2dp"
+        app:strokeColor="@color/white">
+
+        <TextView
+            android:id="@+id/tvCartBadgeCount"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="1"
+            android:textColor="@color/white"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+    </com.google.android.material.card.MaterialCardView>
+
+</FrameLayout>

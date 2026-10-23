@@ -39,7 +39,8 @@
                     android:layout_width="0dp"
                     android:layout_height="42dp"
                     android:layout_weight="1"
-                    android:layout_marginHorizontal="12dp"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="12dp"
                     app:cardCornerRadius="21dp"
                     app:cardElevation="2dp"
                     app:strokeWidth="0dp">
@@ -59,14 +60,27 @@
 
                         <EditText
                             android:id="@+id/etSearchMarketplace"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="match_parent"
                             android:background="@null"
                             android:hint="Buscar en GoMezMart"
                             android:paddingHorizontal="8dp"
                             android:textSize="14sp"
                             android:textColor="@color/slate_900"
-                            android:inputType="text" />
+                            android:inputType="text"
+                            android:imeOptions="actionSearch" />
+
+                        <ImageView
+                            android:id="@+id/btnSearchClearMarketplace"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@android:drawable/ic_menu_close_clear_cancel"
+                            app:tint="@color/slate_400"
+                            android:visibility="gone"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackgroundBorderless" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -183,6 +197,7 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <androidx.core.widget.NestedScrollView
+            android:id="@+id/nsvMarketplaceMain"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
@@ -191,6 +206,35 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
+                <!-- SEARCH SUGGESTIONS OVERLAY (LISTA TIPO GOOGLE) -->
+                <LinearLayout
+                    android:id="@+id/layoutSearchSuggestions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="40dp">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvSearchResultsList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false"
+                        tools:listitem="@layout/item_search_suggestion" />
+
+                    <TextView
+                        android:id="@+id/tvNoSearchResults"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No se encontraron coincidencias 🔍"
+                        android:textColor="@color/slate_400"
+                        android:textSize="14sp"
+                        android:gravity="center"
+                        android:padding="32dp"
+                        android:visibility="gone" />
+                </LinearLayout>
+
                 <!-- Section: Recently Added Shops -->
                 <LinearLayout
                     android:id="@+id/layoutRecentShopsHeader"
@@ -198,8 +242,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:paddingHorizontal="16dp"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="4dp"
                     android:gravity="center_vertical">
                     <TextView
                         android:layout_width="0dp"
@@ -208,7 +252,7 @@
                         android:text="Tiendas agregadas recientemente"
                         android:textColor="@color/slate_900"
                         android:textStyle="bold"
-                        android:textSize="17sp" />
+                        android:textSize="15sp" />
                 </LinearLayout>
 
                 <androidx.recyclerview.widget.RecyclerView
@@ -217,7 +261,7 @@
                     android:layout_height="wrap_content"
                     android:clipToPadding="false"
                     android:paddingHorizontal="8dp"
-                    android:layout_marginBottom="16dp" />
+                    android:layout_marginBottom="8dp" />
 
                 <!-- Section Title: Recently Viewed -->
                 <LinearLayout
@@ -226,8 +270,9 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:paddingHorizontal="16dp"
-                    android:layout_marginBottom="8dp"
-                    android:gravity="center_vertical">
+                    android:layout_marginBottom="4dp"
+                    android:gravity="center_vertical"
+                    android:visibility="gone">
                     <TextView
                         android:layout_width="0dp"
                         android:layout_weight="1"
@@ -235,14 +280,14 @@
                         android:text="Visto recientemente"
                         android:textColor="@color/slate_900"
                         android:textStyle="bold"
-                        android:textSize="17sp" />
+                        android:textSize="15sp" />
                     <TextView
                         android:id="@+id/tvViewHistory"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Ver historial"
                         android:textColor="@color/sky_600"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:clickable="true"
                         android:focusable="true"
                         android:background="?attr/selectableItemBackground" />
@@ -255,9 +300,10 @@
                     android:layout_height="wrap_content"
                     android:clipToPadding="false"
                     android:paddingHorizontal="8dp"
-                    android:layout_marginBottom="24dp" />
+                    android:layout_marginBottom="12dp"
+                    android:visibility="gone" />
 
-                <!-- Section Title: Main Feed -->
+                <!-- Section Title: Main Feed (Oculto) -->
                 <TextView
                     android:id="@+id/tvMainFeedTitle"
                     android:layout_width="wrap_content"
@@ -267,7 +313,8 @@
                     android:textStyle="bold"
                     android:textSize="17sp"
                     android:layout_marginStart="16dp"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="12dp"
+                    android:visibility="gone" />
 
                 <!-- Products Grid (Vertical) -->
                 <androidx.recyclerview.widget.RecyclerView

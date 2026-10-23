@@ -1,74 +1,223 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="24dp">
-
-    <com.google.android.material.textfield.TextInputLayout
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Monto a entregar (S/)"
-        app:prefixText="S/ "
-        android:layout_marginBottom="12dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etStructuredAmount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="numberDecimal" />
-    </com.google.android.material.textfield.TextInputLayout>
+    android:layout_height="wrap_content">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- MONTO -->
         <com.google.android.material.textfield.TextInputLayout
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Interés %"
+            android:hint="Monto a entregar (S/)"
+            app:prefixText="S/ "
+            android:layout_marginBottom="12dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etStructuredAmount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- INTERÉS % (OPCIONAL) -->
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Interés % (Opcional)"
             app:suffixText="%"
-            android:layout_marginEnd="8dp">
+            android:layout_marginBottom="12dp">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etStructuredInterest"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="20"
-                android:inputType="number" />
+                android:hint="0"
+                android:inputType="numberDecimal" />
         </com.google.android.material.textfield.TextInputLayout>
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-            android:layout_width="0dp"
+
+        <!-- SWITCH DE CUOTAS (ACTIVABLE PARA AHORRAR ESPACIO) -->
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/swEnableInstallments"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Cuotas">
+            android:text="Dividir en Cuotas"
+            android:textSize="14sp"
+            android:checked="false"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilStructuredInstallments"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Número de Cuotas"
+            android:visibility="gone"
+            android:layout_marginBottom="12dp">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etStructuredInstallments"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="1"
+                android:hint="2"
                 android:inputType="number" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- FECHA DE PAGO ACORDADA -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Fecha de pago acordada / programada:"
+            android:textSize="12sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStructuredDate"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="📅 Seleccionar Fecha"
+            app:cornerRadius="12dp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- ORIGEN DE FONDOS -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Origen de los fondos 💰"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
+            android:layout_marginBottom="8dp" />
+
+        <!-- OPCIÓN 1: PRESUPUESTO DEL NEGOCIO -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardBusinessStruct"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/slate_200"
+            app:cardBackgroundColor="@color/white"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:text="💼"
+                    android:textSize="18sp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_bottom_sheet_rounded"
+                    android:backgroundTint="@color/purple_100"
+                    android:layout_marginEnd="12dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Presupuesto del Negocio"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_900" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Descuenta de caja"
+                        android:textSize="11sp"
+                        android:textColor="@color/slate_500" />
+                </LinearLayout>
+
+                <RadioButton
+                    android:id="@+id/rbBusinessStruct"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="false"
+                    android:focusable="false" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- OPCIÓN 2: CAPITAL PERSONAL -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardPersonalStruct"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/slate_200"
+            app:cardBackgroundColor="@color/white"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:text="👤"
+                    android:textSize="18sp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_bottom_sheet_rounded"
+                    android:backgroundTint="@color/slate_100"
+                    android:layout_marginEnd="12dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Capital Personal"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_900" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Bolsillo propio"
+                        android:textSize="11sp"
+                        android:textColor="@color/slate_500" />
+                </LinearLayout>
+
+                <RadioButton
+                    android:id="@+id/rbPersonalStruct"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="false"
+                    android:focusable="false" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
     </LinearLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Empezar a cobrar el:"
-        android:textSize="12sp"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:layout_marginBottom="8dp" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnStructuredDate"
-        style="@style/Widget.Material3.Button.TonalButton"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="📅 Seleccionar Fecha"
-        app:cornerRadius="12dp" />
-
-</LinearLayout>
+</ScrollView>

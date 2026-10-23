@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="start"
+    android:orientation="vertical"
+    android:paddingVertical="3dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="48dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="1dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/slate_100"
+        app:cardPreventCornerOverlap="true"
+        app:contentPadding="0dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="bottom"
+            android:paddingStart="16dp"
+            android:paddingEnd="18dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+
+            <TextView
+                android:id="@+id/tvTypingRobot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:text="🤖"
+                android:textSize="18sp"
+                android:includeFontPadding="false" />
+
+            <!-- Contenedor con altura extra para que los puntos reboten sin recortarse -->
+            <FrameLayout
+                android:id="@+id/layoutTypingDots"
+                android:layout_width="wrap_content"
+                android:layout_height="24dp"
+                android:layout_marginStart="10dp"
+                android:clipChildren="false"
+                android:clipToPadding="false">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:orientation="horizontal"
+                    android:clipChildren="false">
+
+                    <View
+                        android:id="@+id/dot1"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:layout_marginEnd="5dp"
+                        android:background="@drawable/bg_typing_dot" />
+
+                    <View
+                        android:id="@+id/dot2"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:layout_marginEnd="5dp"
+                        android:background="@drawable/bg_typing_dot" />
+
+                    <View
+                        android:id="@+id/dot3"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:background="@drawable/bg_typing_dot" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/tvTypingLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:layout_marginStart="10dp"
+                android:layout_marginBottom="1dp"
+                android:text="Escribiendo"
+                android:textColor="@color/slate_500"
+                android:textSize="12sp"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>

@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Diálogo para registrar / editar cuentas.
+  Usa un MaterialCardView con fondo sólido para que el contenido de la pantalla
+  de abajo NO se transparente ni se solape de forma ilegible.
+-->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="16dp"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="8dp"
+    app:strokeWidth="0dp"
+    app:cardBackgroundColor="?attr/colorSurfaceContainer">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:id="@+id/tvAccountDialogTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Registrar Cuenta 💳"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                android:layout_marginBottom="16dp" />
+
+            <!-- VINCULAR A ORIGEN (PRESUPUESTO VS PERSONAL) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="¿A qué origen pertenece esta cuenta?"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_600"
+                android:layout_marginBottom="6dp" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/toggleAccountOrigin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:singleSelection="true"
+                app:selectionRequired="true"
+                app:checkedButton="@+id/btnOriginBusiness">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOriginBusiness"
+                    style="@style/Widget.App.Button.Toggle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="💼 Presupuesto (Negocio)"
+                    android:textSize="11sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOriginPersonal"
+                    style="@style/Widget.App.Button.Toggle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="👤 Bolsillo Personal"
+                    android:textSize="11sp" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <!-- NOMBRE DE LA CUENTA -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Nombre de la cuenta (Ej. Yape BCP, Bolsillo)"
+                android:layout_marginBottom="12dp"
+                app:cornerRadius="12dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etAccountName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapWords"
+                    android:imeOptions="actionNext"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- BANCO O ENTIDAD -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Entidad (Ej. BCP, BBVA, Yape, Efectivo)"
+                android:layout_marginBottom="12dp"
+                app:cornerRadius="12dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etAccountBank"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapWords"
+                    android:imeOptions="actionNext"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- NÚMERO / REFERENCIA -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Número o referencia (opcional)"
+                android:layout_marginBottom="12dp"
+                app:cornerRadius="12dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etAccountNumber"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:imeOptions="actionNext"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- SALDO ACTUAL -->
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Saldo actual (S/)"
+                app:prefixText="S/ "
+                android:layout_marginBottom="20dp"
+                app:cornerRadius="12dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etAccountBalance"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:imeOptions="actionDone"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- BOTONES -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="end">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancelAccount"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cancelar"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveAccount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Guardar Cuenta"
+                    app:cornerRadius="12dp"
+                    app:backgroundTint="@color/purple_600" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</com.google.android.material.card.MaterialCardView>

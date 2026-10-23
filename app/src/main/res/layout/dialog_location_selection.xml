@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="¿Cómo deseas recibir tu pedido?"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/slate_900"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Opción 1: Ubicación Actual -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnLocCurrent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/purple_50"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/purple_100"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:text="📍"
+                    android:textSize="24sp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_circle_surface" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ubicación actual"
+                        android:textStyle="bold"
+                        android:textColor="@color/purple_700"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Usar el GPS de tu celular ahora"
+                        android:textColor="@color/purple_600"
+                        android:textSize="12sp"
+                        android:alpha="0.7" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Opción 2: Ubicaciones Guardadas -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnLocSaved"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/slate_200"
+            app:cardBackgroundColor="@color/white"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:text="🏠"
+                    android:textSize="24sp"
+                    android:gravity="center" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ubicaciones guardadas"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_900"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Elegir entre tus direcciones frecuentes"
+                        android:textColor="@color/slate_500"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Opción 3: Nueva Ubicación -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnLocNew"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/slate_200"
+            app:cardBackgroundColor="@color/white"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:text="🗺️"
+                    android:textSize="24sp"
+                    android:gravity="center" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Nueva ubicación"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_900"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Fijar un punto nuevo en el mapa"
+                        android:textColor="@color/slate_500"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Opción 4: Retiro en Local -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnLocPickup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/slate_200"
+            app:cardBackgroundColor="@color/white"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:text="🏪"
+                    android:textSize="24sp"
+                    android:gravity="center" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Retiro en Local"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_900"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Yo pasaré a recoger el pedido"
+                        android:textColor="@color/slate_500"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelLocation"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Cancelar"
+            android:textColor="@color/slate_400" />
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

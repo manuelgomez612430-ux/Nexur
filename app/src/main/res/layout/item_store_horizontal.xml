@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="160dp"
+    android:layout_width="128dp"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="2dp"
+    android:layout_margin="4dp"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="1dp"
     app:strokeWidth="1dp"
     app:strokeColor="@color/slate_100"
     android:clickable="true"
@@ -15,13 +15,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp"
+        android:padding="8dp"
         android:gravity="center">
 
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            app:cardCornerRadius="30dp"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            app:cardCornerRadius="21dp"
             app:cardElevation="0dp"
             app:cardBackgroundColor="@color/slate_50"
             app:strokeWidth="1dp"
@@ -36,8 +36,8 @@
                     android:scaleType="centerCrop" />
                 <ProgressBar
                     android:id="@+id/pbStoreLogoSmallLoading"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
                     android:layout_gravity="center"
                     android:indeterminateTint="@color/purple_600"
                     android:visibility="gone" />
@@ -49,23 +49,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Tienda"
-            android:textSize="13sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="@color/slate_900"
             android:gravity="center"
             android:maxLines="1"
             android:ellipsize="end"
-            android:layout_marginTop="8dp" />
+            android:layout_marginTop="4dp" />
 
         <TextView
             android:id="@+id/tvStoreDateSmall"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Agregada: 12/10"
-            android:textSize="10sp"
+            android:text="Agregada"
+            android:textSize="9sp"
             android:textColor="@color/slate_400"
             android:gravity="center"
-            android:layout_marginTop="2dp" />
+            android:layout_marginTop="1dp" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

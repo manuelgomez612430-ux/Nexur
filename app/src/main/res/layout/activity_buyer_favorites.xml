@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/slate_50">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarFavorites"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        app:elevation="0dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarFavorites"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:contentInsetStart="0dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnBackFavorites"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="16dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="@color/white"
+                app:strokeWidth="0dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="⬅️"
+                    android:textSize="20sp"
+                    android:includeFontPadding="false" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Mis Favoritos ⭐"
+                android:textColor="@color/slate_900"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+        </com.google.android.material.appbar.MaterialToolbar>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvFavorites"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:padding="8dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+    <LinearLayout
+        android:id="@+id/layoutEmptyFavorites"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="40dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⭐"
+            android:textSize="80sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Aún no tienes favoritos"
+            android:textColor="@color/slate_900"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="Guarda los productos que más te gusten para verlos aquí."
+            android:textColor="@color/slate_500"
+            android:textSize="15sp" />
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

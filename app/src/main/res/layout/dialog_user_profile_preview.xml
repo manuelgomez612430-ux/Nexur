@@ -1,0 +1,427 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:gravity="center_horizontal">
+
+        <!-- HANDLE BAR -->
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_bottom_sheet_handle" />
+
+        <!-- FOTO DE PERFIL CON LOGO DE NEGOCIO EN LA ESQUINA -->
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardPreviewUserPhoto"
+                android:layout_width="110dp"
+                android:layout_height="110dp"
+                app:cardCornerRadius="55dp"
+                app:cardElevation="4dp"
+                app:strokeWidth="3dp"
+                app:strokeColor="@color/purple_600"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:id="@+id/ivPreviewUserPhoto"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/gomezmart_icon" />
+
+                    <ProgressBar
+                        android:id="@+id/pbPreviewUserPhotoLoading"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_gravity="center"
+                        android:indeterminateTint="@color/purple_600"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom"
+                        android:background="#99000000"
+                        android:paddingVertical="3dp"
+                        android:text="🔍 Ampliar"
+                        android:textColor="@color/white"
+                        android:textSize="10sp"
+                        android:gravity="center" />
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- LOGOTIPO DE LA TIENDA / NEGOCIO (INSIGNIA EN LA ESQUINA INFERIOR DERECHA) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardPreviewBizLogo"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_gravity="bottom|end"
+                android:layout_marginEnd="-2dp"
+                android:layout_marginBottom="-2dp"
+                app:cardCornerRadius="19dp"
+                app:cardElevation="6dp"
+                app:strokeWidth="2.5dp"
+                app:strokeColor="@color/white"
+                android:visibility="gone"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+
+                <ImageView
+                    android:id="@+id/ivPreviewBizLogo"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/gomezmart_icon" />
+            </com.google.android.material.card.MaterialCardView>
+
+        </FrameLayout>
+
+        <!-- NOMBRE Y ROL -->
+        <TextView
+            android:id="@+id/tvPreviewUserName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="Nombre del Usuario"
+            android:textColor="@color/slate_900"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/tvPreviewUserRole"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="🛒 COMPRADOR"
+            android:textColor="@color/purple_700"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_pill_purple_light"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            android:gravity="center" />
+
+        <!-- TARJETA INFORMACIÓN DE NEGOCIO (OPCIONAL) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardPreviewBusinessInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/purple_50"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/purple_100"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="12dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🏢"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/tvPreviewBusinessName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:text="Nombre del Negocio"
+                    android:textColor="@color/purple_800"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- INFORMACIÓN DE CONTACTO -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardContactInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/slate_50"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/slate_100">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- CORREO ELECTRÓNICO -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:text="📧"
+                        android:textSize="18sp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_circle_surface" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Correo Electrónico"
+                            android:textColor="@color/slate_400"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/tvPreviewUserEmail"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Cargando..."
+                            android:textColor="@color/slate_800"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/slate_200"
+                    android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp" />
+
+                <!-- TELÉFONO Y BOTÓN DE LLAMADA -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:text="📞"
+                        android:textSize="18sp"
+                        android:gravity="center"
+                        android:background="@drawable/bg_circle_surface" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Teléfono / WhatsApp"
+                            android:textColor="@color/slate_400"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/tvPreviewUserPhone"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Cargando..."
+                            android:textColor="@color/slate_800"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPreviewCallUser"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="Llamar 📞"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:backgroundTint="@color/emerald_50"
+                        android:textColor="@color/emerald_700" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- SECCIÓN DE ESPACIO OCUPADO Y ALMACENAMIENTO LOCAL -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardChatStorageInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/slate_50"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/slate_100"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:text="💾"
+                    android:textSize="18sp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_circle_surface" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Almacenamiento Local del Chat"
+                        android:textColor="@color/slate_400"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/tvStorageUsed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Calculando espacio..."
+                        android:textColor="@color/slate_800"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- SECCIÓN DE FOTOS COMPARTIDAS EN EL CHAT -->
+        <LinearLayout
+            android:id="@+id/layoutSharedPhotosSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp">
+
+            <TextView
+                android:id="@+id/tvSharedPhotosTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🖼️ Fotos compartidas en este chat"
+                android:textColor="@color/slate_800"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvSharedPhotos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:orientation="horizontal"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                tools:listitem="@layout/item_chat_image" />
+
+            <TextView
+                android:id="@+id/tvNoSharedPhotos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No hay fotos compartidas aún"
+                android:textColor="@color/slate_400"
+                android:textSize="12sp"
+                android:gravity="center"
+                android:padding="12dp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- BOTÓN ENVIAR MENSAJE (PARA BÚSQUEDA DE USUARIOS) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPreviewSendMessage"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:layout_marginTop="16dp"
+            android:text="Enviar Mensaje 💬"
+            android:textStyle="bold"
+            app:cornerRadius="16dp"
+            app:backgroundTint="@color/purple_600"
+            android:visibility="gone" />
+
+        <!-- BOTÓN ELIMINAR CHAT -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDeleteChat"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="12dp"
+            android:text="Eliminar Chat 🗑️"
+            android:textColor="@color/red_600"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            app:cornerRadius="14dp"
+            app:backgroundTint="@color/red_50"
+            android:visibility="gone" />
+
+        <!-- BOTÓN BLOQUEAR USUARIO -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBlockUser"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="6dp"
+            android:text="Bloquear Usuario 🚫"
+            android:textColor="@color/red_700"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPreviewClose"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:text="Cerrar"
+            android:textColor="@color/slate_400" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

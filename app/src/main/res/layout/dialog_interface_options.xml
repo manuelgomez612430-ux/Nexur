@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_bottom_sheet_rounded"
+    android:padding="24dp">
+
+    <!-- Handle bar -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/bg_bottom_sheet_handle"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tvInterfaceMenuTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Opciones de Interfaz"
+        android:gravity="center"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Item 1: Ir a Mercado / Gestión -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardOptionMarket"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="?attr/colorSurfaceContainer"
+        app:strokeWidth="0dp"
+        android:clickable="true"
+        android:focusable="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
+            <TextView
+                android:id="@+id/tvOption1Emoji"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🛒"
+                android:textSize="22sp" />
+            <TextView
+                android:id="@+id/tvOption1Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="Ir a Mercado Online"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Item 2: Abrir Negocio en Mercado -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardOptionOpenStore"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="?attr/colorSurfaceContainer"
+        app:strokeWidth="0dp"
+        android:clickable="true"
+        android:focusable="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🚀"
+                android:textSize="22sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="Abrir Negocio en Mercado"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Item 3: Cambiar de Sistema -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardOptionSwitchSystem"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="?attr/colorSurfaceContainer"
+        app:strokeWidth="0dp"
+        android:clickable="true"
+        android:focusable="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🏢"
+                android:textSize="22sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="Cambiar de Sistema"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Item 4: Mis Colaboraciones -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardOptionMyCollabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="?attr/colorSurfaceContainer"
+        app:strokeWidth="0dp"
+        android:clickable="true"
+        android:focusable="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🤝"
+                android:textSize="22sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="Mis Colaboraciones"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>

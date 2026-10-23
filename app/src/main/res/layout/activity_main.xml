@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawerLayoutMain"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -21,14 +22,51 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
+        <!-- BACKDROP PARA CERRAR EL MENÚ FLOTANTE AL TOCAR FUERA -->
+        <View
+            android:id="@+id/viewInterfaceBackdrop"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="#1A000000"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/cardBottomNavContainer" />
+
+        <!-- MENÚ FLOTANTE DE OPCIONES DE INTERFAZ -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardInterfaceMenuOverlay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="16dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:layout_constraintBottom_toTopOf="@id/cardBottomNavContainer"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <include
+                android:id="@+id/includeInterfaceOptions"
+                layout="@layout/dialog_interface_options" />
+
+        </com.google.android.material.card.MaterialCardView>
+
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardBottomNavContainer"
             android:layout_width="match_parent"
-            android:layout_height="72dp"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginBottom="8dp"
-            app:cardCornerRadius="36dp"
-            app:cardElevation="12dp"
+            android:layout_height="60dp"
+            android:layout_marginStart="0dp"
+            android:layout_marginEnd="0dp"
+            android:layout_marginBottom="0dp"
+            app:cardCornerRadius="0dp"
+            app:cardElevation="0dp"
             app:strokeWidth="0dp"
             app:cardBackgroundColor="@color/white"
             app:cardUseCompatPadding="false"
@@ -39,7 +77,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
-                <!-- BLOQUE INDICADOR DINÁMICO (PREMIUM SELECTOR) -->
+                <!-- BLOQUE INDICADOR DINÁMICO RECTANGULAR CUADRADO -->
                 <View
                     android:id="@+id/navIndicatorCustom"
                     android:layout_width="0dp"
@@ -52,11 +90,13 @@
                 <!-- Custom Navigation Layout for perfect alignment -->
                 <LinearLayout
                     android:id="@+id/layoutCustomNav"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="horizontal"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent">
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent">
 
                     <!-- INICIO -->
                     <LinearLayout
@@ -177,18 +217,18 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:visibility="gone"> <!-- Se habilita para dueños/colaboradores -->
+                        android:visibility="gone">
                         <TextView
                             android:id="@+id/tvIconMarket"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="🛒"
+                            android:text="🌐"
                             android:textSize="22sp" />
                         <TextView
                             android:id="@+id/tvLabelMarket"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Mercado"
+                            android:text="Interfaz"
                             android:textSize="10sp"
                             android:textStyle="bold"
                             android:textColor="@color/slate_500" />
@@ -228,7 +268,8 @@
                     android:id="@+id/cardTutorialInfo"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="32dp"
+                    android:layout_marginStart="32dp"
+                    android:layout_marginEnd="32dp"
                     app:cardCornerRadius="24dp"
                     app:cardElevation="8dp"
                     app:layout_constraintBottom_toBottomOf="parent"

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="8dp"
+    app:cardBackgroundColor="@color/slate_50"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/slate_200">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- TITULO Y SUBTITULO -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Seleccionar Entorno 🏢"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/slate_900" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Elige el sistema al que deseas acceder ahora"
+            android:textSize="14sp"
+            android:textColor="@color/slate_500"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- PERFIL DE USUARIO ACTUAL (IR DIRECTO AL MERCADO) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardUserDialogProfile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/purple_50"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/purple_100">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="12dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/purple_600">
+
+                    <ImageView
+                        android:id="@+id/ivUserDialogPhoto"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/gomezmart_icon" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="8dp">
+
+                    <TextView
+                        android:id="@+id/tvUserDialogName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Usuario Gomezmart"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_900" />
+
+                    <TextView
+                        android:id="@+id/tvUserDialogEmail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="usuario@email.com"
+                        android:textSize="12sp"
+                        android:textColor="@color/slate_500" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mercado 🛒"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/purple_600"
+                    android:background="@drawable/bg_bottom_sheet_rounded"
+                    android:backgroundTint="@color/purple_100"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="6dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- LISTA DE ENTORNOS / SISTEMAS -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvEnvironmentsDialog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxHeight="320dp"
+            android:overScrollMode="never" />
+
+        <!-- BOTÓN AÑADIR NUEVO SISTEMA (CUANDO NO HAY SISTEMAS O PARA CREAR OTRO) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddNewSystem"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="8dp"
+            android:text="➕ AÑADIR NUEVO SISTEMA"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            app:cornerRadius="16dp" />
+
+        <!-- BOTÓN CANCELAR / CAMBIAR DE CUENTA -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelDialog"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:text="❌ Cancelar / Cambiar de Cuenta"
+            android:textColor="@color/red_600"
+            android:textSize="13sp" />
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

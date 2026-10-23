@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="?attr/colorSurfaceContainer">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Origen de Fondos 💰"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Selecciona de dónde proviene el capital entregado en este préstamo"
+        android:textSize="13sp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="20dp" />
+
+    <!-- OPCIÓN 1: PRESUPUESTO DEL NEGOCIO -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardOptionBusiness"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="2dp"
+        app:strokeColor="@color/purple_600"
+        app:cardBackgroundColor="@color/purple_50"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:text="💼"
+                android:textSize="20sp"
+                android:gravity="center"
+                android:background="@drawable/bg_bottom_sheet_rounded"
+                android:backgroundTint="@color/purple_100"
+                android:layout_marginEnd="14dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Presupuesto del Negocio"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_900" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Afecta y descuenta el saldo disponible en tu presupuesto de caja"
+                    android:textSize="12sp"
+                    android:textColor="@color/slate_500"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+            <RadioButton
+                android:id="@+id/rbOptionBusiness"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false"
+                android:checked="true" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- OPCIÓN 2: CAPITAL PERSONAL -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardOptionPersonal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/slate_200"
+        app:cardBackgroundColor="@color/white"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:text="👤"
+                android:textSize="20sp"
+                android:gravity="center"
+                android:background="@drawable/bg_bottom_sheet_rounded"
+                android:backgroundTint="@color/slate_100"
+                android:layout_marginEnd="14dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Capital Personal"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_900" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Dinero de tu bolsillo propio (fuera del presupuesto del negocio)"
+                    android:textSize="12sp"
+                    android:textColor="@color/slate_500"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+            <RadioButton
+                android:id="@+id/rbOptionPersonal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false"
+                android:checked="false" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- BOTONES DE ACCIÓN -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelFundingSource"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancelar"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSaveFundingSource"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Guardar Origen"
+            app:cornerRadius="12dp"
+            app:backgroundTint="@color/purple_600" />
+    </LinearLayout>
+</LinearLayout>

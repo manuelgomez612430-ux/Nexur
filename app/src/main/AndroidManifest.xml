@@ -134,6 +134,8 @@
         <activity android:name=".MessageDetailActivity" android:label="Detalle de Mensaje" />
         <activity android:name=".BusinessDebtsActivity" android:label="Mis Cuentas por Pagar" />
         <activity android:name=".CommitmentsActivity" android:exported="false" android:label="Mis Compromisos" />
+        <activity android:name=".AccountsActivity" android:exported="false" android:label="Mis Cuentas" />
+  <activity android:name=".MetricsDetailActivity" android:exported="false" android:label="Detalle de Rendimiento" />
         <activity android:name=".BuyerHomeActivity"
             android:exported="false"
             android:label="Gomezmart: Compras"
@@ -158,7 +160,16 @@
         <activity android:name=".ViewedHistoryActivity" android:exported="false" android:label="Historial de navegación" />
         <activity android:name=".DeliveriesActivity" android:exported="false" android:label="Gestión de Entregas" />
         <activity android:name=".BuyerOrdersActivity" android:exported="false" android:label="Mis Pedidos" />
-        <activity android:name=".ChatActivity" android:exported="false" android:label="Chat con Negocio" />
+        <activity
+            android:name=".ChatActivity"
+            android:exported="false"
+            android:label="Chat con Negocio"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".AiChatActivity"
+            android:exported="false"
+            android:label="Asesor IA"
+            android:windowSoftInputMode="adjustResize" />
         <activity android:name=".SearchUsersActivity" android:exported="false" android:label="Agregar Usuario" />
         <activity android:name=".BuyerFavoritesActivity" android:exported="false" android:label="Mis Favoritos" />
         <activity android:name=".TutorialActivity" android:exported="false" android:theme="@style/Theme.Gomezmart" />

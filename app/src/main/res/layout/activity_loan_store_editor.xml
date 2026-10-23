@@ -9,14 +9,18 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white">
+        android:background="@color/white"
+        app:elevation="0dp">
+
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarLoanEditor"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="Configurar mi Negocio de Préstamos"
             app:titleCentered="true"
-            app:navigationIcon="@android:drawable/ic_menu_revert" />
+            app:titleTextColor="@color/slate_900"
+            app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:navigationIconTint="@color/slate_900" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -25,18 +29,20 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
+            android:id="@+id/layoutLoanEditorContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="24dp">
 
-            <!-- Switch de Activación -->
+            <!-- Estado de mi Negocio -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="2dp"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer"
                 app:strokeWidth="0dp">
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -70,62 +76,94 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Identidad Visual -->
+            <!-- IMAGEN DE PORTADA -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="IDENTIDAD VISUAL"
-                android:textColor="@color/slate_400"
+                android:text="IMAGEN DE PORTADA"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.1"
-                android:layout_marginStart="8dp"
+                android:textColor="@color/slate_400"
                 android:layout_marginBottom="12dp" />
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardEditCover"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="1dp"
+                android:layout_height="160dp"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
                 app:strokeWidth="1dp"
                 app:strokeColor="@color/slate_200"
-                android:layout_marginBottom="24dp">
-                <LinearLayout
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/ivEditCover"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnUploadLoanLogo"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="🖼️ CAMBIAR LOGO" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnUploadLoanCover"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="📷 CAMBIAR PORTADA" />
-                </LinearLayout>
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/gomezmart_full_bg" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#4D000000" />
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:src="@android:drawable/ic_menu_camera"
+                    app:tint="@color/white" />
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Información General -->
+            <!-- LOGOTIPO -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LOGOTIPO DE LA FINANCIERA"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:textColor="@color/slate_400"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardEditLogo"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="32dp"
+                app:cardCornerRadius="50dp"
+                app:cardElevation="4dp"
+                app:strokeWidth="2dp"
+                app:strokeColor="@color/white"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:id="@+id/ivEditLogo"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/gomezmart_icon" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- INFORMACIÓN -->
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:hint="Nombre de la Financiera"
-                app:boxCornerRadiusTopStart="16dp"
-                app:boxCornerRadiusTopEnd="16dp"
-                app:boxCornerRadiusBottomStart="16dp"
-                app:boxCornerRadiusBottomEnd="16dp">
+                android:hint="Rubro del Negocio">
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etLoanStoreName"
+                    android:id="@+id/etEditStoreRubro"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    android:enabled="false"
+                    android:text="SERVICIOS FINANCIEROS / PRÉSTAMOS"
+                    android:textColor="@color/slate_500" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -133,37 +171,170 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:hint="Descripción / Eslogan"
-                app:boxCornerRadiusTopStart="16dp"
-                app:boxCornerRadiusTopEnd="16dp"
-                app:boxCornerRadiusBottomStart="16dp"
-                app:boxCornerRadiusBottomEnd="16dp">
+                android:hint="Nombre de la Financiera">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etLoanStoreName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapWords" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="Descripción / Eslogan">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etLoanStoreDesc"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textMultiLine"
-                    android:minLines="3" />
+                    android:minLines="3"
+                    android:gravity="top" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Requisitos -->
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                android:hint="Requisitos para solicitar (DNI, etc)"
-                app:boxCornerRadiusTopStart="16dp"
-                app:boxCornerRadiusTopEnd="16dp"
-                app:boxCornerRadiusBottomStart="16dp"
-                app:boxCornerRadiusBottomEnd="16dp">
+                android:layout_marginBottom="16dp"
+                android:hint="Requisitos para solicitar (DNI, etc)">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etLoanRequirements"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textMultiLine"
-                    android:minLines="4" />
+                    android:minLines="3"
+                    android:gravity="top" />
             </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="Nombre del Prestamista / Dueño">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditOwnerName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapWords" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="Número de Contacto (WhatsApp)">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditStorePhone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="phone" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:hint="Dirección Pública">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditStoreAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPostalAddress" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSelectLocationOnMap"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginBottom="24dp"
+                android:text="Ubicación en el Mapa 📍"
+                app:cornerRadius="12dp"
+                app:icon="@android:drawable/ic_menu_mylocation" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/slate_100"
+                android:layout_marginBottom="24dp" />
+
+            <!-- SECCIÓN: MÉTODOS DE PAGO -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MÉTODOS DE PAGO PARA COBROS"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:textColor="@color/slate_400"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:id="@+id/layoutPaymentMethodsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddPaymentMethod"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:text="➕ AÑADIR YAPE, PLIN O BANCO"
+                android:textColor="@color/purple_600" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/slate_100"
+                android:layout_marginBottom="24dp" />
+
+            <!-- SECCIÓN: DETALLES EXTRA Y FOTOS -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MÁS DETALLES Y FOTOS (OPCIONAL)"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:textColor="@color/slate_400"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:id="@+id/layoutExtraSectionsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddExtraSection"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="32dp"
+                android:text="➕ AÑADIR NUEVA SECCIÓN (TÍTULO/FOTO)"
+                android:textColor="@color/sky_600" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAiDesigner"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:layout_marginBottom="16dp"
+                android:text="✨ DISEÑAR NEGOCIO CON IA"
+                android:textColor="@color/slate_400"
+                android:textStyle="bold"
+                android:enabled="false"
+                app:cornerRadius="16dp"
+                app:icon="@android:drawable/ic_menu_edit"
+                app:iconTint="@color/slate_400" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSaveLoanStore"
@@ -171,8 +342,9 @@
                 android:layout_height="64dp"
                 android:text="GUARDAR Y PUBLICAR ✨"
                 android:textStyle="bold"
+                android:textSize="16sp"
                 app:cornerRadius="16dp"
-                app:backgroundTint="@color/vibrant_purple" />
+                app:backgroundTint="@color/purple_600" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

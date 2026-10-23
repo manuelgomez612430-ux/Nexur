@@ -21,14 +21,11 @@ android {
         applicationId = "com.naxor.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 22
-        versionName = "1.5.10"
+        versionCode = 52
+        versionName = "1.5.40"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
-        
-        // Optimización: Solo descargar recursos en español para reducir tamaño de librerías
-        resourceConfigurations.add("es")
     }
 
     signingConfigs {
@@ -76,6 +73,21 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
+    }
+
+    // Empaquetado de recursos: se excluyen los metadatos de Maven duplicados.
+    // (Los .mp4/.wav de demo de firebase-ai los gestiona AAPT2 y no se pueden
+    //  excluir desde aquí; ocupan 206 KB y son inofensivos.)
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/*.kotlin_module",
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/versions/9/previous-compilation-data.bin"
+            )
+        }
     }
 
     applicationVariants.all {
@@ -135,14 +147,17 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-messaging")
     implementation("com.google.firebase:firebase-ai:16.0.0-beta01")
-    implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
-    implementation("com.google.firebase:firebase-appcheck-playintegrity")
-    implementation("com.google.firebase:firebase-appcheck-debug")
-    
+    // NOTA: El SDK legacy "com.google.ai.client.generativeai:generativeai" se eliminó:
+    // solo se usaba en HotelMetricsFragment con el modelo ya retirado gemini-1.5-flash.
+    // Ahora toda la IA pasa por GeminiHelper + GeminiDirectClient, lo que ahorra
+    // ~2 MB de dex (okhttp/gson/protobuf/play-services duplicados).
+    // NOTA: Firebase App Check se deshabilita a propósito. El token de App Check
+    // devolvía 403 "App attestation failed" y bloqueaba TODAS las consultas a la
+    // IA de Gemini (la petición se quedaba colgada hasta expirar).
+
     // Network (Consultas RUC/DNI)
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // Supabase (Almacenamiento de Imágenes)
     implementation(platform(libs.supabase.bom))

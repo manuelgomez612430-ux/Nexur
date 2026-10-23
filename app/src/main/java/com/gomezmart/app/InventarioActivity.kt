@@ -1,0 +1,516 @@
+package com.gomezmart.app
+
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.net.Uri
+import android.os.Bundle
+import android.os.Environment
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
+import androidx.core.content.FileProvider
+import androidx.core.view.GravityCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.MultiFormatWriter
+import com.bumptech.glide.Glide
+import com.gomezmart.app.adapter.ProductAdapter
+import com.gomezmart.app.data.AppDatabase
+import com.gomezmart.app.data.MovementLogEntity
+import com.gomezmart.app.data.ProductEntity
+import com.gomezmart.app.databinding.ActivityInventarioBinding
+import com.gomezmart.app.databinding.DialogViewLabelBinding
+import com.gomezmart.app.util.GlideHelper
+import com.gomezmart.app.util.VoiceRecognitionHelper
+import kotlinx.coroutines.*
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
+import androidx.core.widget.addTextChangedListener
+
+class InventarioActivity : BaseActivity() {
+
+    private lateinit var binding: ActivityInventarioBinding
+    private val adapter by lazy { 
+        ProductAdapter(
+            onEdit = { product -> 
+                val intent = Intent(this, AddProductActivity::class.java)
+                intent.putExtra("PRODUCT_ID", product.id)
+                startActivity(intent)
+            },
+            onViewLabel = { product -> showProductLabel(product) },
+            onStockQuickChange = { product, delta -> 
+                handleStockQuickChange(product, delta)
+            },
+            onSelectionChanged = { count -> updateMultiSelectUI(count) }
+        )
+    }
+    private val database by lazy { AppDatabase.getDatabase(this) }
+    private var currentSortAttribute: String = "NOMBRE"
+    private var isAscending: Boolean = true
+    private var currentCategory: String = "Todos"
+    private var currentSearchQuery: String = ""
+    private var filterLowStock: Boolean = false
+    private var businessCurrency: String = "S/"
+    private var isMultiSelectMode: Boolean = false
+    private val voiceHelper by lazy { VoiceRecognitionHelper(this) }
+    private var syncStatusText: String = "Sincronizado"
+    private var lastUnsyncedCount: Int = 0
+    private var isNetworkAvailable: Boolean = true
+    private var currentIsSyncing: Boolean = false
+    private var loadJob: kotlinx.coroutines.Job? = null
+    private var inventoryRegistration: ListenerRegistration? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // Soporte para Edge-to-Edge
+        enableEdgeToEdge()
+        
+        binding = ActivityInventarioBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        // Aplicar insets para evitar recortes por barras del sistema
+        ViewCompat.setOnApplyWindowInsetsListener(binding.inventarioContentRoot) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+
+        setupSyncIndicator()
+        setupRecyclerView()
+        setupListeners()
+
+        inventoryRegistration = SyncManager(this).startRealtimeInventorySync { 
+            loadProducts()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadProducts()
+    }
+
+    private fun setupRecyclerView() {
+        binding.rvInventario.layoutManager = LinearLayoutManager(this)
+        binding.rvInventario.adapter = adapter
+        binding.rvInventario.setItemViewCacheSize(20)
+        binding.rvInventario.setHasFixedSize(true)
+        binding.rvInventario.itemAnimator = null // Desactivar animaciones para cambios instantáneos
+    }
+
+    private fun setupSyncIndicator() {
+        val cm = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val networkCallback = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                isNetworkAvailable = true
+                runOnUiThread { updateSyncIconState() }
+            }
+            override fun onLost(network: android.net.Network) {
+                isNetworkAvailable = false
+                runOnUiThread { updateSyncIconState() }
+            }
+        }
+        cm.registerDefaultNetworkCallback(networkCallback)
+        updateSyncIconState()
+    }
+
+    private fun updateSyncIconState(showDialog: Boolean = false) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val unsynced = database.productDao().allProducts.count { !it.isSynced && !it.isDeleted }
+            lastUnsyncedCount = unsynced
+            
+            withContext(Dispatchers.Main) {
+                val networkStatus = if (isNetworkAvailable) "Conectado" else "Sin internet"
+                syncStatusText = if (unsynced > 0) "Sincronizando ($unsynced pendientes)" else "Todo al día"
+                
+                if (unsynced > 0) {
+                    binding.btnSyncIndicator.setImageResource(android.R.drawable.stat_notify_sync)
+                    binding.btnSyncIndicator.imageTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+                } else {
+                    binding.btnSyncIndicator.setImageResource(android.R.drawable.stat_sys_download_done)
+                    binding.btnSyncIndicator.imageTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+                }
+
+                if (showDialog) {
+                    AlertDialog.Builder(this@InventarioActivity)
+                        .setTitle("Estado de Sincronización")
+                        .setMessage("Internet: $networkStatus\nEstado: $syncStatusText")
+                        .setPositiveButton("Sincronizar ahora") { _, _ -> forceFullSync() }
+                        .setNeutralButton("Probar conexión") { _, _ -> testFirebaseWrite() }
+                        .setNegativeButton("Cerrar", null).show()
+                }
+            }
+        }
+    }
+
+    private fun testFirebaseWrite() {
+        Toast.makeText(this, "Probando conexión...", Toast.LENGTH_SHORT).show()
+        SyncManager(this).syncBusinessSettingsToCloud()
+    }
+
+    private fun forceFullSync() {
+        Toast.makeText(this, "Iniciando sincronización total...", Toast.LENGTH_SHORT).show()
+        SyncManager(this).scheduleOfflineSync()
+        loadProducts()
+    }
+
+    private fun setupListeners() {
+        binding.btnBackInventario.setOnClickListener { finish() }
+        binding.btnHelpInventario.setOnClickListener { showHelpDialog() }
+        binding.btnSyncIndicator.setOnClickListener { updateSyncIconState(true) }
+        
+        binding.btnOpenFilters.setOnClickListener { 
+            binding.drawerLayoutInventario.openDrawer(GravityCompat.START)
+        }
+
+        binding.btnVoiceSearch.setOnClickListener {
+            voiceHelper.startListening { text ->
+                binding.etSearchInventario.setText(text)
+                currentSearchQuery = text
+                loadProducts()
+            }
+        }
+
+        binding.fabAddProducto.setOnClickListener { 
+            startActivity(Intent(this, AddProductActivity::class.java))
+        }
+        
+        binding.btnExitEditorMode.setOnClickListener { 
+            if (isMultiSelectMode) toggleMultiSelectMode(false)
+        }
+
+        binding.etSearchInventario.addTextChangedListener { 
+            currentSearchQuery = it.toString()
+            loadProducts() 
+            val isExpanded = currentSearchQuery.isNotEmpty() || binding.etSearchInventario.hasFocus()
+            binding.btnSearchClear.visibility = if (isExpanded) View.VISIBLE else View.GONE
+        }
+
+        binding.btnSearchClear.setOnClickListener {
+            binding.etSearchInventario.setText("")
+            binding.etSearchInventario.clearFocus()
+            hideKeyboard()
+        }
+
+        // Filtros en el Drawer
+        binding.chipGroupFilters.setOnCheckedStateChangeListener { _, checkedIds ->
+            filterLowStock = checkedIds.contains(R.id.chipFilterLowStock)
+            loadProducts()
+        }
+
+        binding.btnFilterCategory.setOnClickListener { showCategorySelector() }
+        binding.btnSortAttribute.setOnClickListener { showSortAttributeSelector() }
+        binding.btnSortOrder.setOnClickListener { 
+            isAscending = !isAscending
+            binding.btnSortOrder.text = if (isAscending) "Orden: Ascendente" else "Orden: Descendente"
+            binding.btnSortOrder.setIconResource(if (isAscending) android.R.drawable.arrow_up_float else android.R.drawable.arrow_down_float)
+            loadProducts()
+        }
+
+        binding.btnMultiDelete.setOnClickListener { 
+            binding.drawerLayoutInventario.closeDrawer(GravityCompat.START)
+            toggleMultiSelectMode(true) 
+        }
+        
+        binding.btnExportExcel.setOnClickListener {
+            binding.drawerLayoutInventario.closeDrawer(GravityCompat.START)
+            Toast.makeText(this, "Exportando...", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun toggleMultiSelectMode(enabled: Boolean) {
+        isMultiSelectMode = enabled
+        adapter.setMultiSelectMode(enabled)
+        
+        if (enabled) {
+            binding.cardEditorBanner.visibility = View.VISIBLE
+            binding.btnExitEditorMode.text = "CANCELAR"
+            binding.cardEditorBanner.setCardBackgroundColor(getColor(R.color.red_700))
+            val tv = binding.cardEditorBanner.findViewById<TextView>(android.R.id.text1) ?: 
+                     binding.cardEditorBanner.getChildAt(0).let { if(it is android.view.ViewGroup) it.getChildAt(1) as? TextView else null }
+            tv?.text = "0 productos seleccionados"
+            tv?.setTextColor(Color.WHITE)
+            
+            // Reemplazar botón de ayuda por borrar si está en modo multiselección
+            binding.btnHelpInventario.setImageResource(android.R.drawable.ic_menu_delete)
+            binding.btnHelpInventario.setOnClickListener { showMultiDeleteConfirmation() }
+        } else {
+            binding.btnExitEditorMode.text = "SALIR"
+            binding.cardEditorBanner.visibility = View.GONE
+            binding.btnHelpInventario.setImageResource(android.R.drawable.ic_menu_help)
+            binding.btnHelpInventario.setOnClickListener { showHelpDialog() }
+        }
+    }
+
+    private fun updateMultiSelectUI(count: Int) {
+        if (count == -1) { 
+            toggleMultiSelectMode(true)
+            return
+        }
+        if (isMultiSelectMode && count == 0) {
+            toggleMultiSelectMode(false)
+            return
+        }
+        val tv = binding.cardEditorBanner.findViewById<TextView>(android.R.id.text1) ?: 
+                 binding.cardEditorBanner.getChildAt(0).let { if(it is android.view.ViewGroup) it.getChildAt(1) as? TextView else null }
+        tv?.text = "$count productos seleccionados"
+    }
+
+    private fun loadProducts() {
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        businessCurrency = prefs.getString("currency_symbol", "S/") ?: "S/"
+        
+        loadJob?.cancel()
+        loadJob = lifecycleScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val search = if (currentSearchQuery.isBlank()) "%%" else "%$currentSearchQuery%"
+                    var dbList = database.productDao().getFilteredAndSorted(search, currentCategory)
+                    
+                    val totalInvestment = dbList.sumOf { it.stock * it.precioCosto }
+                    val totalSaleValue = dbList.sumOf { it.stock * it.precioVenta }
+
+                    if (filterLowStock) {
+                        dbList = dbList.filter { it.stock <= 5 && !it.isDeleted }
+                    }
+
+                    val sortedList = when (currentSortAttribute) {
+                        "STOCK" -> if (isAscending) dbList.sortedBy { it.stock } else dbList.sortedByDescending { it.stock }
+                        "PRECIO" -> if (isAscending) dbList.sortedBy { it.precioVenta } else dbList.sortedByDescending { it.precioVenta }
+                        else -> if (isAscending) {
+                            dbList.sortedBy { it.nombre?.lowercase()?.trim() ?: "" }
+                        } else {
+                            dbList.sortedByDescending { it.nombre?.lowercase()?.trim() ?: "" }
+                        }
+                    }
+                    
+                    Triple(sortedList, totalInvestment, totalSaleValue)
+                }
+                
+                if (!isActive) return@launch
+
+                adapter.updateList(result.first)
+                updateDrawerHeader(result.third, result.second)
+                updateSyncIconState()
+            } catch (e: Exception) {
+                android.util.Log.e("INVENTARIO", "Error cargando productos", e)
+            }
+        }
+    }
+
+    private fun updateDrawerHeader(totalSale: Double, investment: Double) {
+        try {
+            binding.includedDrawerHeader.tvDrawerValorTotal.text = String.format(Locale.getDefault(), "S/ %.2f", totalSale)
+            binding.includedDrawerHeader.tvDrawerInversionTotal.text = String.format(Locale.getDefault(), "S/ %.2f", investment)
+        } catch (e: Exception) {}
+    }
+
+    private fun updateStatsUI(totalValue: Double, lowStock: Int, totalProducts: Int) {
+        // Stats removed from UI
+    }
+
+    private fun handleStockQuickChange(product: ProductEntity, delta: Int) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            product.stock += delta
+            if (product.stock < 0) product.stock = 0
+            product.isSynced = false
+            database.productDao().update(product)
+            SyncManager(this@InventarioActivity).syncProductToCloud(product)
+            
+            withContext(Dispatchers.Main) {
+                loadProducts()
+                Toast.makeText(this@InventarioActivity, "${product.nombre}: ${product.stock}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun showMultiDeleteConfirmation() {
+        val selected = adapter.getSelectedItems()
+        if (selected.isEmpty()) return
+        
+        AlertDialog.Builder(this)
+            .setTitle("Eliminar Varios")
+            .setMessage("¿Borrar ${selected.size} productos seleccionados?")
+            .setPositiveButton("Eliminar") { _, _ ->
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val sm = SyncManager(this@InventarioActivity)
+                    val count = selected.size
+                    val names = selected.take(3).joinToString { it.nombre } + (if (count > 3) "..." else "")
+                    
+                    selected.forEach { p ->
+                        database.productDao().deleteById(p.id)
+                        database.productDao().delete(p)
+                        sm.deleteProductFromCloud(p.id)
+                    }
+
+                    val log = MovementLogEntity(
+                        type = "PRODUCT_DELETED",
+                        title = "Eliminación Múltiple",
+                        description = "Se eliminaron $count productos: $names",
+                        value = "BORRADO",
+                        colorHex = "#E11D48",
+                        iconRes = android.R.drawable.ic_menu_delete
+                    )
+                    database.movementLogDao().insert(log)
+                    
+                    withContext(Dispatchers.Main) {
+                        toggleMultiSelectMode(false)
+                        loadProducts()
+                    }
+                }
+            }
+            .setNegativeButton("Cancelar", null).show()
+    }
+
+    private fun showCategorySelector() {
+        lifecycleScope.launch {
+            val categories = withContext(Dispatchers.IO) {
+                val list = database.productDao().uniqueCategories.toMutableList()
+                if (!list.contains("Todos")) list.add(0, "Todos")
+                list.toTypedArray()
+            }
+            AlertDialog.Builder(this@InventarioActivity)
+                .setTitle("Seleccionar Categoría")
+                .setItems(categories) { _, which ->
+                    currentCategory = categories[which]
+                    binding.btnFilterCategory.text = if (currentCategory == "Todos") "Categoría" else currentCategory
+                    loadProducts()
+                }.show()
+        }
+    }
+
+    private fun showSortAttributeSelector() {
+        val options = arrayOf("Nombre", "Stock", "Precio")
+        val values = arrayOf("NOMBRE", "STOCK", "PRECIO")
+        AlertDialog.Builder(this)
+            .setTitle("Ordenar por")
+            .setItems(options) { _, which ->
+                currentSortAttribute = values[which]
+                binding.btnSortAttribute.text = "Ordenar por: ${options[which]}"
+                loadProducts()
+            }.show()
+    }
+
+    private fun showHelpDialog() {
+        val helpMessage = """
+            📦 INVENTARIO INTELIGENTE
+            • Valor Total: Es el dinero que tienes en mercancía (Costo x Stock).
+            • Stock Bajo: Productos con menos de 5 unidades.
+            • Edición Rápida: Usa los botones +/- para cambiar el stock sin entrar a editar.
+            • Utilidad: El margen de ganancia calculado para cada producto.
+        """.trimIndent()
+        AlertDialog.Builder(this).setTitle("Guía de Inventario").setMessage(helpMessage).setPositiveButton("Entendido", null).show()
+    }
+
+    private fun hideKeyboard() {
+        val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(binding.etSearchInventario.windowToken, 0)
+    }
+
+    private fun showProductLabel(p: ProductEntity) {
+        val db = DialogViewLabelBinding.inflate(layoutInflater)
+        val d = AlertDialog.Builder(this, R.style.Theme_Gomezmart_Dialog).setView(db.root).create()
+        db.tvLabelProdName.text = p.nombre
+        db.tvLabelProdDesc.text = p.descripcion ?: "Sin descripción."
+
+        val imageSource: Any? = when {
+            !p.photoPath.isNullOrEmpty() && File(p.photoPath!!).exists() -> p.photoPath
+            !p.photoUrl.isNullOrEmpty() -> p.photoUrl
+            else -> null
+        }
+
+        if (imageSource != null) {
+            Glide.with(this)
+                .load(imageSource)
+                .apply(GlideHelper.getOptions(this, showPlaceholder = false))
+                .centerCrop()
+                .into(db.ivLabelProdPhoto)
+            db.ivLabelProdPhoto.alpha = 1.0f
+        } else {
+            db.ivLabelProdPhoto.setImageResource(R.drawable.gomezmart_icon)
+            db.ivLabelProdPhoto.alpha = 0.3f
+        }
+
+        val content = if (!p.codigo.isNullOrBlank()) p.codigo!!.split(",")[0] else p.nombre
+        var currentBitmap: Bitmap? = null
+
+        fun generateCode(format: BarcodeFormat, width: Int, height: Int): Bitmap? {
+            return try {
+                val bitMatrix = MultiFormatWriter().encode(content, format, width, height)
+                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+                for (x in 0 until width) for (y in 0 until height) {
+                    bitmap.setPixel(x, y, if (bitMatrix.get(x, y)) Color.BLACK else Color.WHITE)
+                }
+                bitmap
+            } catch (e: Exception) { null }
+        }
+
+        val qrBitmap = generateCode(BarcodeFormat.QR_CODE, 500, 500)
+        val barBitmap = generateCode(BarcodeFormat.CODE_128, 800, 300)
+
+        db.ivProductCode.setImageBitmap(qrBitmap)
+        db.ivProductBarcode.setImageBitmap(barBitmap)
+        currentBitmap = qrBitmap
+
+        db.chipGroupCodeType.setOnCheckedStateChangeListener { _, checkedIds ->
+            if (checkedIds.contains(R.id.chipShowQR)) {
+                db.ivProductCode.visibility = View.VISIBLE
+                db.ivProductBarcode.visibility = View.GONE
+                currentBitmap = qrBitmap
+            } else {
+                db.ivProductCode.visibility = View.GONE
+                db.ivProductBarcode.visibility = View.VISIBLE
+                currentBitmap = barBitmap
+            }
+        }
+
+        db.btnEditProductFromLabel.setOnClickListener {
+            d.dismiss()
+            val intent = Intent(this, AddProductActivity::class.java)
+            intent.putExtra("PRODUCT_ID", p.id)
+            startActivity(intent)
+        }
+
+        db.btnShareLabel.setOnClickListener { currentBitmap?.let { shareLabelBitmap(it, p.nombre) } }
+        db.tvLabelProdCode.text = if (!p.codigo.isNullOrBlank()) p.codigo!!.replace(",", "\n• ") else "---"
+        db.btnCloseLabel.setOnClickListener { d.dismiss() }
+        d.show()
+        d.window?.let {
+            it.setLayout((resources.displayMetrics.widthPixels * 0.95).toInt(), android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+            it.setBackgroundDrawableResource(android.R.color.transparent)
+        }
+    }
+
+    private fun shareLabelBitmap(bitmap: Bitmap, name: String) {
+        val file = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "Ficha_$name.png")
+        try {
+            FileOutputStream(file).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            val uri = FileProvider.getUriForFile(this, "$packageName.provider", file)
+            startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "image/png"; putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }, "Compartir Ficha"))
+        } catch (e: Exception) {}
+    }
+
+    override fun onStop() {
+        super.onStop()
+        inventoryRegistration?.remove()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        voiceHelper.destroy()
+    }
+}

@@ -6,6 +6,7 @@
     android:background="?attr/colorSurface">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLoansClients"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurfaceContainer"

@@ -1,52 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLoanDetails"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?attr/colorSurfaceContainer"
-        app:elevation="0dp"
-        app:liftOnScroll="false">
-        <FrameLayout
+        android:background="@android:color/transparent"
+        app:elevation="0dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarLoanDetails"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-            <com.google.android.material.appbar.MaterialToolbar
-                android:id="@+id/toolbarLoanDetails"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                app:title="Detalle del Préstamo"
-                app:navigationIcon="@android:drawable/ic_menu_revert" />
+            android:layout_height="?attr/actionBarSize"
+            app:title="Detalle del Préstamo"
+            app:navigationIcon="@android:drawable/ic_menu_revert">
 
-            <ImageButton
-                android:id="@+id/btnDeleteClient"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_gravity="center_vertical|end"
-                android:layout_marginEnd="56dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="12dp"
-                android:scaleType="fitCenter"
-                android:src="@android:drawable/ic_menu_delete"
-                android:contentDescription="Eliminar cliente"
-                app:tint="@color/red_600" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingEnd="16dp">
 
-            <ImageButton
-                android:id="@+id/btnSyncIndicator"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_gravity="center_vertical|end"
-                android:layout_marginEnd="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="12dp"
-                android:scaleType="fitCenter"
-                android:src="@android:drawable/stat_sys_download_done"
-                android:contentDescription="Estado de sincronización"
-                app:tint="?attr/colorOnSurfaceVariant" />
-        </FrameLayout>
+                <ImageView
+                    android:id="@+id/btnSyncIndicator"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginEnd="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/stat_sys_download_done"
+                    app:tint="@color/emerald_600" />
+
+                <ImageView
+                    android:id="@+id/btnDeleteClient"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_delete"
+                    app:tint="@color/red_600" />
+            </LinearLayout>
+        </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -58,47 +61,80 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingHorizontal="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="100dp">
 
+            <!-- TARJETA PRINCIPAL DEL CLIENTE Y DEUDA -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="?attr/colorSurfaceContainer">
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="?attr/colorSurfaceContainerLow">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="20dp">
-                    <!-- INFORMACIÓN DEL CLIENTE REFINADA -->
-                    <LinearLayout
+
+                    <FrameLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:layout_height="wrap_content">
 
                         <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:layout_marginEnd="48dp">
 
                             <TextView
                                 android:id="@+id/tvDetailClientName"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Nombre Cliente"
+                                android:text="Cargando Cliente..."
                                 android:textSize="22sp"
                                 android:textStyle="bold"
                                 android:textColor="?attr/colorOnSurface" />
 
                             <TextView
-                                android:id="@+id/tvDetailClientAddress"
-                                android:layout_width="match_parent"
+                                android:id="@+id/tvDetailCapitalLent"
+                                android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Dirección del domicilio"
-                                android:textSize="13sp"
+                                android:text="💰 Capital Prestado: S/ 0.00"
+                                android:textSize="14sp"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:layout_marginTop="4dp" />
+
+                            <TextView
+                                android:id="@+id/tvDetailTotalToPay"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📄 Deuda Total (con interés): S/ 0.00"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnSurface"
+                                android:layout_marginTop="2dp"
+                                android:visibility="gone" />
+
+                            <TextView
+                                android:id="@+id/tvDetailInterestInfo"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="No se aplicó interés para este cliente"
+                                android:textSize="12sp"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:layout_marginTop="2dp" />
+
+                            <TextView
+                                android:id="@+id/tvDetailClientAddress"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📍 Dirección"
+                                android:textSize="12sp"
                                 android:textColor="?attr/colorOnSurfaceVariant"
                                 android:layout_marginTop="2dp"
                                 android:visibility="gone" />
@@ -108,6 +144,7 @@
                             android:id="@+id/btnEditClientInfo"
                             android:layout_width="40dp"
                             android:layout_height="40dp"
+                            android:layout_gravity="top|end"
                             app:cardCornerRadius="20dp"
                             app:cardElevation="0dp"
                             app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
@@ -120,43 +157,237 @@
                                 android:src="@android:drawable/ic_menu_edit"
                                 app:tint="?attr/colorPrimary" />
                         </com.google.android.material.card.MaterialCardView>
-                    </LinearLayout>
+                    </FrameLayout>
 
-                    <TextView
-                        android:id="@+id/tvDetailLoanAmount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Deuda Total: S/ 0.00"
-                        android:textSize="14sp"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-
-                    <!-- SALDO PENDIENTE PROMINENTE -->
+                    <!-- BLOQUE REDISEÑADO: TARJETA DE FECHAS Y ESTADO (2 COLUMNAS LIMPIAS) -->
                     <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardPendingBalanceContainer"
+                        android:id="@+id/cardLoanDatesAndStatus"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
-                        app:cardCornerRadius="20dp"
+                        android:layout_marginTop="14dp"
+                        app:cardCornerRadius="16dp"
                         app:cardElevation="0dp"
-                        app:cardBackgroundColor="@color/emerald_50"
                         app:strokeWidth="1dp"
-                        app:strokeColor="#D1FAE5">
+                        app:strokeColor="?attr/colorOutlineVariant"
+                        app:cardBackgroundColor="?attr/colorSurfaceContainer">
+
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="vertical"
-                            android:padding="20dp"
+                            android:padding="14dp">
+
+                            <!-- FILA 1: REGISTRO E INICIO -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="REGISTRO EN APP"
+                                        android:textSize="10sp"
+                                        android:textStyle="bold"
+                                        android:textColor="?attr/colorOnSurfaceVariant"
+                                        android:letterSpacing="0.08" />
+
+                                    <TextView
+                                        android:id="@+id/tvDetailRegisterDate"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="--/--/----"
+                                        android:textSize="13sp"
+                                        android:textStyle="bold"
+                                        android:textColor="?attr/colorOnSurface"
+                                        android:layout_marginTop="2dp" />
+                                </LinearLayout>
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical"
+                                    android:layout_marginStart="8dp">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="INICIO DEL CRÉDITO"
+                                        android:textSize="10sp"
+                                        android:textStyle="bold"
+                                        android:textColor="?attr/colorOnSurfaceVariant"
+                                        android:letterSpacing="0.08" />
+
+                                    <TextView
+                                        android:id="@+id/tvDetailStartDate"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="--/--/----"
+                                        android:textSize="13sp"
+                                        android:textStyle="bold"
+                                        android:textColor="?attr/colorOnSurface"
+                                        android:layout_marginTop="2dp" />
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:background="?attr/colorOutlineVariant"
+                                android:layout_marginTop="10dp"
+                                android:layout_marginBottom="10dp" />
+
+                            <!-- FILA 2: FECHA DE COBRO Y ESTADO -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="FECHA DE COBRO"
+                                        android:textSize="10sp"
+                                        android:textStyle="bold"
+                                        android:textColor="?attr/colorOnSurfaceVariant"
+                                        android:letterSpacing="0.08" />
+
+                                    <TextView
+                                        android:id="@+id/tvDetailDueDate"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Sin fecha límite"
+                                        android:textSize="13sp"
+                                        android:textStyle="bold"
+                                        android:textColor="?attr/colorOnSurface"
+                                        android:layout_marginTop="2dp" />
+                                </LinearLayout>
+
+                                <TextView
+                                    android:id="@+id/tvDetailMoraStatus"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Al día"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/emerald_600"
+                                    android:background="@drawable/bg_bottom_sheet_rounded"
+                                    android:backgroundTint="@color/purple_50"
+                                    android:paddingHorizontal="12dp"
+                                    android:paddingVertical="6dp" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- BLOQUE ORIGEN DE FONDOS REDISEÑADO -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardFundingSource"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="?attr/colorOutlineVariant"
+                        app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:id="@+id/tvFundingSourceIcon"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:text="💼"
+                                android:textSize="18sp"
+                                android:gravity="center"
+                                android:background="@drawable/bg_bottom_sheet_rounded"
+                                android:backgroundTint="?attr/colorSurfaceContainerHigh"
+                                android:layout_marginEnd="12dp" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tvFundingSourceTitle"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Origen: Presupuesto del Negocio"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurface" />
+
+                                <TextView
+                                    android:id="@+id/tvFundingSourceDesc"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Toca para cambiar la fuente de capital"
+                                    android:textSize="11sp"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
+                            </LinearLayout>
+
+                            <ImageView
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:src="@android:drawable/ic_menu_edit"
+                                app:tint="?attr/colorPrimary" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- CAJA RESALTADA DEL SALDO RESTANTE -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardPendingBalanceContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="@color/emerald_50"
+                        app:strokeWidth="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp"
                             android:gravity="center">
+
                             <TextView
                                 android:id="@+id/tvPendingBalanceLabel"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="SALDO RESTANTE"
-                                android:textSize="10sp"
+                                android:textSize="11sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/emerald_600"
                                 android:letterSpacing="0.1" />
+
                             <TextView
                                 android:id="@+id/tvDetailPendingBalance"
                                 android:layout_width="wrap_content"
@@ -168,7 +399,7 @@
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 
-                    <!-- ACCIONES RÁPIDAS -->
+                    <!-- ACCIONES RÁPIDAS DE CONTACTO (LLAMAR Y MENSAJE CON ESPACIO COMPLETO) -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -182,7 +413,9 @@
                             android:layout_height="56dp"
                             android:layout_weight="1"
                             android:text="Llamar"
-                            android:layout_marginEnd="6dp"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="5dp"
                             app:cornerRadius="16dp"
                             app:icon="@android:drawable/ic_menu_call"
                             app:backgroundTint="?attr/colorSurfaceContainerHigh"
@@ -190,18 +423,20 @@
                             app:iconTint="?attr/colorPrimary" />
 
                         <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnIncreaseDebt"
+                            android:id="@+id/btnSendWhatsAppReminder"
                             style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="0dp"
                             android:layout_height="56dp"
-                            android:layout_weight="1.2"
-                            android:text="Sumar Deuda"
-                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="Mensaje"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="5dp"
                             app:cornerRadius="16dp"
-                            app:icon="@android:drawable/ic_input_add"
-                            app:backgroundTint="?attr/colorPrimaryContainer"
-                            android:textColor="?attr/colorPrimary"
-                            app:iconTint="?attr/colorPrimary" />
+                            app:icon="@android:drawable/ic_menu_send"
+                            app:backgroundTint="@color/emerald_50"
+                            android:textColor="@color/emerald_700"
+                            app:iconTint="@color/emerald_700" />
                     </LinearLayout>
 
                     <!-- OPERACIONES FINANCIERAS -->
@@ -213,7 +448,7 @@
                         android:textStyle="bold"
                         android:textColor="@color/slate_400"
                         android:letterSpacing="0.1"
-                        android:layout_marginTop="28dp"
+                        android:layout_marginTop="24dp"
                         android:layout_marginBottom="12dp" />
 
                     <com.google.android.material.button.MaterialButton
@@ -228,20 +463,6 @@
                         android:textColor="@color/emerald_700"
                         app:icon="@android:drawable/checkbox_on_background"
                         app:iconTint="@color/emerald_700" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnRefinanceLoan"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:layout_marginTop="10dp"
-                        android:text="Refinanciar Deuda Actual"
-                        android:textStyle="bold"
-                        app:cornerRadius="16dp"
-                        app:backgroundTint="@color/orange_50"
-                        android:textColor="@color/orange_600"
-                        app:icon="@android:drawable/ic_menu_rotate"
-                        app:iconTint="@color/orange_600" />
 
                     <View
                         android:layout_width="match_parent"
@@ -346,30 +567,75 @@
 
             <View
                 android:layout_width="match_parent"
-                android:layout_height="100dp" />
+                android:layout_height="40dp" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- BOTÓN PAGO FLOTANTE / FIJO (SIEMPRE VISIBLE) -->
+    <!-- BARRA INFERIOR FLOTANTE SIN FONDO CUADRADO (TRANSPARENTE Y CON PROTECCIÓN DE INSETS) -->
     <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardQuickPayContainer"
+        android:id="@+id/cardBottomMoneyActionsContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        app:cardElevation="12dp"
+        android:layout_marginBottom="8dp"
+        app:cardElevation="0dp"
         app:cardCornerRadius="0dp"
-        app:cardBackgroundColor="?attr/colorSurface"
-        android:visibility="gone">
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnQuickPaySingle"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:strokeWidth="0dp">
+
+        <LinearLayout
+            android:id="@+id/layoutBottomMoneyActions"
             android:layout_width="match_parent"
-            android:layout_height="64dp"
-            android:layout_margin="20dp"
-            android:text="REGISTRAR PAGO"
-            android:textStyle="bold"
-            android:textSize="16sp"
-            app:cornerRadius="20dp"
-            app:backgroundTint="@color/emerald_600" />
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnIncreaseDebt"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:text="Sumar Deuda"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginEnd="5dp"
+                app:cornerRadius="18dp"
+                app:icon="@android:drawable/ic_input_add"
+                app:backgroundTint="?attr/colorPrimaryContainer"
+                android:textColor="?attr/colorPrimary"
+                app:iconTint="?attr/colorPrimary" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardQuickPayContainer"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="5dp"
+                app:cardElevation="0dp"
+                app:cardCornerRadius="18dp"
+                app:strokeWidth="0dp"
+                app:cardBackgroundColor="@android:color/transparent">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnQuickPaySingle"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Registrar Pago"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="18dp"
+                    app:backgroundTint="@color/emerald_600"
+                    android:textColor="@color/white"
+                    app:icon="@android:drawable/checkbox_on_background"
+                    app:iconTint="@color/white" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

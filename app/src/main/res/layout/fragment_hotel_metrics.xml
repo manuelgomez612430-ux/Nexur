@@ -113,7 +113,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
                         android:background="@color/slate_50"
-                        android:layout_marginVertical="24dp" />
+                        android:layout_marginTop="24dp"
+                        android:layout_marginBottom="24dp" />
 
                     <LinearLayout
                         android:layout_width="match_parent"

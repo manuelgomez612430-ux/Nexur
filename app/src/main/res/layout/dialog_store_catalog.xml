@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white">
+
+    <!-- Header Handle -->
+    <View
+        android:layout_width="36dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_bottom_sheet_handle" />
+
+    <!-- Top Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="10dp"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvCatalogStoreName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Catálogo Virtual 🛍️"
+                android:textColor="@color/slate_900"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvCatalogProductCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cargando productos..."
+                android:textColor="@color/purple_600"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnCloseCatalog"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            app:tint="@color/slate_500" />
+    </LinearLayout>
+
+    <!-- Search Bar -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="12dp"
+        app:cardCornerRadius="23dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="@color/slate_50"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/slate_200">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@android:drawable/ic_menu_search"
+                app:tint="@color/slate_400" />
+
+            <EditText
+                android:id="@+id/etSearchCatalog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@null"
+                android:hint="Buscar en el catálogo..."
+                android:paddingHorizontal="12dp"
+                android:textSize="14sp"
+                android:textColor="@color/slate_900"
+                android:inputType="text" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Products Grid -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvCatalogGrid"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingHorizontal="12dp"
+        android:clipToPadding="false"
+        tools:listitem="@layout/item_marketplace_grid_product" />
+
+    <!-- Empty State -->
+    <TextView
+        android:id="@+id/tvEmptyCatalog"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="32dp"
+        android:text="No se encontraron productos en el catálogo."
+        android:textColor="@color/slate_400"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+</LinearLayout>

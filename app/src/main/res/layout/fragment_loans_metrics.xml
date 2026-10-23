@@ -102,7 +102,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Ganancia Estimada"
+                            android:text="Ganancia Neta"
                             android:textSize="10sp"
                             android:textColor="#B0FFFFFF" />
                     </LinearLayout>
@@ -110,9 +110,12 @@
             </LinearLayout>
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardCapitalDistribution"
                 android:layout_width="match_parent"
                 android:layout_height="300dp"
                 android:layout_marginTop="24dp"
+                android:clickable="true"
+                android:focusable="true"
                 app:cardCornerRadius="28dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
@@ -123,14 +126,31 @@
                     android:layout_height="match_parent"
                     android:orientation="vertical"
                     android:padding="20dp">
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Distribución de Mi Capital"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="14sp"
-                        android:letterSpacing="0.02" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Distribución de Mi Capital"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="14sp"
+                            android:letterSpacing="0.02" />
+
+                        <TextView
+                            android:id="@+id/tvHintCapitalDetail"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/tap_for_more_details"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/purple_600" />
+                    </LinearLayout>
                     <com.github.mikephil.charting.charts.PieChart
                         android:id="@+id/chartMetricsRisk"
                         android:layout_width="match_parent"
@@ -194,7 +214,7 @@
                         android:id="@+id/tvLoansAiContent"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="¿Quieres un análisis de tu rentabilidad y riesgo? Toca el botón para que Gemini revise tu cartera."
+                        android:text="¿Quieres un análisis de tu rentabilidad y riesgo? Toca el botón para que la IA de GoMezMart revise tu cartera."
                         android:textSize="15sp"
                         android:textColor="#FFFFFF"
                         android:alpha="1.0"
@@ -220,6 +240,18 @@
                             android:layout_marginEnd="8dp" />
 
                         <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnChatLoansAi"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:text="💬 Chatear con IA"
+                            android:textSize="11sp"
+                            android:textColor="@color/white"
+                            app:backgroundTint="#33FFFFFF"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnRefreshLoansAi"
                             style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="wrap_content"
@@ -236,9 +268,12 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardWeeklyCollections"
                 android:layout_width="match_parent"
                 android:layout_height="300dp"
                 android:layout_marginTop="20dp"
+                android:clickable="true"
+                android:focusable="true"
                 app:cardCornerRadius="28dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
@@ -249,14 +284,31 @@
                     android:layout_height="match_parent"
                     android:orientation="vertical"
                     android:padding="20dp">
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Cobros Semanales (S/)"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="14sp"
-                        android:letterSpacing="0.02" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Cobros Semanales (S/)"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="14sp"
+                            android:letterSpacing="0.02" />
+
+                        <TextView
+                            android:id="@+id/tvHintWeeklyDetail"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/tap_for_more_details"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/purple_600" />
+                    </LinearLayout>
                     <com.github.mikephil.charting.charts.BarChart
                         android:id="@+id/chartMetricsCollection"
                         android:layout_width="match_parent"

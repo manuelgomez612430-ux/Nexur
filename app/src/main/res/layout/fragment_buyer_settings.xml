@@ -69,7 +69,8 @@
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:layout_marginHorizontal="16dp"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="16dp"
                         android:background="@color/slate_100" />
 
                     <com.google.android.material.button.MaterialButton
@@ -88,7 +89,8 @@
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:layout_marginHorizontal="16dp"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="16dp"
                         android:background="@color/slate_100" />
 
                     <com.google.android.material.button.MaterialButton
@@ -107,6 +109,49 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- SECCIÓN COMPARTIR -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="COMPARTIR"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_400"
+                android:letterSpacing="0.1"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="1dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_200">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="8dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnShareWithFriends"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:text="🎁  Compartir con Amigos"
+                        android:gravity="start|center_vertical"
+                        android:textColor="@color/purple_700"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        app:icon="@android:drawable/ic_menu_share"
+                        app:iconGravity="end"
+                        app:iconTint="@color/purple_600" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -121,7 +166,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="GoMezMart v1.5.10"
+                android:text="GoMezMart v1.5.40"
                 android:textAlignment="center"
                 android:textColor="@color/slate_400"
                 android:textSize="12sp"

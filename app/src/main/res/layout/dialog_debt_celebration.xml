@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="?attr/colorSurface"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/emerald_600">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp">
+
+            <TextView
+                android:id="@+id/tvCelebrationEmoji"
+                android:layout_width="88dp"
+                android:layout_height="88dp"
+                android:text="🏆"
+                android:textSize="48sp"
+                android:gravity="center"
+                android:background="@drawable/bg_circle_green"
+                android:layout_marginBottom="20dp"/>
+
+            <TextView
+                android:id="@+id/tvCelebrationTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="¡Deuda 100% Liquidada! 🎉"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                android:gravity="center"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:id="@+id/tvCelebrationMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="¡Excelente trabajo! Has cobrado la totalidad de la deuda. El cliente está completamente al día."
+                android:textSize="14sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:gravity="center"
+                android:layout_marginBottom="28dp"
+                android:lineSpacingExtra="4dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCelebrationClose"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:text="¡Excelente! 🚀"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="18dp"
+                app:backgroundTint="@color/emerald_600"
+                android:textColor="@color/white"/>
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</LinearLayout>

@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp"
+    app:cardBackgroundColor="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- BARRA SUPERIOR BOTTOM SHEET -->
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_bottom_sheet_handle" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Compartir en el chat"
+            android:textColor="@color/slate_900"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp"
+            android:layout_gravity="center_horizontal" />
+
+        <!-- OPCIÓN 1: CÁMARA -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnOptionCamera"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/slate_100"
+            app:cardBackgroundColor="@color/slate_50"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:text="📸"
+                    android:textSize="22sp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_circle_purple" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tomar una foto"
+                        android:textColor="@color/slate_900"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Abre la cámara de tu celular"
+                        android:textColor="@color/slate_500"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- OPCIÓN 2: GALERÍA -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnOptionGallery"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/slate_100"
+            app:cardBackgroundColor="@color/slate_50"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:text="🖼️"
+                    android:textSize="22sp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_circle_light_blue" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Elegir de la galería"
+                        android:textColor="@color/slate_900"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Selecciona fotos o imágenes guardadas"
+                        android:textColor="@color/slate_500"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- OPCIÓN 3: CATÁLOGO DE PRODUCTOS -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnOptionCatalog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/slate_100"
+            app:cardBackgroundColor="@color/slate_50"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:text="📂"
+                    android:textSize="22sp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_circle_light_green" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Catálogo de productos"
+                        android:textColor="@color/slate_900"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Envía una tarjeta interactiva de tu negocio"
+                        android:textColor="@color/slate_500"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

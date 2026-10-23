@@ -6,6 +6,7 @@
     android:background="@color/white">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarVision"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/white"
@@ -13,7 +14,8 @@
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarVision"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
+            android:layout_height="wrap_content"
+            android:minHeight="?attr/actionBarSize"
             app:title="Visión y Sostenibilidad"
             app:titleTextColor="@color/slate_900"
             app:navigationIcon="@android:drawable/ic_menu_revert"

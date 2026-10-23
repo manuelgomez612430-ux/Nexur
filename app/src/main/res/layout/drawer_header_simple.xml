@@ -8,12 +8,13 @@
 
     <!-- Bloque de Identidad (Fondo Morado) -->
     <LinearLayout
+        android:id="@+id/layoutDrawerPurpleHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/purple_600"
         android:orientation="vertical"
         android:paddingHorizontal="24dp"
-        android:paddingTop="48dp"
+        android:paddingTop="20dp"
         android:paddingBottom="20dp">
 
         <LinearLayout
@@ -68,74 +69,14 @@
             android:letterSpacing="0.2" />
     </LinearLayout>
 
-    <!-- Botón 1: Publicación de Servicio -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/btnDrawerPublishService"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="16dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp"
-        app:cardBackgroundColor="@color/purple_600"
-        android:clickable="true"
-        android:focusable="true"
-        android:foreground="?attr/selectableItemBackground">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:id="@+id/tvDrawerPublishTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🌐 Gestionar tienda online"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Botón 3: Cambiar de Sistema (UBICACIÓN ACTUALIZADA) -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/btnDrawerSwitchSystem"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp"
-        app:cardBackgroundColor="@color/purple_600"
-        android:clickable="true"
-        android:focusable="true"
-        android:foreground="?attr/selectableItemBackground">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🔄 Cambiar de Sistema"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Botón 2: Gestionar Colaboradores -->
+    <!-- Botón: Gestionar Colaboradores -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/btnDrawerManageTeam"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="16dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="2dp"
         app:cardBackgroundColor="@color/purple_600"
@@ -199,55 +140,13 @@
         </FrameLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- El botón de Mercado ha sido movido al menú inferior principal -->
-
-    <!-- Botón 5: Mis Colaboraciones (NUEVO) -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/btnDrawerMyCollaborations"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp"
-        app:cardBackgroundColor="@color/indigo_500"
-        android:clickable="true"
-        android:focusable="true"
-        android:foreground="?attr/selectableItemBackground">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
-
-            <TextView
-                android:id="@+id/tvDrawerCollabTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🤝 Mis Colaboraciones"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvDrawerCollabDesc"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Accede a los negocios donde eres parte del equipo."
-                android:textColor="@android:color/white"
-                android:textSize="10sp"
-                android:alpha="0.8" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Botón 6: Mi Cuenta (Solo para colaboradores) -->
+    <!-- Botón: Mi Cuenta (Solo para colaboradores) -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/btnDrawerCollabAccount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
         android:layout_marginTop="8dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="2dp"

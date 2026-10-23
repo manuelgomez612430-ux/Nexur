@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/tvQtyDialogTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Selecciona la cantidad"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/slate_900" />
+
+        <TextView
+            android:id="@+id/tvQtyDialogProductName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Nombre del Producto"
+            android:textColor="@color/slate_500"
+            android:textSize="14sp"
+            android:gravity="center" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="32dp"
+            android:background="@drawable/bg_filter_chip"
+            android:padding="8dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQtyDialogMinus"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                app:icon="@android:drawable/ic_menu_close_clear_cancel"
+                app:iconSize="24dp"
+                app:cornerRadius="16dp"
+                android:padding="0dp"
+                app:iconGravity="textStart" />
+
+            <TextView
+                android:id="@+id/tvQtyDialogValue"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="1"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_900"
+                android:gravity="center" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQtyDialogPlus"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                app:icon="@android:drawable/ic_input_add"
+                app:iconSize="24dp"
+                app:cornerRadius="16dp"
+                android:padding="0dp"
+                app:iconGravity="textStart" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/slate_100"
+            android:layout_marginTop="32dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="24dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Total a pagar:"
+                android:textSize="16sp"
+                android:textColor="@color/slate_600" />
+
+            <TextView
+                android:id="@+id/tvQtyDialogTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="S/ 0.00"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@color/purple_600" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnQtyDialogConfirm"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="24dp"
+            android:text="AGREGAR"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            app:cornerRadius="18dp"
+            app:backgroundTint="@color/purple_600" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnQtyDialogCancel"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Cancelar"
+            android:textColor="@color/slate_400" />
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

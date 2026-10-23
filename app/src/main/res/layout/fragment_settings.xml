@@ -96,19 +96,41 @@
                     android:textColor="@color/slate_500"
                     android:textSize="14sp" />
 
-                <TextView
-                    android:id="@+id/tvUserAccountTypeSettings"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="TIPO DE CUENTA"
-                    android:textColor="@color/purple_600"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:letterSpacing="0.05"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="4dp"
-                    android:background="@drawable/bg_pill_purple_light" />
+                    android:layout_gravity="center_horizontal"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/bg_pill_purple_light"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="6dp">
+
+                    <TextView
+                        android:id="@+id/tvUserAccountRoleIconSettings"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="💼"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:id="@+id/tvUserAccountTypeSettings"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:gravity="center"
+                        android:text="ADMINISTRADOR"
+                        android:textColor="@color/purple_600"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:singleLine="true"
+                        android:maxLines="1"
+                        android:ellipsize="none"
+                        android:includeFontPadding="false"
+                        android:layout_marginTop="1dp" />
+                </LinearLayout>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -175,6 +197,60 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Idioma y preferencias de la app"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/ic_menu_directions"
+                        app:tint="@color/slate_400" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/slate_100" />
+
+                <!-- Account Settings -->
+                <LinearLayout
+                    android:id="@+id/cardAccountSettings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="20dp"
+                    android:gravity="center_vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+
+                    <TextView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:text="👤"
+                        android:textSize="22sp"
+                        android:gravity="center" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ajustes de Cuenta"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Seguridad y eliminación de cuenta"
                             android:textSize="12sp"
                             android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
@@ -257,7 +333,8 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:layout_marginHorizontal="20dp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginEnd="20dp"
                     android:background="@color/slate_100" />
 
                 <!-- Support Creator -->
@@ -305,7 +382,8 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:layout_marginHorizontal="20dp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginEnd="20dp"
                     android:background="@color/slate_100" />
 
                 <LinearLayout
@@ -348,42 +426,6 @@
                             android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- LOGOUT -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardLogout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="40dp"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="@color/slate_100"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/slate_400">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="20dp"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_lock_power_off"
-                    app:tint="@color/red_600" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:text="Cerrar Sesión Segura"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/red_600" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

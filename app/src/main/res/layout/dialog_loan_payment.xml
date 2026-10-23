@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+<LinearLayout
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -105,6 +109,75 @@
             android:textColor="?attr/colorOnSurface" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- CUENTA DESTINO DEL COBRO -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cuenta o banco donde ingresa el dinero:"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/autoCompletePaymentAccount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- COMPROBANTE / VOUCHER DE PAGO -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Comprobante o captura del pago (Opcional):"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddPaymentReceipt"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="48dp"
+            android:text="📷 Adjuntar Comprobante"
+            android:textSize="12sp"
+            app:cornerRadius="12dp" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardPaymentReceiptContainer"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="10dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/ivPaymentReceiptThumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop" />
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -130,3 +203,4 @@
             app:backgroundTint="?attr/colorPrimary" />
     </LinearLayout>
 </LinearLayout>
+</ScrollView>

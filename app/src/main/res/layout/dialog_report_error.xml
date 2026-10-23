@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <!-- HANDLE BAR -->
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_bottom_sheet_handle" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Reportar un Error o Sugerencia 🛠️"
+            android:textColor="@color/slate_900"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Escribe los detalles de lo sucedido e incluye capturas para ayudarte a solucionarlo."
+            android:textColor="@color/slate_500"
+            android:textSize="13sp"
+            android:gravity="center" />
+
+        <!-- SELECTOR DE CATEGORÍA DE REPORTE -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_gravity="start"
+            android:text="TIPO DE REPORTE"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/slate_400"
+            android:letterSpacing="0.1" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupReportType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:singleSelection="true"
+            app:selectionRequired="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipReportBug"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🐛 Error / Fallo"
+                android:checked="true" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipReportSuggestion"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="💡 Sugerencia" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipReportQuestion"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="❓ Consulta" />
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- CAJA DE TEXTO DESCRIPCIÓN -->
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="Cuéntanos detalladamente qué sucedió..."
+            app:boxCornerRadiusTopStart="16dp"
+            app:boxCornerRadiusTopEnd="16dp"
+            app:boxCornerRadiusBottomStart="16dp"
+            app:boxCornerRadiusBottomEnd="16dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etReportDescription"
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:gravity="top"
+                android:inputType="textMultiLine|textCapSentences" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ADJUNTAR CAPTURA / FOTO -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_gravity="start"
+            android:text="CAPTURAS O FOTOS (OPCIONAL)"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/slate_400"
+            android:letterSpacing="0.1" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="10dp">
+
+            <!-- VISTA PREVIA DE CAPTURA ADJUNTADA -->
+            <FrameLayout
+                android:id="@+id/cardReportPhotoPreviewContainer"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_marginEnd="12dp"
+                android:visibility="gone">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/slate_200">
+
+                    <ImageView
+                        android:id="@+id/ivReportPhotoPreview"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnRemoveReportPhoto"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="-4dp"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="@color/red_600"
+                    app:strokeWidth="0dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:text="✕"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:gravity="center" />
+                </com.google.android.material.card.MaterialCardView>
+            </FrameLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAttachReportPhoto"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="52dp"
+                android:text="🖼️ Adjuntar Captura o Foto"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:cornerRadius="16dp"
+                app:backgroundTint="@color/purple_50"
+                android:textColor="@color/purple_700" />
+        </LinearLayout>
+
+        <!-- BOTÓN DE ENVIAR -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSendReport"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="24dp"
+            android:text="ENVIAR REPORTE POR CORREO 📧"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            app:cornerRadius="16dp"
+            app:backgroundTint="@color/purple_600" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelReport"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="6dp"
+            android:text="Cancelar"
+            android:textColor="@color/slate_400" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

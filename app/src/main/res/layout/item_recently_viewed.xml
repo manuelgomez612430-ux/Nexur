@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="140dp"
+    android:layout_width="118dp"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
+    android:layout_margin="4dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="1dp"
     app:strokeWidth="1dp"
@@ -18,7 +18,7 @@
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="110dp"
+            android:layout_height="78dp"
             app:cardCornerRadius="0dp"
             app:cardElevation="0dp"
             app:cardBackgroundColor="@color/slate_50">
@@ -34,14 +34,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="8dp">
+            android:padding="6dp">
 
             <TextView
                 android:id="@+id/tvRecentProductPrice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="S/ 0.00"
-                android:textSize="15sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:textColor="@color/slate_900" />
 
@@ -50,7 +50,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Nombre"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textColor="@color/slate_600"
                 android:maxLines="1"
                 android:ellipsize="end" />

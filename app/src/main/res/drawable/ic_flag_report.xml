@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Icono de "Reportar un problema" (banderita).
+  Es el símbolo universal que usan las apps para señalar el botón de reportar
+  errores / enviar comentarios: una banderita sobre un asta.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+
+    <!-- Asta de la bandera -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4.8,2.5 H6.2 V21.5 H4.8 Z" />
+
+    <!-- Paño de la bandera (con la muesca lateral) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M6.2,4 H19 V6.8 L16.3,9 L19,11.2 V13.6 H6.2 Z" />
+</vector>

@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pantalla DEDICADA al detalle del rendimiento financiero.
+  Se abre al tocar los gráficos de "Distribución de Mi Capital" o "Cobros Semanales"
+  de la pantalla de Rendimiento Financiero (vista previa).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/colorSurface">
+
+    <!-- Cabecera propia: el MaterialToolbar de esta app no dibuja su contenido -->
+    <LinearLayout
+        android:id="@+id/headerMetricsDetail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="?attr/colorSurfaceContainer"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="8dp">
+
+        <ImageButton
+            android:id="@+id/btnBackMetricsDetail"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Volver"
+            android:padding="10dp"
+            android:src="@drawable/ic_arrow_back" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:text="Detalle de Rendimiento"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/slate_900" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- AVISO DE VISTA PREVIA -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/purple_50"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/purple_200">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="14dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/ic_menu_view"
+                        app:tint="@color/purple_700" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:text="Estás viendo el detalle completo. Aquí tienes cada cifra desglosada."
+                        android:textSize="12sp"
+                        android:textColor="@color/purple_800" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===================== RESUMEN ===================== -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Resumen del negocio"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp"
+                android:baselineAligned="false">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/emerald_50"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/emerald_600">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:id="@+id/tvDetailTotalCollected"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="S/ 0.00"
+                            android:textSize="17sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/emerald_700" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Total cobrado"
+                            android:textSize="10sp"
+                            android:textColor="@color/emerald_600" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/purple_50"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/purple_600">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:id="@+id/tvDetailNetProfit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="S/ 0.00"
+                            android:textSize="17sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/purple_800" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ganancia neta"
+                            android:textSize="10sp"
+                            android:textColor="@color/purple_600" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- ===================== DISTRIBUCIÓN DE CAPITAL ===================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Distribución de Mi Capital"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="16sp"
+                        android:letterSpacing="0.02" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="¿En qué está tu dinero ahora mismo?"
+                        android:textSize="12sp"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <com.github.mikephil.charting.charts.PieChart
+                        android:id="@+id/chartDetailCapital"
+                        android:layout_width="match_parent"
+                        android:layout_height="300dp"
+                        android:layout_marginTop="12dp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="8dp"
+                        android:background="?attr/colorOutlineVariant" />
+
+                    <!-- Desglose con montos y porcentajes -->
+                    <LinearLayout
+                        android:id="@+id/layoutCapitalBreakdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===================== COBROS SEMANALES ===================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Cobros Semanales (S/)"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="16sp"
+                        android:letterSpacing="0.02" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Últimos 7 días: cobrado vs gastado"
+                        android:textSize="12sp"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <com.github.mikephil.charting.charts.BarChart
+                        android:id="@+id/chartDetailWeekly"
+                        android:layout_width="match_parent"
+                        android:layout_height="280dp"
+                        android:layout_marginTop="12dp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="8dp"
+                        android:background="?attr/colorOutlineVariant" />
+
+                    <!-- Desglose diario -->
+                    <LinearLayout
+                        android:id="@+id/layoutWeeklyBreakdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===================== INDICADORES CLAVE ===================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Indicadores Clave"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="16sp"
+                        android:letterSpacing="0.02" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Los números que de verdad importan"
+                        android:textSize="12sp"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutKeyIndicators"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="12dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===================== ANALISTA IA ===================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardLoansAiAdvisor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="@color/midnight_purple"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="4dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/glass_border">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@android:drawable/ic_menu_compass"
+                            app:tint="@color/white" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="ANALISTA IA DE CARTERA"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.1"
+                            android:textColor="@color/white" />
+
+                        <ProgressBar
+                            android:id="@+id/progressLoansAi"
+                            style="?android:attr/progressBarStyleSmall"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_marginStart="12dp"
+                            android:indeterminateTint="@color/white"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvLoansAiContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Toca Analizar Cartera y la IA revisará tu rentabilidad y riesgo con estos mismos datos."
+                        android:textSize="14sp"
+                        android:textColor="#FFFFFF"
+                        android:lineSpacingExtra="6dp"
+                        android:padding="4dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="end"
+                        android:layout_marginTop="16dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnChatLoansAi"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:text="💬 Chatear con IA"
+                            android:textSize="11sp"
+                            android:textColor="@color/white"
+                            app:backgroundTint="#33FFFFFF"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRefreshLoansAi"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Analizar Cartera"
+                            android:textSize="11sp"
+                            android:textColor="@color/midnight_purple"
+                            app:backgroundTint="@color/white"
+                            app:cornerRadius="10dp"
+                            app:icon="@android:drawable/stat_notify_sync"
+                            app:iconSize="14dp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

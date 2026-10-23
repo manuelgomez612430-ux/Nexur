@@ -56,4 +56,7 @@
         <item>Ropa</item>
         <item>Otros</item>
     </string-array>
+
+    <!-- Aviso de vista previa (tarjetas de métricas) -->
+    <string name="tap_for_more_details">Toca para ver más detalles ›</string>
 </resources>

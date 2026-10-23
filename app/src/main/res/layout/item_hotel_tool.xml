@@ -67,7 +67,8 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/slate_100"
-            android:layout_marginVertical="12dp" />
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp" />
 
         <GridLayout
             android:layout_width="match_parent"

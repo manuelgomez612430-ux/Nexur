@@ -1,0 +1,53 @@
+package com.gomezmart.app.data;
+
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.PrimaryKey;
+
+@Entity(tableName = "products", indices = {
+    @androidx.room.Index("isDeleted"),
+    @androidx.room.Index("categoria"),
+    @androidx.room.Index("codigo")
+})
+public class ProductEntity {
+    @PrimaryKey
+    @NonNull
+    public String id;
+    public String codigo;
+    public String nombre;
+    public String categoria;
+    public int stock;
+    public double precioCosto;
+    public double precioVenta;
+    public long timestamp;
+    public long expirationDate; // 0 si no tiene vencimiento
+    public String photoPath;    // Ruta de la imagen en el cel
+    public String photoUrl;     // URL pública en Firebase Storage
+    public String location;     // Pasillo / Estante
+    public String descripcion;  // Descripción opcional
+    public boolean isSynced = false;
+    public boolean isDeleted = false;
+
+    public ProductEntity() {
+        this.id = java.util.UUID.randomUUID().toString();
+    }
+
+    @Ignore
+    public ProductEntity(String codigo, String nombre, String categoria, int stock, double precioCosto, double precioVenta) {
+        this.id = java.util.UUID.randomUUID().toString();
+        this.codigo = codigo;
+        this.nombre = nombre;
+        this.categoria = categoria;
+        this.stock = stock;
+        this.precioCosto = precioCosto;
+        this.precioVenta = precioVenta;
+        this.timestamp = System.currentTimeMillis();
+        this.expirationDate = 0;
+        this.photoPath = null;
+        this.location = "";
+        this.isSynced = false;
+        this.isDeleted = false;
+    }
+}
+

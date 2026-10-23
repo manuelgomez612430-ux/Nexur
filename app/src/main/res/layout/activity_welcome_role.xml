@@ -13,218 +13,389 @@
         android:orientation="vertical"
         android:padding="24dp">
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnBackToLogin"
-                style="@style/Widget.Material3.Button.IconButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                app:icon="@android:drawable/ic_menu_revert"
-                app:iconTint="@color/slate_600" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSkipToMarketWelcome"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:text="Omitir"
-                android:textColor="@color/slate_600"
-                android:textStyle="bold" />
-        </RelativeLayout>
-
         <ImageView
             android:id="@+id/ivWelcomeLogo"
             android:layout_width="match_parent"
-            android:layout_height="180dp"
-            android:layout_marginTop="8dp"
+            android:layout_height="140dp"
+            android:layout_marginTop="16dp"
             android:layout_marginBottom="12dp"
             android:scaleType="fitCenter"
             android:src="@drawable/gomezmart_logo" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Antes de continuar..."
-            android:textAlignment="center"
-            android:textColor="@color/slate_900"
-            android:textSize="22sp"
-            android:textStyle="bold" />
-
-        <TextView
+        <!-- ANIMACIÓN DE CARGA / VERIFICACIÓN DE SISTEMAS -->
+        <LinearLayout
+            android:id="@+id/layoutLoadingSystems"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="24dp"
-            android:paddingHorizontal="16dp"
-            android:text="Es muy importante seleccionar el modo de uso principal que le vas a dar a la App. Podrás alternar entre ellas una vez que ya estés dentro del aplicativo."
-            android:textAlignment="center"
-            android:textColor="@color/slate_500"
-            android:textSize="13sp"
-            android:lineSpacingExtra="2dp" />
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="32dp">
 
-        <!-- SELLER CARD -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardSellerRole"
+            <ProgressBar
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:indeterminateTint="@color/purple_600" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Verificando tus datos y sistemas... ⏳"
+                android:textColor="@color/purple_700"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Cargando tus entornos guardados..."
+                android:textColor="@color/slate_500"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+
+        <!-- SECCIÓN DE SELECCIÓN DE ENTORNO (INLINE / DIRECTA EN PANTALLA) -->
+        <LinearLayout
+            android:id="@+id/layoutEnvironmentSelectionContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:clickable="true"
-            android:focusable="true"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="3dp"
-            app:strokeColor="@color/slate_200"
-            app:strokeWidth="1dp">
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:visibility="gone">
 
-            <LinearLayout
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="20dp">
+                android:text="Seleccionar Entorno 🏢"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_900" />
 
-                <TextView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginEnd="16dp"
-                    android:background="@drawable/bg_circle_light_purple"
-                    android:gravity="center"
-                    android:text="💼"
-                    android:textSize="24sp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Gestionar mi Negocio"
-                        android:textColor="@color/slate_900"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Vende, presta y controla tus gastos"
-                        android:textColor="@color/slate_500"
-                        android:textSize="13sp" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- BUYER CARD -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardBuyerRole"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:clickable="true"
-            android:focusable="true"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="3dp"
-            app:strokeColor="@color/slate_200"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="20dp">
+                android:text="Elige el sistema al que deseas acceder ahora"
+                android:textSize="14sp"
+                android:textColor="@color/slate_500"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="16dp" />
 
-                <TextView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginEnd="16dp"
-                    android:background="@drawable/bg_circle_light_blue"
-                    android:gravity="center"
-                    android:text="🛒"
-                    android:textSize="24sp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Comprar en Tiendas"
-                        android:textColor="@color/slate_900"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Explora productos y haz tus pedidos"
-                        android:textColor="@color/slate_500"
-                        android:textSize="13sp" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- COLLABORATOR CARD -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardCollabRole"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            android:clickable="true"
-            android:focusable="true"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="3dp"
-            app:strokeColor="@color/slate_200"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
+            <!-- PERFIL DE USUARIO ACTUAL (IR DIRECTO AL MERCADO) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardUserProfileInline"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginEnd="16dp"
-                    android:background="@drawable/bg_circle_light_green"
-                    android:gravity="center"
-                    android:text="🤝"
-                    android:textSize="24sp" />
+                android:layout_marginBottom="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="1dp"
+                app:cardBackgroundColor="@color/purple_50"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/purple_100">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="12dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="@color/purple_600">
+
+                        <ImageView
+                            android:id="@+id/ivUserPhotoInline"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/gomezmart_icon" />
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginEnd="8dp">
+
+                        <TextView
+                            android:id="@+id/tvUserNameInline"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Usuario Gomezmart"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_900" />
+
+                        <TextView
+                            android:id="@+id/tvUserEmailInline"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="usuario@email.com"
+                            android:textSize="12sp"
+                            android:textColor="@color/slate_500" />
+                    </LinearLayout>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Colaborar con un Negocio"
-                        android:textColor="@color/slate_900"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Únete a un equipo y gestiona operaciones"
-                        android:textColor="@color/slate_500"
-                        android:textSize="13sp" />
+                        android:text="Mercado 🛒"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/purple_600"
+                        android:background="@drawable/bg_bottom_sheet_rounded"
+                        android:backgroundTint="@color/purple_100"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="6dp" />
                 </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- LISTA DE ENTORNOS / SISTEMAS -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvEnvironmentsInline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+            <!-- BOTÓN AÑADIR NUEVO SISTEMA -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddNewSystemInline"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
+                android:text="➕ AÑADIR NUEVO SISTEMA"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                app:cornerRadius="16dp" />
+
+            <!-- BOTÓN CANCELAR / CAMBIAR DE CUENTA -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCancelAccountInline"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="12dp"
+                android:text="❌ Cancelar / Cambiar de Cuenta"
+                android:textColor="@color/red_600"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+        <!-- SECCIÓN DE SELECCIÓN DE ROL PARA USUARIOS NUEVOS SIN SISTEMA -->
+        <LinearLayout
+            android:id="@+id/layoutRoleSelectionContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Antes de continuar..."
+                android:textAlignment="center"
+                android:textColor="@color/slate_900"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp"
+                android:paddingHorizontal="16dp"
+                android:text="Es muy importante seleccionar el modo de uso principal que le vas a dar a la App. Podrás alternar entre ellas una vez que ya estés dentro del aplicativo."
+                android:textAlignment="center"
+                android:textColor="@color/slate_500"
+                android:textSize="13sp"
+                android:lineSpacingExtra="2dp" />
+
+            <!-- SELLER CARD -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardSellerRole"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="3dp"
+                app:strokeColor="@color/slate_200"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="16dp"
+                        android:background="@drawable/bg_circle_light_purple"
+                        android:gravity="center"
+                        android:text="💼"
+                        android:textSize="24sp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Gestionar mi Negocio"
+                            android:textColor="@color/slate_900"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Vende, presta y controla tus gastos"
+                            android:textColor="@color/slate_500"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- BUYER CARD -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBuyerRole"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="3dp"
+                app:strokeColor="@color/slate_200"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="16dp"
+                        android:background="@drawable/bg_circle_light_blue"
+                        android:gravity="center"
+                        android:text="🛒"
+                        android:textSize="24sp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Comprar en Tiendas"
+                            android:textColor="@color/slate_900"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Explora productos y haz tus pedidos"
+                            android:textColor="@color/slate_500"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- COLLABORATOR CARD -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardCollabRole"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="3dp"
+                app:strokeColor="@color/slate_200"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="16dp"
+                        android:background="@drawable/bg_circle_light_green"
+                        android:gravity="center"
+                        android:text="🤝"
+                        android:textSize="24sp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Colaborar con un Negocio"
+                            android:textColor="@color/slate_900"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Únete a un equipo y gestiona operaciones"
+                            android:textColor="@color/slate_500"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- BOTÓN DE VOLVER A DATOS DE PERFIL -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBackToProfileSetup"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
+                android:text="⬅️ VOLVER A MIS DATOS DE PERFIL"
+                android:textColor="@color/purple_700"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:cornerRadius="16dp"
+                app:backgroundTint="@color/purple_50" />
+        </LinearLayout>
 
         <View
             android:layout_width="match_parent"
@@ -236,7 +407,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"
-            android:text="GoMezMart v1.5.10 - Acceso Anticipado"
+            android:text="GoMezMart v1.5.40 - Acceso Anticipado"
             android:textColor="@color/slate_400"
             android:textSize="11sp" />
 

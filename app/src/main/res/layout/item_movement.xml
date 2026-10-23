@@ -3,8 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="16dp"
-    android:layout_marginVertical="6dp"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="6dp"
     app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
     app:cardCornerRadius="16dp"
     app:cardElevation="0dp"
@@ -79,6 +81,24 @@
             android:textSize="16sp"
             android:textStyle="bold"
             android:layout_marginStart="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnReverseMovement"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_marginStart="4dp"
+            android:contentDescription="Deshacer cobro"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:padding="0dp"
+            android:visibility="gone"
+            app:icon="@android:drawable/ic_menu_revert"
+            app:iconSize="16dp"
+            app:iconPadding="0dp"
+            app:iconGravity="textStart"
+            app:backgroundTint="#FEE2E2"
+            app:iconTint="#DC2626" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

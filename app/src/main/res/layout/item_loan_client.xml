@@ -32,6 +32,13 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/purple_600" />
+            <ImageView
+                android:id="@+id/ivClientPhoto"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                android:contentDescription="Foto del cliente" />
         </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout
@@ -71,6 +78,19 @@
                 android:textStyle="bold"
                 android:textColor="@color/red_600"
                 android:layout_marginTop="2dp" />
+
+            <TextView
+                android:id="@+id/tvClientFundingSource"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="💼 Presupuesto"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:background="@drawable/bg_pill_purple_light"
+                android:textColor="@color/purple_600" />
         </LinearLayout>
 
         <com.google.android.material.chip.Chip

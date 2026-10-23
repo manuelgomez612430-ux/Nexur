@@ -240,6 +240,19 @@
                 app:cornerRadius="16dp"
                 app:backgroundTint="@color/purple_600" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnChatHotelOwner"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="12dp"
+                android:text="CONSULTAR / HABLAR CON EL HOTEL 💬"
+                android:textColor="@color/purple_700"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:cornerRadius="14dp"
+                app:backgroundTint="@color/purple_50" />
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -1,0 +1,548 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/slate_50">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarAccountSettings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        app:elevation="0dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarAccountSettings"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:title="Configuración de Cuenta"
+            app:titleCentered="true" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:gravity="center_horizontal">
+
+            <!-- FOTO DE PERFIL Y ROL -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp"
+                android:layout_marginBottom="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <FrameLayout
+                        android:id="@+id/btnChangeProfilePhoto"
+                        android:layout_width="100dp"
+                        android:layout_height="100dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            app:cardBackgroundColor="@color/purple_100"
+                            app:cardCornerRadius="50dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="@color/purple_600"
+                            app:strokeWidth="2.5dp">
+
+                            <FrameLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent">
+
+                                <TextView
+                                    android:id="@+id/tvProfileInitial"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center"
+                                    android:text="U"
+                                    android:textColor="@color/purple_600"
+                                    android:textSize="36sp"
+                                    android:textStyle="bold" />
+
+                                <ImageView
+                                    android:id="@+id/ivProfileImage"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:scaleType="centerCrop"
+                                    android:visibility="gone" />
+
+                                <ProgressBar
+                                    android:id="@+id/pbProfilePhotoLoading"
+                                    android:layout_width="28dp"
+                                    android:layout_height="28dp"
+                                    android:layout_gravity="center"
+                                    android:indeterminateTint="@color/purple_600"
+                                    android:visibility="gone" />
+                            </FrameLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:layout_gravity="bottom|end"
+                            app:cardBackgroundColor="@color/purple_600"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="2dp"
+                            app:strokeColor="@color/white"
+                            app:strokeWidth="2dp">
+
+                            <ImageView
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:layout_gravity="center"
+                                android:src="@android:drawable/ic_menu_camera"
+                                app:tint="@color/white" />
+                        </com.google.android.material.card.MaterialCardView>
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/tvProfileNameDisplay"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Nombre de Usuario"
+                        android:textColor="@color/slate_900"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvProfileEmailDisplay"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="usuario@correo.com"
+                        android:textColor="@color/slate_500"
+                        android:textSize="13sp" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:layout_gravity="center_horizontal"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="@drawable/bg_bottom_sheet_rounded"
+                        android:backgroundTint="@color/purple_50"
+                        android:paddingHorizontal="18dp"
+                        android:paddingVertical="8dp">
+
+                        <TextView
+                            android:id="@+id/tvUserAccountRoleIcon"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="💼"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:id="@+id/tvUserAccountType"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:gravity="center"
+                            android:text="ADMINISTRADOR"
+                            android:textColor="@color/purple_600"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:singleLine="true"
+                            android:maxLines="1"
+                            android:ellipsize="none"
+                            android:includeFontPadding="false"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- DATOS PERSONALES (EDITABLES) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="INFORMACIÓN PERSONAL"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_400"
+                android:letterSpacing="0.1"
+                android:layout_gravity="start"
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="1dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_200"
+                android:layout_marginBottom="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nombre Completo"
+                        app:startIconDrawable="@android:drawable/ic_menu_edit">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etFullName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapWords" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:hint="DNI (Opcional)"
+                        app:startIconDrawable="@android:drawable/ic_menu_edit">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etDni"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:hint="Número de Celular"
+                        app:startIconDrawable="@android:drawable/stat_sys_phone_call">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etPhone"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="phone" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutAddress"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:hint="Ciudad / Residencia"
+                        app:startIconDrawable="@android:drawable/ic_menu_directions"
+                        app:endIconMode="custom"
+                        app:endIconDrawable="@android:drawable/ic_menu_mylocation"
+                        app:endIconTint="@color/purple_600">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etAddress"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapSentences" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSaveProfile"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="16dp"
+                        android:text="GUARDAR CAMBIOS"
+                        android:textStyle="bold"
+                        app:cornerRadius="14dp"
+                        app:backgroundTint="@color/purple_600" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SECCIÓN: CUENTAS VINCULADAS -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CUENTAS VINCULADAS"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_400"
+                android:letterSpacing="0.1"
+                android:layout_gravity="start"
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_100"
+                app:cardBackgroundColor="@color/slate_50">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:text="G"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/white"
+                        android:gravity="center"
+                        android:background="@drawable/bg_circle_google" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="16dp">
+
+                        <TextView
+                            android:id="@+id/tvEditAccountEmail"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="correo@gmail.com"
+                            android:textColor="@color/slate_700"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvEditGoogleStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Vinculado con Google"
+                            android:textColor="@color/emerald_600"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLinkGoogle"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Vincular"
+                        android:textSize="12sp"
+                        android:textColor="@color/purple_600"
+                        app:cornerRadius="8dp"
+                        android:visibility="gone" />
+
+                    <ImageView
+                        android:id="@+id/ivGoogleLinkedCheck"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/checkbox_on_background"
+                        app:tint="@color/emerald_600"
+                        android:visibility="visible" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SISTEMAS Y COLABORACIONES GUARDADAS -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MIS SISTEMAS Y COLABORACIONES"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_400"
+                android:letterSpacing="0.1"
+                android:layout_gravity="start"
+                android:layout_marginBottom="8dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvSavedSystems"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                tools:listitem="@layout/item_business_profile"
+                android:layout_marginBottom="16dp" />
+
+            <!-- SESION Y ZONA DE PELIGRO -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SESIÓN Y SEGURIDAD"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_400"
+                android:letterSpacing="0.1"
+                android:layout_gravity="start"
+                android:layout_marginBottom="8dp" />
+
+            <!-- SECCIÓN: CONTRASEÑA DE ACCESO -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="1dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_200"
+                app:cardBackgroundColor="@color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Contraseña de Acceso 🔒"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_900"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Agrega o cambia tu contraseña para iniciar sesión."
+                        android:textSize="12sp"
+                        android:textColor="@color/slate_500"
+                        android:layout_marginBottom="12dp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nueva Contraseña"
+                        app:endIconMode="password_toggle"
+                        app:startIconDrawable="@android:drawable/ic_lock_lock">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etAccountPassword"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPassword" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSaveAccountPassword"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="12dp"
+                        android:text="GUARDAR / CAMBIAR CONTRASEÑA"
+                        android:textStyle="bold"
+                        app:cornerRadius="14dp"
+                        app:backgroundTint="@color/purple_600"
+                        android:textColor="@color/white" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardSignOutAccount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="1dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_200"
+                app:cardBackgroundColor="@color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Cerrar Sesión"
+                        android:textColor="@color/red_600"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/ic_menu_close_clear_cancel"
+                        app:tint="@color/red_600" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ZONA DE PELIGRO -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="1dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/red_200"
+                app:cardBackgroundColor="@color/red_50"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Zona de Peligro ⚠️"
+                        android:textColor="@color/red_700"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Al eliminar tu cuenta se borrarán de forma PERMANENTE todos tus datos, perfiles, negocios, inventarios, compras, mensajes, ubicaciones e imágenes de Supabase y la nube."
+                        android:textColor="@color/slate_600"
+                        android:textSize="12sp"
+                        android:lineSpacingExtra="2dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDeleteAccountPermanent"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="16dp"
+                        android:text="ELIMINAR MI CUENTA Y DATOS 🗑️"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="14dp"
+                        app:backgroundTint="@color/red_600"
+                        android:textColor="@color/white" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F0000000">
+
+    <ImageView
+        android:id="@+id/ivFullScreenPhoto"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        android:contentDescription="Foto ampliada" />
+
+    <ProgressBar
+        android:id="@+id/pbFullScreenPhoto"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
+        android:indeterminateTint="@color/white" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btnCloseFullScreenPhoto"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="24dp"
+        app:cardCornerRadius="22dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#80000000"
+        app:strokeWidth="0dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="✕"
+            android:textColor="@color/white"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+    </com.google.android.material.card.MaterialCardView>
+
+</FrameLayout>

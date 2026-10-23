@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarEditProfile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:fitsSystemWindows="true"
+        app:elevation="0dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarEditProfile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="?attr/actionBarSize"
+            app:title="Editar mi Información"
+            app:titleCentered="true"
+            app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:navigationIconTint="@color/slate_900" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:gravity="center_horizontal">
+
+            <!-- FOTO DE PERFIL -->
+            <FrameLayout
+                android:id="@+id/btnEditChangePhoto"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_marginTop="16dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:cardCornerRadius="60dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="2.5dp"
+                    app:strokeColor="@color/purple_600">
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+                        <ImageView
+                            android:id="@+id/ivEditProfilePhoto"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop" />
+                        <ProgressBar
+                            android:id="@+id/pbEditProfilePhotoLoading"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:layout_gravity="center"
+                            android:indeterminateTint="@color/purple_600"
+                            android:visibility="gone" />
+                    </FrameLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_gravity="bottom|end"
+                    app:cardBackgroundColor="@color/purple_600"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="2dp"
+                    app:strokeWidth="2dp"
+                    app:strokeColor="@color/white">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:src="@android:drawable/ic_menu_camera"
+                        app:tint="@color/white" />
+                </com.google.android.material.card.MaterialCardView>
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="40dp"
+                android:text="DATOS PERSONALES"
+                android:textColor="@color/slate_400"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:layout_gravity="start" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="Nombre Completo"
+                app:startIconDrawable="@android:drawable/ic_menu_edit">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditFullName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapWords" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="DNI (Opcional)"
+                app:startIconDrawable="@android:drawable/ic_menu_edit">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditDni"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="Número de Celular"
+                app:startIconDrawable="@android:drawable/stat_sys_phone_call">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditPhone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="phone" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutEditAddress"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="Ciudad / Residencia"
+                app:startIconDrawable="@android:drawable/ic_menu_directions"
+                app:endIconMode="custom"
+                app:endIconDrawable="@android:drawable/ic_menu_mylocation"
+                app:endIconTint="@color/purple_600">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapSentences" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- SECCIÓN: CUENTAS VINCULADAS -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:text="CUENTAS VINCULADAS"
+                android:textColor="@color/slate_400"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:layout_gravity="start" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_100"
+                app:cardBackgroundColor="@color/slate_50">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <!-- Icono de Google (Placeholder / Emoji por ahora para estilo rápido) -->
+                    <TextView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:text="G"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/white"
+                        android:gravity="center"
+                        android:background="@drawable/bg_circle_google" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="16dp">
+
+                        <TextView
+                            android:id="@+id/tvEditAccountEmail"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="correo@gmail.com"
+                            android:textColor="@color/slate_700"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvEditGoogleStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Vinculado con Google"
+                            android:textColor="@color/emerald_600"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLinkGoogle"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Vincular con Google"
+                        android:textSize="12sp"
+                        android:textColor="@color/purple_600"
+                        app:cornerRadius="8dp"
+                        android:visibility="gone" />
+
+                    <ImageView
+                        android:id="@+id/ivGoogleLinkedCheck"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/checkbox_on_background"
+                        app:tint="@color/emerald_600"
+                        android:visibility="visible" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEditSave"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="32dp"
+                android:text="GUARDAR CAMBIOS"
+                android:textStyle="bold"
+                app:cornerRadius="16dp"
+                app:backgroundTint="@color/purple_600" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

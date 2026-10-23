@@ -1,203 +1,339 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="24dp"
-    android:background="?attr/colorSurfaceContainer">
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Ajustes del Préstamo"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="?attr/colorOnSurface" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Modifica las condiciones de este crédito"
-        android:textSize="14sp"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:layout_marginTop="4dp" />
-
-    <!-- PLAN DE PAGO -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Plan de Pago"
-        android:textStyle="bold"
-        android:textColor="@color/slate_600"
-        android:textSize="14sp"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="12dp" />
-
-    <com.google.android.material.button.MaterialButtonToggleGroup
-        android:id="@+id/toggleEditPlan"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:singleSelection="true"
-        app:selectionRequired="true"
-        android:layout_marginBottom="16dp">
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnEditFreqNone"
-            style="@style/Widget.App.Button.Toggle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Única"
-            android:textSize="10sp" />
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnEditFreqDaily"
-            style="@style/Widget.App.Button.Toggle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Diario"
-            android:textSize="10sp" />
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnEditFreqWeekly"
-            style="@style/Widget.App.Button.Toggle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Semanal"
-            android:textSize="10sp" />
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnEditFreqMonthly"
-            style="@style/Widget.App.Button.Toggle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Mensual"
-            android:textSize="10sp" />
-    </com.google.android.material.button.MaterialButtonToggleGroup>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnEditStartDate"
-        style="@style/Widget.Material3.Button.TonalButton"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="📅 Cambiar Fecha de Inicio"
-        android:layout_marginBottom="16dp"
-        app:cornerRadius="12dp" />
-
-    <!-- DÍAS DE GRACIA (AHORA PRIMERO) -->
-    <com.google.android.material.textfield.TextInputLayout
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Días de Gracia Permitidos"
-        app:startIconDrawable="@android:drawable/ic_menu_my_calendar">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etEditGraceDays"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="number" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Días de espera antes de aplicar mora."
-        android:textSize="11sp"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:layout_marginTop="4dp" />
-
-    <!-- MORA DIARIA PORCENTAJE -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp"
-        android:baselineAligned="false">
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Mora (%)"
-            app:suffixText="%"
-            app:startIconDrawable="@android:drawable/ic_menu_edit">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etEditLateFeePercent"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal"
-                android:textStyle="bold" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="12dp"
-            android:hint="Monto Diario"
-            app:prefixText="S/ "
-            android:enabled="false">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etEditLateFeeAmountAuto"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="?attr/colorPrimary"
-                android:textStyle="bold" />
-        </com.google.android.material.textfield.TextInputLayout>
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvLateFeeRecommendation"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Recomendado: 5% diario sobre la cuota."
-        android:textSize="11sp"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:layout_marginTop="4dp" />
+    android:layout_height="wrap_content">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginTop="24dp">
+        android:padding="24dp"
+        android:background="?attr/colorSurfaceContainer">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnDialogRescheduleDates"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="match_parent"
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🗓️ Reprogramar cuotas individuales"
-            android:textColor="?attr/colorPrimary"
-            app:cornerRadius="12dp" />
+            android:text="Ajustes del Préstamo"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Modifica las condiciones financieras y del crédito"
+            android:textSize="14sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_marginTop="4dp" />
+
+        <!-- CONDICIONES FINANCIERAS -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Condiciones Financieras"
+            android:textStyle="bold"
+            android:textColor="@color/slate_600"
+            android:textSize="14sp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="12dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="end"
-            android:layout_marginTop="8dp">
+            android:baselineAligned="false">
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Monto Dado"
+                app:prefixText="S/ ">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditLoanAmount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:textStyle="bold" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:hint="Interés (%)"
+                app:suffixText="%">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditInterestRate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:textStyle="bold" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="Número de Cuotas (0 = Pago Único)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etEditInstallmentsCount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:textStyle="bold" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:id="@+id/tvInstallmentsExplanation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 o 1 = Pago Único en una sola fecha. | 2 o más = Estructurado en cuotas."
+            android:textSize="11sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_marginTop="4dp" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/emerald_600"
+            app:cardBackgroundColor="@color/emerald_50">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:id="@+id/tvEditTotalToPaySummary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total a pagar: S/ 0.00"
+                    android:textStyle="bold"
+                    android:textColor="@color/emerald_800"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tvEditQuotaAmountSummary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Monto de la cuota: S/ 0.00"
+                    android:textColor="@color/emerald_700"
+                    android:textSize="12sp"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- PLAN DE PAGO -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Plan de Pago"
+            android:textStyle="bold"
+            android:textColor="@color/slate_600"
+            android:textSize="14sp"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="12dp" />
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggleEditPlan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:singleSelection="true"
+            app:selectionRequired="true"
+            android:layout_marginBottom="16dp">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEditFreqNone"
+                style="@style/Widget.App.Button.Toggle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Única"
+                android:textSize="10sp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEditFreqDaily"
+                style="@style/Widget.App.Button.Toggle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Diario"
+                android:textSize="10sp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEditFreqWeekly"
+                style="@style/Widget.App.Button.Toggle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Semanal"
+                android:textSize="10sp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEditFreqMonthly"
+                style="@style/Widget.App.Button.Toggle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Mensual"
+                android:textSize="10sp" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEditStartDate"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="📅 Agregar / Cambiar Fecha de Inicio"
+            android:layout_marginBottom="8dp"
+            app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEditDueDate"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="🗓️ Agregar / Cambiar Fecha de Cobro"
+            app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRemoveDueDate"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginBottom="8dp"
+            android:text="❌ Quitar Fecha de Cobro"
+            android:textColor="@color/red_600"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <!-- DÍAS DE GRACIA -->
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Días de Gracia Permitidos"
+            app:startIconDrawable="@android:drawable/ic_menu_my_calendar">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etEditGraceDays"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Días de espera antes de aplicar mora."
+            android:textSize="11sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_marginTop="4dp" />
+
+        <!-- MORA DIARIA PORCENTAJE -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp"
+            android:baselineAligned="false">
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Mora (%)"
+                app:suffixText="%"
+                app:startIconDrawable="@android:drawable/ic_menu_edit">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditLateFeePercent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:textStyle="bold" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:hint="Monto Diario"
+                app:prefixText="S/ "
+                android:enabled="false">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEditLateFeeAmountAuto"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvLateFeeRecommendation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Recomendado: 5% diario sobre la cuota."
+            android:textSize="11sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_marginTop="4dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="24dp">
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnDialogCancelTerms"
+                android:id="@+id/btnDialogRescheduleDates"
                 style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Cancelar"
-                android:textColor="?attr/colorOnSurfaceVariant" />
+                android:text="🗓️ Reprogramar cuotas individuales"
+                android:textColor="?attr/colorPrimary"
+                app:cornerRadius="12dp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnDialogSaveTerms"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Guardar Cambios"
-                app:cornerRadius="12dp"
-                app:backgroundTint="?attr/colorPrimary" />
+                android:orientation="horizontal"
+                android:gravity="end"
+                android:layout_marginTop="8dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDialogCancelTerms"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cancelar"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDialogSaveTerms"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Guardar Cambios"
+                    app:cornerRadius="12dp"
+                    app:backgroundTint="?attr/colorPrimary" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</ScrollView>

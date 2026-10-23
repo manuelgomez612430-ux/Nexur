@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        app:elevation="0dp">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarTracking"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:contentInsetStart="0dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnBackTracking"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="16dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="@color/white"
+                app:strokeWidth="0dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="⬅️"
+                    android:textSize="20sp"
+                    android:includeFontPadding="false" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Seguimiento en Vivo"
+                android:textColor="@color/slate_900"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+        </com.google.android.material.appbar.MaterialToolbar>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Card: Estado Actual -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardTrackingStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp"
+                app:cardBackgroundColor="@color/purple_50">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="24dp"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/tvTrackingStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="EL PEDIDO ESTÁ EN RUTA"
+                        android:textColor="@color/purple_600"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:gravity="center" />
+
+                    <TextView
+                        android:id="@+id/tvTrackingStore"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Tienda: Comercial Gómez"
+                        android:textColor="@color/slate_600"
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Card: Alerta Cancelado/Rechazado -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardTrackingCancelled"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/red_200"
+                app:cardBackgroundColor="@color/red_50">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="20dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🚫"
+                        android:textSize="24sp"
+                        android:layout_marginEnd="16dp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvCancelledTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="PEDIDO CANCELADO"
+                            android:textColor="@color/red_600"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvCancelledReason"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Lo sentimos, el negocio ha tenido que rechazar o cancelar tu solicitud."
+                            android:textColor="@color/red_600"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- LÍNEA DE TIEMPO (TIMELINE) -->
+            <LinearLayout
+                android:id="@+id/layoutTrackingTimeline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="32dp">
+
+                <!-- Step 1: PENDING -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal">
+                        <View
+                            android:id="@+id/dotPending"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:background="@drawable/bg_circle_slate" />
+                        <View
+                            android:id="@+id/line1"
+                            android:layout_width="2dp"
+                            android:layout_height="40dp"
+                            android:background="@color/slate_200" />
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/textPending"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:text="Pedido realizado"
+                        android:textColor="@color/slate_400"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <!-- Step 2: ACCEPTED -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal">
+                        <View
+                            android:id="@+id/dotAccepted"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:background="@drawable/bg_circle_slate" />
+                        <View
+                            android:id="@+id/line2"
+                            android:layout_width="2dp"
+                            android:layout_height="40dp"
+                            android:background="@color/slate_200" />
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/textAccepted"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:text="Preparando tu pedido"
+                        android:textColor="@color/slate_400"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <!-- Step 3: EN_ROUTE -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal">
+                        <View
+                            android:id="@+id/dotEnRoute"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:background="@drawable/bg_circle_slate" />
+                        <View
+                            android:id="@+id/line3"
+                            android:layout_width="2dp"
+                            android:layout_height="40dp"
+                            android:background="@color/slate_200" />
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/textEnRoute"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:text="¡Pedido en camino! 🛵"
+                        android:textColor="@color/slate_400"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <!-- Step 4: DELIVERED -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal">
+                        <View
+                            android:id="@+id/dotDelivered"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:background="@drawable/bg_circle_slate" />
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/textDelivered"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:text="Entregado ✅"
+                        android:textColor="@color/slate_400"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardTrackingMap"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:layout_marginTop="32dp"
+                android:visibility="gone"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_100">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <org.osmdroid.views.MapView
+                        android:id="@+id/mapTracking"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnFullscreenMap"
+                        style="@style/Widget.Material3.Button.IconButton"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="top|end"
+                        android:layout_margin="12dp"
+                        android:backgroundTint="#80FFFFFF"
+                        app:icon="@android:drawable/ic_menu_zoom"
+                        app:iconTint="@color/slate_900"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTrackingContact"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="32dp"
+                android:text="Contactar con la Tienda 💬"
+                android:textStyle="bold"
+                app:cornerRadius="16dp"
+                app:backgroundTint="@color/purple_600" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
