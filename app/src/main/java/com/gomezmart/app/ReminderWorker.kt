@@ -173,7 +173,7 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
             notificationManager.createNotificationChannel(channel)
         }
 
-        val intent = android.content.Intent(context, LoansCollectionsActivity::class.java)
+        val intent = android.content.Intent().setClassName(context.packageName, "com.gomezmart.feature_loans.LoansCollectionsActivity")
         val pendingIntent = android.app.PendingIntent.getActivity(context, 5001, intent, android.app.PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(context, channelId)
@@ -196,7 +196,7 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
             notificationManager.createNotificationChannel(channel)
         }
 
-        val intent = android.content.Intent(context, LoansCollectionsActivity::class.java)
+        val intent = android.content.Intent().setClassName(context.packageName, "com.gomezmart.feature_loans.LoansCollectionsActivity")
         val pendingIntent = android.app.PendingIntent.getActivity(context, 4001, intent, android.app.PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(context, channelId)
@@ -256,7 +256,7 @@ class ReminderWorker(val context: Context, workerParams: WorkerParameters) :
             notificationManager.createNotificationChannel(channel)
         }
 
-        val intent = Intent(context, HotelToolsActivity::class.java)
+        val intent = Intent().setClassName(context.packageName, "com.gomezmart.feature_hotel.HotelToolsActivity")
         val pendingIntent = PendingIntent.getActivity(context, notificationId, intent, PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(context, channelId)

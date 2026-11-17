@@ -52,6 +52,11 @@ class LoansClientsFragment : Fragment() {
         setupSearch()
         setupFilters()
         
+        binding.btnAddNewLoanClientEmptyFrag.setOnClickListener {
+            val intent = Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_loans.AddLoanActivity")
+            startActivity(intent)
+        }
+        
         // Sincronizar UI con el filtro por defecto
         binding.chipFilterActiveFrag.isChecked = true
         
@@ -65,12 +70,24 @@ class LoansClientsFragment : Fragment() {
         }
 
         loadClients()
+    }
 
-        val sm = com.gomezmart.app.SyncManager(requireContext())
-        sm.startRealtimeLoanClientsSync { loadClients(binding.etSearchClientsFrag.text.toString()) }?.let { registrations.add(it) }
-        sm.startRealtimeLoansSync { loadClients(binding.etSearchClientsFrag.text.toString()) }?.let { registrations.add(it) }
-        sm.startRealtimeInstallmentsSync { loadClients(binding.etSearchClientsFrag.text.toString()) }?.let { registrations.add(it) }
-        sm.startRealtimeLoanPaymentsSync { loadClients(binding.etSearchClientsFrag.text.toString()) }?.let { registrations.add(it) }
+    override fun onStart() {
+        super.onStart()
+        if (registrations.isEmpty()) {
+            val sm = com.gomezmart.app.SyncManager(requireContext())
+            sm.startRealtimeLoanClientsSync { if (_binding != null) loadClients(binding.etSearchClientsFrag.text.toString()) }?.let { registrations.add(it) }
+            sm.startRealtimeLoansSync { if (_binding != null) loadClients(binding.etSearchClientsFrag.text.toString()) }?.let { registrations.add(it) }
+            sm.startRealtimeInstallmentsSync { if (_binding != null) loadClients(binding.etSearchClientsFrag.text.toString()) }?.let { registrations.add(it) }
+            sm.startRealtimeLoanPaymentsSync { if (_binding != null) loadClients(binding.etSearchClientsFrag.text.toString()) }?.let { registrations.add(it) }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (_binding != null) {
+            loadClients(binding.etSearchClientsFrag.text.toString())
+        }
     }
 
     private fun setupToolbar() {
@@ -158,6 +175,20 @@ class LoansClientsFragment : Fragment() {
                     }
                 }
                 adapter.submitList(resultList)
+                if (resultList.isEmpty()) {
+                    binding.rvLoanClientsFrag.visibility = View.GONE
+                    binding.layoutEmptyLoanClientsFrag.visibility = View.VISIBLE
+                    if (query.isNotEmpty()) {
+                        binding.tvEmptyLoanClientsTitleFrag.text = "No se encontraron clientes"
+                        binding.tvEmptyLoanClientsSubtitleFrag.text = "No hay coincidencias para '$query'."
+                    } else {
+                        binding.tvEmptyLoanClientsTitleFrag.text = "No hay ningún cliente registrado"
+                        binding.tvEmptyLoanClientsSubtitleFrag.text = "Toca el botón para registrar tu primer cliente o préstamo."
+                    }
+                } else {
+                    binding.rvLoanClientsFrag.visibility = View.VISIBLE
+                    binding.layoutEmptyLoanClientsFrag.visibility = View.GONE
+                }
             }
         }
     }
@@ -251,6 +282,7 @@ class LoansClientsFragment : Fragment() {
                     chipClientScore.setChipBackgroundColorResource(R.color.emerald_50)
                     chipClientScore.setTextColor(requireContext().getColor(R.color.emerald_600))
                 }
+                chipClientScore.setOnClickListener { onClick(itemWithDebt) }
                 root.setOnClickListener { onClick(itemWithDebt) }
             }
         }

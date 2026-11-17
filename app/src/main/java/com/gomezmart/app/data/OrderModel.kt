@@ -39,6 +39,9 @@ data class ChatMessage(
     val productPhoto: String = "",
     val productPrice: Double = 0.0,
     val productCategory: String = "",
+    val productStoreId: String = "",
+    val productStoreName: String = "",
+    val productStoreType: String = "PRODUCTS",
     val imageUrl: String = "",
     val linkedOrderId: String = "", // Para botones de acción en el chat
     val deliveryLat: Double = 0.0,

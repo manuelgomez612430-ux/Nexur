@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">GoMezMart</string>
+    <string name="title_feature_hotel">Sistema de Hotel</string>
+    <string name="title_feature_loans">Sistema de Préstamos y Cobranzas</string>
+    <string name="title_feature_products">Sistema de Productos e Inventario</string>
 
     <!-- Main Activity -->
     <string name="main_subtitle">Sistema de gestión y control de costos</string>

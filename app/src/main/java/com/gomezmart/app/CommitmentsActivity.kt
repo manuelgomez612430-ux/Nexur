@@ -52,6 +52,10 @@ class CommitmentsActivity : BaseActivity() {
     }
 
     private fun setupSyncIndicator() {
+        if (isGuestUser()) {
+            binding.btnSyncIndicator.visibility = View.GONE
+            return
+        }
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
         val networkCallback = object : android.net.ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: android.net.Network) {
@@ -85,6 +89,10 @@ class CommitmentsActivity : BaseActivity() {
     }
 
     private fun updateSyncIconState() {
+        if (isGuestUser()) {
+            binding.btnSyncIndicator.visibility = View.GONE
+            return
+        }
         val color: Int
         val iconRes: Int
         

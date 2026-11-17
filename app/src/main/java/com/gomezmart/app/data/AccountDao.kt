@@ -26,6 +26,12 @@ interface AccountDao {
     @Query("SELECT * FROM accounts WHERE isSynced = 0 AND isDeleted = 0")
     suspend fun getUnsyncedAccounts(): List<AccountEntity>
 
+    @Query("SELECT * FROM accounts WHERE isSynced = 1 AND isDeleted = 0")
+    suspend fun getSyncedAccounts(): List<AccountEntity>
+
+    @Query("SELECT * FROM accounts WHERE isDeleted = 1 AND isSynced = 0")
+    suspend fun getDeletedAccounts(): List<AccountEntity>
+
     @Query("SELECT COUNT(*) FROM accounts WHERE isSynced = 0")
     fun getUnsyncedCountFlow(): Flow<Int>
 }

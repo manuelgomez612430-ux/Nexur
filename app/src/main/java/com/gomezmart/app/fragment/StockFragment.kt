@@ -155,6 +155,10 @@ class StockFragment : Fragment() {
     }
 
     private fun setupSyncIndicator() {
+        if ((activity as? BaseActivity)?.isGuestUser() == true) {
+            binding.btnSyncIndicator.visibility = View.GONE
+            return
+        }
         val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
         val networkCallback = object : android.net.ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: android.net.Network) {
@@ -171,6 +175,10 @@ class StockFragment : Fragment() {
     }
 
     private fun updateSyncIconState(showDialog: Boolean = false) {
+        if ((activity as? BaseActivity)?.isGuestUser() == true) {
+            if (_binding != null) binding.btnSyncIndicator.visibility = View.GONE
+            return
+        }
         val dbInstance = database ?: return
         lifecycleScope.launch(Dispatchers.IO) {
             val unsynced = dbInstance.productDao().allProducts.count { !it.isSynced && !it.isDeleted }
@@ -266,7 +274,40 @@ class StockFragment : Fragment() {
         
         binding.btnExportExcel.setOnClickListener {
             binding.drawerLayoutInventario.closeDrawer(GravityCompat.START)
-            Toast.makeText(requireContext(), "Exportando...", Toast.LENGTH_SHORT).show()
+            exportInventoryToCsv()
+        }
+    }
+
+    private fun exportInventoryToCsv() {
+        val dbInstance = database ?: return
+        val ctx = context ?: return
+        lifecycleScope.launch {
+            val products = withContext(Dispatchers.IO) { dbInstance.productDao().allProducts.filter { !it.isDeleted } }
+            if (products.isEmpty()) {
+                Toast.makeText(ctx, "No hay productos en inventario para exportar", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            val csvBuilder = StringBuilder("Codigo,Nombre,Categoria,Stock,CostoTotal,PrecioVenta\n")
+            products.forEach { p ->
+                val code = (p.codigo ?: "").replace(",", ";")
+                val name = (p.nombre ?: "").replace(",", " ")
+                val cat = (p.categoria ?: "").replace(",", " ")
+                csvBuilder.append("$code,$name,$cat,${p.stock},${p.precioCosto},${p.precioVenta}\n")
+            }
+            try {
+                val file = File(ctx.cacheDir, "Inventario_GoMezMart_${System.currentTimeMillis()}.csv")
+                file.writeText(csvBuilder.toString())
+                val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.provider", file)
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/csv"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    putExtra(Intent.EXTRA_SUBJECT, "Reporte de Inventario - GoMezMart")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                startActivity(Intent.createChooser(shareIntent, "Exportar Inventario (CSV / Excel)"))
+            } catch (e: Exception) {
+                Toast.makeText(ctx, "Error al exportar: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -350,6 +391,10 @@ class StockFragment : Fragment() {
 
                 withContext(Dispatchers.Main) {
                     if (_binding != null && isAdded) {
+                        val isListEmpty = fullList.isEmpty()
+                        binding.rvInventario.visibility = if (isListEmpty) View.GONE else View.VISIBLE
+                        binding.layoutEmptyInventario.visibility = if (isListEmpty) View.VISIBLE else View.GONE
+
                         adapter.updateList(fullList)
                         lastLoadedList = fullList
                         
@@ -545,7 +590,7 @@ class StockFragment : Fragment() {
             startActivity(intent)
         }
 
-        db.btnShareLabel.setOnClickListener { currentBitmap?.let { shareLabelBitmap(it, p.nombre) } }
+        db.btnShareLabel.setOnClickListener { currentBitmap?.let { shareLabelBitmap(it, p.nombre ?: "") } }
         db.tvLabelProdCode.text = if (!p.codigo.isNullOrBlank()) p.codigo!!.replace(",", "\n• ") else "---"
         db.btnCloseLabel.setOnClickListener { d.dismiss() }
         d.show()

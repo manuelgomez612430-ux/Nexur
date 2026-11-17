@@ -20,7 +20,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.gomezmart.app.AccountsActivity
-import com.gomezmart.app.AddLoanActivity
 import com.gomezmart.app.AiChatActivity
 import com.gomezmart.app.BaseActivity
 import com.gomezmart.app.CommitmentsActivity
@@ -71,16 +70,20 @@ class LoansHomeFragment : Fragment() {
         setupListeners()
         loadDashboardData()
         loadBudgetData()
+    }
 
-        val ctx = context ?: return
-        val sm = SyncManager(ctx)
-        sm.startRealtimeLoanClientsSync { loadDashboardData() }?.let { registrations.add(it) }
-        sm.startRealtimeLoansSync { loadDashboardData() }?.let { registrations.add(it) }
-        sm.startRealtimeInstallmentsSync { loadDashboardData() }?.let { registrations.add(it) }
-        sm.startRealtimeLoanPaymentsSync { loadDashboardData() }?.let { registrations.add(it) }
-        sm.startRealtimeLoanExpensesSystemSync { loadBudgetData(); loadDashboardData() }?.let { registrations.add(it) }
-        sm.startRealtimeLoanBudgetsSync { loadBudgetData(); loadDashboardData() }?.let { registrations.add(it) }
-
+    override fun onStart() {
+        super.onStart()
+        if (registrations.isEmpty()) {
+            val ctx = context ?: return
+            val sm = SyncManager(ctx)
+            sm.startRealtimeLoanClientsSync { loadDashboardData() }?.let { registrations.add(it) }
+            sm.startRealtimeLoansSync { loadDashboardData() }?.let { registrations.add(it) }
+            sm.startRealtimeInstallmentsSync { loadDashboardData() }?.let { registrations.add(it) }
+            sm.startRealtimeLoanPaymentsSync { loadDashboardData() }?.let { registrations.add(it) }
+            sm.startRealtimeLoanExpensesSystemSync { loadBudgetData(); loadDashboardData() }?.let { registrations.add(it) }
+            sm.startRealtimeLoanBudgetsSync { loadBudgetData(); loadDashboardData() }?.let { registrations.add(it) }
+        }
         listenForNewMessages()
     }
 
@@ -110,11 +113,9 @@ class LoansHomeFragment : Fragment() {
             ?: "Usuario"
     }
 
-    override fun onStart() {
-        super.onStart()
-    }
-
     private fun listenForNewMessages() {
+        val ctx = context ?: return
+        if (SyncManager(ctx).isGuestUser()) return
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val firestore = FirebaseFirestore.getInstance()
         val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
@@ -545,10 +546,12 @@ class LoansHomeFragment : Fragment() {
             (activity as? MainActivity)?.navigateToStock() // Pestaña de clientes
         }
         binding.cardTodayCollections.setOnClickListener {
-            startActivity(Intent(requireContext(), com.gomezmart.app.LoansCollectionsActivity::class.java))
+            val intent = Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_loans.LoansCollectionsActivity")
+            startActivity(intent)
         }
         binding.toolLoansExpenses.setOnClickListener {
-            startActivity(Intent(requireContext(), com.gomezmart.app.LoansExpensesActivity::class.java))
+            val intent = Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_loans.LoansExpensesActivity")
+            startActivity(intent)
         }
         binding.toolLoansCommitments.setOnClickListener {
             startActivity(Intent(requireContext(), CommitmentsActivity::class.java))
@@ -559,15 +562,24 @@ class LoansHomeFragment : Fragment() {
         binding.toolLoansMailbox.setOnClickListener {
             startActivity(Intent(requireContext(), MailboxActivity::class.java))
         }
+        binding.toolLoansOfferMarket.setOnClickListener {
+            val baseActivity = activity as? BaseActivity
+            if (baseActivity?.requireLoginForGuest("ofrecer tu servicio en el Mercado en Línea") == true) {
+                return@setOnClickListener
+            }
+            startActivity(Intent(requireContext(), com.gomezmart.app.LoanStoreEditorActivity::class.java))
+        }
         binding.toolLoansMovements.setOnClickListener {
             startActivity(Intent(requireContext(), MovementsActivity::class.java))
         }
         binding.toolLoansAccounts.setOnClickListener {
             startActivity(Intent(requireContext(), AccountsActivity::class.java))
         }
-        binding.btnSupportCreatorHome.setOnClickListener {
-            startActivity(Intent(requireContext(), com.gomezmart.app.SupportCreatorActivity::class.java))
+        binding.toolLoansReorganization.setOnClickListener {
+            val intent = Intent(requireContext(), com.gomezmart.app.FinancialReorganizationActivity::class.java)
+            startActivity(intent)
         }
+
         binding.btnReportErrorLoans.setOnClickListener {
             val baseActivity = activity as? BaseActivity
             baseActivity?.showReportErrorDialog(requireActivity())
@@ -580,11 +592,12 @@ class LoansHomeFragment : Fragment() {
             .setTitle("Registrar Préstamo")
             .setItems(options) { _, which ->
                 if (which == 0) {
-                    val intent = Intent(requireContext(), com.gomezmart.app.LoansClientsActivity::class.java)
+                    val intent = Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_loans.LoansClientsActivity")
                     intent.putExtra("PICK_MODE", true)
                     startActivity(intent)
                 } else {
-                    startActivity(Intent(requireContext(), AddLoanActivity::class.java))
+                    val intent = Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_loans.AddLoanActivity")
+                    startActivity(intent)
                 }
             }
             .show()

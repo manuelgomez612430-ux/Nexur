@@ -4,8 +4,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.LocaleList
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
+import android.widget.EditText
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -19,8 +23,16 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.gomezmart.app.data.CartManager
 import com.gomezmart.app.util.FloatingCartHelper
+import com.gomezmart.app.util.SpanishInputHelper
+import java.util.Locale
 
 open class BaseActivity : AppCompatActivity() {
+
+    private val globalFocusListener = ViewTreeObserver.OnGlobalFocusChangeListener { _, newFocus ->
+        if (newFocus is EditText) {
+            SpanishInputHelper.configureEditText(newFocus, attachInlineBarIfPossible = true)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         try {
@@ -29,33 +41,67 @@ open class BaseActivity : AppCompatActivity() {
             // Ignorar si el motor MIUI/HyperOS o la versión del sistema no soporta Edge-to-Edge
         }
         super.onCreate(savedInstanceState)
+        try {
+            window?.decorView?.viewTreeObserver?.addOnGlobalFocusChangeListener(globalFocusListener)
+        } catch (_: Exception) {}
+    }
+
+    override fun onDestroy() {
+        try {
+            window?.decorView?.viewTreeObserver?.removeOnGlobalFocusChangeListener(globalFocusListener)
+        } catch (_: Exception) {}
+        super.onDestroy()
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val focusedEditText = currentFocus as? EditText
+        if (focusedEditText != null && SpanishInputHelper.dispatchActivityOrDialogKeyEvent(focusedEditText, event)) {
+            return true
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        try {
+            SpanishInputHelper.hookAllOpenWindows()
+            window?.decorView?.postDelayed({
+                try {
+                    SpanishInputHelper.hookAllOpenWindows()
+                } catch (_: Exception) {}
+            }, 80)
+        } catch (_: Exception) {}
     }
 
     override fun attachBaseContext(newBase: Context?) {
         if (newBase == null) {
-            super.attachBaseContext(newBase)
+            super.attachBaseContext(null)
             return
         }
-        
-        try {
-            val res = newBase.resources
-            if (res != null) {
-                val config = Configuration(res.configuration)
-                config.fontScale = 1.0f
-                val context = newBase.createConfigurationContext(config)
-                super.attachBaseContext(context)
-            } else {
-                super.attachBaseContext(newBase)
-            }
+        val contextToAttach = try {
+            val esLocale = SpanishInputHelper.getSpanishLocale()
+            Locale.setDefault(esLocale)
+            val config = Configuration(newBase.resources.configuration)
+            config.fontScale = 1.0f
+            config.setLocale(esLocale)
+            config.setLocales(LocaleList(esLocale, Locale.forLanguageTag("es")))
+            newBase.createConfigurationContext(config)
         } catch (e: Exception) {
-            super.attachBaseContext(newBase)
+            newBase
         }
+        super.attachBaseContext(contextToAttach)
+        try {
+            com.google.android.play.core.splitcompat.SplitCompat.installActivity(this)
+        } catch (_: Exception) {}
     }
 
     // Asegurar que si la configuración cambia dinámicamente, se mantenga el bloqueo
     override fun applyOverrideConfiguration(overrideConfiguration: Configuration?) {
         if (overrideConfiguration != null) {
             overrideConfiguration.fontScale = 1.0f
+            val esLocale = SpanishInputHelper.getSpanishLocale()
+            overrideConfiguration.setLocale(esLocale)
+            overrideConfiguration.setLocales(LocaleList(esLocale, Locale.forLanguageTag("es")))
         }
         super.applyOverrideConfiguration(overrideConfiguration)
     }
@@ -67,6 +113,10 @@ open class BaseActivity : AppCompatActivity() {
         } else {
             FloatingCartHelper.hide()
         }
+        try {
+            SpanishInputHelper.configureAllEditTextsInTree(window?.decorView)
+        } catch (_: Exception) {}
+        com.gomezmart.app.network.FcmHelper.initUserFcm(this)
     }
 
     override fun onPause() {
@@ -96,12 +146,13 @@ open class BaseActivity : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(view) { v, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             val navBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
             
             val initialTop = v.getTag(R.id.tag_initial_padding_top) as? Int ?: v.paddingTop.also { v.setTag(R.id.tag_initial_padding_top, it) }
             val initialBottom = v.getTag(R.id.tag_initial_padding_bottom) as? Int ?: v.paddingBottom.also { v.setTag(R.id.tag_initial_padding_bottom, it) }
 
             val safeTop = if (applyTop) initialTop + statusBars.top else initialTop
-            val safeBottom = if (applyBottom) initialBottom + navBars.bottom else initialBottom
+            val safeBottom = if (applyBottom) initialBottom + kotlin.math.max(navBars.bottom, ime.bottom) else initialBottom
 
             v.setPadding(v.paddingLeft, safeTop, v.paddingRight, safeBottom)
             insets
@@ -117,18 +168,23 @@ open class BaseActivity : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(view) { v, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             val navBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
             val params = v.layoutParams as? ViewGroup.MarginLayoutParams ?: return@setOnApplyWindowInsetsListener insets
             
             val initialTop = v.getTag(R.id.tag_initial_margin_top) as? Int ?: params.topMargin.also { v.setTag(R.id.tag_initial_margin_top, it) }
             val initialBottom = v.getTag(R.id.tag_initial_margin_bottom) as? Int ?: params.bottomMargin.also { v.setTag(R.id.tag_initial_margin_bottom, it) }
 
             val targetTop = if (applyTop) initialTop + statusBars.top else initialTop
-            val targetBottom = if (applyBottom) initialBottom + navBars.bottom else initialBottom
+            val targetBottom = if (applyBottom) initialBottom + kotlin.math.max(navBars.bottom, ime.bottom) else initialBottom
 
             if (params.topMargin != targetTop || params.bottomMargin != targetBottom) {
                 params.topMargin = targetTop
                 params.bottomMargin = targetBottom
-                v.layoutParams = params
+                if (v.isInLayout) {
+                    v.post { if (v.isAttachedToWindow) v.layoutParams = params }
+                } else {
+                    v.layoutParams = params
+                }
             }
             insets
         }
@@ -155,7 +211,11 @@ open class BaseActivity : AppCompatActivity() {
 
             if (params.height != targetHeight) {
                 params.height = targetHeight
-                v.layoutParams = params
+                if (v.isInLayout) {
+                    v.post { if (v.isAttachedToWindow) v.layoutParams = params }
+                } else {
+                    v.layoutParams = params
+                }
             }
             insets
         }
@@ -163,11 +223,11 @@ open class BaseActivity : AppCompatActivity() {
     }
 
     /**
-     * Inicia una actividad con un efecto de desvanecimiento (fade).
+     * Inicia una actividad con un efecto de desvanecimiento suave sin parpadeo de fondo.
      */
     fun startActivityWithFade(intent: Intent) {
         startActivity(intent)
-        overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
+        overridePendingTransition(R.anim.fade_in, R.anim.stay)
     }
 
     private var reportImageUri: android.net.Uri? = null
@@ -289,9 +349,133 @@ open class BaseActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Comprueba si el usuario actual es un invitado
+     */
+    fun isGuestUser(): Boolean {
+        val user = try { FirebaseAuth.getInstance().currentUser } catch (e: Exception) { null }
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        
+        // Si hay una cuenta real iniciada, definitivamente NO es invitado
+        if (user != null && !user.isAnonymous) {
+            if (prefs.getBoolean("is_guest", false)) {
+                prefs.edit().putBoolean("is_guest", false).apply()
+            }
+            return false
+        }
+        
+        // Es invitado si activó la opción "is_guest" previamente
+        return prefs.getBoolean("is_guest", false)
+    }
+
+    /**
+     * Muestra un diálogo bloqueando la acción e invitando a iniciar sesión
+     * Retorna true si es invitado (la acción debe detenerse), false si es usuario real.
+     */
+    fun requireLoginForGuest(actionDescription: String = "realizar esta acción"): Boolean {
+        if (!isGuestUser()) return false
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Inicia sesión")
+            .setMessage("Debes tener una cuenta registrada para $actionDescription.")
+            .setPositiveButton("Crear cuenta / Ingresar") { _, _ ->
+                val intent = Intent(this, LoginActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+            }
+            .setNegativeButton("Cerrar", null)
+            .show()
+        return true
+    }
+
+    /**
+     * Verifica que el módulo dinámico correspondiente a [businessType] esté instalado antes de entrar al sistema.
+     * Si no está descargado, bloquea el ingreso y muestra un diálogo con barra de progreso para instalarlo primero.
+     */
+    fun ensureModuleInstalled(businessType: String, onInstalled: () -> Unit) {
+        val dynamicManager = com.gomezmart.app.utils.DynamicModuleManager(this)
+        val module = when (businessType) {
+            "HOTEL" -> com.gomezmart.app.utils.DynamicFeatureModule.HOTEL
+            "LOANS" -> com.gomezmart.app.utils.DynamicFeatureModule.LOANS
+            else -> com.gomezmart.app.utils.DynamicFeatureModule.PRODUCTS
+        }
+
+        if (dynamicManager.isModuleInstalled(module)) {
+            onInstalled()
+            return
+        }
+
+        val systemName = when (businessType) {
+            "HOTEL" -> "Sistema de Hotel"
+            "LOANS" -> "Sistema de Préstamos"
+            else -> "Sistema de Productos"
+        }
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("📥 $systemName no instalado")
+            .setMessage("Tu $systemName aún no está descargado en este dispositivo.\n\nPresiona 'Instalar Sistema' para descargarlo e ingresar.")
+            .setPositiveButton("Instalar Sistema") { _, _ ->
+                val dialogLayout = android.widget.LinearLayout(this).apply {
+                    orientation = android.widget.LinearLayout.VERTICAL
+                    setPadding(60, 40, 60, 40)
+                    gravity = android.view.Gravity.CENTER_HORIZONTAL
+                }
+                val progressBar = android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+                    isIndeterminate = false
+                    max = 100
+                    progress = 0
+                }
+                val statusText = android.widget.TextView(this).apply {
+                    text = "Descargando e instalando $systemName: 0%"
+                    textSize = 14f
+                    textAlignment = android.widget.TextView.TEXT_ALIGNMENT_CENTER
+                    setPadding(0, 24, 0, 0)
+                }
+                dialogLayout.addView(progressBar)
+                dialogLayout.addView(statusText)
+
+                val progressDialog = androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Descargando $systemName 🚀")
+                    .setView(dialogLayout)
+                    .setCancelable(false)
+                    .show()
+
+                dynamicManager.launchOrDownloadModule(
+                    module = module,
+                    autoLaunchOnSuccess = false,
+                    onProgress = { progress ->
+                        progressBar.isIndeterminate = false
+                        progressBar.progress = progress
+                        statusText.text = "Descargando e instalando $systemName: $progress%"
+                    },
+                    onSuccess = {
+                        if (!isFinishing && !isDestroyed) {
+                            progressDialog.dismiss()
+                            Toast.makeText(this, "$systemName instalado con éxito ✅", Toast.LENGTH_SHORT).show()
+                            onInstalled()
+                        }
+                    },
+                    onError = { err ->
+                        if (!isFinishing && !isDestroyed) {
+                            progressDialog.dismiss()
+                            Toast.makeText(this, "Error al instalar: $err", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                )
+            }
+            .setNegativeButton("Cancelar") { _, _ ->
+                if (this is MainActivity) {
+                    startActivity(Intent(this, BuyerHomeActivity::class.java))
+                    finish()
+                }
+            }
+            .setCancelable(false)
+            .show()
+    }
+
     override fun finish() {
         super.finish()
-        // Opcional: Aplicar fade también al cerrar si se desea consistencia
-        overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
+        overridePendingTransition(R.anim.stay, R.anim.fade_out)
     }
 }

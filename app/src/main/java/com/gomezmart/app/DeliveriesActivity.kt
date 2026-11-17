@@ -86,6 +86,10 @@ class DeliveriesActivity : BaseActivity() {
     }
 
     private fun startOrdersListener() {
+        if (isGuestUser()) {
+            binding.layoutEmptyDeliveries.visibility = View.VISIBLE
+            return
+        }
         val userId = auth.currentUser?.uid ?: return
         
         orderRegistration = db.collection("orders")

@@ -23,6 +23,7 @@ object CartManager {
     var currentStoreName: String = ""
     var currentStoreLogo: String = ""
 
+    @Synchronized
     fun addItem(product: ProductEntity, storeId: String, storeName: String = "", storeLogo: String = "") {
         if (currentStoreId != storeId) {
             items.clear()
@@ -41,13 +42,14 @@ object CartManager {
         } else {
             items[product.id] = CartItem(
                 productId = product.id,
-                productName = product.nombre,
+                productName = product.nombre ?: "",
                 price = product.precioVenta,
-                category = product.categoria
+                category = product.categoria ?: ""
             )
         }
     }
 
+    @Synchronized
     fun addItemFromMarketplace(product: MarketplaceProduct) {
         if (currentStoreId != product.storeId) {
             items.clear()
@@ -74,6 +76,7 @@ object CartManager {
         }
     }
 
+    @Synchronized
     fun addItemFromManualData(id: String, name: String, price: Double, cat: String, sId: String, sName: String = "", sLogo: String = "", photo: String? = null) {
         if (currentStoreId != sId) {
             items.clear()
@@ -93,10 +96,12 @@ object CartManager {
         }
     }
 
+    @Synchronized
     fun removeItem(productId: String) {
         items.remove(productId)
     }
 
+    @Synchronized
     fun updateQuantity(productId: String, delta: Int) {
         items[productId]?.let {
             it.quantity += delta
@@ -104,9 +109,16 @@ object CartManager {
         }
     }
 
+    @Synchronized
     fun getItems(): List<CartItem> = items.values.toList()
+
+    @Synchronized
     fun getTotalCount(): Int = items.values.sumOf { it.quantity }
+
+    @Synchronized
     fun getTotalPrice(): Double = items.values.sumOf { it.total }
+
+    @Synchronized
     fun clear() { 
         items.clear()
         currentStoreId = ""
@@ -114,8 +126,15 @@ object CartManager {
         currentStoreLogo = ""
     }
 
+    @Synchronized
     fun save(context: Context) {
         val prefs = context.getSharedPreferences("CartPrefs", Context.MODE_PRIVATE)
+        if (items.isEmpty() && currentStoreId.isEmpty()) {
+            if (prefs.contains("cart_items") || prefs.contains("store_id")) {
+                prefs.edit().clear().apply()
+            }
+            return
+        }
         val gson = Gson()
         val json = gson.toJson(items.values.toList())
         prefs.edit()
@@ -126,6 +145,7 @@ object CartManager {
             .apply()
     }
 
+    @Synchronized
     fun load(context: Context) {
         val prefs = context.getSharedPreferences("CartPrefs", Context.MODE_PRIVATE)
         val json = prefs.getString("cart_items", null)
@@ -137,7 +157,7 @@ object CartManager {
             val type = object : TypeToken<List<CartItem>>() {}.type
             val list = gson.fromJson<List<CartItem>>(json, type)
             items.clear()
-            list.forEach { items[it.productId] = it }
+            list?.forEach { items[it.productId] = it }
         }
     }
 }

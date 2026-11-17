@@ -6,121 +6,12 @@
     android:layout_height="match_parent"
     android:background="@color/white">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarStoreProfile"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/white"
-        android:fitsSystemWindows="true"
-        app:elevation="0dp">
-
-        <com.google.android.material.appbar.CollapsingToolbarLayout
-            android:id="@+id/collapsingToolbarStoreProfile"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fitsSystemWindows="true"
-            app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:titleEnabled="false">
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <!-- 1. PORTADA -->
-                <FrameLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="220dp">
-                    <ImageView
-                        android:id="@+id/ivStoreCover"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scaleType="centerCrop" />
-                    <ProgressBar
-                        android:id="@+id/pbCoverLoading"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:layout_gravity="center"
-                        android:indeterminateTint="@color/white"
-                        android:visibility="gone" />
-                </FrameLayout>
-
-                <!-- 2. LOGO -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardProfileLogo"
-                    android:layout_width="100dp"
-                    android:layout_height="100dp"
-                    android:layout_marginStart="24dp"
-                    android:layout_marginTop="160dp"
-                    app:cardCornerRadius="50dp"
-                    app:cardElevation="8dp"
-                    app:strokeColor="@color/white"
-                    app:strokeWidth="4dp">
-                    <FrameLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent">
-                        <ImageView
-                            android:id="@+id/ivProfileStoreLogo"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:scaleType="centerCrop" />
-                        <ProgressBar
-                            android:id="@+id/pbLogoLoading"
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_gravity="center"
-                            android:indeterminateTint="@color/purple_600"
-                            android:visibility="gone" />
-                    </FrameLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Padding bottom to prevent overlap -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="20dp"
-                    android:layout_below="@id/cardProfileLogo" />
-
-            </RelativeLayout>
-
-            <com.google.android.material.appbar.MaterialToolbar
-                android:id="@+id/toolbarStoreProfile"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                app:layout_collapseMode="pin"
-                app:contentInsetStart="0dp">
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/btnBackStoreProfile"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="16dp"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="4dp"
-                    app:cardBackgroundColor="@color/white"
-                    app:strokeWidth="0dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground">
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:text="⬅️"
-                        android:textSize="20sp"
-                        android:includeFontPadding="false" />
-                </com.google.android.material.card.MaterialCardView>
-
-            </com.google.android.material.appbar.MaterialToolbar>
-
-        </com.google.android.material.appbar.CollapsingToolbarLayout>
-
-    </com.google.android.material.appbar.AppBarLayout>
-
     <androidx.core.widget.NestedScrollView
         android:id="@+id/nsvStoreProfile"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/white"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:fillViewport="true">
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -156,89 +47,553 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <LinearLayout
-                android:id="@+id/layoutMainProfileContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingHorizontal="24dp"
-                android:paddingTop="16dp"
-                android:paddingBottom="100dp">
+                android:orientation="vertical">
 
-            <!-- ID SECTION -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-                <TextView
-                    android:id="@+id/tvProfileStoreName"
-                    android:layout_width="0dp"
+                <!-- HEADER SECTION: COVER & LOGO -->
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <!-- 1. PORTADA -->
+                    <FrameLayout
+                        android:id="@+id/flCoverContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="220dp"
+                        android:background="@color/slate_100">
+
+                        <ImageView
+                            android:id="@+id/ivStoreCover"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop" />
+
+                        <LinearLayout
+                            android:id="@+id/layoutCoverPlaceholder"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:visibility="gone">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🖼️"
+                                android:textSize="32sp" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Imagen de portada en blanco"
+                                android:textColor="@color/slate_500"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnUploadCoverInline"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="38dp"
+                            android:layout_gravity="bottom|end"
+                            android:layout_marginEnd="16dp"
+                            android:layout_marginBottom="16dp"
+                            android:paddingHorizontal="14dp"
+                            android:text="📷 Subir portada"
+                            android:textColor="@color/purple_700"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:visibility="gone"
+                            app:backgroundTint="@color/white"
+                            app:cornerRadius="19dp"
+                            app:elevation="4dp" />
+
+                        <ProgressBar
+                            android:id="@+id/pbCoverLoading"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:layout_gravity="center"
+                            android:indeterminateTint="@color/purple_600"
+                            android:visibility="gone" />
+
+                        <!-- TOP BUTTONS OVER COVER -->
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="top"
+                            android:layout_marginTop="16dp"
+                            android:paddingHorizontal="16dp">
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/btnBackStoreProfile"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_alignParentStart="true"
+                                app:cardCornerRadius="20dp"
+                                app:cardElevation="6dp"
+                                app:cardBackgroundColor="@color/white"
+                                app:strokeWidth="0dp"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:foreground="?attr/selectableItemBackground">
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center"
+                                    android:text="⬅️"
+                                    android:textSize="20sp"
+                                    android:includeFontPadding="false" />
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/btnShareStoreProfile"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_alignParentEnd="true"
+                                app:cardCornerRadius="20dp"
+                                app:cardElevation="6dp"
+                                app:cardBackgroundColor="@color/white"
+                                app:strokeWidth="0dp"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:foreground="?attr/selectableItemBackground">
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center"
+                                    android:text="📤"
+                                    android:textSize="18sp"
+                                    android:includeFontPadding="false" />
+                            </com.google.android.material.card.MaterialCardView>
+                        </RelativeLayout>
+                    </FrameLayout>
+
+                    <!-- 2. LOGO -->
+                    <FrameLayout
+                        android:id="@+id/flLogoOuterContainer"
+                        android:layout_width="112dp"
+                        android:layout_height="112dp"
+                        android:layout_marginStart="20dp"
+                        android:layout_marginTop="154dp">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardProfileLogo"
+                            android:layout_width="100dp"
+                            android:layout_height="100dp"
+                            android:layout_gravity="center"
+                            app:cardBackgroundColor="@color/white"
+                            app:cardCornerRadius="50dp"
+                            app:cardElevation="8dp"
+                            app:strokeColor="@color/slate_200"
+                            app:strokeWidth="3dp">
+                            <FrameLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent">
+                                <ImageView
+                                    android:id="@+id/ivProfileStoreLogo"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:scaleType="centerCrop" />
+                                <LinearLayout
+                                    android:id="@+id/layoutLogoPlaceholder"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center"
+                                    android:orientation="vertical"
+                                    android:visibility="gone">
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="🏪"
+                                        android:textSize="24sp" />
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Subir logo"
+                                        android:textColor="@color/slate_500"
+                                        android:textSize="10sp"
+                                        android:textStyle="bold" />
+                                </LinearLayout>
+                                <ProgressBar
+                                    android:id="@+id/pbLogoLoading"
+                                    android:layout_width="24dp"
+                                    android:layout_height="24dp"
+                                    android:layout_gravity="center"
+                                    android:indeterminateTint="@color/purple_600"
+                                    android:visibility="gone" />
+                            </FrameLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/btnUploadLogoInline"
+                            android:layout_width="34dp"
+                            android:layout_height="34dp"
+                            android:layout_gravity="bottom|end"
+                            android:layout_marginEnd="2dp"
+                            android:layout_marginBottom="2dp"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground"
+                            android:visibility="gone"
+                            app:cardBackgroundColor="@color/purple_600"
+                            app:cardCornerRadius="17dp"
+                            app:cardElevation="10dp"
+                            app:strokeColor="@color/white"
+                            app:strokeWidth="2dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:text="📷"
+                                android:textSize="14sp" />
+                        </com.google.android.material.card.MaterialCardView>
+                    </FrameLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="12dp"
+                        android:layout_below="@id/flLogoOuterContainer" />
+
+                </RelativeLayout>
+
+                <!-- MAIN STORE CONTENT -->
+                <LinearLayout
+                    android:id="@+id/layoutMainProfileContent"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Nombre de la Tienda"
-                    android:textColor="@color/slate_900"
-                    android:textSize="26sp"
-                    android:textStyle="bold" />
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnEditStoreProfile"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="EDITAR"
-                    android:textSize="12sp"
-                    android:visibility="gone"
-                    app:cornerRadius="12dp"
-                    app:icon="@android:drawable/ic_menu_edit" />
+                    android:orientation="vertical"
+                    android:paddingHorizontal="24dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="120dp">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnChatStoreOwner"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="44dp"
-                    android:layout_marginStart="8dp"
-                    android:text="Chat 💬"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/purple_700"
-                    app:backgroundTint="@color/purple_50"
-                    app:cornerRadius="14dp"
-                    android:paddingHorizontal="12dp" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/tvProfileStoreCategory"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="CATEGORÍA"
-                android:textColor="@color/purple_600"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.1" />
-
-            <!-- DISPONIBILIDAD (Modern Pill) -->
+            <!-- BANNER DE INSTRUCCIÓN EN MODO CREACIÓN / EDICIÓN EN VIVO -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardHotelAvailability"
-                android:layout_width="wrap_content"
+                android:id="@+id/cardLiveBuilderBanner"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                app:cardCornerRadius="12dp"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/purple_50"
+                app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:cardBackgroundColor="@color/emerald_50"
-                app:strokeWidth="1dp"
-                app:strokeColor="@color/emerald_600"
-                android:visibility="gone">
-                <TextView
-                    android:id="@+id/tvHotelAvailability"
-                    android:layout_width="wrap_content"
+                app:strokeColor="@color/purple_600"
+                app:strokeWidth="1dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="4dp"
-                    android:text="11 de 11 habitaciones disponibles"
-                    android:textColor="@color/emerald_600"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="✨"
+                        android:textSize="20sp" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/tvLiveBuilderBannerTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Construye tu página en vivo"
+                            android:textColor="@color/purple_700"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/tvLiveBuilderBannerSub"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Toca el botón editar (✏️) al costado de cada sección para personalizar cómo te verán en el mercado."
+                            android:textColor="@color/slate_600"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- STORE HEADER CONTAINER BOX (FONDO PERSONALIZADO: COLOR, GRADIENTE O IMAGEN) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardStoreHeaderBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="6dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp"
+                app:cardBackgroundColor="@android:color/transparent">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <!-- Background Image (if configured) -->
+                    <ImageView
+                        android:id="@+id/ivHeaderCustomBg"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
+
+                    <!-- Readability Overlay Tint (customizable opacity / dark tint) -->
+                    <View
+                        android:id="@+id/viewHeaderBgOverlay"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="#66000000"
+                        android:visibility="gone" />
+
+                    <!-- Header Content -->
+                    <LinearLayout
+                        android:id="@+id/layoutStoreHeaderBoxContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="8dp">
+
+                        <!-- ID SECTION (CATEGORÍA + NOMBRE DEL NEGOCIO CENTRADO) -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_horizontal"
+                            android:layout_marginTop="0dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tvProfileStoreCategory"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center_horizontal"
+                                android:layout_marginBottom="2dp"
+                                android:text="CATEGORÍA"
+                                android:textColor="@color/purple_600"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:letterSpacing="0.08" />
+
+                            <LinearLayout
+                                android:id="@+id/layoutStoreNameRow"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center">
+
+                                <TextView
+                                    android:id="@+id/tvProfileStoreName"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center"
+                                    android:text="Nombre del negocio"
+                                    android:textAlignment="center"
+                                    android:textColor="@color/slate_900"
+                                    android:textSize="26sp"
+                                    android:textStyle="bold" />
+
+                                <ImageView
+                                    android:id="@+id/ivVerifiedBadgeStore"
+                                    android:layout_width="24dp"
+                                    android:layout_height="24dp"
+                                    android:layout_marginStart="6dp"
+                                    android:src="@drawable/ic_verified_badge"
+                                    android:contentDescription="Tienda Oficial Verificada"
+                                    android:visibility="gone" />
+                            </LinearLayout>
+
+                            <!-- RESUMEN DE CALIFICACIÓN (DEBAJO DEL NOMBRE) -->
+                            <LinearLayout
+                                android:id="@+id/layoutStoreRatingSummary"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:layout_marginBottom="2dp"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:foreground="?attr/selectableItemBackground"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/tvStoreAverageRatingPill"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:paddingHorizontal="4dp"
+                                    android:paddingVertical="4dp"
+                                    android:text="☆ Sé el primero en calificar"
+                                    android:textColor="#B45309"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+
+                            <!-- DISPONIBILIDAD (Modern Animated Status Beacon Pill - Centrado) -->
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/cardHotelAvailability"
+                                android:layout_width="wrap_content"
+                                android:layout_height="32dp"
+                                android:layout_gravity="center_horizontal"
+                                android:layout_marginTop="6dp"
+                                android:visibility="gone"
+                                app:cardBackgroundColor="#F0FDF4"
+                                app:cardCornerRadius="16dp"
+                                app:cardElevation="0dp"
+                                app:strokeColor="#86EFAC"
+                                app:strokeWidth="1dp">
+
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal"
+                                    android:paddingHorizontal="14dp">
+
+                                    <!-- LIVE ANIMATED STATUS BEACON / DOT -->
+                                    <FrameLayout
+                                        android:layout_width="16dp"
+                                        android:layout_height="16dp"
+                                        android:layout_marginEnd="6dp">
+
+                                        <!-- Translucent Pulsing Ring -->
+                                        <View
+                                            android:id="@+id/viewHotelStatusPulse"
+                                            android:layout_width="16dp"
+                                            android:layout_height="16dp"
+                                            android:layout_gravity="center"
+                                            android:background="@drawable/dot_active" />
+
+                                        <!-- Solid Center Dot -->
+                                        <View
+                                            android:id="@+id/viewHotelStatusDot"
+                                            android:layout_width="8dp"
+                                            android:layout_height="8dp"
+                                            android:layout_gravity="center"
+                                            android:background="@drawable/dot_active" />
+                                    </FrameLayout>
+
+                                    <TextView
+                                        android:id="@+id/tvHotelAvailability"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:gravity="center"
+                                        android:text="Habitaciones disponibles"
+                                        android:textColor="#16A34A"
+                                        android:textSize="11.5sp"
+                                        android:textStyle="bold" />
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <!-- Inline Action Buttons (Editar Nombre / Fondo Header) -->
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center"
+                                android:layout_marginTop="6dp">
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnEditNameInline"
+                                    style="@style/Widget.Material3.Button.TonalButton"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="34dp"
+                                    android:layout_marginEnd="8dp"
+                                    android:paddingHorizontal="12dp"
+                                    android:text="✏️ Nombre"
+                                    android:textColor="@color/purple_700"
+                                    android:textSize="11.5sp"
+                                    android:textStyle="bold"
+                                    android:visibility="gone"
+                                    app:backgroundTint="@color/purple_50"
+                                    app:cornerRadius="12dp" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnEditHeaderBgInline"
+                                    style="@style/Widget.Material3.Button.TonalButton"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="34dp"
+                                    android:paddingHorizontal="12dp"
+                                    android:text="🎨 Fondo"
+                                    android:textColor="@color/purple_700"
+                                    android:textSize="11.5sp"
+                                    android:textStyle="bold"
+                                    android:visibility="gone"
+                                    app:backgroundTint="@color/purple_50"
+                                    app:cornerRadius="12dp" />
+                            </LinearLayout>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnEditStoreProfile"
+                                style="@style/Widget.Material3.Button.TonalButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="EDITAR"
+                                android:textSize="12sp"
+                                android:visibility="gone"
+                                app:cornerRadius="12dp"
+                                app:icon="@android:drawable/ic_menu_edit" />
+                        </LinearLayout>
+
+                        <!-- BOTÓN SEGUIR TIENDA Y SEGUIDORES (Fila limpia sin colisiones) -->
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/tvStoreFollowersPill"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:clickable="true"
+                                    android:focusable="true"
+                                    android:foreground="?attr/selectableItemBackground"
+                                    android:paddingHorizontal="12dp"
+                                    android:paddingVertical="6dp"
+                                    android:text="👥 0 seguidores"
+                                    android:textColor="@color/purple_700"
+                                    android:textSize="11.5sp"
+                                    android:textStyle="bold" />
+
+                                <View
+                                    android:layout_width="0dp"
+                                    android:layout_height="1dp"
+                                    android:layout_weight="1" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnFollowStore"
+                                    style="@style/Widget.Material3.Button"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="36dp"
+                                    android:insetTop="0dp"
+                                    android:insetBottom="0dp"
+                                    android:paddingHorizontal="14dp"
+                                    android:text="+ Seguir"
+                                    android:textColor="@color/white"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    app:backgroundTint="@color/purple_600"
+                                    app:cornerRadius="12dp"
+                                    app:strokeWidth="0dp" />
+
+                            </LinearLayout>
+
+                        </RelativeLayout>
+
+                    </LinearLayout>
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+
 
             <!-- SECCIÓN: PRODUCTOS DE LA TIENDA (Oculto en vista principal, disponible vía Catálogo Virtual) -->
             <LinearLayout
@@ -285,31 +640,330 @@
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="24dp" />
 
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- ACERCA DE NOSOTROS -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Acerca de nosotros"
-                android:textColor="@color/slate_400"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.05" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.05"
+                    android:text="Acerca de nosotros"
+                    android:textColor="@color/slate_400"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEditDescInline"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:paddingHorizontal="12dp"
+                    android:text="✏️ Editar"
+                    android:textColor="@color/purple_700"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:backgroundTint="@color/purple_50"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvProfileStoreDesc"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Somos una empresa dedicada a brindar lo mejor..."
+                android:text="Agrega una descripción de tu negocio..."
                 android:textColor="@color/slate_700"
                 android:textSize="15sp"
                 android:lineSpacingExtra="4dp" />
 
-            <!-- DUEÑO Y UBICACIÓN -->
+            <!-- UBICACIÓN Y DIRECCIÓN (JUSTO DEBAJO DE ACERCA DE NOSOTROS) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
+                android:layout_marginTop="20dp"
+                android:gravity="center_vertical">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_menu_directions"
+                    app:tint="@color/slate_400" />
+                <TextView
+                    android:id="@+id/tvProfileStoreAddress"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Dirección y ubicación de tu negocio"
+                    android:textColor="@color/slate_600"
+                    android:textSize="13sp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEditAddressInline"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="6dp"
+                    android:paddingHorizontal="12dp"
+                    android:text="✏️ Ubicación"
+                    android:textColor="@color/purple_700"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:backgroundTint="@color/purple_50"
+                    app:cornerRadius="10dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnContactWhatsApp"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:padding="0dp"
+                    android:insetLeft="0dp"
+                    android:insetTop="0dp"
+                    android:insetRight="0dp"
+                    android:insetBottom="0dp"
+                    android:visibility="gone"
+                    app:icon="@android:drawable/stat_sys_phone_call"
+                    app:iconTint="@color/emerald_600"
+                    app:iconGravity="textStart"
+                    app:cornerRadius="22dp" />
+            </LinearLayout>
+
+            <!-- FILA CONTACTO WHATSAPP (Visible para el dueño en edición en vivo) -->
+            <LinearLayout
+                android:id="@+id/layoutOwnerPhoneRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/stat_sys_phone_call"
+                    app:tint="@color/emerald_600" />
+                <TextView
+                    android:id="@+id/tvProfileOwnerPhone"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="Número de WhatsApp de contacto"
+                    android:textColor="@color/slate_600"
+                    android:textSize="13sp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEditPhoneInline"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="6dp"
+                    android:paddingHorizontal="12dp"
+                    android:text="✏️ WhatsApp"
+                    android:textColor="@color/purple_700"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/purple_50"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
+
+            <!-- SECCIÓN: MAPA DEL NEGOCIO -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardStoreMap"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_100"
+                android:visibility="gone">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <FrameLayout
+                        android:id="@+id/mapContainerStoreProfile"
+                        android:layout_width="match_parent"
+                        android:layout_height="200dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnHowToGetThere"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="📍 ¿Cómo llegar? Ver en mapa"
+                        android:textColor="@color/sky_600"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        app:icon="@android:drawable/ic_menu_compass"
+                        app:iconTint="@color/sky_600" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SECCIÓN: NOVEDADES Y PROMOCIONES DE LA TIENDA -->
+            <LinearLayout
+                android:id="@+id/layoutStoreUpdatesSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
                 android:layout_marginTop="24dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="NOVEDADES Y PROMOCIONES"
+                        android:textColor="@color/slate_500"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.1" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPublishStoreUpdate"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="+ Publicar"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/purple_700"
+                        app:backgroundTint="@color/purple_50"
+                        app:cornerRadius="12dp"
+                        android:paddingHorizontal="12dp"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvStoreUpdates"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:clipToPadding="false"
+                    android:nestedScrollingEnabled="false"
+                    tools:listitem="@layout/item_store_update" />
+
+                <TextView
+                    android:id="@+id/tvNoStoreUpdates"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Publica anuncios o promociones para tus seguidores 📢"
+                    android:textColor="@color/slate_400"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- SECCIÓN: EXTRA DETAILS (Dynamic) -->
+            <LinearLayout
+                android:id="@+id/layoutExtraSectionsHeaderOwner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.1"
+                    android:text="SECCIONES Y GALERÍAS DE TU PÁGINA"
+                    android:textColor="@color/slate_400"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutExtraSectionsProfile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="12dp" />
+
+            <!-- BOTÓN AL FINAL PARA AGREGAR NUEVAS SECCIONES EN MODO EDICIÓN -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddExtraSectionBottom"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8dp"
+                android:text="➕ Agregar nueva sección a mi página"
+                android:textColor="@color/purple_700"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:backgroundTint="@color/purple_50"
+                app:strokeColor="@color/purple_200"
+                app:strokeWidth="1dp"
+                app:cornerRadius="16dp" />
+
+            <!-- SECCIÓN: MÉTODOS DE PAGO (REPOSICIONADA AL FINAL) -->
+            <LinearLayout
+                android:id="@+id/layoutPublicPaymentMethods"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="20dp"
+                android:visibility="gone">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:letterSpacing="0.1"
+                        android:text="MÉTODOS DE PAGO QUE ACEPTAMOS"
+                        android:textColor="@color/slate_400"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEditPaymentMethodsInline"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:paddingHorizontal="10dp"
+                        android:text="✏️ Editar pagos"
+                        android:textColor="@color/purple_700"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        app:backgroundTint="@color/purple_50"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:scrollbars="none"
+                    android:overScrollMode="never">
+                    <LinearLayout
+                        android:id="@+id/layoutPaymentIconsContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal" />
+                </HorizontalScrollView>
+            </LinearLayout>
+
+            <!-- DUEÑO Y CONTACTO (REPOSICIONADO AL FINAL) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="20dp"
                 android:gravity="center_vertical">
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="40dp"
@@ -341,126 +995,49 @@
                         android:id="@+id/tvProfileOwnerName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Nombre del Fundador"
+                        android:text="Nombre del Fundador / Dueño"
                         android:textColor="@color/slate_800"
                         android:textSize="14sp"
                         android:textStyle="bold" />
                 </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="16dp"
-                android:gravity="center_vertical">
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@android:drawable/ic_menu_directions"
-                    app:tint="@color/slate_400" />
-                <TextView
-                    android:id="@+id/tvProfileStoreAddress"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Ubicación no especificada"
-                    android:textColor="@color/slate_600"
-                    android:textSize="13sp" />
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnContactWhatsApp"
+                    android:id="@+id/btnEditOwnerInline"
                     style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:padding="0dp"
-                    android:insetLeft="0dp"
-                    android:insetTop="0dp"
-                    android:insetRight="0dp"
-                    android:insetBottom="0dp"
-                    android:visibility="gone"
-                    app:icon="@android:drawable/stat_sys_phone_call"
-                    app:iconTint="@color/emerald_600"
-                    app:iconGravity="textStart"
-                    app:cornerRadius="22dp" />
-            </LinearLayout>
-
-            <!-- SECCIÓN: MAPA DEL NEGOCIO (REPOSICIONADA) -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardStoreMap"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="2dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="@color/slate_100"
-                android:visibility="gone">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <org.osmdroid.views.MapView
-                        android:id="@+id/mvStoreProfile"
-                        android:layout_width="match_parent"
-                        android:layout_height="200dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnHowToGetThere"
-                        style="@style/Widget.Material3.Button.TextButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="📍 ¿Cómo llegar? Ver en mapa"
-                        android:textColor="@color/sky_600"
-                        android:textStyle="bold"
-                        android:textSize="12sp"
-                        app:icon="@android:drawable/ic_menu_compass"
-                        app:iconTint="@color/sky_600" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- SECCIÓN: MÉTODOS DE PAGO (Público: Solo títulos) -->
-            <LinearLayout
-                android:id="@+id/layoutPublicPaymentMethods"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="20dp"
-                android:visibility="gone">
-                <TextView
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="ACEPTAMOS"
-                    android:textColor="@color/slate_400"
-                    android:textSize="10sp"
+                    android:layout_height="34dp"
+                    android:paddingHorizontal="12dp"
+                    android:text="✏️ Editar"
+                    android:textColor="@color/purple_700"
+                    android:textSize="11sp"
                     android:textStyle="bold"
-                    android:letterSpacing="0.1" />
-                <LinearLayout
-                    android:id="@+id/layoutPaymentIconsContainer"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="8dp" />
+                    android:visibility="gone"
+                    app:backgroundTint="@color/purple_50"
+                    app:cornerRadius="10dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnChatStoreOwner"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="8dp"
+                    android:paddingHorizontal="12dp"
+                    android:text="Chat 💬"
+                    android:textColor="@color/purple_700"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/purple_50"
+                    app:cornerRadius="12dp" />
             </LinearLayout>
-
-            <!-- SECCIÓN: EXTRA DETAILS (Dynamic) -->
-            <LinearLayout
-                android:id="@+id/layoutExtraSectionsProfile"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="32dp" />
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/slate_100"
-                android:layout_marginTop="32dp"
+                android:layout_marginTop="24dp"
                 android:layout_marginBottom="24dp" />
 
             <!-- SECCIÓN DE RESEÑAS -->
             <TextView
+                android:id="@+id/tvReviewsSectionTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="RESEÑAS Y COMENTARIOS"
@@ -483,6 +1060,15 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginBottom="6dp"
+                        android:text="¿Cómo calificas esta tienda?"
+                        android:textColor="@color/slate_700"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
                     <RatingBar
                         android:id="@+id/rbNewReview"
                         android:layout_width="wrap_content"
@@ -497,7 +1083,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:hint="Escribe tu opinión aquí..."
+                        android:hint="Escribe tu opinión (opcional)..."
                         app:boxCornerRadiusTopStart="16dp"
                         app:boxCornerRadiusTopEnd="16dp"
                         app:boxCornerRadiusBottomStart="16dp"
@@ -528,7 +1114,7 @@
                             android:layout_width="0dp"
                             android:layout_height="54dp"
                             android:layout_weight="2"
-                            android:text="PUBLICAR COMENTARIO"
+                            android:text="PUBLICAR CALIFICACIÓN"
                             android:textStyle="bold"
                             app:cornerRadius="12dp"
                             app:backgroundTint="@color/purple_600" />
@@ -592,66 +1178,232 @@
                 android:visibility="gone" />
 
         </LinearLayout>
+        </LinearLayout>
     </FrameLayout>
 </androidx.core.widget.NestedScrollView>
 
-    <!-- BOTÓN INFERIOR FIJO: VER CATÁLOGO VIRTUAL -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardBottomCatalogButton"
+    <!-- BOTÓN FLOTANTE: OBTENER INSIGNIA OFICIAL (Solo Dueño en modo edición) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnOwnerVerifiedBadgeStatus"
+        style="@style/Widget.Material3.Button.ElevatedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="46dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="86dp"
+        android:paddingHorizontal="16dp"
+        android:text="🛡️ Obtener insignia de Tienda Oficial"
+        android:textColor="@color/sky_700"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:backgroundTint="@color/white"
+        app:strokeColor="@color/sky_200"
+        app:strokeWidth="1.5dp"
+        app:cornerRadius="24dp"
+        app:elevation="6dp" />
+
+    <!-- BARRA INFERIOR FIJA: VISTA PREVIA + PUBLICAR / VER CATÁLOGO -->
+    <LinearLayout
+        android:id="@+id/layoutBottomActionBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
-        app:cardCornerRadius="28dp"
-        app:cardElevation="8dp"
-        app:cardBackgroundColor="@color/purple_600"
-        app:strokeWidth="0dp">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <!-- BOTÓN IZQUIERDO (Solo Dueño): VISTA PREVIA / VOLVER A EDITAR -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardBottomPreviewButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="8dp"
+            app:strokeColor="@color/purple_600"
+            app:strokeWidth="1.5dp">
+
+            <LinearLayout
+                android:id="@+id/btnTogglePreviewMode"
+                android:layout_width="wrap_content"
+                android:layout_height="56dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp">
+
+                <TextView
+                    android:id="@+id/tvPreviewButtonIcon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:text="👁️"
+                    android:textSize="17sp" />
+
+                <TextView
+                    android:id="@+id/tvPreviewButtonText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Vista previa"
+                    android:textColor="@color/purple_700"
+                    android:textSize="13.5sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- BOTÓN PRINCIPAL DERECHO: PUBLICAR MI PÁGINA / VER CATÁLOGO VIRTUAL -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardBottomCatalogButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            app:cardBackgroundColor="@color/purple_600"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="8dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:id="@+id/btnOpenStoreCatalog"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp">
+
+                <TextView
+                    android:id="@+id/tvCatalogButtonIcon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="🛍️"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:id="@+id/tvCatalogButtonText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:letterSpacing="0.03"
+                    android:maxLines="1"
+                    android:text="VER CATÁLOGO VIRTUAL"
+                    android:textColor="@color/white"
+                    android:textSize="13.5sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvCatalogBadgeCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_circle_surface"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
+                    android:text="0"
+                    android:textColor="@color/purple_600"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
+    <!-- PANTALLA DE CARGA COMPLETA (INICIO DEL EDITOR VIRTUAL) -->
+    <FrameLayout
+        android:id="@+id/layoutFullPageLoadingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/white"
+        android:clickable="true"
+        android:focusable="true"
+        android:elevation="24dp"
+        android:visibility="visible">
 
         <LinearLayout
-            android:id="@+id/btnOpenStoreCatalog"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:orientation="horizontal"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:gravity="center"
-            android:paddingHorizontal="20dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground">
+            android:orientation="vertical"
+            android:paddingHorizontal="32dp">
 
+            <!-- LOGO REPRESENTATIVO DEL EDITOR DE TIENDA VIRTUAL -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardLoadingLogo"
+                android:layout_width="140dp"
+                android:layout_height="140dp"
+                app:cardCornerRadius="70dp"
+                app:cardElevation="12dp"
+                app:cardBackgroundColor="@color/purple_50"
+                app:strokeColor="@color/purple_200"
+                app:strokeWidth="3dp">
+
+                <ImageView
+                    android:id="@+id/ivLoadingLogoImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/logo_editor_negocio_virtual"
+                    android:contentDescription="Editor de Negocio Virtual" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- TÍTULO DE CARGA -->
             <TextView
+                android:id="@+id/tvLoadingTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🛍️"
-                android:textSize="20sp"
-                android:layout_marginEnd="10dp" />
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:text="Cargando Editor de Negocio Virtual"
+                android:textColor="@color/slate_900"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
+            <!-- SUBTÍTULO -->
             <TextView
-                android:id="@+id/tvCatalogButtonText"
+                android:id="@+id/tvLoadingSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="VER CATÁLOGO VIRTUAL"
-                android:textColor="@color/white"
-                android:textSize="15sp"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="Sincronizando secciones y datos con la nube ☁️"
+                android:textColor="@color/slate_500"
+                android:textSize="13sp" />
+
+            <!-- ANIMACIÓN DE CARGA / PROGRESS BAR -->
+            <ProgressBar
+                android:id="@+id/pbFullPageLoading"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginTop="28dp"
+                android:indeterminateTint="@color/purple_600" />
+
+            <!-- BOTÓN DE REINTENTO EN CASO DE ERROR DE INTERNET -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRetryLoadingEditor"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:layout_marginTop="24dp"
+                android:paddingHorizontal="20dp"
+                android:text="🔄 Reintentar conexión"
+                android:textColor="@color/purple_700"
+                android:textSize="13sp"
                 android:textStyle="bold"
-                android:letterSpacing="0.05" />
-
-            <TextView
-                android:id="@+id/tvCatalogBadgeCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:background="@drawable/bg_circle_surface"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="3dp"
-                android:text="0"
-                android:textColor="@color/purple_600"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
+                android:visibility="gone"
+                app:backgroundTint="@color/purple_50"
+                app:cornerRadius="14dp" />
 
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
+    </FrameLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -31,6 +31,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
+import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -46,7 +47,6 @@ import com.gomezmart.app.fragment.BuyerAccountFragment
 import com.gomezmart.app.fragment.BuyerChatsFragment
 import com.gomezmart.app.fragment.BuyerMarketplaceFragment
 import com.gomezmart.app.fragment.BuyerSettingsFragment
-import com.gomezmart.app.network.GomezmartSyncService
 import com.gomezmart.app.util.FavoritesManager
 import com.gomezmart.app.util.SessionManager
 import kotlinx.coroutines.launch
@@ -55,10 +55,6 @@ import kotlinx.coroutines.tasks.await
 class BuyerHomeActivity : BaseActivity() {
 
     private lateinit var binding: ActivityBuyerHomeBinding
-    private val marketplaceFragment = BuyerMarketplaceFragment()
-    private val chatsFragment = BuyerChatsFragment()
-    private val accountFragment = BuyerAccountFragment()
-    private val settingsFragment = BuyerSettingsFragment()
     private val registrations = mutableListOf<ListenerRegistration>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,7 +62,6 @@ class BuyerHomeActivity : BaseActivity() {
         binding = ActivityBuyerHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        window.statusBarColor = ContextCompat.getColor(this, R.color.gomezmart_primary)
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = false
 
         applyWindowInsets(binding.mainContentRoot, applyTop = false, applyBottom = false)
@@ -77,27 +72,49 @@ class BuyerHomeActivity : BaseActivity() {
         setupViewPager()
         setupCustomBottomNav()
         startProfileListener()
-        checkNotificationPermission()
+        updatePublicIdentity()
         FavoritesManager.loadFromFirebase(this)
 
         startSyncService()
         listenForUnreadMessages()
         listenForActiveOrders()
 
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (binding.drawerBuyerHome.isDrawerOpen(GravityCompat.START)) {
+                    binding.drawerBuyerHome.closeDrawer(GravityCompat.START)
+                    return
+                }
+
+                if (binding.buyerViewPager.currentItem != 0) {
+                    navigateToMarketplace()
+                    return
+                }
+
+                // Mover al fondo en lugar de matar el proceso de la app
+                moveTaskToBack(true)
+            }
+        })
+
         if (intent.getBooleanExtra("START_UPDATE", false)) {
-            Updater(this).checkAndDownload(autoDownload = true)
+            Updater(this).checkAndDownload(autoCheck = true)
         }
     }
 
     private fun setupViewPager() {
-        val fragments = listOf(marketplaceFragment, chatsFragment, accountFragment, settingsFragment)
         binding.buyerViewPager.adapter = object : FragmentStateAdapter(this) {
-            override fun getItemCount(): Int = fragments.size
-            override fun createFragment(position: Int): Fragment = fragments[position]
+            override fun getItemCount(): Int = 3
+            override fun createFragment(position: Int): Fragment {
+                return when (position) {
+                    0 -> BuyerMarketplaceFragment()
+                    1 -> BuyerChatsFragment()
+                    else -> BuyerAccountFragment()
+                }
+            }
         }
-        binding.buyerViewPager.isUserInputEnabled = true // Permitir desplazamiento táctil
-        binding.buyerViewPager.offscreenPageLimit = 3 // Mantener fragmentos cargados para suavidad
-
+        binding.buyerViewPager.isUserInputEnabled = false // Desactivar deslizamiento táctil horizontal
+        binding.buyerViewPager.offscreenPageLimit = 2 // Mantener fragmentos cargados para suavidad
+        
         binding.buyerViewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 updateCustomNavUI(position)
@@ -107,19 +124,23 @@ class BuyerHomeActivity : BaseActivity() {
 
     private fun startSyncService() {
         try {
-            val intent = Intent(this, GomezmartSyncService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(intent)
-            } else {
-                startService(intent)
-            }
+            SyncManager(this).scheduleOfflineSync()
         } catch (e: Exception) {
-            Log.e("BuyerHomeActivity", "Error starting sync service: ${e.message}")
+            Log.e("BuyerHomeActivity", "Error scheduling offline sync: ${e.message}")
         }
     }
 
     override fun onResume() {
         super.onResume()
+        val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        if (appPrefs.getString("last_active_interface", null) != "MARKET" ||
+            appPrefs.getBoolean("login_in_progress", false)
+        ) {
+            appPrefs.edit()
+                .putString("last_active_interface", "MARKET")
+                .putBoolean("login_in_progress", false)
+                .commit()
+        }
         checkBusinessStatus()
     }
 
@@ -131,40 +152,64 @@ class BuyerHomeActivity : BaseActivity() {
         }
     }
 
+    private fun hasAnySystemInstalled(): Boolean {
+        val manager = com.gomezmart.app.utils.DynamicModuleManager(this)
+        return manager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.HOTEL) ||
+               manager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.LOANS) ||
+               manager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.PRODUCTS)
+    }
+
     private fun checkBusinessStatus() {
-        // El botón de gestión/interfaz debe estar SIEMPRE visible para permitir al usuario volver a su sistema en cualquier momento
-        showGestionButton(true)
+        val hasInstalledSystem = hasAnySystemInstalled()
+        showGestionButton(hasInstalledSystem)
     }
 
     private fun listenForUnreadMessages() {
-        SyncManager(this).startRealtimeUnreadCountSync { count ->
-            if (count > 0) {
-                binding.tvUnreadBadgeChats.visibility = View.VISIBLE
-                binding.tvUnreadBadgeChats.text = if (count > 9) "9+" else count.toString()
-            } else {
-                binding.tvUnreadBadgeChats.visibility = View.GONE
-            }
-        }?.let { registrations.add(it) }
+        try {
+            SyncManager(this).startRealtimeUnreadCountSync { count ->
+                try {
+                    if (count > 0) {
+                        binding.tvUnreadBadgeChats.visibility = View.VISIBLE
+                        binding.tvUnreadBadgeChats.text = if (count > 9) "9+" else count.toString()
+                    } else {
+                        binding.tvUnreadBadgeChats.visibility = View.GONE
+                    }
+                } catch (e: Exception) {}
+            }?.let { registrations.add(it) }
+        } catch (e: Exception) {
+            Log.e("BuyerHomeActivity", "Error listenForUnreadMessages: ${e.message}")
+        }
     }
 
     private fun listenForActiveOrders() {
-        SyncManager(this).startRealtimeBuyerActiveOrdersCountSync { count ->
-            if (count > 0) {
-                binding.tvActiveOrdersBadge.visibility = View.VISIBLE
-                binding.tvActiveOrdersBadge.text = if (count > 9) "9+" else count.toString()
-            } else {
-                binding.tvActiveOrdersBadge.visibility = View.GONE
-            }
-        }?.let { registrations.add(it) }
+        try {
+            SyncManager(this).startRealtimeBuyerActiveOrdersCountSync { count ->
+                try {
+                    if (count > 0) {
+                        binding.tvActiveOrdersBadge.visibility = View.VISIBLE
+                        binding.tvActiveOrdersBadge.text = if (count > 9) "9+" else count.toString()
+                    } else {
+                        binding.tvActiveOrdersBadge.visibility = View.GONE
+                    }
+                } catch (e: Exception) {}
+            }?.let { registrations.add(it) }
+        } catch (e: Exception) {
+            Log.e("BuyerHomeActivity", "Error listenForActiveOrders: ${e.message}")
+        }
     }
 
     private fun startProfileListener() {
+        if (isGuestUser()) return
         val user = FirebaseAuth.getInstance().currentUser ?: return
         val reg = FirebaseFirestore.getInstance().collection("users").document(user.uid).collection("profile").document("info")
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot != null && snapshot.exists()) {
-                    val name = snapshot.getString("name")
-                    val photo = snapshot.getString("photoUrl")
+                    val name = snapshot.getString("name") ?: snapshot.getString("user_full_name")
+                    val photo = snapshot.getString("photoUrl") ?: snapshot.getString("user_photo_url")
+                    val phone = snapshot.getString("phone") ?: snapshot.getString("user_phone")
+                    val email = snapshot.getString("email") ?: snapshot.getString("user_email") ?: user.email
+                    val dni = snapshot.getString("dni") ?: snapshot.getString("user_dni")
+                    val address = snapshot.getString("address") ?: snapshot.getString("user_address")
                     
                     if (photo.isNullOrEmpty() && user.photoUrl != null) {
                         FirebaseFirestore.getInstance().collection("users").document(user.uid).collection("profile").document("info")
@@ -172,16 +217,23 @@ class BuyerHomeActivity : BaseActivity() {
                     }
 
                     val edit = getSharedPreferences("AppPrefs", MODE_PRIVATE).edit()
+                    edit.putBoolean("is_guest", false)
                     if (!name.isNullOrEmpty()) edit.putString("user_full_name", name)
                     if (!photo.isNullOrEmpty()) edit.putString("user_photo_url", photo)
+                    if (!phone.isNullOrEmpty()) edit.putString("user_phone", phone)
+                    if (!email.isNullOrEmpty()) edit.putString("user_email", email)
+                    if (!dni.isNullOrEmpty()) edit.putString("user_dni", dni)
+                    if (!address.isNullOrEmpty()) edit.putString("user_address", address)
                     edit.apply()
-                    updatePublicIdentity()
+
+                    runOnUiThread { setupDrawer() }
                 }
             }
         registrations.add(reg)
     }
 
     private fun updatePublicIdentity() {
+        if (isGuestUser()) return
         val user = FirebaseAuth.getInstance().currentUser ?: return
         val bizPrefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
@@ -194,49 +246,56 @@ class BuyerHomeActivity : BaseActivity() {
         val collabBizName = collabPrefs.getString("collab_business_name", "") ?: ""
         val collabBizLogo = collabPrefs.getString("collab_business_logo", "") ?: ""
 
+        val isOnline = bizPrefs.getBoolean("${businessType}_is_online", bizPrefs.getBoolean("is_online_store", false))
+
         val title = when {
             bizName.isNotEmpty() && collabBizName.isNotEmpty() -> "Gestionando y Colaborando"
-            bizName.isNotEmpty() -> "Dueño de $bizName"
+            bizName.isNotEmpty() && isOnline -> "Dueño de $bizName"
             collabBizName.isNotEmpty() -> "Colaborador en $collabBizName"
             else -> "Comprador"
         }
 
         val publicLogo = if (bizLogo.isNotEmpty()) bizLogo else collabBizLogo
-        val realName = appPrefs.getString("user_full_name", null) ?: user.displayName ?: "Usuario Gomezmart"
+        val storedName = appPrefs.getString("user_full_name", null) ?: user.displayName ?: ""
         val realPhoto = appPrefs.getString("user_photo_url", null) ?: user.photoUrl?.toString() ?: ""
 
         val updates = mutableMapOf<String, Any>(
             "businessTitle" to title,
-            "name" to realName,
             "photoUrl" to realPhoto,
             "user_photo_url" to realPhoto,
             "email" to (user.email ?: ""),
             "phone" to (appPrefs.getString("user_phone", "") ?: "")
         )
+        if (!SessionManager.isPlaceholderName(storedName)) {
+            updates["name"] = storedName.trim()
+        }
         
         if (publicLogo.isNotEmpty()) updates["businessLogoUrl"] = publicLogo
 
         FirebaseFirestore.getInstance().collection("users").document(user.uid).collection("profile").document("info")
             .set(updates, SetOptions.merge())
             
-        val rootUpdates = mapOf(
-            "name" to realName,
+        val rootUpdates = mutableMapOf<String, Any>(
             "photoUrl" to realPhoto,
             "businessTitle" to title,
             "email" to (user.email ?: ""),
             "phone" to (appPrefs.getString("user_phone", "") ?: "")
         )
+        if (!SessionManager.isPlaceholderName(storedName)) {
+            rootUpdates["name"] = storedName.trim()
+        }
         FirebaseFirestore.getInstance().collection("users").document(user.uid).set(rootUpdates, SetOptions.merge())
     }
 
     private fun showGestionButton(show: Boolean) {
+        binding.btnNavSettings.visibility = View.GONE
         binding.btnNavGestion.isVisible = show
-        val buttons = listOf(binding.btnNavHome, binding.btnNavChats, binding.btnNavAccount, binding.btnNavSettings, binding.btnNavGestion)
+        val buttons = listOf(binding.btnNavHome, binding.btnNavChats, binding.btnNavAccount, binding.btnNavGestion)
         val vCount = buttons.count { it.isVisible }
         binding.layoutCustomNav.weightSum = vCount.toFloat()
 
         binding.layoutCustomNav.post {
-            val icons = listOf(binding.tvIconHome, binding.tvIconChats, binding.tvIconAccount, binding.tvIconSettings, binding.tvIconGestion)
+            val icons = listOf(binding.tvIconHome, binding.tvIconChats, binding.tvIconAccount, binding.tvIconGestion)
             val activeIdx = icons.indexOfFirst { it.alpha == 1.0f }.coerceAtLeast(0)
             updateCustomNavUI(activeIdx)
         }
@@ -251,17 +310,25 @@ class BuyerHomeActivity : BaseActivity() {
             val header = binding.navBuyerHome.getHeaderView(0)
             applyWindowInsets(header, applyTop = true, applyBottom = false) // Proteger cabecera lateral
             
-            if (user != null) {
-                val tvName = header.findViewById<TextView>(R.id.tvBuyerDrawerName)
-                val tvEmail = header.findViewById<TextView>(R.id.tvBuyerDrawerEmail)
-                val ivLogo = header.findViewById<ImageView>(R.id.ivBuyerDrawerLogo)
+            val tvName = header.findViewById<TextView>(R.id.tvBuyerDrawerName)
+            val tvEmail = header.findViewById<TextView>(R.id.tvBuyerDrawerEmail)
+            val tvBadge = header.findViewById<TextView>(R.id.tvBuyerRoleBadge)
+            val ivLogo = header.findViewById<ImageView>(R.id.ivBuyerDrawerLogo)
 
+            if (isGuestUser()) {
+                tvName?.text = "Modo Invitado"
+                tvEmail?.text = "Sin cuenta registrada"
+                tvBadge?.text = "👀 INVITADO"
+                ivLogo?.setImageResource(R.drawable.gomezmart_icon)
+            } else if (user != null) {
                 val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
                 tvName?.text = prefs.getString("user_full_name", user.displayName ?: "Comprador")
-                tvEmail?.text = user.email
+                tvEmail?.text = prefs.getString("user_email", user.email ?: "")
+                tvBadge?.text = "🛒 COMPRADOR"
 
-                if (user.photoUrl != null) {
-                    Glide.with(this).load(user.photoUrl).circleCrop().into(ivLogo!!)
+                val photoUrl = prefs.getString("user_photo_url", null)?.takeIf { it.isNotBlank() } ?: user.photoUrl?.toString()
+                if (!photoUrl.isNullOrEmpty() && ivLogo != null) {
+                    Glide.with(this).load(photoUrl).circleCrop().into(ivLogo)
                 }
             }
         }
@@ -269,14 +336,24 @@ class BuyerHomeActivity : BaseActivity() {
         binding.navBuyerHome.setNavigationItemSelectedListener { item ->
             binding.drawerBuyerHome.closeDrawer(GravityCompat.START)
             when (item.itemId) {
-                R.id.buyer_menu_bookings -> startActivity(Intent(this, BuyerBookingsActivity::class.java))
-                R.id.buyer_menu_orders -> startActivity(Intent(this, BuyerOrdersActivity::class.java))
+                R.id.buyer_menu_bookings -> {
+                    if (!requireLoginForGuest("ver tus reservas")) {
+                        startActivity(Intent(this, BuyerBookingsActivity::class.java))
+                    }
+                }
+                R.id.buyer_menu_orders -> {
+                    if (!requireLoginForGuest("ver tus pedidos")) {
+                        startActivity(Intent(this, BuyerOrdersActivity::class.java))
+                    }
+                }
                 R.id.buyer_menu_cart -> {
-                    startActivity(Intent(this, CartCheckoutActivity::class.java).apply {
-                        putExtra("STORE_ID", CartManager.currentStoreId)
-                        putExtra("STORE_NAME", CartManager.currentStoreName)
-                        putExtra("STORE_LOGO", CartManager.currentStoreLogo)
-                    })
+                    if (!requireLoginForGuest("acceder a tu carrito")) {
+                        startActivity(Intent(this, CartCheckoutActivity::class.java).apply {
+                            putExtra("STORE_ID", CartManager.currentStoreId)
+                            putExtra("STORE_NAME", CartManager.currentStoreName)
+                            putExtra("STORE_LOGO", CartManager.currentStoreLogo)
+                        })
+                    }
                 }
                 R.id.buyer_menu_categories -> navigateToMarketplace()
                 R.id.buyer_menu_report_error -> showReportErrorDialog(this)
@@ -294,10 +371,14 @@ class BuyerHomeActivity : BaseActivity() {
     private var lastActiveNavIndex = 0
 
     private fun setupCustomBottomNav() {
+        binding.btnNavSettings.visibility = View.GONE
         binding.btnNavHome.setOnClickListener { hideFloatingInterfaceMenu(); lastActiveNavIndex = 0; navigateToMarketplace() }
-        binding.btnNavChats.setOnClickListener { hideFloatingInterfaceMenu(); lastActiveNavIndex = 1; navigateToChats() }
-        binding.btnNavAccount.setOnClickListener { hideFloatingInterfaceMenu(); lastActiveNavIndex = 2; navigateToAccount() }
-        binding.btnNavSettings.setOnClickListener { hideFloatingInterfaceMenu(); lastActiveNavIndex = 3; navigateToSettings() }
+        binding.btnNavChats.setOnClickListener { 
+            hideFloatingInterfaceMenu(); lastActiveNavIndex = 1; navigateToChats() 
+        }
+        binding.btnNavAccount.setOnClickListener { 
+            hideFloatingInterfaceMenu(); lastActiveNavIndex = 2; navigateToAccount() 
+        }
         binding.btnNavGestion.setOnClickListener { 
             showFloatingInterfaceMenu()
         }
@@ -305,6 +386,7 @@ class BuyerHomeActivity : BaseActivity() {
     }
 
     private fun openMarketBusiness() {
+        if (requireLoginForGuest("publicar o administrar tu tienda en el Mercado en Línea")) return
         val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val businessType = prefs.getString("business_type", "PRODUCTS") ?: "PRODUCTS"
         val isOnline = prefs.getBoolean("is_online_store", false)
@@ -335,11 +417,28 @@ class BuyerHomeActivity : BaseActivity() {
             return
         }
 
-        updateCustomNavUI(4, animate = false) // Fondo morado activo en "Gestión" (salto instantáneo)
+        updateCustomNavUI(3, animate = false) // Fondo morado activo en "Gestión" (salto instantáneo)
 
         val optionsBinding = binding.includeInterfaceOptions
-        optionsBinding.tvOption1Emoji.text = "💼"
-        optionsBinding.tvOption1Title.text = "Ir a Gestión de Negocio"
+        optionsBinding.tvOption1Emoji.text = "🛒"
+        optionsBinding.tvOption1Title.text = "Mercado en Línea"
+        optionsBinding.tvOption1Subtitle.text = "Descubre y compra productos"
+
+        val dynamicModuleManager = com.gomezmart.app.utils.DynamicModuleManager(this)
+        val hasProductsInstalled = dynamicModuleManager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.PRODUCTS)
+        val hasLoansInstalled = dynamicModuleManager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.LOANS)
+        val hasHotelInstalled = dynamicModuleManager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.HOTEL)
+
+        val installedCount = listOf(hasProductsInstalled, hasLoansInstalled, hasHotelInstalled).count { it }
+
+        val isGuest = isGuestUser()
+        optionsBinding.cardOptionMarket.visibility = View.VISIBLE
+        optionsBinding.cardOptionSwitchSystem.visibility = View.VISIBLE
+        optionsBinding.cardOptionMyCollabs.visibility = View.GONE
+
+        // Restablecer vista inicial
+        optionsBinding.layoutInterfaceMainMenu.visibility = View.VISIBLE
+        optionsBinding.layoutDownloadedSystemsView.visibility = View.GONE
 
         binding.viewInterfaceBackdrop.visibility = View.VISIBLE
         binding.cardInterfaceMenuOverlay.visibility = View.VISIBLE
@@ -353,11 +452,24 @@ class BuyerHomeActivity : BaseActivity() {
             .setInterpolator(DecelerateInterpolator())
             .start()
 
-        val cards = listOf(
+        // Mercado resaltado
+        val menuColorActive = ContextCompat.getColor(this, R.color.purple_600)
+        val menuBgActive = ContextCompat.getColor(this, R.color.purple_50)
+        val menuColorInactive = ContextCompat.getColor(this, R.color.purple_200)
+        val menuBgInactive = ContextCompat.getColor(this, R.color.white)
+
+        optionsBinding.cardOptionMarket.apply {
+            strokeColor = menuColorActive
+            setCardBackgroundColor(menuBgActive)
+        }
+        optionsBinding.cardOptionSwitchSystem.apply {
+            strokeColor = menuColorInactive
+            setCardBackgroundColor(menuBgInactive)
+        }
+
+        val cards = mutableListOf<View>(
             optionsBinding.cardOptionMarket,
-            optionsBinding.cardOptionOpenStore,
-            optionsBinding.cardOptionSwitchSystem,
-            optionsBinding.cardOptionMyCollabs
+            optionsBinding.cardOptionSwitchSystem
         )
 
         cards.forEachIndexed { i, card ->
@@ -376,30 +488,98 @@ class BuyerHomeActivity : BaseActivity() {
             hideFloatingInterfaceMenu()
         }
 
+        val dynamicManager = com.gomezmart.app.utils.DynamicModuleManager(this)
+
+        // Comportamiento del botón de Mercado Online
         optionsBinding.cardOptionMarket.setOnClickListener {
             hideFloatingInterfaceMenu()
+            navigateToMarketplace()
+        }
+
+        // 1. Al presionar "Gestión", mostrar únicamente los sistemas descargados dentro del mismo recuadro
+        optionsBinding.cardOptionSwitchSystem.setOnClickListener {
+            val hasProducts = dynamicManager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.PRODUCTS)
+            val hasLoans = dynamicManager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.LOANS)
+            val hasHotel = dynamicManager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.HOTEL)
+
+            optionsBinding.cardSystemProducts.visibility = if (hasProducts) View.VISIBLE else View.GONE
+            optionsBinding.cardSystemLoans.visibility = if (hasLoans) View.VISIBLE else View.GONE
+            optionsBinding.cardSystemHotel.visibility = if (hasHotel) View.VISIBLE else View.GONE
+
+            val anyInstalled = hasProducts || hasLoans || hasHotel
+            optionsBinding.tvNoInstalledSystems.visibility = if (anyInstalled) View.GONE else View.VISIBLE
+            optionsBinding.tvDownloadedSystemsSubtitle.visibility = if (anyInstalled) View.VISIBLE else View.GONE
+            optionsBinding.btnAddNewSystemFromInterface.visibility = if (hasProducts && hasLoans && hasHotel) View.GONE else View.VISIBLE
+
+            android.transition.TransitionManager.beginDelayedTransition(
+                binding.cardInterfaceMenuOverlay,
+                android.transition.TransitionSet().apply {
+                    addTransition(android.transition.Fade())
+                    addTransition(android.transition.ChangeBounds())
+                    duration = 220
+                }
+            )
+            optionsBinding.layoutInterfaceMainMenu.visibility = View.GONE
+            optionsBinding.layoutDownloadedSystemsView.visibility = View.VISIBLE
+            optionsBinding.layoutDownloadedSystemsView.alpha = 0f
+            optionsBinding.layoutDownloadedSystemsView.translationX = 30f
+            optionsBinding.layoutDownloadedSystemsView.animate()
+                .alpha(1f)
+                .translationX(0f)
+                .setDuration(220)
+                .start()
+        }
+
+        // Botón retroceder dentro del recuadro con animación
+        optionsBinding.btnBackToInterfaceMenu.setOnClickListener {
+            android.transition.TransitionManager.beginDelayedTransition(
+                binding.cardInterfaceMenuOverlay,
+                android.transition.TransitionSet().apply {
+                    addTransition(android.transition.Fade())
+                    addTransition(android.transition.ChangeBounds())
+                    duration = 220
+                }
+            )
+            optionsBinding.layoutDownloadedSystemsView.visibility = View.GONE
+            optionsBinding.layoutInterfaceMainMenu.visibility = View.VISIBLE
+            optionsBinding.layoutInterfaceMainMenu.alpha = 0f
+            optionsBinding.layoutInterfaceMainMenu.translationX = -30f
+            optionsBinding.layoutInterfaceMainMenu.animate()
+                .alpha(1f)
+                .translationX(0f)
+                .setDuration(220)
+                .start()
+        }
+
+        // Selección de sistemas dentro del recuadro
+        optionsBinding.cardSystemProducts.setOnClickListener {
+            switchToBusinessSystem("PRODUCTS")
+        }
+
+        optionsBinding.cardSystemLoans.setOnClickListener {
+            switchToBusinessSystem("LOANS")
+        }
+
+        optionsBinding.cardSystemHotel.setOnClickListener {
+            switchToBusinessSystem("HOTEL")
+        }
+
+        optionsBinding.btnAddNewSystemFromInterface.setOnClickListener {
+            hideFloatingInterfaceMenu()
+            startActivity(Intent(this, BusinessSelectionActivity::class.java))
+        }
+    }
+
+    private fun switchToBusinessSystem(type: String) {
+        hideFloatingInterfaceMenu()
+        ensureModuleInstalled(type) {
+            getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE).edit()
+                .putString("business_type", type)
+                .apply()
             startActivity(Intent(this, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             })
             finish()
-        }
-
-        optionsBinding.cardOptionOpenStore.setOnClickListener {
-            hideFloatingInterfaceMenu()
-            openMarketBusiness()
-        }
-
-        optionsBinding.cardOptionSwitchSystem.setOnClickListener {
-            hideFloatingInterfaceMenu()
-            startActivity(Intent(this, MyBusinessesActivity::class.java))
-        }
-
-        optionsBinding.cardOptionMyCollabs.setOnClickListener {
-            hideFloatingInterfaceMenu()
-            val intent = Intent(this, MyBusinessesActivity::class.java).apply {
-                putExtra("COLLAB_ONLY_MODE", true)
-            }
-            startActivity(intent)
         }
     }
 
@@ -420,11 +600,12 @@ class BuyerHomeActivity : BaseActivity() {
     }
 
     private fun updateCustomNavUI(index: Int, animate: Boolean = true) {
+        binding.btnNavSettings.visibility = View.GONE
         val activeColor = Color.WHITE
         val inactiveColor = Color.parseColor("#94A3B8") 
-        val buttons = listOf(binding.btnNavHome, binding.btnNavChats, binding.btnNavAccount, binding.btnNavSettings, binding.btnNavGestion)
-        val icons = listOf(binding.tvIconHome, binding.tvIconChats, binding.tvIconAccount, binding.tvIconSettings, binding.tvIconGestion)
-        val labels = listOf(binding.tvLabelHome, binding.tvLabelChats, binding.tvLabelAccount, binding.tvLabelSettings, binding.tvLabelGestion)
+        val buttons = listOf(binding.btnNavHome, binding.btnNavChats, binding.btnNavAccount, binding.btnNavGestion)
+        val icons = listOf(binding.tvIconHome, binding.tvIconChats, binding.tvIconAccount, binding.tvIconGestion)
+        val labels = listOf(binding.tvLabelHome, binding.tvLabelChats, binding.tvLabelAccount, binding.tvLabelGestion)
         
         val visibleButtons = buttons.filter { it.isVisible }
         if (visibleButtons.isEmpty()) return
@@ -445,32 +626,40 @@ class BuyerHomeActivity : BaseActivity() {
 
         val targetView = buttons[targetIdx]
 
-        val alignAction = Runnable {
-            if (!this::binding.isInitialized) return@Runnable
+        val applyIndicator = Runnable {
+            if (!this::binding.isInitialized || isDestroyed || isFinishing) return@Runnable
             val w = targetView.width
             val x = targetView.x
-            
-            if (w > 0) {
-                val params = binding.navIndicatorCustom.layoutParams
-                if (params.width != w) {
-                    params.width = w
-                    binding.navIndicatorCustom.layoutParams = params
-                }
-                
-                if (animate) {
-                    binding.navIndicatorCustom.animate()
-                        .translationX(x)
-                        .setDuration(180)
-                        .setInterpolator(AccelerateDecelerateInterpolator())
-                        .start()
-                } else {
-                    binding.navIndicatorCustom.animate().cancel()
-                    binding.navIndicatorCustom.translationX = x
-                }
+            if (w <= 0) return@Runnable
+
+            val params = binding.navIndicatorCustom.layoutParams
+            if (params.width != w) {
+                params.width = w
+                binding.navIndicatorCustom.layoutParams = params
+                binding.navIndicatorCustom.requestLayout()
+            }
+            if (binding.navIndicatorCustom.visibility != View.VISIBLE) {
+                binding.navIndicatorCustom.visibility = View.VISIBLE
+            }
+
+            if (animate) {
+                binding.navIndicatorCustom.animate()
+                    .translationX(x)
+                    .setDuration(180)
+                    .setInterpolator(AccelerateDecelerateInterpolator())
+                    .start()
+            } else {
+                binding.navIndicatorCustom.animate().cancel()
+                binding.navIndicatorCustom.translationX = x
             }
         }
 
-        if (targetView.width > 0) alignAction.run() else targetView.post(alignAction)
+        val navParentInLayout = (binding.navIndicatorCustom.parent as? View)?.isInLayout == true
+        if (targetView.isLaidOut && targetView.width > 0 && !targetView.isInLayout && !binding.navIndicatorCustom.isInLayout && !navParentInLayout) {
+            applyIndicator.run()
+        } else {
+            binding.navIndicatorCustom.post(applyIndicator)
+        }
     }
 
     private fun navigateToMarketplace() { binding.buyerViewPager.setCurrentItem(0, false); updateCustomNavUI(0) }
@@ -478,13 +667,14 @@ class BuyerHomeActivity : BaseActivity() {
     private fun navigateToAccount() { binding.buyerViewPager.setCurrentItem(2, false); updateCustomNavUI(2) }
     private fun navigateToSettings() { binding.buyerViewPager.setCurrentItem(3, false); updateCustomNavUI(3) }
     
-    private fun checkNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
-            }
-        }
-    }
+    // Función para mostrar el menú de opciones (igual que en MainActivity)
+
+
+
+
+
+    
+
 
     override fun onDestroy() {
         super.onDestroy()

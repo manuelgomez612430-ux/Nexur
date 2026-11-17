@@ -8,7 +8,7 @@
     <View
         android:id="@+id/topHeaderBackgroundSearch"
         android:layout_width="match_parent"
-        android:layout_height="110dp"
+        android:layout_height="112dp"
         android:background="@color/purple_600"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -17,8 +17,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingHorizontal="24dp"
-        android:paddingTop="20dp"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="18dp"
         app:layout_constraintTop_toTopOf="parent">
 
         <RelativeLayout
@@ -51,19 +51,42 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
-                android:text="Buscar usuario"
+                android:text="Comunidad y Usuarios"
                 android:textColor="@android:color/white"
-                android:textSize="20sp"
+                android:textSize="19sp"
                 android:textStyle="bold" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnFriendQrCode"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="4dp"
+                app:strokeWidth="0dp"
+                android:foreground="?attr/selectableItemBackground">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="🪪"
+                    android:textSize="18sp"
+                    android:includeFontPadding="false" />
+            </com.google.android.material.card.MaterialCardView>
         </RelativeLayout>
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:layout_marginTop="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:strokeWidth="0dp">
+            app:cardCornerRadius="14dp"
+            app:cardElevation="3dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -77,48 +100,174 @@
                     app:tint="?attr/colorOnSurfaceVariant" />
                 <EditText
                     android:id="@+id/etSearchUserAdd"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="match_parent"
+                    android:layout_weight="1"
                     android:layout_marginStart="8dp"
                     android:background="@android:color/transparent"
-                    android:hint="Buscar por nombre..."
+                    android:hint="Buscar por nombre o negocio..."
                     android:textSize="14sp"
                     android:inputType="text"
+                    android:imeOptions="actionSearch"
                     android:maxLines="1"
                     android:textColor="?attr/colorOnSurface" />
+                <ImageView
+                    android:id="@+id/btnClearSearchUser"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:padding="4dp"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    app:tint="?attr/colorOnSurfaceVariant"
+                    android:visibility="gone"
+                    android:clickable="true"
+                    android:focusable="true" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvTitleUserList"
-        android:layout_width="wrap_content"
+    <HorizontalScrollView
+        android:id="@+id/hsvUserFilters"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="20dp"
-        android:text="Lista de usuarios"
-        android:textColor="@color/slate_400"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:textAllCaps="true"
-        android:letterSpacing="0.1"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headerSearchUsers" />
+        android:layout_marginTop="10dp"
+        android:scrollbars="none"
+        android:paddingHorizontal="16dp"
+        android:clipToPadding="false"
+        app:layout_constraintTop_toBottomOf="@id/headerSearchUsers">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupUserFilters"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleLine="true"
+            app:singleSelection="true"
+            app:selectionRequired="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFilterAll"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="Todos" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFilterFriends"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🤝 Amigos (0)" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFilterRequests"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📩 Solicitudes (0)" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFilterBusinesses"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🏪 Negocios" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFilterBuyers"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🛒 Compradores" />
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
+
+    <LinearLayout
+        android:id="@+id/layoutUserListHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="20dp"
+        android:layout_marginTop="10dp"
+        app:layout_constraintTop_toBottomOf="@id/hsvUserFilters">
+
+        <TextView
+            android:id="@+id/tvTitleUserList"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Lista de usuarios"
+            android:textColor="@color/slate_500"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textAllCaps="true"
+            android:letterSpacing="0.08" />
+
+        <TextView
+            android:id="@+id/tvPrivacyDirectoryBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔒 Datos privados protegidos"
+            android:textColor="@color/emerald_700"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshUsers"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvTitleUserList">
+        app:layout_constraintTop_toBottomOf="@id/layoutUserListHeader">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvUserSearchResults"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="16dp" />
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutEmptyUsers"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/layoutUserListHeader"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔍"
+            android:textSize="40sp" />
+
+        <TextView
+            android:id="@+id/tvEmptyUsersTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="No encontramos usuarios"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/tvEmptyUsersSubtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Prueba con otro nombre o cambia el filtro seleccionado."
+            android:textColor="@color/slate_500"
+            android:textSize="13sp"
+            android:gravity="center" />
+    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/pbLoadingSearch"

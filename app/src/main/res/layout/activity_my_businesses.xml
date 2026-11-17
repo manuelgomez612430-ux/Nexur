@@ -91,7 +91,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_marginTop="24dp"
-                android:text="Omitir, ir al Mercado Online"
+                android:text="Omitir, ir al Mercado en Línea"
                 android:textColor="@color/slate_400"
                 android:textSize="13sp"
                 android:visibility="gone" />

@@ -240,6 +240,42 @@
                 android:clipToPadding="false"
                 android:paddingBottom="80dp" />
 
+            <LinearLayout
+                android:id="@+id/layoutEmptyInventario"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="32dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:src="@android:drawable/ic_menu_search"
+                    app:tint="?attr/colorOnSurfaceVariant"
+                    android:contentDescription="Sin resultados" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No se encontraron productos coincidentes"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Intenta con otro nombre o limpia los filtros."
+                    android:textSize="13sp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center" />
+            </LinearLayout>
+
         </LinearLayout>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton

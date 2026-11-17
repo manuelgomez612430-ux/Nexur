@@ -25,4 +25,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "Gomezmart"
 include(":app")
+include(":feature_hotel")
+include(":feature_loans")
+include(":feature_products")
  

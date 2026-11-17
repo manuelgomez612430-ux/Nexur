@@ -1,9 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Diálogo para registrar / editar cuentas.
-  Usa un MaterialCardView con fondo sólido para que el contenido de la pantalla
-  de abajo NO se transparente ni se solape de forma ilegible.
--->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -38,7 +33,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="¿A qué origen pertenece esta cuenta?"
+                android:text="1. ¿A qué origen pertenece esta cuenta?"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/slate_600"
@@ -48,7 +43,7 @@
                 android:id="@+id/toggleAccountOrigin"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="14dp"
                 app:singleSelection="true"
                 app:selectionRequired="true"
                 app:checkedButton="@+id/btnOriginBusiness">
@@ -72,12 +67,94 @@
                     android:textSize="11sp" />
             </com.google.android.material.button.MaterialButtonToggleGroup>
 
+            <!-- PLANTILLAS RÁPIDAS DE ENTIDAD -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2. Elige rápido el tipo o entidad:"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_600"
+                android:layout_marginBottom="6dp" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="14dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPresetCash"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        android:text="💵 Efectivo"
+                        android:textSize="12sp"
+                        android:layout_marginEnd="6dp"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPresetYape"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        android:text="📱 Yape"
+                        android:textSize="12sp"
+                        android:layout_marginEnd="6dp"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPresetPlin"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        android:text="⚡ Plin"
+                        android:textSize="12sp"
+                        android:layout_marginEnd="6dp"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPresetBcp"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        android:text="🟦 BCP"
+                        android:textSize="12sp"
+                        android:layout_marginEnd="6dp"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPresetBbva"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        android:text="🔷 BBVA"
+                        android:textSize="12sp"
+                        android:layout_marginEnd="6dp"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPresetInterbank"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        android:text="🟩 Interbank"
+                        android:textSize="12sp"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
+            </HorizontalScrollView>
+
             <!-- NOMBRE DE LA CUENTA -->
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Nombre de la cuenta (Ej. Yape BCP, Bolsillo)"
+                android:hint="Nombre de la cuenta (Ej. Yape Principal, Caja)"
                 android:layout_marginBottom="12dp"
                 app:cornerRadius="12dp">
                 <com.google.android.material.textfield.TextInputEditText
@@ -111,7 +188,7 @@
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Número o referencia (opcional)"
+                android:hint="Número / celular / referencia (opcional)"
                 android:layout_marginBottom="12dp"
                 app:cornerRadius="12dp">
                 <com.google.android.material.textfield.TextInputEditText
@@ -128,7 +205,7 @@
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Saldo actual (S/)"
+                android:hint="Saldo disponible ahora (S/)"
                 app:prefixText="S/ "
                 android:layout_marginBottom="20dp"
                 app:cornerRadius="12dp">

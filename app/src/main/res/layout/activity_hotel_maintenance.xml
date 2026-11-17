@@ -6,6 +6,7 @@
     android:background="@color/slate_50">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarMaintenance"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/white">
@@ -24,6 +25,54 @@
         android:clipToPadding="false"
         android:padding="8dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+    <!-- EMPTY STATE MANTENIMIENTO -->
+    <LinearLayout
+        android:id="@+id/layoutEmptyMaintenance"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingHorizontal="32dp"
+        android:visibility="gone"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✨"
+            android:textSize="56sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="¡Todo en perfecto estado!"
+            android:textColor="@color/slate_800"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="No tienes reportes de averías o mantenimiento pendientes en las habitaciones del hotel."
+            android:textAlignment="center"
+            android:textColor="@color/slate_500"
+            android:textSize="14sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEmptyAddReport"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Reportar Avería o Falla"
+            app:backgroundTint="@color/orange_600"
+            app:cornerRadius="20dp"
+            app:icon="@android:drawable/ic_input_add"
+            app:iconTint="@color/white" />
+    </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddReport"

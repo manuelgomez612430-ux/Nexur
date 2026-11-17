@@ -12,9 +12,9 @@
         android:layout_height="match_parent"
         android:background="?attr/colorSurface">
 
-        <androidx.fragment.app.FragmentContainerView
+        <FrameLayout
             android:id="@+id/mainFragmentContainer"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="0dp"
             android:fitsSystemWindows="false"
             app:layout_constraintTop_toTopOf="parent"
@@ -73,7 +73,7 @@
             app:cardPreventCornerOverlap="false"
             app:layout_constraintBottom_toBottomOf="parent">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
@@ -82,21 +82,16 @@
                     android:id="@+id/navIndicatorCustom"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:background="@drawable/bg_nav_indicator_pill"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent" />
+                    android:layout_gravity="start"
+                    android:visibility="invisible"
+                    android:background="@drawable/bg_nav_indicator_pill" />
 
                 <!-- Custom Navigation Layout for perfect alignment -->
                 <LinearLayout
                     android:id="@+id/layoutCustomNav"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:orientation="horizontal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent">
+                    android:orientation="horizontal">
 
                     <!-- INICIO -->
                     <LinearLayout
@@ -189,7 +184,8 @@
                         android:orientation="vertical"
                         android:clickable="true"
                         android:focusable="true"
-                        android:background="?attr/selectableItemBackgroundBorderless">
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:visibility="gone">
                         <TextView
                             android:id="@+id/tvIconConfig"
                             android:layout_width="wrap_content"
@@ -243,7 +239,7 @@
                     android:visibility="gone"
                     app:menu="@menu/menu_bottom_nav" />
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
+            </FrameLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- CAPA DE TUTORIAL CONTEXTUAL -->

@@ -130,18 +130,19 @@ object FloatingCartHelper {
                     v.y = newY
                     lastX = newX
                     lastY = newY
-                    
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     try {
                         val prefs = v.context.getSharedPreferences("FloatingCartPrefs", Context.MODE_PRIVATE)
                         prefs.edit().putFloat("last_x", lastX).putFloat("last_y", lastY).apply()
                     } catch (e: Exception) {}
-                    true
-                }
-                MotionEvent.ACTION_UP -> {
-                    val diffX = Math.abs(event.rawX - initialTouchX)
-                    val diffY = Math.abs(event.rawY - initialTouchY)
-                    if (diffX < 15 && diffY < 15) {
-                        openCart(v.context)
+                    if (event.action == MotionEvent.ACTION_UP) {
+                        val diffX = Math.abs(event.rawX - initialTouchX)
+                        val diffY = Math.abs(event.rawY - initialTouchY)
+                        if (diffX < 15 && diffY < 15) {
+                            openCart(v.context)
+                        }
                     }
                     true
                 }

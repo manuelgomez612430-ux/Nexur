@@ -374,12 +374,65 @@
                 android:visibility="gone" />
         </LinearLayout>
 
+        <!-- NOTA DE SOLICITUD DE AMISTAD (OPCIONAL) -->
+        <TextView
+            android:id="@+id/tvPreviewFriendNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_pill_purple_light"
+            android:padding="10dp"
+            android:text=""
+            android:textColor="@color/purple_800"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:visibility="gone" />
+
+        <!-- BOTÓN ACCIÓN DE AMISTAD -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPreviewFriendAction"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="14dp"
+            android:text="🤝 Enviar Solicitud de Amistad"
+            android:textColor="@color/purple_800"
+            android:textStyle="bold"
+            app:cornerRadius="16dp"
+            app:backgroundTint="@color/purple_50"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/purple_200"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPreviewFriendSecondary"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="4dp"
+            android:text="Rechazar solicitud"
+            android:textColor="@color/red_600"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvPreviewMessagePrivacyNotice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="🔒 Solo acepta mensajes de amigos"
+            android:textColor="@color/slate_500"
+            android:textSize="12sp"
+            android:gravity="center"
+            android:visibility="gone" />
+
         <!-- BOTÓN ENVIAR MENSAJE (PARA BÚSQUEDA DE USUARIOS) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPreviewSendMessage"
             android:layout_width="match_parent"
             android:layout_height="54dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="10dp"
             android:text="Enviar Mensaje 💬"
             android:textStyle="bold"
             app:cornerRadius="16dp"

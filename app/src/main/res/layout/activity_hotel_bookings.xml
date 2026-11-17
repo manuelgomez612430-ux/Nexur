@@ -6,6 +6,7 @@
     android:background="@color/slate_50">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarBookings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/white">
@@ -48,6 +49,57 @@
         android:padding="8dp"
         android:clipToPadding="false"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+    <!-- EMPTY STATE DINÁMICO (CONFIRMADAS / SOLICITUDES) -->
+    <LinearLayout
+        android:id="@+id/layoutEmptyBookings"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingHorizontal="32dp"
+        android:visibility="gone"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <TextView
+            android:id="@+id/tvEmptyBookingsIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🛎️"
+            android:textSize="56sp" />
+
+        <TextView
+            android:id="@+id/tvEmptyBookingsTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="No hay reservas confirmadas"
+            android:textColor="@color/slate_800"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvEmptyBookingsDesc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Presiona 'Nueva Reserva' para agendar una habitación o revisa la pestaña de Solicitudes."
+            android:textAlignment="center"
+            android:textColor="@color/slate_500"
+            android:textSize="14sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEmptyCreateBooking"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Crear Reserva Manual"
+            app:backgroundTint="@color/sky_600"
+            app:cornerRadius="20dp"
+            app:icon="@android:drawable/ic_input_add"
+            app:iconTint="@color/white" />
+    </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fabAddBooking"

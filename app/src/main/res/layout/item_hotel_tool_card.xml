@@ -3,65 +3,74 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="6dp"
-    app:cardCornerRadius="24dp"
-    app:cardElevation="1dp"
-    app:strokeWidth="1dp"
-    app:strokeColor="?attr/colorOutlineVariant"
-    app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+    android:layout_margin="4dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="2dp"
+    app:strokeWidth="1.2dp"
+    app:strokeColor="@color/slate_200"
+    app:cardBackgroundColor="@color/white"
     android:clickable="true"
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground">
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="14dp"
             android:gravity="center"
-            android:minHeight="140dp">
+            android:minHeight="112dp">
 
-            <TextView
-                android:id="@+id/tvToolEmoji"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:text="🚀"
-                android:textSize="32sp"
-                android:gravity="center"
-                android:visibility="visible" />
+            <FrameLayout
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_circle_light_purple">
+
+                <TextView
+                    android:id="@+id/tvToolEmoji"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="🚀"
+                    android:textSize="22sp" />
+            </FrameLayout>
 
             <ImageView
                 android:id="@+id/ivToolIcon"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:src="@android:drawable/ic_menu_my_calendar"
-                app:tint="?attr/colorPrimary"
+                app:tint="@color/purple_600"
                 android:visibility="gone" />
 
             <TextView
                 android:id="@+id/tvToolName"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Herramienta"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
-                android:layout_marginTop="12dp"
-                android:textColor="?attr/colorOnSurface"
-                android:textAlignment="center" />
+                android:layout_marginTop="8dp"
+                android:textColor="@color/slate_800"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:lineSpacingExtra="1dp" />
 
         </LinearLayout>
 
         <!-- Badge de Notificación -->
         <View
             android:id="@+id/viewToolBadge"
-            android:layout_width="12dp"
-            android:layout_height="12dp"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
             android:layout_gravity="top|end"
-            android:layout_margin="16dp"
+            android:layout_margin="10dp"
             android:background="@drawable/bg_circle_red"
             android:visibility="gone" />
 

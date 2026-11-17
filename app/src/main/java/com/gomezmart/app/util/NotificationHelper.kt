@@ -32,7 +32,15 @@ object NotificationHelper {
         return manager
     }
 
+    private fun isNotificationEnabled(context: Context, categoryKey: String): Boolean {
+        val prefs = context.getSharedPreferences("NotificationPrefs", Context.MODE_PRIVATE)
+        val masterAll = prefs.getBoolean("notify_all", true)
+        if (!masterAll) return false
+        return prefs.getBoolean(categoryKey, true)
+    }
+
     fun showSaleNotification(context: Context, total: String, businessName: String) {
+        if (!isNotificationEnabled(context, "notify_orders")) return
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_gomezmart)
             .setContentTitle("¡Venta Realizada!")
@@ -45,6 +53,7 @@ object NotificationHelper {
     }
 
     fun showMessageNotification(context: Context, title: String, message: String, chatId: String? = null, senderId: String? = null) {
+        if (!isNotificationEnabled(context, "notify_chats")) return
         Log.d("NotificationHelper", "Mostrando notificación: $title - $message")
         
         // Usar senderId.hashCode() para que notificaciones del mismo usuario se agrupen/reemplacen
@@ -73,6 +82,7 @@ object NotificationHelper {
     }
 
     fun showUpdateNotification(context: Context, latestVersionName: String, releaseNotes: String) {
+        if (!isNotificationEnabled(context, "notify_system")) return
         val intent = Intent(context, SplashActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             putExtra("START_UPDATE", true)
@@ -97,6 +107,7 @@ object NotificationHelper {
     }
 
     fun showRequestNotification(context: Context, name: String) {
+        if (!isNotificationEnabled(context, "notify_system")) return
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_gomezmart)
             .setContentTitle("Nueva Solicitud 🤝")
@@ -109,6 +120,7 @@ object NotificationHelper {
     }
 
     fun showOrderNotification(context: Context, name: String) {
+        if (!isNotificationEnabled(context, "notify_orders")) return
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_gomezmart)
             .setContentTitle("¡Nuevo Pedido! 🛵")
@@ -118,5 +130,49 @@ object NotificationHelper {
             .setAutoCancel(true)
 
         getManager(context).notify(3003, builder.build())
+    }
+
+    fun showStoreUpdateNotification(
+        context: Context,
+        title: String,
+        message: String,
+        storeId: String?,
+        storeName: String?,
+        storeType: String?
+    ) {
+        if (!isNotificationEnabled(context, "notify_system")) return
+        val notificationId = storeId?.hashCode() ?: ((title.hashCode() + System.currentTimeMillis().toInt()) % 1000000)
+
+        val targetActivity = if (!storeId.isNullOrBlank()) {
+            Intent(context, com.gomezmart.app.StoreProfileActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("STORE_ID", storeId)
+                if (!storeName.isNullOrBlank()) putExtra("STORE_NAME", storeName)
+                if (!storeType.isNullOrBlank()) putExtra("FORCE_RUBRO", storeType)
+            }
+        } else {
+            Intent(context, SplashActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            targetActivity,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification_gomezmart)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+
+        getManager(context).notify(notificationId, builder.build())
     }
 }

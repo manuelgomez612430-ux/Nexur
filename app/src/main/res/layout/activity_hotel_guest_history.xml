@@ -118,6 +118,26 @@
                 android:contentDescription="Elegir Fecha" />
         </com.google.android.material.card.MaterialCardView>
 
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnExportHistory"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="8dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="26dp"
+            app:cardElevation="6dp"
+            app:strokeWidth="0dp"
+            android:clickable="true"
+            android:focusable="true">
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_menu_share"
+                app:tint="@color/purple_600"
+                android:contentDescription="Exportar Reporte" />
+        </com.google.android.material.card.MaterialCardView>
+
     </LinearLayout>
 
     <!-- Texto de fecha seleccionada -->
@@ -218,5 +238,44 @@
         app:layout_constraintTop_toBottomOf="@id/cardRevenueSummary"
         app:layout_constraintBottom_toBottomOf="parent"
         tools:listitem="@layout/item_hotel_guest_history" />
+
+    <!-- EMPTY STATE HISTORIAL -->
+    <LinearLayout
+        android:id="@+id/layoutEmptyHistory"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingHorizontal="32dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/cardRevenueSummary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📋"
+            android:textSize="56sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Sin registros en este período"
+            android:textColor="@color/slate_800"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="No se encontraron huéspedes registrados para las fechas seleccionadas. Puedes cambiar el filtro de fecha arriba o buscar en el calendario."
+            android:textAlignment="center"
+            android:textColor="@color/slate_500"
+            android:textSize="14sp" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

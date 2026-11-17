@@ -14,5 +14,7 @@ data class MarketplaceProduct(
     val storeName: String = "",
     val storeAddress: String = "",
     val storeLogoUrl: String? = null,
-    val storeType: String = "PRODUCTS"
+    val storeType: String = "PRODUCTS",
+    val averageRating: Double = 0.0,
+    val reviewCount: Int = 0
 )

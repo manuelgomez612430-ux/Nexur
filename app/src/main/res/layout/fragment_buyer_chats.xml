@@ -9,58 +9,60 @@
     <View
         android:id="@+id/topHeaderBackgroundBuyerChats"
         android:layout_width="match_parent"
-        android:layout_height="110dp"
+        android:layout_height="75dp"
         android:background="@color/purple_600"
         app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Cabecera -->
-    <RelativeLayout
+    <LinearLayout
         android:id="@+id/headerBuyerChats"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:paddingHorizontal="24dp"
-        android:paddingTop="20dp"
+        android:paddingTop="16dp"
         app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:id="@+id/tvTitleChats"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:text="Mensajes"
-            android:textColor="@android:color/white"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
-        <!-- CONTROL DE CATEGORÍAS (TABS) -->
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabLayoutBuyerChats"
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/tvTitleChats"
-            android:layout_marginTop="16dp"
-            android:layout_marginStart="24dp"
-            android:layout_marginEnd="24dp"
-            android:background="@android:color/transparent"
-            app:tabMode="fixed"
-            app:tabGravity="fill"
-            app:tabBackground="@drawable/bg_tab_pill_selector"
-            app:tabIndicatorHeight="0dp"
-            app:tabSelectedTextColor="@color/purple_600"
-            app:tabTextColor="@android:color/white"
-            app:tabPaddingStart="0dp"
-            app:tabPaddingEnd="0dp"
-            app:tabRippleColor="@android:color/transparent">
-            <com.google.android.material.tabs.TabItem
+            android:minHeight="40dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnBackBuyerChats"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="4dp"
+                app:strokeWidth="0dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:text="⬅️"
+                    android:textSize="20sp" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:id="@+id/tvTitleChats"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Chats" />
-            <com.google.android.material.tabs.TabItem
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Sistema" />
-        </com.google.android.material.tabs.TabLayout>
-    </RelativeLayout>
+                android:layout_centerInParent="true"
+                android:text="Mensajes"
+                android:textColor="@android:color/white"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
+    </LinearLayout>
 
     <!-- VISTA PARA CHATS -->
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -119,34 +121,79 @@
             </com.google.android.material.card.MaterialCardView>
 
             <!-- BOTÓN AGREGAR NUEVO USUARIO -->
-            <com.google.android.material.button.MaterialButton
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/btnAddUserChat"
-                style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:layout_marginStart="8dp"
-                android:padding="0dp"
-                android:insetLeft="0dp"
-                android:insetTop="0dp"
-                android:insetRight="0dp"
-                android:insetBottom="0dp"
-                android:backgroundTint="@color/purple_600"
-                app:icon="@android:drawable/ic_input_add"
-                app:iconTint="@color/white"
-                app:iconGravity="textStart"
-                app:iconPadding="0dp"
-                app:cornerRadius="14dp" />
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardBackgroundColor="@color/purple_600"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:src="@android:drawable/ic_input_add"
+                    app:tint="@color/white" />
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
+
+        <HorizontalScrollView
+            android:id="@+id/hsvChatsSocialBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:paddingHorizontal="16dp"
+            android:clipToPadding="false"
+            android:scrollbars="none"
+            app:layout_constraintTop_toBottomOf="@id/layoutSearchRow">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupChatsTabs"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleLine="true"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipChatsMain"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="💬 Chats" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipChatsFriends"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🤝 Amigos (0)" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipChatsMessageRequests"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📩 Solicitudes (0)" />
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvChats"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layoutSearchRow" />
+            android:layout_marginTop="6dp"
+            app:layout_constraintBottom_toTopOf="@id/cardGuestInfoBanner"
+            app:layout_constraintTop_toBottomOf="@id/hsvChatsSocialBar" />
 
-        <!-- ESTADO VACÍO DE CHATS -->
+        <!-- ESTADO VACÍO DE CHATS / AMIGOS / SOLICITUDES -->
         <LinearLayout
             android:id="@+id/layoutEmptyChats"
             android:layout_width="match_parent"
@@ -155,16 +202,18 @@
             android:gravity="center"
             android:padding="32dp"
             android:visibility="gone"
-            app:layout_constraintTop_toBottomOf="@id/layoutSearchRow"
+            app:layout_constraintTop_toBottomOf="@id/hsvChatsSocialBar"
             app:layout_constraintBottom_toBottomOf="parent">
 
             <TextView
+                android:id="@+id/tvEmptyChatsEmoji"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="💬"
                 android:textSize="48sp" />
 
             <TextView
+                android:id="@+id/tvEmptyChatsTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -174,54 +223,86 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tvEmptyChatsSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Presiona el botón '+' de arriba para buscar usuarios en línea y empezar a chatear."
+                android:text="Presiona el botón '+' para buscar otros usuarios en línea y empezar a chatear."
                 android:textColor="@color/slate_500"
                 android:textSize="14sp"
                 android:gravity="center" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEmptyOpenCommunity"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Explorar Comunidad (+)"
+                android:textColor="@color/purple_700"
+                app:backgroundTint="@color/purple_50"
+                app:cornerRadius="14dp"
+                android:visibility="gone" />
+
         </LinearLayout>
-    </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- VISTA PARA MENSAJES DE SISTEMA -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvMessages"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:paddingTop="16dp"
-        android:clipToPadding="false"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headerBuyerChats" />
-
-    <!-- Estado vacío -->
-    <LinearLayout
-        android:id="@+id/layoutEmptyMailbox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/topHeaderBackgroundBuyerChats">
-
-        <ImageView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:src="@android:drawable/ic_dialog_email"
-            android:alpha="0.2" />
-
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- BANNER INFORMATIVO MODO INVITADO -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardGuestInfoBanner"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="No hay mensajes nuevos"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:alpha="0.5" />
-    </LinearLayout>
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="16dp"
+            android:layout_marginTop="8dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/white"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/purple_100"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🔒 Inicia sesión para chatear"
+                    android:textColor="@color/purple_800"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:gravity="center" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="En modo invitado puedes leer los comunicados oficiales del sistema y explorar la lista de usuarios registrados pulsando el botón '+'."
+                    android:textColor="@color/slate_600"
+                    android:textSize="12sp"
+                    android:gravity="center" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGuestLoginBanner"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Iniciar sesión / Crear cuenta"
+                    android:textColor="@color/white"
+                    app:backgroundTint="@color/purple_600"
+                    app:cornerRadius="16dp"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="20dp"
+                    android:paddingVertical="8dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

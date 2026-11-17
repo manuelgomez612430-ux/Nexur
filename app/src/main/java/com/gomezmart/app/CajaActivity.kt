@@ -77,6 +77,10 @@ class CajaActivity : BaseActivity() {
     }
 
     private fun setupSyncIndicator() {
+        if (isGuestUser()) {
+            binding.btnSyncIndicator.visibility = View.GONE
+            return
+        }
         database.cashDao().getUnsyncedCount().observe(this) { count ->
             lastUnsyncedCount = count ?: 0
             updateSyncIconState()
@@ -99,6 +103,10 @@ class CajaActivity : BaseActivity() {
     }
 
     private fun updateSyncIconState(isSyncing: Boolean = currentIsSyncing) {
+        if (isGuestUser()) {
+            binding.btnSyncIndicator.visibility = View.GONE
+            return
+        }
         currentIsSyncing = isSyncing
         val color: Int
         val animation: android.view.animation.Animation?
@@ -189,7 +197,37 @@ class CajaActivity : BaseActivity() {
         }
         
         binding.btnVerHistorialCaja.setOnClickListener {
-            Toast.makeText(this, "Historial de Cierres (Próximamente)", Toast.LENGTH_SHORT).show()
+            showCashSessionsHistoryDialog()
+        }
+    }
+
+    private fun showCashSessionsHistoryDialog() {
+        lifecycleScope.launch {
+            val sessions = withContext(Dispatchers.IO) { database.cashDao().getAllSessions().filter { !it.isOpen } }
+            withContext(Dispatchers.Main) {
+                if (sessions.isEmpty()) {
+                    AlertDialog.Builder(this@CajaActivity)
+                        .setTitle("📋 Historial de Cierres de Caja")
+                        .setMessage("Aún no has registrado cierres de caja en este dispositivo.")
+                        .setPositiveButton("Entendido", null)
+                        .show()
+                } else {
+                    val sdf = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+                    val historyItems = sessions.map { s ->
+                        val date = sdf.format(java.util.Date(s.startTime))
+                        val expected = s.initialAmount + s.totalSales - s.totalExpenses
+                        val diff = (s.actualAmount ?: 0.0) - expected
+                        val diffStr = if (diff >= 0) "+S/ ${String.format(java.util.Locale.US, "%.2f", diff)}" else "-S/ ${String.format(java.util.Locale.US, "%.2f", Math.abs(diff))}"
+                        "📅 $date\n• Base: S/ ${String.format(java.util.Locale.US, "%.2f", s.initialAmount)} | Real: S/ ${String.format(java.util.Locale.US, "%.2f", s.actualAmount ?: 0.0)}\n• Dif: $diffStr"
+                    }.toTypedArray()
+
+                    AlertDialog.Builder(this@CajaActivity)
+                        .setTitle("📋 Historial de Cierres de Caja")
+                        .setItems(historyItems, null)
+                        .setPositiveButton("Cerrar", null)
+                        .show()
+                }
+            }
         }
     }
 

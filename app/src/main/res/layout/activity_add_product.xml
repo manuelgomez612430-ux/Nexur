@@ -438,7 +438,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="Notas internas"
-                        android:id="@+id/layoutProdNotas">
+                        android:id="@+id/layoutProdNotas"
+                        android:layout_marginBottom="12dp">
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etProdDescripcion"
                             android:layout_width="match_parent"
@@ -446,6 +447,13 @@
                             android:inputType="textCapSentences|textMultiLine"
                             android:maxLines="3" />
                     </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/cbNotifyFollowers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="Notificar novedad a seguidores 🔔" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

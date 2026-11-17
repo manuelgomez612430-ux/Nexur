@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 52,
-      "versionName": "1.5.40",
-      "outputFile": "GoMezMart_v1.5.40_release.apk"
+      "versionCode": 53,
+      "versionName": "1.5.41",
+      "outputFile": "GoMezMart_v1.5.41_release.apk"
     }
   ],
   "elementType": "File",
@@ -22,14 +22,14 @@
       "minApi": 28,
       "maxApi": 30,
       "baselineProfiles": [
-        "baselineProfiles/1/GoMezMart_v1.5.40_release.dm"
+        "baselineProfiles/1/GoMezMart_v1.5.41_release.dm"
       ]
     },
     {
       "minApi": 31,
       "maxApi": 2147483647,
       "baselineProfiles": [
-        "baselineProfiles/0/GoMezMart_v1.5.40_release.dm"
+        "baselineProfiles/0/GoMezMart_v1.5.41_release.dm"
       ]
     }
   ],

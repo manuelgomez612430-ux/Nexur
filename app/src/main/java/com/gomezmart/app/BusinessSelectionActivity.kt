@@ -80,18 +80,20 @@ class BusinessSelectionActivity : BaseActivity() {
     }
 
     private fun checkUserAndProceed(onSuccess: () -> Unit) {
-        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-        if (user == null) {
-            androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Cuenta Obligatoria 💼")
-                .setMessage("Para gestionar un negocio en GoMezMart es necesario crear una cuenta. Esto asegura que tus productos, préstamos y ventas estén siempre a salvo en la nube.")
-                .setPositiveButton("Crear mi Cuenta") { _, _ ->
+        if (isGuestUser()) {
+            AlertDialog.Builder(this)
+                .setTitle("Acceso a Sistema en Modo Invitado ⚡")
+                .setMessage("Estás intentando entrar a un sistema en modo invitado. Podrás usarlos, pero tus datos se guardarán en tu teléfono y no tendrás acceso a copia de seguridad, sincronización con tus otros dispositivos, ni podrás vender en el mercado en línea.")
+                .setPositiveButton("Iniciar Sesión") { _, _ ->
                     val intent = Intent(this, LoginActivity::class.java)
                     intent.putExtra("FORCE_REGISTER", true)
                     startActivity(intent)
                     finish()
                 }
-                .setNegativeButton("Luego", null)
+                .setNeutralButton("Entrar de todas maneras") { _, _ ->
+                    onSuccess()
+                }
+                .setNegativeButton("Cerrar", null)
                 .show()
         } else {
             onSuccess()
@@ -121,23 +123,46 @@ class BusinessSelectionActivity : BaseActivity() {
             binding.tvSelectionSubtitle.text = "¿En qué área se especializa tu negocio?"
             
             // Highlight specialty cards
-            binding.cardLoans.strokeWidth = if (selectedType == "LOANS") 6 else 0
-            binding.cardHotel.strokeWidth = if (selectedType == "HOTEL") 6 else 0
+            val isLoans = selectedType == "LOANS"
+            val isHotel = selectedType == "HOTEL"
+
+            val purpleColor = androidx.core.content.ContextCompat.getColor(this, R.color.purple_600)
+            val slateBorderColor = androidx.core.content.ContextCompat.getColor(this, R.color.slate_200)
+
+            binding.cardLoans.setStrokeColor(android.content.res.ColorStateList.valueOf(if (isLoans) purpleColor else slateBorderColor))
+            binding.cardLoans.strokeWidth = if (isLoans) (resources.displayMetrics.density * 2.5f).toInt() else (resources.displayMetrics.density * 1.5f).toInt()
+            binding.cardLoans.cardElevation = if (isLoans) resources.displayMetrics.density * 6f else resources.displayMetrics.density * 2f
+            binding.ivCheckLoans.visibility = if (isLoans) View.VISIBLE else View.GONE
+
+            binding.cardHotel.setStrokeColor(android.content.res.ColorStateList.valueOf(if (isHotel) purpleColor else slateBorderColor))
+            binding.cardHotel.strokeWidth = if (isHotel) (resources.displayMetrics.density * 2.5f).toInt() else (resources.displayMetrics.density * 1.5f).toInt()
+            binding.cardHotel.cardElevation = if (isHotel) resources.displayMetrics.density * 6f else resources.displayMetrics.density * 2f
+            binding.ivCheckHotel.visibility = if (isHotel) View.VISIBLE else View.GONE
         }
     }
 
     private fun saveAndContinue() {
-        AlertDialog.Builder(this)
-            .setTitle("Cambio de Perfil ⚠️")
-            .setMessage("Al entrar en un sistema de gestión, tu cuenta cambiará al rol de 'Dueño de Negocio'.\n\nEsto aplicará cambios automáticos en tu interfaz y habilitará funciones administrativas. Ten en cuenta que estamos optimizando el sistema y corrigiendo posibles errores en cada actualización.\n\n¿Deseas proceder?")
-            .setPositiveButton("Sí, Aceptar") { _, _ ->
-                checkCloudDataAndProceed()
+        ensureModuleInstalled(selectedType) {
+            if (isGuestUser()) {
+                proceedToMain()
+            } else {
+                AlertDialog.Builder(this)
+                    .setTitle("Cambio de Perfil ⚠️")
+                    .setMessage("Al entrar en un sistema de gestión, tu cuenta cambiará al rol de 'Dueño de Negocio'.\n\nEsto aplicará cambios automáticos en tu interfaz y habilitará funciones administrativas. Ten en cuenta que estamos optimizando el sistema y corrigiendo posibles errores en cada actualización.\n\n¿Deseas proceder?")
+                    .setPositiveButton("Sí, Aceptar") { _, _ ->
+                        checkCloudDataAndProceed()
+                    }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
             }
-            .setNegativeButton("Cancelar", null)
-            .show()
+        }
     }
 
     private fun checkCloudDataAndProceed() {
+        if (isGuestUser()) {
+            proceedToMain()
+            return
+        }
         val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
         if (userId == null) {
             proceedToMain()
@@ -200,14 +225,21 @@ class BusinessSelectionActivity : BaseActivity() {
     }
 
     private fun proceedToMain() {
-        // Actualizar Rol a Vendedor (Gestor)
-        val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        appPrefs.edit().putString("user_role", "SELLER").apply()
+        com.gomezmart.app.util.SessionManager.setLoginInProgress(this, false)
+        if (!isGuestUser()) {
+            val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+            appPrefs.edit()
+                .putString("user_role", "SELLER")
+                .putBoolean("is_profile_verified", true)
+                .apply()
+        }
 
         val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
         prefs.edit().putString("business_type", selectedType).apply()
         
-        SyncManager(this).syncBusinessSettingsToCloud()
+        if (!isGuestUser()) {
+            SyncManager(this).syncBusinessSettingsToCloud()
+        }
         
         startActivity(Intent(this, MainActivity::class.java))
         finish()

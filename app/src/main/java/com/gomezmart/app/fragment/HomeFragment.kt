@@ -103,8 +103,9 @@ class HomeFragment : Fragment() {
     }
 
     private fun listenForNewMessages() {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val ctx = context ?: return
+        if (SyncManager(ctx).isGuestUser()) return
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val prefs = ctx.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
         val lastRead = prefs.getLong("last_mailbox_read_time", 0L)
 
@@ -286,9 +287,14 @@ class HomeFragment : Fragment() {
                         .into(homeBinding.ivLogoHome)
                 }
             }
-            // 3. Fallback: Logo por defecto
+            // 3. Fallback: Logo oficial por defecto según el sistema
             else -> {
-                glide.load(R.drawable.gomezmart_icon)
+                val defaultLogo = when (businessType) {
+                    "HOTEL" -> R.drawable.logo_sistema_hoteles
+                    "LOANS" -> R.drawable.logo_sistema_prestamos
+                    else -> R.drawable.logo_sistema_productos
+                }
+                glide.load(defaultLogo)
                     .circleCrop()
                     .into(homeBinding.ivLogoHome)
             }
@@ -385,10 +391,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupActivityListeners() {
-        // Asumiendo que homeBinding está disponible y tiene el ID correcto
-        homeBinding.btnSupportCreatorMain.setOnClickListener {
-            startToolActivity(Intent(requireContext(), com.gomezmart.app.SupportCreatorActivity::class.java))
-        }
     }
 
     override fun onDestroyView() {

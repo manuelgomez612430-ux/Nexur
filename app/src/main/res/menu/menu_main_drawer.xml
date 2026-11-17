@@ -76,9 +76,9 @@
                 android:icon="@android:drawable/ic_menu_help"
                 android:title="Instrucciones de Uso" />
             <item
-                android:id="@+id/menu_settings"
-                android:icon="@android:drawable/ic_menu_preferences"
-                android:title="Ajustes de mi Negocio" />
+                android:id="@+id/menu_account_settings"
+                android:icon="@drawable/ic_person_profile"
+                android:title="Ajustes de Cuenta" />
             <item
                 android:id="@+id/menu_logout"
                 android:icon="@android:drawable/ic_menu_close_clear_cancel"

@@ -90,6 +90,10 @@ class GastosActivity : BaseActivity() {
     }
 
     private fun setupSyncIndicator() {
+        if (isGuestUser()) {
+            binding.btnSyncIndicator.visibility = View.GONE
+            return
+        }
         database.expenseDao().getUnsyncedCount().observe(this) { count ->
             lastUnsyncedCount = count ?: 0
             updateSyncIconState()
@@ -112,6 +116,10 @@ class GastosActivity : BaseActivity() {
     }
 
     private fun updateSyncIconState(isSyncing: Boolean = currentIsSyncing) {
+        if (isGuestUser()) {
+            binding.btnSyncIndicator.visibility = View.GONE
+            return
+        }
         currentIsSyncing = isSyncing
         val color: Int
         val animation: android.view.animation.Animation?

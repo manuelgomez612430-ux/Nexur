@@ -1,265 +1,433 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="24dp"
-    android:gravity="center_horizontal"
     android:background="@color/slate_50">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollViewContent"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp">
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/layoutBottomActions">
 
-        <ImageView
-            android:id="@+id/ivSelectionLogo"
-            android:layout_width="match_parent"
-            android:layout_height="180dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/gomezmart_icon"
-            app:layout_constraintTop_toTopOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <TextView
-        android:id="@+id/tvSelectionTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="¿Qué vamos a gestionar hoy?"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:textColor="@color/slate_900"
-        android:layout_marginBottom="8dp" />
-
-    <TextView
-        android:id="@+id/tvSelectionSubtitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Selecciona el tipo de rubro para tu cuenta de negocio"
-        android:textSize="16sp"
-        android:textColor="@color/slate_600"
-        android:layout_marginBottom="32dp"
-        android:textAlignment="center" />
-
-    <!-- STEP 1: PRODUCTS VS SERVICES -->
-    <LinearLayout
-        android:id="@+id/layoutStep1"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardProductsCategory"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="4dp"
-            android:clickable="true"
-            android:focusable="true">
-            <LinearLayout
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="24dp"
+            android:gravity="center_horizontal">
+
+            <!-- LOGO HEADER SECTION -->
+            <ImageView
+                android:id="@+id/ivSelectionLogo"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:scaleType="fitCenter"
+                android:scaleX="1.35"
+                android:scaleY="1.35"
+                android:src="@drawable/gomezmart_icon"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- TITLES -->
+            <TextView
+                android:id="@+id/tvSelectionTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="24dp"
-                android:gravity="center_vertical">
-                <TextView
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:text="🛍️"
-                    android:textSize="30sp"
-                    android:gravity="center"
-                    android:background="@drawable/bg_circle_light_purple"
-                    android:layout_marginEnd="16dp" />
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Venta de Productos"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/slate_900" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Tiendas, bodegas y almacenes"
-                        android:textSize="14sp"
-                        android:textColor="@color/slate_500" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                android:text="¿Qué vamos a gestionar hoy?"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_900"
+                android:gravity="center"
+                android:letterSpacing="-0.02"
+                android:layout_marginBottom="8dp" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardServicesCategory"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="4dp"
-            android:clickable="true"
-            android:focusable="true">
-            <LinearLayout
+            <TextView
+                android:id="@+id/tvSelectionSubtitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="24dp"
-                android:gravity="center_vertical">
-                <TextView
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:text="✨"
-                    android:textSize="30sp"
-                    android:gravity="center"
-                    android:background="@drawable/bg_circle_light_blue"
-                    android:layout_marginEnd="16dp" />
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Servicios Especializados"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/slate_900" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Préstamos, hoteles y atención"
-                        android:textSize="14sp"
-                        android:textColor="@color/slate_500" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-    </LinearLayout>
+                android:text="Selecciona el tipo de rubro para tu cuenta"
+                android:textSize="14sp"
+                android:textColor="@color/slate_500"
+                android:gravity="center"
+                android:lineSpacingExtra="3dp"
+                android:layout_marginBottom="28dp" />
 
-    <!-- STEP 2: SERVICES SPECIALTY (HIDDEN INITIALLY) -->
+            <!-- STEP 1: PRODUCTS VS SERVICES -->
+            <LinearLayout
+                android:id="@+id/layoutStep1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- OPCCIÓN 1: VENTA DE PRODUCTOS -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardProductsCategory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="3dp"
+                    app:strokeWidth="1.5dp"
+                    app:strokeColor="@color/purple_200"
+                    app:cardBackgroundColor="@color/white"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="20dp"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:layout_marginEnd="16dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/logo_sistema_productos"
+                            android:contentDescription="Sistema de Productos" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="Venta de Productos"
+                                    android:textSize="17sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/slate_900"
+                                    android:singleLine="true"
+                                    android:ellipsize="end" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:text="POPULAR"
+                                    android:textSize="10sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/purple_700"
+                                    android:background="@drawable/bg_bottom_sheet_rounded"
+                                    android:backgroundTint="@color/purple_100"
+                                    android:paddingHorizontal="8dp"
+                                    android:paddingVertical="3dp"
+                                    android:singleLine="true"
+                                    android:includeFontPadding="false" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Tiendas, bodegas, almacenes y comercio en general"
+                                android:textSize="13sp"
+                                android:textColor="@color/slate_500"
+                                android:lineSpacingExtra="2dp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="12dp"
+                            app:cardCornerRadius="18dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="0dp"
+                            app:cardBackgroundColor="@color/purple_50">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_chevron_right"
+                                app:tint="@color/purple_600" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- OPCCIÓN 2: SERVICIOS ESPECIALIZADOS -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardServicesCategory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="3dp"
+                    app:strokeWidth="1.5dp"
+                    app:strokeColor="@color/purple_200"
+                    app:cardBackgroundColor="@color/white"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="20dp"
+                        android:gravity="center_vertical">
+
+                        <FrameLayout
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_light_blue"
+                            android:layout_marginEnd="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:text="✨"
+                                android:textSize="28sp" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Servicios Especializados"
+                                android:textSize="17sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/slate_900" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Préstamos, hoteles y atención personalizada"
+                                android:textSize="13sp"
+                                android:textColor="@color/slate_500"
+                                android:lineSpacingExtra="2dp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="12dp"
+                            app:cardCornerRadius="18dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="0dp"
+                            app:cardBackgroundColor="@color/purple_50">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_chevron_right"
+                                app:tint="@color/purple_600" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- STEP 2: SERVICES SPECIALTY (HIDDEN INITIALLY) -->
+            <LinearLayout
+                android:id="@+id/layoutStep2Services"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- TARJETA PRÉSTAMOS -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardLoans"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="3dp"
+                    app:strokeWidth="1.5dp"
+                    app:strokeColor="@color/slate_200"
+                    app:cardBackgroundColor="@color/white"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="20dp"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:layout_marginEnd="16dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/logo_sistema_prestamos"
+                            android:contentDescription="Gestión de Préstamos" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Gestión de Préstamos"
+                                android:textSize="17sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/slate_900" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Cobros, moras, clientes y cronogramas de pago"
+                                android:textSize="13sp"
+                                android:textColor="@color/slate_500"
+                                android:lineSpacingExtra="2dp" />
+                        </LinearLayout>
+
+                        <ImageView
+                            android:id="@+id/ivCheckLoans"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginStart="12dp"
+                            android:src="@drawable/ic_check_circle_24"
+                            android:visibility="gone" />
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- TARJETA HOTEL -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardHotel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="3dp"
+                    app:strokeWidth="1.5dp"
+                    app:strokeColor="@color/slate_200"
+                    app:cardBackgroundColor="@color/white"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="20dp"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:layout_marginEnd="16dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/logo_sistema_hoteles"
+                            android:contentDescription="Gestión de Hotel" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Gestión de Hotel"
+                                android:textSize="17sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/slate_900" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Habitaciones, tarifas, check-in y reservaciones"
+                                android:textSize="13sp"
+                                android:textColor="@color/slate_500"
+                                android:lineSpacingExtra="2dp" />
+                        </LinearLayout>
+
+                        <ImageView
+                            android:id="@+id/ivCheckHotel"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginStart="12dp"
+                            android:src="@drawable/ic_check_circle_24"
+                            android:visibility="gone" />
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- BOTTOM ACTIONS BAR -->
     <LinearLayout
-        android:id="@+id/layoutStep2Services"
+        android:id="@+id/layoutBottomActions"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:visibility="gone">
+        android:paddingHorizontal="24dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="20dp"
+        android:background="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardLoans"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnConfirmSelection"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="4dp"
-            android:clickable="true"
-            android:focusable="true">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="24dp"
-                android:gravity="center_vertical">
-                <TextView
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:text="💵"
-                    android:textSize="30sp"
-                    android:gravity="center"
-                    android:background="@drawable/bg_circle_light_green"
-                    android:layout_marginEnd="16dp" />
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Gestión de Préstamos"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/slate_900" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Cobros, moras y cronogramas"
-                        android:textSize="14sp"
-                        android:textColor="@color/slate_500" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            android:layout_height="56dp"
+            android:text="Continuar 🚀"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            app:cornerRadius="16dp"
+            app:backgroundTint="@color/purple_600"
+            android:elevation="4dp"
+            android:visibility="gone"
+            android:layout_marginBottom="8dp" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardHotel"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBackSelection"
+            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="4dp"
-            android:clickable="true"
-            android:focusable="true">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="24dp"
-                android:gravity="center_vertical">
-                <TextView
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:text="🏨"
-                    android:textSize="30sp"
-                    android:gravity="center"
-                    android:background="@drawable/bg_circle_light_blue"
-                    android:layout_marginEnd="16dp" />
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Gestión de Hotel"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/slate_900" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Habitaciones y reservaciones"
-                        android:textSize="14sp"
-                        android:textColor="@color/slate_500" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            android:layout_height="48dp"
+            android:text="Atrás"
+            android:textSize="15sp"
+            android:textColor="@color/purple_700"
+            android:textStyle="bold"
+            app:icon="@drawable/ic_arrow_back"
+            app:iconTint="@color/purple_700"
+            app:iconGravity="textStart" />
+
     </LinearLayout>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnBackSelection"
-        style="@style/Widget.Material3.Button.TextButton"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="Atrás"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnConfirmSelection"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:text="Continuar"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:cornerRadius="16dp"
-        app:backgroundTint="@color/purple_600" />
-
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

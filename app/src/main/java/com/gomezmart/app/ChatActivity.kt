@@ -45,6 +45,10 @@ import com.gomezmart.app.databinding.*
 import com.gomezmart.app.databinding.ItemChatMessageOrderAlertMeBinding
 import com.gomezmart.app.databinding.ItemChatMessageOrderAlertOtherBinding
 import com.gomezmart.app.network.SupabaseManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import java.io.FileOutputStream
+import kotlinx.coroutines.withContext
 import android.net.Uri
 import android.provider.MediaStore
 import android.widget.ProgressBar
@@ -75,6 +79,12 @@ class ChatActivity : BaseActivity() {
     private var chatMetadataRegistration: ListenerRegistration? = null
     private var otherProfileRegistration: ListenerRegistration? = null
     private var myProfileRegistration: ListenerRegistration? = null
+    private val systemChatRegistrations = mutableListOf<ListenerRegistration>()
+    
+    private var isSystemChat: Boolean = false
+    private var globalSystemMsgs = listOf<ChatMessage>()
+    private var privateSystemMsgs = listOf<ChatMessage>()
+    private var directSystemMsgs = listOf<ChatMessage>()
     
     private var lastClearedAt: Long = 0L
     private lateinit var adapter: ChatAdapter
@@ -82,6 +92,10 @@ class ChatActivity : BaseActivity() {
     private var isDirectChat: Boolean = false
     private var otherUserId: String = ""
     private var otherUserName: String = ""
+    private var isMessageRequestIntent: Boolean = false
+    private var chatRequestStatus: String = "ACCEPTED"
+    private var chatRequestedBy: String = ""
+    private var chatDocExists: Boolean = false
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
@@ -146,11 +160,30 @@ class ChatActivity : BaseActivity() {
         val otherPhoto = intent.getStringExtra("OTHER_USER_PHOTO") ?: ""
         val otherTitle = intent.getStringExtra("OTHER_USER_TITLE") ?: ""
         val otherBizLogo = intent.getStringExtra("OTHER_USER_BIZ_LOGO") ?: ""
-        isDirectChat = intent.getBooleanExtra("IS_DIRECT", false) || orderId.contains("_")
+        isSystemChat = orderId == "SYSTEM_ANNOUNCEMENTS_CHAT" || otherUserId == "SYSTEM_NOTIFICATIONS" || intent.getBooleanExtra("IS_READ_ONLY_SYSTEM", false)
+        isDirectChat = intent.getBooleanExtra("IS_DIRECT", false) || orderId.contains("_") || isSystemChat
+        isMessageRequestIntent = intent.getBooleanExtra("IS_MESSAGE_REQUEST", false)
+        if (isMessageRequestIntent) {
+            chatRequestStatus = "PENDING"
+            chatRequestedBy = auth.currentUser?.uid ?: ""
+        }
 
         binding.tvChatHeaderName.text = otherUserName
         binding.tvChatHeaderRole.text = if (otherTitle.isNotEmpty()) otherTitle else "Usuario"
+        binding.tvChatHeaderInitial.text = if (otherUserName.isNotEmpty()) otherUserName[0].uppercaseChar().toString() else "?"
         updateRoleColor(binding.tvChatHeaderRole.text.toString())
+
+        if (isSystemChat || otherUserId == "AI_ASSISTANT" || otherUserId == "SYSTEM_NOTIFICATIONS") {
+            binding.layoutChatHeaderAvatarContainer.visibility = View.GONE
+            binding.btnSendMessage.visibility = View.GONE
+            binding.btnShareOptions.visibility = View.GONE
+            binding.etChatMessage.isEnabled = false
+            binding.etChatMessage.isFocusable = false
+            binding.etChatMessage.isClickable = false
+            binding.etChatMessage.hint = "🔒 Canal oficial solo de lectura (Sistema)"
+        } else {
+            binding.layoutChatHeaderAvatarContainer.visibility = View.VISIBLE
+        }
         
         if (otherPhoto.isNotEmpty()) {
             binding.ivChatHeaderPhoto.visibility = View.VISIBLE
@@ -201,7 +234,15 @@ class ChatActivity : BaseActivity() {
     }
 
     private fun loadInitialUnreadCountAndStartListener() {
-        val myUid = auth.currentUser?.uid ?: return
+        if (isSystemChat) {
+            startChatListener()
+            return
+        }
+        val myUid = auth.currentUser?.uid
+        if (myUid.isNullOrEmpty()) {
+            startChatListener()
+            return
+        }
         
         // OPTIMIZACIÓN: Intentar leer de CACHE primero para velocidad instantánea
         db.collection("direct_chats").document(orderId).get(Source.CACHE)
@@ -241,6 +282,7 @@ class ChatActivity : BaseActivity() {
     private var currentOtherProfile: Map<String, Any>? = null
 
     private fun fetchParticipantProfiles() {
+        if (isSystemChat) return
         val myUid = auth.currentUser?.uid ?: return
         
         // 1. Escuchar MI PROPIO perfil (Para inyectar mis cambios en este chat)
@@ -266,6 +308,7 @@ class ChatActivity : BaseActivity() {
                     otherUserName = oName
                     binding.tvChatHeaderName.text = otherUserName
                     binding.tvChatHeaderRole.text = oTitle
+                    binding.tvChatHeaderInitial.text = if (otherUserName.isNotEmpty()) otherUserName[0].uppercaseChar().toString() else "?"
                     updateRoleColor(oTitle)
                     
                     if (oPhoto.isNotEmpty()) {
@@ -294,9 +337,10 @@ class ChatActivity : BaseActivity() {
     private fun syncCompleteMetadata() {
         val myUid = auth.currentUser?.uid ?: return
         if (orderId.isEmpty() || !isDirectChat) return
-        
+        if (!chatDocExists && isMessageRequestIntent) return
+
         val chatRef = db.collection("direct_chats").document(orderId)
-        
+
         // Extraer datos de mis perfiles locales
         val myName = currentMyProfile?.get("name")?.toString() ?: auth.currentUser?.displayName ?: "Usuario"
         val myPhoto = currentMyProfile?.get("photoUrl")?.toString() ?: auth.currentUser?.photoUrl?.toString() ?: ""
@@ -320,7 +364,7 @@ class ChatActivity : BaseActivity() {
         val titles = mapOf(myUid to myTitle, otherUserId to oTitle)
         val emails = mapOf(myUid to myEmail, otherUserId to oEmail)
         val phones = mapOf(myUid to myPhone, otherUserId to oPhone)
-        
+
         val bizLogos = mutableMapOf<String, String>()
         if (myBizLogo.isNotEmpty()) bizLogos[myUid] = myBizLogo
         if (oBizLogo.isNotEmpty()) bizLogos[otherUserId] = oBizLogo
@@ -334,16 +378,16 @@ class ChatActivity : BaseActivity() {
             "participantTitles" to titles,
             "participants" to listOf(myUid, otherUserId).sorted()
         )
-        
+
         chatRef.set(data, SetOptions.merge())
     }
 
     private fun updateRoleColor(title: String) {
         val color = when {
-            title.contains("Dueño", ignoreCase = true) || title.contains("Gestionando", ignoreCase = true) -> Color.parseColor("#FFD700") // Dorado
-            title.contains("Colaborador", ignoreCase = true) -> Color.parseColor("#3B82F6") // Azul
-            title.contains("Comprador", ignoreCase = true) -> Color.parseColor("#10B981") // Verde
-            else -> Color.parseColor("#64748B") // Slate 500 (Gris)
+            title.contains("Dueño", ignoreCase = true) || title.contains("Gestionando", ignoreCase = true) -> Color.parseColor("#B45309")
+            title.contains("Colaborador", ignoreCase = true) -> Color.parseColor("#6D28D9")
+            title.contains("Comprador", ignoreCase = true) -> Color.parseColor("#047857")
+            else -> Color.parseColor("#64748B")
         }
         binding.tvChatHeaderRole.setTextColor(color)
     }
@@ -375,14 +419,37 @@ class ChatActivity : BaseActivity() {
         binding.btnShareOptions.setOnClickListener {
             showShareOptions()
         }
+        binding.btnAcceptMessageRequest.setOnClickListener {
+            acceptMessageRequest()
+        }
+        binding.btnRejectMessageRequest.setOnClickListener {
+            rejectMessageRequest()
+        }
+        binding.btnBlockMessageRequest.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Bloquear a $otherUserName 🚫")
+                .setMessage("No volverás a recibir mensajes ni solicitudes de este usuario.")
+                .setPositiveButton("Bloquear") { _, _ ->
+                    db.collection("direct_chats").document(orderId)
+                        .set(mapOf("requestStatus" to "REJECTED"), SetOptions.merge())
+                    executeBlockUserProcess()
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+        updateMessageRequestUi()
     }
 
     private fun checkUserRoleForSharing() {
-        // La opción de compartir (tomar foto) ahora es para TODOS
-        binding.btnShareOptions.visibility = View.VISIBLE
+        if (isSystemChat || otherUserId == "AI_ASSISTANT" || otherUserId == "SYSTEM_NOTIFICATIONS") {
+            binding.btnShareOptions.visibility = View.GONE
+        } else {
+            binding.btnShareOptions.visibility = View.VISIBLE
+        }
     }
 
     private fun showShareOptions() {
+        if (requireLoginForGuest("compartir imágenes o productos en el chat")) return
         val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val businessType = prefs.getString("business_type", "") ?: ""
         val isCollab = prefs.getBoolean("is_collaborator_mode", false)
@@ -511,33 +578,69 @@ class ChatActivity : BaseActivity() {
         }
     }
 
+    private fun compressImageFile(inputFile: File): File {
+        return try {
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            BitmapFactory.decodeFile(inputFile.absolutePath, options)
+            
+            var scale = 1
+            val maxDimension = 1280
+            while (options.outWidth / scale / 2 >= maxDimension && options.outHeight / scale / 2 >= maxDimension) {
+                scale *= 2
+            }
+            
+            val scaleOptions = BitmapFactory.Options().apply {
+                inSampleSize = scale
+            }
+            val bitmap = BitmapFactory.decodeFile(inputFile.absolutePath, scaleOptions) ?: return inputFile
+            
+            val compressedFile = File(cacheDir, "chat_compressed_${System.currentTimeMillis()}.jpg")
+            FileOutputStream(compressedFile).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
+            }
+            bitmap.recycle()
+            compressedFile
+        } catch (e: Exception) {
+            Log.e("ChatActivity", "Error al comprimir imagen: ${e.message}")
+            inputFile
+        }
+    }
+
     private fun uploadChatImage(file: File) {
+        if (requireLoginForGuest("enviar imágenes")) return
         val myUid = auth.currentUser?.uid ?: return
         val messageId = UUID.randomUUID().toString()
         
-        // 1. CREAR MENSAJE LOCAL INMEDIATO
-        val localMessage = ChatMessage(
-            id = messageId,
-            senderId = myUid,
-            message = "📷 Imagen",
-            timestamp = Date(), // Timestamp local temporal
-            type = "IMAGE",
-            localPath = file.absolutePath,
-            isUploading = true
-        )
-        
-        // Añadir a la lista visual de inmediato
-        adapter.addTempMessage(localMessage)
-        binding.rvChatMessages.scrollToPosition(adapter.itemCount - 1)
-        
-        // Desaparecer separador al primer envío
-        initialUnreadCount = 0
-        refreshMessagesWithCurrentFilter()
-
         lifecycleScope.launch {
+            // Comprimir la imagen en hilo secundario para pasar de ~10MB a ~200KB y evitar fallos
+            val compressedFile = withContext(Dispatchers.IO) { compressImageFile(file) }
+
+            // 1. CREAR MENSAJE LOCAL INMEDIATO
+            val localMessage = ChatMessage(
+                id = messageId,
+                senderId = myUid,
+                message = "📷 Imagen",
+                timestamp = Date(), // Timestamp local temporal
+                type = "IMAGE",
+                localPath = compressedFile.absolutePath,
+                isUploading = true
+            )
+            
+            // Añadir a la lista visual de inmediato
+            adapter.addTempMessage(localMessage)
+            binding.rvChatMessages.scrollToPosition(adapter.itemCount - 1)
+            
+            // Desaparecer separador al primer envío
+            initialUnreadCount = 0
+            refreshMessagesWithCurrentFilter()
+
             try {
                 val path = "chat_images/$orderId/${UUID.randomUUID()}.jpg"
-                val url = SupabaseManager.uploadImage("naxor-imagenes-usuarios", path, file)
+                val url = withContext(Dispatchers.IO) {
+                    SupabaseManager.uploadImage("naxor-imagenes-usuarios", path, compressedFile)
+                }
                 
                 if (url != null) {
                     // 2. ENVIAR A FIRESTORE UNA VEZ SUBIDO
@@ -560,11 +663,11 @@ class ChatActivity : BaseActivity() {
                         }
                 } else {
                     adapter.removeTempMessage(messageId)
-                    Toast.makeText(this@ChatActivity, "Error al subir imagen", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ChatActivity, "Error al subir imagen. Inténtalo nuevamente.", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 adapter.removeTempMessage(messageId)
-                Toast.makeText(this@ChatActivity, "Error crítico: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@ChatActivity, "Error al subir imagen: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -573,6 +676,7 @@ class ChatActivity : BaseActivity() {
 
 
     private fun sendProductCard(p: ProductEntity) {
+        if (requireLoginForGuest("compartir productos")) return
         if (orderId.isEmpty()) return
         val user = auth.currentUser ?: return
         val messageId = UUID.randomUUID().toString()
@@ -580,13 +684,13 @@ class ChatActivity : BaseActivity() {
         val message = ChatMessage(
             id = messageId,
             senderId = user.uid,
-            message = p.nombre,
+            message = p.nombre ?: "",
             timestamp = FieldValue.serverTimestamp(),
             type = "PRODUCT_CARD",
             productId = p.id,
             productPhoto = p.photoUrl ?: "",
             productPrice = p.precioVenta,
-            productCategory = p.categoria
+            productCategory = p.categoria ?: ""
         )
         
         // Desaparecer separador al primer envío
@@ -606,23 +710,37 @@ class ChatActivity : BaseActivity() {
 
     private fun startChatListener() {
         if (orderId.isEmpty()) return
+
+        if (isSystemChat) {
+            startSystemChatListener()
+            return
+        }
         
         val myUid = auth.currentUser?.uid ?: return
         val collection = if (isDirectChat) "direct_chats" else "orders"
 
-        // 1. Escuchar metadatos de borrado (clearedUntil) de forma INDEPENDIENTE
+        // 1. Escuchar metadatos de borrado (clearedUntil) y estado de solicitud de mensaje
         chatMetadataRegistration?.remove()
         chatMetadataRegistration = db.collection(collection).document(orderId).addSnapshotListener { chatDoc, _ ->
             if (chatDoc != null && chatDoc.exists()) {
+                chatDocExists = true
+                if (isDirectChat) {
+                    chatRequestStatus = chatDoc.getString("requestStatus") ?: "ACCEPTED"
+                    chatRequestedBy = chatDoc.getString("requestedBy") ?: ""
+                    updateMessageRequestUi()
+                }
+
                 val clearedMap = chatDoc.get("clearedUntil") as? Map<String, Long>
                 val newClearedAt = clearedMap?.get(myUid) ?: 0L
-                
+
                 // Si el tiempo de borrado cambió, debemos actualizar la lista actual
                 if (newClearedAt != lastClearedAt) {
                     lastClearedAt = newClearedAt
-                    // Forzar re-filtrado de lo que ya tenemos si es necesario
                     refreshMessagesWithCurrentFilter()
                 }
+            } else {
+                chatDocExists = false
+                if (isDirectChat) updateMessageRequestUi()
             }
         }
 
@@ -632,7 +750,7 @@ class ChatActivity : BaseActivity() {
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener(MetadataChanges.INCLUDE) { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
-                
+
                 lastMessagesSnapshot = snapshot.toObjects(ChatMessage::class.java)
                 refreshMessagesWithCurrentFilter()
             }
@@ -656,20 +774,226 @@ class ChatActivity : BaseActivity() {
         }
 
         adapter.submitList(visibleMessages)
-        
+        updateMessageRequestUi()
+
         // AUTO-SCROLL INTELIGENTE Y RÁPIDO
         if (visibleMessages.isNotEmpty()) {
             binding.rvChatMessages.scrollToPosition(adapter.itemCount - 1)
         }
     }
 
+    private fun updateMessageRequestUi() {
+        if (isSystemChat || otherUserId == "AI_ASSISTANT" || otherUserId == "SYSTEM_NOTIFICATIONS") return
+        if (!isDirectChat) {
+            binding.cardMessageRequestBanner.visibility = View.GONE
+            return
+        }
+
+        val myUid = auth.currentUser?.uid ?: ""
+        when (chatRequestStatus) {
+            "REJECTED" -> {
+                binding.cardMessageRequestBanner.visibility = View.VISIBLE
+                binding.layoutMessageRequestActions.visibility = View.GONE
+                binding.tvMessageRequestTitle.text = "🚫 Solicitud rechazada"
+                binding.tvMessageRequestSubtitle.text = "Esta conversación está cerrada."
+                binding.etChatMessage.isEnabled = false
+                binding.etChatMessage.hint = "No puedes enviar mensajes aquí"
+                binding.btnSendMessage.isEnabled = false
+                binding.btnShareOptions.visibility = View.GONE
+            }
+            "PENDING" -> {
+                val isRecipient = chatDocExists && chatRequestedBy.isNotEmpty() && chatRequestedBy != myUid
+                binding.cardMessageRequestBanner.visibility = View.VISIBLE
+                if (isRecipient) {
+                    binding.layoutMessageRequestActions.visibility = View.VISIBLE
+                    binding.tvMessageRequestTitle.text = "📩 Solicitud de mensaje de $otherUserName"
+                    binding.tvMessageRequestSubtitle.text = "Si aceptas, podrá escribirte y el chat pasará a tu bandeja principal."
+                    binding.etChatMessage.isEnabled = false
+                    binding.etChatMessage.hint = "Acepta la solicitud arriba para responder"
+                    binding.btnSendMessage.isEnabled = false
+                    binding.btnShareOptions.visibility = View.GONE
+                } else {
+                    binding.layoutMessageRequestActions.visibility = View.GONE
+                    val alreadySent = lastMessagesSnapshot.any { it.senderId == myUid }
+                    if (alreadySent) {
+                        binding.tvMessageRequestTitle.text = "⏳ Solicitud de mensaje enviada"
+                        binding.tvMessageRequestSubtitle.text = "Podrás seguir escribiendo cuando $otherUserName acepte tu solicitud."
+                        binding.etChatMessage.isEnabled = false
+                        binding.etChatMessage.hint = "Esperando aceptación de solicitud..."
+                        binding.btnSendMessage.isEnabled = false
+                        binding.btnShareOptions.visibility = View.GONE
+                    } else {
+                        binding.tvMessageRequestTitle.text = "💬 Enviar solicitud de mensaje"
+                        binding.tvMessageRequestSubtitle.text = "Puedes enviar 1 mensaje inicial. $otherUserName decidirá si acepta chatear contigo."
+                        binding.etChatMessage.isEnabled = true
+                        binding.etChatMessage.hint = "Escribe tu mensaje de presentación..."
+                        binding.btnSendMessage.isEnabled = true
+                        binding.btnShareOptions.visibility = View.GONE
+                    }
+                }
+            }
+            else -> {
+                binding.cardMessageRequestBanner.visibility = View.GONE
+                binding.layoutMessageRequestActions.visibility = View.GONE
+                binding.etChatMessage.isEnabled = true
+                binding.etChatMessage.hint = "Escribe un mensaje..."
+                binding.btnSendMessage.isEnabled = true
+                checkUserRoleForSharing()
+            }
+        }
+    }
+
+    private fun acceptMessageRequest() {
+        if (orderId.isEmpty()) return
+        db.collection("direct_chats").document(orderId)
+            .set(
+                mapOf(
+                    "requestStatus" to "ACCEPTED",
+                    "chatType" to "DIRECT"
+                ),
+                SetOptions.merge()
+            )
+            .addOnSuccessListener {
+                chatRequestStatus = "ACCEPTED"
+                updateMessageRequestUi()
+                Toast.makeText(this, "Solicitud aceptada ✅", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Error al aceptar solicitud", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun rejectMessageRequest() {
+        val myUid = auth.currentUser?.uid ?: return
+        if (orderId.isEmpty()) return
+        val now = System.currentTimeMillis()
+        db.collection("direct_chats").document(orderId)
+            .set(
+                mapOf(
+                    "requestStatus" to "REJECTED",
+                    "clearedUntil" to mapOf(myUid to now)
+                ),
+                SetOptions.merge()
+            )
+            .addOnSuccessListener {
+                Toast.makeText(this, "Solicitud rechazada", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Error al rechazar solicitud", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun startSystemChatListener() {
+        val myUid = auth.currentUser?.uid ?: ""
+
+        systemChatRegistrations.forEach { it.remove() }
+        systemChatRegistrations.clear()
+
+        // 1. Escuchar mensajes globales del sistema
+        val reg1 = db.collection("app_messages").orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    globalSystemMsgs = snapshot.documents.mapNotNull { doc ->
+                        val title = doc.getString("title") ?: ""
+                        val content = doc.getString("content") ?: ""
+                        val fullText = if (title.isNotBlank()) "📢 $title\n\n$content" else content
+                        val ts = doc.get("timestamp")
+                        ChatMessage(
+                            id = doc.id,
+                            senderId = "SYSTEM_NOTIFICATIONS",
+                            message = fullText,
+                            timestamp = ts
+                        )
+                    }
+                    refreshSystemChatUI()
+                }
+            }
+        systemChatRegistrations.add(reg1)
+
+        // 2. Escuchar mensajes privados del sistema dirigidos al usuario
+        if (myUid.isNotEmpty()) {
+            val reg2 = db.collection("users").document(myUid).collection("messages").orderBy("timestamp", Query.Direction.ASCENDING)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) {
+                        privateSystemMsgs = snapshot.documents.mapNotNull { doc ->
+                            val type = doc.getString("type")
+                            if (type == "CHAT") return@mapNotNull null
+                            val title = doc.getString("title") ?: ""
+                            val content = doc.getString("content") ?: ""
+                            val fullText = if (title.isNotBlank()) "📢 $title\n\n$content" else content
+                            val ts = doc.get("timestamp")
+                            ChatMessage(
+                                id = doc.id,
+                                senderId = "SYSTEM_NOTIFICATIONS",
+                                message = fullText,
+                                timestamp = ts
+                            )
+                        }
+                        refreshSystemChatUI()
+                    }
+                }
+            systemChatRegistrations.add(reg2)
+        }
+
+        // 3. Escuchar mensajes directos en direct_chats/SYSTEM_ANNOUNCEMENTS_CHAT/messages
+        val reg3 = db.collection("direct_chats").document("SYSTEM_ANNOUNCEMENTS_CHAT").collection("messages").orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    directSystemMsgs = snapshot.documents.mapNotNull { doc ->
+                        val msg = doc.toObject(ChatMessage::class.java)
+                        msg?.copy(id = doc.id, senderId = "SYSTEM_NOTIFICATIONS")
+                    }
+                    refreshSystemChatUI()
+                }
+            }
+        systemChatRegistrations.add(reg3)
+    }
+
+    private fun refreshSystemChatUI() {
+        val allSystemMsgs = (globalSystemMsgs + privateSystemMsgs + directSystemMsgs)
+            .distinctBy { it.id }
+            .sortedBy { msg ->
+                when (val t = msg.timestamp) {
+                    is Timestamp -> t.toDate().time
+                    is Long -> t
+                    else -> 0L
+                }
+            }
+        
+        adapter.submitList(allSystemMsgs)
+        if (allSystemMsgs.isNotEmpty()) {
+            binding.rvChatMessages.post {
+                binding.rvChatMessages.scrollToPosition(adapter.itemCount - 1)
+            }
+        }
+    }
+
     private var initialUnreadCount: Int = 0
 
     private fun sendMessage() {
+        if (isSystemChat) return
+        if (requireLoginForGuest("enviar mensajes a usuarios")) return
         val text = binding.etChatMessage.text.toString().trim()
         if (text.isEmpty() || orderId.isEmpty()) return
-        
+
         val user = auth.currentUser ?: return
+        if (isDirectChat) {
+            if (chatRequestStatus == "REJECTED") {
+                Toast.makeText(this, "Esta solicitud fue rechazada", Toast.LENGTH_SHORT).show()
+                return
+            }
+            if (chatRequestStatus == "PENDING") {
+                if (chatDocExists && chatRequestedBy.isNotEmpty() && chatRequestedBy != user.uid) {
+                    Toast.makeText(this, "Acepta la solicitud arriba para responder", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                if (lastMessagesSnapshot.any { it.senderId == user.uid }) {
+                    Toast.makeText(this, "Espera a que acepte tu solicitud de mensaje", Toast.LENGTH_SHORT).show()
+                    return
+                }
+            }
+        }
         val messageId = UUID.randomUUID().toString()
         val message = ChatMessage(
             id = messageId,
@@ -693,10 +1017,6 @@ class ChatActivity : BaseActivity() {
                 if (isDirectChat) {
                     updateChatMetadata(text)
                     sendNotificationToOtherUser(text)
-                    
-                    // Incrementar contador de no leídos para el destinatario
-                    db.collection("direct_chats").document(orderId)
-                        .update("unreadCount.$otherUserId", FieldValue.increment(1))
                 } else {
                     db.collection("orders").document(orderId)
                         .update("lastMessage", text, "lastMessageTime", FieldValue.serverTimestamp())
@@ -710,7 +1030,7 @@ class ChatActivity : BaseActivity() {
         val myName = prefs.getString("user_full_name", auth.currentUser?.displayName ?: "Usuario") ?: "Usuario"
 
         val notificationMsg = mapOf(
-            "title" to "Nuevo mensaje de $myName 📬",
+            "title" to "Nuevo mensaje de $myName 💬",
             "content" to lastMessage,
             "timestamp" to FieldValue.serverTimestamp(),
             "type" to "CHAT",
@@ -718,16 +1038,26 @@ class ChatActivity : BaseActivity() {
         )
 
         db.collection("users").document(otherUserId).collection("messages").add(notificationMsg)
+
+        // Enviar notificación Push instantánea vía Google Play Services (FCM) al usuario destino
+        com.gomezmart.app.network.FcmHelper.sendPushNotification(
+            targetUserId = otherUserId,
+            title = "Nuevo mensaje de $myName 💬",
+            message = lastMessage,
+            type = "chat",
+            chatId = orderId,
+            senderId = myUid
+        )
     }
 
     private fun updateChatMetadata(lastMessage: String) {
         val myUid = auth.currentUser?.uid ?: return
+        if (orderId.isEmpty() || otherUserId.isEmpty()) return
+
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val myName = prefs.getString("user_full_name", auth.currentUser?.displayName ?: "Usuario") ?: "Usuario"
         val myPhoto = prefs.getString("user_photo_url", "")
         
-        // Calcular mi título actual (puedo reutilizar la lógica de MainActivity o sacarlo de un lugar común)
-        // Para simplificar, lo sacamos de lo que MainActivity guarda en Firestore, pero aquí necesitamos el valor local
         val bizPrefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val businessType = bizPrefs.getString("business_type", "") ?: ""
         val bizName = bizPrefs.getString("${businessType}_name", null) ?: bizPrefs.getString("business_name", "") ?: ""
@@ -744,17 +1074,18 @@ class ChatActivity : BaseActivity() {
         val otherTitle = intent.getStringExtra("OTHER_USER_TITLE") ?: ""
         
         val chatRef = db.collection("direct_chats").document(orderId)
+        val participants = listOf(myUid, otherUserId).sorted()
         
         db.runTransaction { transaction ->
             val snapshot = transaction.get(chatRef)
             
-            val participants = listOf(myUid, otherUserId).sorted()
             val names = (snapshot.get("participantNames") as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
             val photos = (snapshot.get("participantPhotos") as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
             val titles = (snapshot.get("participantTitles") as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
             val emails = (snapshot.get("participantEmails") as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
             val phones = (snapshot.get("participantPhones") as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
             val clearedUntil = (snapshot.get("clearedUntil") as? Map<String, Long>)?.toMutableMap() ?: mutableMapOf()
+            val unreadMap = (snapshot.get("unreadCount") as? Map<String, Long>)?.toMutableMap() ?: mutableMapOf()
 
             // Actualizar mi información
             names[myUid] = myName
@@ -763,37 +1094,41 @@ class ChatActivity : BaseActivity() {
             emails[myUid] = prefs.getString("user_email", auth.currentUser?.email) ?: ""
             phones[myUid] = prefs.getString("user_phone", "") ?: ""
             
-            // Actualizar información del otro
-            if (otherUserName != "Chat") names[otherUserId] = otherUserName
+            // Actualizar información del destinatario
+            if (otherUserName.isNotEmpty() && otherUserName != "Chat") names[otherUserId] = otherUserName
             if (!otherPhoto.isNullOrEmpty()) photos[otherUserId] = otherPhoto
             if (otherTitle.isNotEmpty()) titles[otherUserId] = otherTitle
+
+            // Incrementar contador de mensajes no leídos para el destinatario
+            val currentUnread = unreadMap[otherUserId] ?: 0L
+            unreadMap[otherUserId] = currentUnread + 1L
             
-            if (snapshot.exists()) {
-                transaction.update(chatRef, 
-                    "lastMessage", lastMessage, 
-                    "lastMessageTime", FieldValue.serverTimestamp(),
-                    "participantNames", names,
-                    "participantPhotos", photos,
-                    "participantTitles", titles,
-                    "participantEmails", emails,
-                    "participantPhones", phones,
-                    "clearedUntil", clearedUntil
-                )
-            } else {
-                val data = mapOf(
-                    "id" to orderId,
-                    "participants" to participants,
-                    "participantNames" to names,
-                    "participantPhotos" to photos,
-                    "participantTitles" to titles,
-                    "participantEmails" to emails,
-                    "participantPhones" to phones,
-                    "clearedUntil" to clearedUntil,
-                    "lastMessage" to lastMessage,
-                    "lastMessageTime" to FieldValue.serverTimestamp()
-                )
-                transaction.set(chatRef, data)
+            val data = mutableMapOf<String, Any>(
+                "id" to orderId,
+                "participants" to participants,
+                "participantNames" to names,
+                "participantPhotos" to photos,
+                "participantTitles" to titles,
+                "participantEmails" to emails,
+                "participantPhones" to phones,
+                "clearedUntil" to clearedUntil,
+                "unreadCount" to unreadMap,
+                "lastMessage" to lastMessage,
+                "lastMessageTime" to FieldValue.serverTimestamp()
+            )
+
+            val existingStatus = snapshot.getString("requestStatus")
+            if (!snapshot.exists() && isMessageRequestIntent) {
+                data["requestStatus"] = "PENDING"
+                data["requestedBy"] = myUid
+                data["chatType"] = "MESSAGE_REQUEST"
+            } else if (existingStatus == null) {
+                data["requestStatus"] = "ACCEPTED"
             }
+
+            transaction.set(chatRef, data, SetOptions.merge())
+        }.addOnSuccessListener {
+            Log.d("ChatActivity", "Chat $orderId registrado/actualizado exitosamente para ambos usuarios")
         }.addOnFailureListener { e ->
             Log.e("ChatActivity", "Error updating metadata: ${e.message}")
         }
@@ -865,6 +1200,8 @@ class ChatActivity : BaseActivity() {
         chatMetadataRegistration?.remove()
         otherProfileRegistration?.remove()
         myProfileRegistration?.remove()
+        systemChatRegistrations.forEach { it.remove() }
+        systemChatRegistrations.clear()
     }
 
     data class DateHeader(val title: String)
@@ -1094,9 +1431,29 @@ class ChatActivity : BaseActivity() {
                     .into(ivPhoto)
             }
 
-            // El botón de pedir solo debe ser funcional para quien recibe el producto (el comprador)
+            // Si fue recomendado por un amigo (desde otra tienda), abrir el detalle del producto
+            val isFriendRecommendation = msg.productStoreId.isNotEmpty() && msg.productStoreId != msg.senderId
             val isMe = msg.senderId == currentUserId
-            if (isMe) {
+
+            if (isFriendRecommendation) {
+                btnOrder?.alpha = 1.0f
+                btnOrder?.text = "VER PRODUCTO 🔍"
+                val openProductDetail = View.OnClickListener {
+                    val intent = Intent(holder.itemView.context, ProductDetailActivity::class.java).apply {
+                        putExtra("PROD_ID", msg.productId)
+                        putExtra("PROD_NAME", msg.message)
+                        putExtra("PROD_PRICE", msg.productPrice)
+                        putExtra("PROD_CAT", msg.productCategory)
+                        putExtra("PROD_PHOTO", msg.productPhoto)
+                        putExtra("STORE_ID", msg.productStoreId)
+                        putExtra("STORE_NAME", msg.productStoreName.ifEmpty { "Tienda" })
+                        putExtra("STORE_TYPE", msg.productStoreType.ifEmpty { "PRODUCTS" })
+                    }
+                    startActivityWithFade(intent)
+                }
+                btnOrder?.setOnClickListener(openProductDetail)
+                holder.itemView.setOnClickListener(openProductDetail)
+            } else if (isMe) {
                 btnOrder?.alpha = 0.5f
                 btnOrder?.text = "ENVIADO 📦"
                 btnOrder?.setOnClickListener(null)
@@ -1137,9 +1494,11 @@ class ChatActivity : BaseActivity() {
             }
 
             btnAccept?.setOnClickListener {
+                if (requireLoginForGuest("responder a este pedido")) return@setOnClickListener
                 updateLinkedOrderStatus(msg.linkedOrderId, "ACCEPTED")
             }
             btnReject?.setOnClickListener {
+                if (requireLoginForGuest("responder a este pedido")) return@setOnClickListener
                 updateLinkedOrderStatus(msg.linkedOrderId, "CANCELLED")
             }
             btnLocation?.setOnClickListener {
@@ -1174,6 +1533,7 @@ class ChatActivity : BaseActivity() {
     }
 
     private fun startProductOrderFlow(msg: ChatMessage) {
+        if (requireLoginForGuest("realizar pedidos")) return
         val options = arrayOf("A domicilio 🛵")
         AlertDialog.Builder(this)
             .setTitle("Realizar pedido de ${msg.message}")
@@ -1306,6 +1666,7 @@ class ChatActivity : BaseActivity() {
     }
 
     private fun showUserProfilePreviewDialog() {
+        if (requireLoginForGuest("ver los datos de los usuarios")) return
         if (otherUserId.isEmpty()) return
 
         val dialog = BottomSheetDialog(this)
@@ -1433,6 +1794,7 @@ class ChatActivity : BaseActivity() {
         }
 
         btnDeleteChat?.setOnClickListener {
+            if (requireLoginForGuest("eliminar este chat")) return@setOnClickListener
             AlertDialog.Builder(this@ChatActivity)
                 .setTitle("¿Eliminar todo el chat?")
                 .setMessage("Esta acción eliminará de forma permanente los mensajes de este chat en la nube y en tu dispositivo.")
@@ -1445,6 +1807,7 @@ class ChatActivity : BaseActivity() {
         }
 
         btnBlockUser?.setOnClickListener {
+            if (requireLoginForGuest("bloquear usuarios")) return@setOnClickListener
             AlertDialog.Builder(this@ChatActivity)
                 .setTitle("¿Bloquear a $otherUserName?")
                 .setMessage("No podrás recibir ni enviar mensajes a este usuario.")

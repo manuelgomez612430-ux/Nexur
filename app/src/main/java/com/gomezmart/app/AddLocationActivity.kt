@@ -257,6 +257,7 @@ class AddLocationActivity : BaseActivity() {
     }
 
     private fun saveLocation() {
+        if (requireLoginForGuest("guardar una dirección en tu cuenta")) return
         val userId = auth.currentUser?.uid
         if (userId.isNullOrEmpty()) {
             Toast.makeText(this, "Usuario no autenticado", Toast.LENGTH_SHORT).show()

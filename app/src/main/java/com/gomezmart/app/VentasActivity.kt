@@ -55,14 +55,6 @@ class VentasActivity : BaseActivity() {
         applyWindowInsets(binding.topSection, applyTop = true, applyBottom = false)
         applyWindowInsetsMargins(binding.paymentFooter, applyTop = false, applyBottom = true)
 
-        // Solicitar permisos de cámara al inicio
-        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (!isGranted) {
-                Toast.makeText(this, "Se requiere permiso de cámara para el escáner", Toast.LENGTH_LONG).show()
-            }
-        }
-        requestPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-
         setupCartRecyclerView()
         setupListeners()
         loadProducts()
@@ -153,12 +145,23 @@ class VentasActivity : BaseActivity() {
                     true
                 }
                 R.id.menu_reset_day -> {
-                    // Lógica para reiniciar día si es necesario
-                    Toast.makeText(this, "Función Próximamente", Toast.LENGTH_SHORT).show()
+                    AlertDialog.Builder(this)
+                        .setTitle("Vaciar Carrito de Ventas")
+                        .setMessage("¿Deseas cancelar y vaciar los productos ingresados en la venta actual?")
+                        .setPositiveButton("Sí, Vaciar") { _, _ ->
+                            cartItems.clear()
+                            cartProducts.clear()
+                            cartAdapter.notifyDataSetChanged()
+                            updateTotalPrice()
+                            checkEmptyState()
+                            Toast.makeText(this, "Carrito vaciado", Toast.LENGTH_SHORT).show()
+                        }
+                        .setNegativeButton("Cancelar", null)
+                        .show()
                     true
                 }
                 R.id.menu_export_sales -> {
-                    Toast.makeText(this, "Exportando...", Toast.LENGTH_SHORT).show()
+                    exportSalesToCsv()
                     true
                 }
                 R.id.menu_undo_info -> {
@@ -700,6 +703,30 @@ class VentasActivity : BaseActivity() {
             }
             .setNegativeButton("Cerrar", null)
             .show()
+    }
+
+    private fun exportSalesToCsv() {
+        lifecycleScope.launch {
+            val sales = withContext(Dispatchers.IO) { database.saleDao().allSales }
+            if (sales.isEmpty()) {
+                Toast.makeText(this@VentasActivity, "No hay ventas registradas para exportar", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+            val csvBuilder = StringBuilder("ID,Fecha,Producto,Categoria,Cantidad,Precio,Total,MetodoPago\n")
+            sales.forEach { s ->
+                val date = sdf.format(java.util.Date(s.timestamp))
+                val name = s.nombreProducto.replace(",", " ")
+                val cat = s.categoria.replace(",", " ")
+                csvBuilder.append("${s.id},$date,$name,$cat,${s.cantidad},${s.precioVenta},${s.total},${s.paymentMethod}\n")
+            }
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/csv"
+                putExtra(Intent.EXTRA_SUBJECT, "Reporte_Ventas_GoMezMart.csv")
+                putExtra(Intent.EXTRA_TEXT, csvBuilder.toString())
+            }
+            startActivity(Intent.createChooser(shareIntent, "Exportar Reporte de Ventas (CSV)"))
+        }
     }
 
     override fun onDestroy() {

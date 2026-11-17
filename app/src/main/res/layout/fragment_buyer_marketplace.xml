@@ -21,6 +21,7 @@
 
             <!-- 1. BARRA SUPERIOR: MENU, BÚSQUEDA Y FAVORITOS -->
             <LinearLayout
+                android:id="@+id/layoutHeaderBar"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:orientation="horizontal"
@@ -36,6 +37,7 @@
                     app:tint="@color/white" />
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardSearchMarketplace"
                     android:layout_width="0dp"
                     android:layout_height="42dp"
                     android:layout_weight="1"
@@ -50,7 +52,7 @@
                         android:layout_height="match_parent"
                         android:orientation="horizontal"
                         android:gravity="center_vertical"
-                        android:paddingHorizontal="14dp">
+                        android:paddingHorizontal="12dp">
 
                         <ImageView
                             android:layout_width="18dp"
@@ -73,13 +75,15 @@
 
                         <ImageView
                             android:id="@+id/btnSearchClearMarketplace"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:padding="4dp"
                             android:src="@android:drawable/ic_menu_close_clear_cancel"
-                            app:tint="@color/slate_400"
+                            app:tint="@color/slate_600"
                             android:visibility="gone"
                             android:clickable="true"
                             android:focusable="true"
+                            android:contentDescription="Limpiar o cerrar búsqueda"
                             android:background="?attr/selectableItemBackgroundBorderless" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -150,6 +154,7 @@
 
             <!-- 3. PESTAÑAS DE CATEGORÍA -->
             <HorizontalScrollView
+                android:id="@+id/hsvCategoryTabs"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:scrollbars="none"
@@ -167,6 +172,11 @@
                         android:text="Todo"
                         android:textColor="@color/white"
                         android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tabFollowing"
+                        style="@style/MarketplaceTab"
+                        android:text="⭐ Siguiendo"
+                        android:textColor="@color/white" />
                     <TextView
                         android:id="@+id/tabHotel"
                         style="@style/MarketplaceTab"
@@ -263,6 +273,37 @@
                     android:paddingHorizontal="8dp"
                     android:layout_marginBottom="8dp" />
 
+                <!-- Section: Novedades de tiendas que sigues -->
+                <LinearLayout
+                    android:id="@+id/layoutFollowedUpdatesHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="4dp"
+                    android:gravity="center_vertical"
+                    android:visibility="gone">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="Novedades de tiendas que sigues 🔔"
+                        android:textColor="@color/slate_900"
+                        android:textStyle="bold"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvFollowedUpdates"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipToPadding="false"
+                    android:paddingHorizontal="10dp"
+                    android:layout_marginBottom="10dp"
+                    android:visibility="gone"
+                    tools:listitem="@layout/item_store_update" />
+
                 <!-- Section Title: Recently Viewed -->
                 <LinearLayout
                     android:id="@+id/layoutRecentlyViewedHeader"
@@ -325,6 +366,45 @@
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_marketplace_grid_product" />
 
+                <!-- EMPTY STATE (NO BUSINESSES/PRODUCTS AVAILABLE) -->
+                <LinearLayout
+                    android:id="@+id/layoutEmptyMarketplace"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:paddingHorizontal="32dp"
+                    android:paddingVertical="60dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🏪"
+                        android:textSize="48sp" />
+
+                    <TextView
+                        android:id="@+id/tvEmptyMarketplaceTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="No hay negocios disponibles aún"
+                        android:textColor="@color/slate_700"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:layout_marginTop="12dp" />
+
+                    <TextView
+                        android:id="@+id/tvEmptyMarketplaceSub"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Pronto habrá negocios de esta categoría en tu zona."
+                        android:textColor="@color/slate_400"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        android:layout_marginTop="6dp" />
+                </LinearLayout>
+
                 <!-- Pagination / End Container -->
                 <LinearLayout
                     android:id="@+id/layoutPaginationContainer"
@@ -383,7 +463,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Cargando GoMezMart..."
+            android:text="Cargando mercado..."
             android:textColor="@color/slate_500"
             android:layout_marginTop="12dp" />
     </LinearLayout>

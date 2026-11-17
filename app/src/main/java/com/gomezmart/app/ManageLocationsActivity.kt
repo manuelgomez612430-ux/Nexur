@@ -45,6 +45,7 @@ class ManageLocationsActivity : BaseActivity() {
         loadLocations()
 
         binding.btnAddLocation.setOnClickListener {
+            if (requireLoginForGuest("guardar direcciones en tu cuenta")) return@setOnClickListener
             startActivity(Intent(this, AddLocationActivity::class.java))
         }
     }
@@ -59,6 +60,7 @@ class ManageLocationsActivity : BaseActivity() {
     }
 
     private fun loadLocations() {
+        if (isGuestUser()) return
         val userId = auth.currentUser?.uid ?: return
         db.collection("users").document(userId).collection("locations")
             .addSnapshotListener { snapshot, e ->
@@ -74,6 +76,7 @@ class ManageLocationsActivity : BaseActivity() {
     }
 
     private fun setAsPrimaryLocation(location: UserLocation) {
+        if (isGuestUser()) return
         val userId = auth.currentUser?.uid ?: return
 
         lifecycleScope.launch {

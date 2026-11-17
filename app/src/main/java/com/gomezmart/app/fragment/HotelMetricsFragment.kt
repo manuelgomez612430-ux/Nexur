@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -12,20 +13,20 @@ import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
-import com.gomezmart.app.BaseActivity
-import com.gomezmart.app.util.GeminiHelper
 import com.google.android.material.datepicker.MaterialDatePicker
-import com.gomezmart.app.BuildConfig
+import com.gomezmart.app.BaseActivity
 import com.gomezmart.app.MainActivity
 import com.gomezmart.app.R
 import com.gomezmart.app.adapter.HotelMovementAdapter
 import com.gomezmart.app.adapter.HotelMovementItem
 import com.gomezmart.app.data.AppDatabase
+import com.gomezmart.app.data.ExpenseEntity
 import com.gomezmart.app.data.HotelBookingEntity
 import com.gomezmart.app.data.HotelPaymentEntity
-import com.gomezmart.app.data.MovementLogEntity
 import com.gomezmart.app.databinding.FragmentHotelMetricsBinding
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,10 +40,11 @@ class HotelMetricsFragment : Fragment() {
     private val database: AppDatabase?
         get() = context?.applicationContext?.let { AppDatabase.getDatabase(it) }
     private val adapter = HotelMovementAdapter()
-    
+
     private var startDate: Long = 0
     private var endDate: Long = Long.MAX_VALUE
     private var lastResult: FinancialResult? = null
+    private var metricsJob: Job? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHotelMetricsBinding.inflate(inflater, container, false)
@@ -54,8 +56,14 @@ class HotelMetricsFragment : Fragment() {
         setupToolbar()
         setupRecyclerView()
         setupFilters()
-        setupAI()
         setFilterToToday()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (_binding != null && metricsJob != null) {
+            loadMetrics()
+        }
     }
 
     private fun setupToolbar() {
@@ -74,10 +82,8 @@ class HotelMetricsFragment : Fragment() {
                 R.id.chipMonth -> setFilterToMonth()
             }
         }
-        
-        // Manejar el click de forma independiente para evitar bloqueos o duplicidad
+
         binding.chipCustom.setOnClickListener {
-            // Aseguramos que el chip esté marcado antes de abrir el calendario
             if (!binding.chipCustom.isChecked) {
                 binding.chipGroupTime.check(R.id.chipCustom)
             }
@@ -99,7 +105,7 @@ class HotelMetricsFragment : Fragment() {
         cal.add(Calendar.DAY_OF_YEAR, -1)
         cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
         startDate = cal.timeInMillis
-        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59)
+        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59); cal.set(Calendar.MILLISECOND, 999)
         endDate = cal.timeInMillis
         binding.chipCustom.text = "Elegir Fecha"
         loadMetrics()
@@ -122,84 +128,49 @@ class HotelMetricsFragment : Fragment() {
             .setTitleText("Seleccionar Día para Reporte")
             .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
             .build()
-            
+
         picker.addOnPositiveButtonClickListener { selection ->
             val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
             cal.timeInMillis = selection
-            
-            // Inicio del día seleccionado
+
             cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0)
             cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
             startDate = cal.timeInMillis
-            
-            // Fin del día seleccionado
+
             cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59)
             cal.set(Calendar.SECOND, 59); cal.set(Calendar.MILLISECOND, 999)
             endDate = cal.timeInMillis
-            
-            // Actualizar el texto del Chip con la fecha elegida
+
             val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-            binding.chipCustom.text = sdf.format(Date(selection))
-            
+            _binding?.chipCustom?.text = sdf.format(Date(selection))
+
             loadMetrics()
         }
-        
-        // Si el usuario cancela, no hacemos nada y el chip se mantiene en su estado
+
         picker.show(childFragmentManager, "DATE_PICKER")
     }
 
-    private fun setupAI() {
-        binding.btnRefreshAI.setOnClickListener {
-            val res = lastResult ?: return@setOnClickListener
-            analyzeWithAI(res)
-        }
-    }
-
-    private fun analyzeWithAI(result: FinancialResult) {
-        binding.tvAICounsel.text = "Gemini está analizando tus datos... 🧠"
-        binding.btnRefreshAI.isEnabled = false
-        
-        lifecycleScope.launch {
-            try {
-                val prompt = """
-                    Actúa como un experto consultor financiero para hoteles. 
-                    Analiza estos datos del periodo actual:
-                    - Ingresos Totales: S/ ${result.totalIncome}
-                    - Egresos Totales: S/ ${result.totalExpense}
-                    - Utilidad Neta: S/ ${result.netProfit}
-                    - Número de movimientos: ${result.movements.size}
-                    
-                    Dame 3 consejos breves, estratégicos y motivadores para mejorar el rendimiento. 
-                    Usa un lenguaje cercano y profesional. Responde en español y usa emojis.
-                """.trimIndent()
-
-                // Se usa GeminiHelper (cascada de modelos + reintentos + llamada HTTP
-                // directa). El SDK legacy "generativeai" usaba el modelo retirado
-                // gemini-1.5-flash y además arrastraba ~2 MB de dex innecesarios.
-                val response = GeminiHelper.askRaw(requireContext(), prompt)
-                binding.tvAICounsel.text = response
-                    ?: "No pude generar un análisis en este momento. Inténtalo de nuevo en unos segundos."
-            } catch (e: Exception) {
-                binding.tvAICounsel.text = "Error al conectar con la IA. Inténtalo de nuevo en unos segundos."
-            } finally {
-                binding.btnRefreshAI.isEnabled = true
-            }
-        }
-    }
-
     private fun setupRecyclerView() {
-        binding.rvFinancialMovements.layoutManager = LinearLayoutManager(requireContext())
+        val ctx = context ?: return
+        binding.rvFinancialMovements.layoutManager = LinearLayoutManager(ctx)
         binding.rvFinancialMovements.adapter = adapter
+        binding.barChartFinancial.setNoDataText("Sin flujo financiero en este período")
+        binding.barChartFinancial.setNoDataTextColor(ContextCompat.getColor(ctx, R.color.slate_400))
     }
 
     private fun loadMetrics() {
         val dbInstance = database ?: return
-        lifecycleScope.launch {
+        metricsJob?.cancel()
+        metricsJob = viewLifecycleOwner.lifecycleScope.launch {
             combine(
                 dbInstance.hotelDao().getAllPaymentsFlow(),
-                dbInstance.hotelDao().getAllBookings(),
-                dbInstance.movementLogDao().getAllLogsFlow()
-            ) { p, b, l -> processFinancialData(p, b, l) }.collect { result ->
+                dbInstance.hotelDao().getAllBookings()
+            ) { p, b -> Pair(p, b) }.collectLatest { (payments, bookings) ->
+                val result = withContext(Dispatchers.IO) {
+                    val expenses = dbInstance.expenseDao().getExpensesInRange(startDate, endDate)
+                        .filter { !it.isPersonal }
+                    processFinancialData(payments, bookings, expenses)
+                }
                 lastResult = result
                 updateUI(result)
             }
@@ -209,42 +180,64 @@ class HotelMetricsFragment : Fragment() {
     private fun processFinancialData(
         payments: List<HotelPaymentEntity>,
         bookings: List<HotelBookingEntity>,
-        logs: List<MovementLogEntity>
+        expenses: List<ExpenseEntity>
     ): FinancialResult {
         val fP = payments.filter { it.timestamp in startDate..endDate }
-        val fB = bookings.filter { it.timestamp in startDate..endDate }
-        val fL = logs.filter { it.timestamp in startDate..endDate }
+        val fB = bookings.filter { it.timestamp in startDate..endDate && it.status != "CANCELLED" }
 
         val income = fP.sumOf { it.amount } + fB.sumOf { it.deposit }
-        val expense = fL.filter { it.type.contains("EXPENSE") || it.type.contains("GASTO") }
-            .sumOf { it.value.replace("S/", "").replace(",", "").trim().toDoubleOrNull() ?: 0.0 }
+        val expense = expenses.sumOf { it.monto }
 
         val movements = mutableListOf<HotelMovementItem>()
-        fP.forEach { movements.add(HotelMovementItem(it.id, "PAYMENT", "Pago Recibido", it.amount, it.timestamp)) }
-        fB.forEach { if (it.deposit > 0) movements.add(HotelMovementItem(it.id + "_dep", "PAYMENT", "Anticipo: ${it.guestName}", it.deposit, it.timestamp)) }
-        fL.forEach { val amount = it.value.replace("S/", "").replace(",", "").trim().toDoubleOrNull() ?: 0.0; movements.add(HotelMovementItem(it.id.toString(), "CHARGE", it.title, amount, it.timestamp)) }
+        fP.forEach {
+            val label = if (it.nightsPaid > 0) "Pago (${it.nightsPaid} noches)" else "Pago Recibido"
+            movements.add(HotelMovementItem(it.id, "PAYMENT", label, it.amount, it.timestamp))
+        }
+        fB.forEach {
+            if (it.deposit > 0) {
+                movements.add(HotelMovementItem(it.id + "_dep", "PAYMENT", "Anticipo: ${it.guestName}", it.deposit, it.timestamp))
+            }
+        }
+        expenses.forEach {
+            movements.add(HotelMovementItem("exp_${it.id}", "CHARGE", "${it.categoria}: ${it.concepto}", it.monto, it.fecha))
+        }
 
         return FinancialResult(income, expense, income - expense, movements.sortedByDescending { it.timestamp })
     }
 
     private fun updateUI(result: FinancialResult) {
-        _binding?.let { b ->
-            b.tvTotalIncome.text = String.format(Locale.US, "S/ %.2f", result.totalIncome)
-            b.tvTotalExpense.text = String.format(Locale.US, "S/ %.2f", result.totalExpense)
-            b.tvNetProfit.text = String.format(Locale.US, "S/ %.2f", result.netProfit)
-            b.tvNetProfit.setTextColor(requireContext().getColor(if (result.netProfit < 0) R.color.red_600 else R.color.emerald_600))
-            adapter.submitList(result.movements)
-            setupChart(result)
-        }
+        val ctx = context ?: return
+        val b = _binding ?: return
+        b.tvTotalIncome.text = String.format(Locale.US, "S/ %.2f", result.totalIncome)
+        b.tvTotalExpense.text = String.format(Locale.US, "S/ %.2f", result.totalExpense)
+        b.tvNetProfit.text = String.format(Locale.US, "S/ %.2f", result.netProfit)
+        b.tvNetProfit.setTextColor(ContextCompat.getColor(ctx, if (result.netProfit < 0) R.color.red_600 else R.color.emerald_600))
+
+        val isEmpty = result.movements.isEmpty()
+        b.rvFinancialMovements.visibility = if (isEmpty) View.GONE else View.VISIBLE
+        b.layoutEmptyMovements.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        adapter.submitList(result.movements)
+        setupChart(result)
     }
 
     private fun setupChart(result: FinancialResult) {
-        val entries = mutableListOf<BarEntry>()
-        entries.add(BarEntry(0f, result.totalIncome.toFloat()))
-        entries.add(BarEntry(1f, result.totalExpense.toFloat()))
+        val ctx = context ?: return
+        val b = _binding ?: return
+        if (result.totalIncome == 0.0 && result.totalExpense == 0.0) {
+            b.barChartFinancial.clear()
+            b.barChartFinancial.invalidate()
+            return
+        }
+        val entries = listOf(
+            BarEntry(0f, result.totalIncome.toFloat()),
+            BarEntry(1f, result.totalExpense.toFloat())
+        )
         val dataSet = BarDataSet(entries, "Flujo")
-        dataSet.colors = listOf(requireContext().getColor(R.color.emerald_600), requireContext().getColor(R.color.red_600))
-        binding.barChartFinancial.apply {
+        dataSet.colors = listOf(
+            ContextCompat.getColor(ctx, R.color.emerald_600),
+            ContextCompat.getColor(ctx, R.color.red_600)
+        )
+        b.barChartFinancial.apply {
             data = BarData(dataSet)
             description.isEnabled = false
             xAxis.valueFormatter = IndexAxisValueFormatter(listOf("Ingresos", "Egresos"))
@@ -252,11 +245,17 @@ class HotelMetricsFragment : Fragment() {
             xAxis.granularity = 1f
             xAxis.setDrawGridLines(false)
             axisRight.isEnabled = false
-            animateY(800)
+            animateY(600)
             invalidate()
         }
     }
 
     data class FinancialResult(val totalIncome: Double, val totalExpense: Double, val netProfit: Double, val movements: List<HotelMovementItem>)
-    override fun onDestroyView() { super.onDestroyView(); _binding = null }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        metricsJob?.cancel()
+        metricsJob = null
+        _binding = null
+    }
 }

@@ -18,7 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@android:drawable/ic_menu_revert"
-            app:title="Configuración de Cuenta"
+            app:title="Ajustes de Cuenta"
             app:titleCentered="true" />
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -175,8 +175,62 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- BANNER PARA MODO INVITADO -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardGuestBannerAccountSettings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@color/white"
+                app:strokeWidth="1.5dp"
+                app:strokeColor="@color/purple_200"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="👀 Estás en Modo Invitado"
+                        android:textColor="@color/purple_800"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Inicia sesión para editar tus datos personales en la app y guardar tu información en la nube."
+                        android:textColor="@color/slate_600"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        android:lineSpacingExtra="2dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnGuestLoginInSettings"
+                        style="@style/Widget.Material3.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="16dp"
+                        android:text="Iniciar sesión / Crear cuenta 🚀"
+                        android:textColor="@color/white"
+                        app:backgroundTint="@color/purple_600"
+                        app:cornerRadius="16dp"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- DATOS PERSONALES (EDITABLES) -->
             <TextView
+                android:id="@+id/tvHeaderPersonalInfo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="INFORMACIÓN PERSONAL"
@@ -188,6 +242,7 @@
                 android:layout_marginBottom="8dp" />
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardPersonalInfoContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="20dp"
@@ -274,6 +329,170 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- PRIVACIDAD Y CONEXIONES -->
+            <TextView
+                android:id="@+id/tvHeaderPrivacySettings"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PRIVACIDAD Y CONEXIONES"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_400"
+                android:letterSpacing="0.1"
+                android:layout_gravity="start"
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardPrivacySettingsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="1dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/slate_200"
+                app:cardBackgroundColor="@color/white"
+                android:layout_marginBottom="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginEnd="12dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Aparecer en el directorio"
+                                android:textColor="@color/slate_900"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Permite que otros usuarios te encuentren por nombre en la comunidad."
+                                android:textColor="@color/slate_500"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchAllowDirectorySearch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="12dp"
+                        android:background="@color/slate_100" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginEnd="12dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Compartir contacto con amigos"
+                                android:textColor="@color/slate_900"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Solo tus amigos aceptados podrán ver tu teléfono y correo."
+                                android:textColor="@color/slate_500"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switchShareContactWithFriends"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="false" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="12dp"
+                        android:background="@color/slate_100" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutMessagePrivacySelector"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackground"
+                        android:paddingVertical="4dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Quién puede enviarme mensajes"
+                                android:textColor="@color/slate_900"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvMessagePrivacyCurrent"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Cualquiera (con solicitud de mensaje)"
+                                android:textColor="@color/purple_700"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Cambiar ›"
+                            android:textColor="@color/purple_600"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- SECCIÓN: CUENTAS VINCULADAS -->
             <TextView
                 android:layout_width="wrap_content"
@@ -324,7 +543,7 @@
                             android:id="@+id/tvEditAccountEmail"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="correo@gmail.com"
+                            android:text="Sin correo registrado"
                             android:textColor="@color/slate_700"
                             android:textSize="14sp"
                             android:textStyle="bold" />
@@ -333,8 +552,8 @@
                             android:id="@+id/tvEditGoogleStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Vinculado con Google"
-                            android:textColor="@color/emerald_600"
+                            android:text="No vinculado con Google"
+                            android:textColor="@color/slate_400"
                             android:textSize="12sp" />
                     </LinearLayout>
 
@@ -347,7 +566,7 @@
                         android:textSize="12sp"
                         android:textColor="@color/purple_600"
                         app:cornerRadius="8dp"
-                        android:visibility="gone" />
+                        android:visibility="visible" />
 
                     <ImageView
                         android:id="@+id/ivGoogleLinkedCheck"
@@ -355,7 +574,7 @@
                         android:layout_height="24dp"
                         android:src="@android:drawable/checkbox_on_background"
                         app:tint="@color/emerald_600"
-                        android:visibility="visible" />
+                        android:visibility="gone" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -380,6 +599,58 @@
                 tools:listitem="@layout/item_business_profile"
                 android:layout_marginBottom="16dp" />
 
+            <!-- MENSAJE Y BOTÓN CUANDO NO HAY SISTEMAS ACTIVOS -->
+            <LinearLayout
+                android:id="@+id/layoutEmptySystems"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="20dp"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💻"
+                    android:textSize="32sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="No hay sistemas ni colaboraciones activas"
+                    android:textColor="@color/slate_700"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:gravity="center" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Descarga o instala un sistema de gestión para tu negocio o uso personal."
+                    android:textColor="@color/slate_500"
+                    android:textSize="12sp"
+                    android:gravity="center" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDownloadManagementSystem"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Descargar sistema de gestión 📥"
+                    android:textColor="@color/purple_700"
+                    app:backgroundTint="@color/purple_50"
+                    app:strokeColor="@color/purple_200"
+                    app:strokeWidth="1dp"
+                    app:cornerRadius="12dp"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
             <!-- SESION Y ZONA DE PELIGRO -->
             <TextView
                 android:layout_width="wrap_content"
@@ -394,6 +665,7 @@
 
             <!-- SECCIÓN: CONTRASEÑA DE ACCESO -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardPasswordSettingsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
@@ -455,6 +727,71 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- SECCIÓN: ACTUALIZACIÓN DE LA APLICACIÓN -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardCheckUpdateAccount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="1dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/purple_200"
+                app:cardBackgroundColor="@color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <FrameLayout
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_circle_light_purple">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:text="🚀"
+                            android:textSize="20sp" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="14dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Actualizar Aplicación"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_900" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Verificar nueva versión en Google Play Store"
+                            android:textSize="12sp"
+                            android:textColor="@color/slate_500" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="@color/purple_600" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardSignOutAccount"
                 android:layout_width="match_parent"
@@ -477,6 +814,7 @@
                     android:gravity="center_vertical">
 
                     <TextView
+                        android:id="@+id/tvSignOutLabel"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -493,8 +831,20 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ZONA DE PELIGRO -->
+            <!-- ELIMINACIÓN DE DATOS O CUENTA -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ELIMINACIÓN DE DATOS O CUENTA"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_400"
+                android:letterSpacing="0.1"
+                android:layout_gravity="start"
+                android:layout_marginBottom="8dp" />
+
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardOpenDeleteOptions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
@@ -502,43 +852,57 @@
                 app:strokeWidth="1dp"
                 app:strokeColor="@color/red_200"
                 app:cardBackgroundColor="@color/red_50"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
                 android:layout_marginBottom="24dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Zona de Peligro ⚠️"
-                        android:textColor="@color/red_700"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:text="🗑️"
+                        android:textSize="24sp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="14dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Eliminar datos o cuenta"
+                            android:textColor="@color/red_700"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="Borra únicamente los datos de tus sistemas o elimina tu cuenta de forma definitiva."
+                            android:textColor="@color/slate_600"
+                            android:textSize="12sp"
+                            android:lineSpacingExtra="1dp" />
+                    </LinearLayout>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="Al eliminar tu cuenta se borrarán de forma PERMANENTE todos tus datos, perfiles, negocios, inventarios, compras, mensajes, ubicaciones e imágenes de Supabase y la nube."
-                        android:textColor="@color/slate_600"
-                        android:textSize="12sp"
-                        android:lineSpacingExtra="2dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnDeleteAccountPermanent"
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:layout_marginTop="16dp"
-                        android:text="ELIMINAR MI CUENTA Y DATOS 🗑️"
-                        android:textSize="12sp"
+                        android:text="➔"
+                        android:textColor="@color/red_600"
+                        android:textSize="18sp"
                         android:textStyle="bold"
-                        app:cornerRadius="14dp"
-                        app:backgroundTint="@color/red_600"
-                        android:textColor="@color/white" />
-
+                        android:layout_marginStart="8dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

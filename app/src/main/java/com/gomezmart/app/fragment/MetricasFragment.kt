@@ -118,15 +118,6 @@ class MetricasFragment : Fragment() {
             openDrawer()
         }
 
-        binding.btnRefreshAiAnalysis.setOnClickListener {
-            generateAiAnalysis(currentVentas, currentUtilidad, currentGastos, currentDeudores, currentDeudas, currentCompromisos)
-        }
-
-        binding.btnCloseAiAnalysis.setOnClickListener {
-            binding.tvAiAnalysisContent.text = "¿Quieres un análisis experto de hoy? Pulsa el botón para que Gemini analice tus números."
-            binding.btnCloseAiAnalysis.visibility = View.GONE
-        }
-        
         setupCharts()
         loadStatistics()
     }
@@ -377,27 +368,6 @@ class MetricasFragment : Fragment() {
 
             } catch (e: Exception) {
                 e.printStackTrace()
-            }
-        }
-    }
-
-    private fun generateAiAnalysis(v: Double, u: Double, g: Double, dr: Double, dp: Double, c: Double) {
-        val range = binding.tvCurrentFilterRange.text.toString().replace("Mostrando: ", "")
-        val capital = requireContext().getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE).getFloat("business_capital", 0f).toDouble()
-        
-        binding.progressAiAnalysis.visibility = View.VISIBLE
-        binding.tvAiAnalysisContent.alpha = 0.5f
-
-        lifecycleScope.launch {
-            val analysis = GeminiHelper.getBusinessAnalysis(v, u, g, dr, dp, capital, c, range)
-            withContext(Dispatchers.Main) {
-                if (_binding != null) {
-                    val formattedText = GeminiHelper.formatMarkdown(analysis)
-                    binding.tvAiAnalysisContent.text = formattedText
-                    binding.tvAiAnalysisContent.alpha = 1.0f
-                    binding.progressAiAnalysis.visibility = View.GONE
-                    binding.btnCloseAiAnalysis.visibility = View.VISIBLE
-                }
             }
         }
     }

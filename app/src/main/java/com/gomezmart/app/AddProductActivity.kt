@@ -212,6 +212,7 @@ class AddProductActivity : BaseActivity() {
                         currentPhotoPath = p.photoPath
                     }
                     binding.btnDeleteProduct.visibility = View.VISIBLE
+                    binding.cbNotifyFollowers.isChecked = false
                 }
             }
         }
@@ -477,9 +478,10 @@ class AddProductActivity : BaseActivity() {
                 colorHex = "#8E44AD",
                 iconRes = android.R.drawable.ic_menu_edit
             )
+            val shouldNotifyFollowers = binding.cbNotifyFollowers.isChecked
             database.movementLogDao().insert(log)
             SyncManager(this@AddProductActivity).syncLogToCloud(log)
-            SyncManager(this@AddProductActivity).syncProductToCloud(productToSync)
+            SyncManager(this@AddProductActivity).syncProductToCloud(productToSync, notifyFollowers = shouldNotifyFollowers)
             SyncManager(this@AddProductActivity).scheduleOfflineSync()
 
             withContext(Dispatchers.Main) {
@@ -568,7 +570,7 @@ class AddProductActivity : BaseActivity() {
                 val log = MovementLogEntity(
                     type = "PRODUCT_DELETED",
                     title = "Producto Eliminado",
-                    description = p.nombre,
+                    description = p.nombre ?: "",
                     value = "ELIMINADO",
                     colorHex = "#E11D48", // Rojo vibrante
                     iconRes = android.R.drawable.ic_menu_delete,

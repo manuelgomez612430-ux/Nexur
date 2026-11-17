@@ -237,6 +237,10 @@ class StoreEditorActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (requireLoginForGuest("publicar o editar tu tienda en el Mercado en Línea")) {
+            finish()
+            return
+        }
         if (savedInstanceState != null) {
             cameraImageUri = savedInstanceState.getParcelable("camera_uri")
             currentCropType = savedInstanceState.getString("crop_type") ?: ""
@@ -351,12 +355,45 @@ class StoreEditorActivity : BaseActivity() {
     }
 
     private fun showMainImageOptions(type: String) {
-        val options = arrayOf("🗑️ Quitar Imagen", "🔄 Reemplazar Imagen")
+        val options = arrayOf("🔄 Reemplazar Imagen", "✏️ Editar Imagen")
         AlertDialog.Builder(this).setTitle("Gestionar Imagen").setItems(options) { _, which ->
-            if (which == 0) {
-                if (type == "LOGO") { selectedLogoUri = null; binding.ivEditLogo.tag = null; binding.ivEditLogo.setImageResource(R.drawable.gomezmart_icon) }
-                else { selectedCoverUri = null; binding.ivEditCover.tag = null; binding.ivEditCover.setImageResource(R.drawable.gomezmart_full_bg) }
-            } else showImagePickerOptions(type)
+            when (which) {
+                0 -> showImagePickerOptions(type)
+                1 -> {
+                    val currentTag = if (type == "LOGO") binding.ivEditLogo.tag?.toString() else binding.ivEditCover.tag?.toString()
+                    val currentUri = if (type == "LOGO") selectedLogoUri else selectedCoverUri
+                    
+                    if (currentUri != null) {
+                        startCrop(currentUri, type)
+                    } else if (!currentTag.isNullOrEmpty()) {
+                        Toast.makeText(this, "Preparando imagen...", Toast.LENGTH_SHORT).show()
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            try {
+                                val file = Glide.with(this@StoreEditorActivity)
+                                    .downloadOnly()
+                                    .load(currentTag)
+                                    .submit()
+                                    .get()
+
+                                val localUri = androidx.core.content.FileProvider.getUriForFile(
+                                    this@StoreEditorActivity,
+                                    "$packageName.provider",
+                                    file
+                                )
+                                withContext(Dispatchers.Main) {
+                                    startCrop(localUri, type)
+                                }
+                            } catch (e: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(this@StoreEditorActivity, "Error al cargar la imagen para editar", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    } else {
+                        Toast.makeText(this, "No hay imagen para editar", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }.show()
     }
 
@@ -419,7 +456,7 @@ class StoreEditorActivity : BaseActivity() {
                         binding.ivEditLogo.tag = it
                         Glide.with(this@StoreEditorActivity)
                             .load(it)
-                            .placeholder(R.drawable.gomezmart_icon)
+                            .placeholder(R.drawable.logo_sistema_productos)
                             .priority(Priority.HIGH)
                             .circleCrop()
                             .into(binding.ivEditLogo) 
@@ -495,16 +532,18 @@ class StoreEditorActivity : BaseActivity() {
         
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                // [NUEVO] Detectar Ciudad y Código Postal antes de guardar
+                // [NUEVO] Detectar Ciudad, Código Postal y País antes de guardar
                 var detectedCity = ""
                 var detectedPostalCode = ""
+                var detectedCountry = ""
                 try {
                     val geocoder = Geocoder(this@StoreEditorActivity, Locale.getDefault())
                     val addresses = geocoder.getFromLocation(businessLat, businessLng, 1)
                     if (!addresses.isNullOrEmpty()) {
-                        val addr = addresses[0]
-                        detectedCity = addr.locality ?: addr.subAdminArea ?: ""
-                        detectedPostalCode = addr.postalCode ?: ""
+                        val addrObj = addresses[0]
+                        detectedCity = addrObj.locality ?: addrObj.subAdminArea ?: ""
+                        detectedPostalCode = addrObj.postalCode ?: ""
+                        detectedCountry = addrObj.countryName ?: ""
                     }
                 } catch (e: Exception) {
                     Log.e("StoreEditor", "Error detectando zona: ${e.message}")
@@ -524,6 +563,7 @@ class StoreEditorActivity : BaseActivity() {
                     "longitude" to businessLng, 
                     "business_city" to detectedCity,
                     "business_postal_code" to detectedPostalCode,
+                    "business_country" to detectedCountry,
                     "business_type" to bType, 
                     "theme" to currentTheme, 
                     "paymentMethods" to paymentMethods
@@ -582,6 +622,15 @@ class StoreEditorActivity : BaseActivity() {
                 db.collection("users").document(ownerId).collection("settings").document(bType)
                     .set(data, SetOptions.merge()).await()
 
+                // Limpieza preventiva de documentos legacy/duplicados ("business")
+                try {
+                    if (bType != "business") {
+                        db.collection("users").document(ownerId).collection("settings").document("business").delete().await()
+                    }
+                } catch (e: Exception) {}
+
+                SyncManager(this@StoreEditorActivity).cleanTempCacheFiles()
+
                 // 4. CORRECCIÓN: Actualizar también el Perfil del Usuario si cambió el nombre del dueño
                 if (owner.isNotEmpty()) {
                     val profileData = mapOf("name" to owner)
@@ -589,7 +638,19 @@ class StoreEditorActivity : BaseActivity() {
                         .set(profileData, SetOptions.merge()).await()
                 }
 
+                getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit().apply {
+                    putBoolean("is_online_store", isOnline)
+                    putBoolean("${bType}_is_online", isOnline)
+                    putString("${bType}_name", name)
+                    putString("${bType}_owner_name", owner)
+                    putString("${bType}_phone", phone)
+                    putString("${bType}_address", addr)
+                    (data["business_logo_url"] as? String)?.let { putString("${bType}_logo_url", it) }
+                    apply()
+                }
+
                 withContext(Dispatchers.Main) {
+                    com.gomezmart.app.fragment.BuyerMarketplaceFragment.needsMarketplaceRefresh = true
                     progress.dismiss()
                     Toast.makeText(this@StoreEditorActivity, "¡Tienda y fotos guardadas! 🌐✨", Toast.LENGTH_SHORT).show()
                     finish()

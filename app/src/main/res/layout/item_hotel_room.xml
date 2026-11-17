@@ -26,10 +26,13 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <!-- ICONO DINÁMICO TIPO BURBUJA -->
+            <!-- ICONO / MINIATURA DE HABITACIÓN -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardRoomThumb"
                 android:layout_width="52dp"
                 android:layout_height="52dp"
+                android:clickable="true"
+                android:focusable="true"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:cardBackgroundColor="@color/slate_50">
@@ -43,6 +46,12 @@
                         android:layout_gravity="center"
                         android:text="🏨"
                         android:textSize="24sp" />
+                    <ImageView
+                        android:id="@+id/ivRoomThumb"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
                     <ImageView
                         android:id="@+id/ivRoomIcon"
                         android:layout_width="26dp"
@@ -75,6 +84,19 @@
                     android:text="Simple"
                     android:textSize="13sp"
                     android:textColor="@color/slate_400" />
+                <TextView
+                    android:id="@+id/tvRoomPhotoBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:background="@color/amber_50"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp"
+                    android:text="📷 Añadir foto"
+                    android:textColor="@color/amber_700"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <com.google.android.material.chip.Chip

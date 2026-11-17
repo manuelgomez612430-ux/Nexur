@@ -362,6 +362,9 @@ interface LoanDao {
     @Query("SELECT * FROM loan_funding_sources")
     suspend fun getAllFundingSources(): List<LoanFundingSourceEntity>
 
+    @Query("SELECT * FROM loan_funding_sources")
+    fun getAllFundingSourcesFlow(): Flow<List<LoanFundingSourceEntity>>
+
     @Query("DELETE FROM loan_funding_sources")
     suspend fun deleteAllFundingSources()
 
@@ -525,7 +528,7 @@ interface LoanDao {
         for ((_, clientLoans) in byClient) {
             val active = clientLoans.filter { !it.isDeleted && (it.status == "ACTIVE" || it.status == "OVERDUE") }
             if (active.isNotEmpty()) {
-                val primary = active.minByOrNull { it.createdAt } ?: active.first()
+                val primary = active.maxByOrNull { it.createdAt } ?: active.first()
 
                 active.filter { it.id != primary.id }.forEach { old ->
                     updateLoan(old.copy(status = "REFINANCED", isDeleted = true, isSynced = false))

@@ -101,6 +101,8 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="96dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -564,37 +566,59 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- HERRAMIENTAS EN LÍNEA -->
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- SEPARADOR DE SECCIÓN: Gestión Financiera -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="HISTORIAL Y REPORTES"
-                android:textStyle="bold"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:textSize="11sp"
-                android:letterSpacing="0.1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
                 android:layout_marginTop="24dp"
-                android:layout_marginBottom="12dp" />
+                android:layout_marginBottom="12dp">
 
-            <!-- FILA 1 DE ACCESOS DIRECTOS -->
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="?attr/colorOnSurfaceVariant"
+                    android:alpha="0.15" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💼 Gestión Financiera"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:layout_marginHorizontal="12dp"
+                    android:letterSpacing="0.1" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="?attr/colorOnSurfaceVariant"
+                    android:alpha="0.15" />
+            </LinearLayout>
+
+            <!-- FILA 1 DE ACCESOS DIRECTOS: Gestión Financiera Principal -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:weightSum="3">
 
-                <!-- 1. MIS CLIENTES -->
+                <!-- 1. CUENTAS Y DINERO -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/toolLoansClients"
+                    android:id="@+id/toolLoansAccounts"
                     android:layout_width="0dp"
                     android:layout_height="105dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="4dp"
                     app:cardCornerRadius="24dp"
                     app:cardElevation="2dp"
-                    app:cardBackgroundColor="#EEF2FF"
+                    app:cardBackgroundColor="#F5F3FF"
                     app:strokeWidth="1dp"
-                    app:strokeColor="#C7D2FE"
+                    app:strokeColor="#DDD6FE"
                     android:clickable="true"
                     android:focusable="true">
                     <LinearLayout
@@ -606,17 +630,17 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="👥"
+                            android:text="🏦"
                             android:textSize="36sp"
                             android:layout_marginBottom="4dp" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="MIS CLIENTES"
+                            android:text="CUENTAS"
                             android:textAlignment="center"
                             android:textStyle="bold"
                             android:textSize="10sp"
-                            android:textColor="#312E81"
+                            android:textColor="#5B21B6"
                             android:layout_marginTop="6dp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -699,7 +723,41 @@
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
-            <!-- SEGUNDA FILA DE ACCESOS DIRECTOS -->
+            <!-- SEPARADOR DE SECCIÓN: Clientes y Créditos -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp">
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="?attr/colorOnSurfaceVariant"
+                    android:alpha="0.15" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="👥 Clientes y Créditos"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:layout_marginHorizontal="12dp"
+                    android:letterSpacing="0.1" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="?attr/colorOnSurfaceVariant"
+                    android:alpha="0.15" />
+            </LinearLayout>
+
+            <!-- SEGUNDA FILA DE ACCESOS DIRECTOS: Clientes y Seguimiento -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -707,7 +765,165 @@
                 android:layout_marginTop="8dp"
                 android:weightSum="3">
 
-                <!-- 4. ASESOR IA -->
+                <!-- 4. MIS CLIENTES -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/toolLoansClients"
+                    android:layout_width="0dp"
+                    android:layout_height="105dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="#EEF2FF"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="#C7D2FE"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="👥"
+                            android:textSize="36sp"
+                            android:layout_marginBottom="4dp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="MIS CLIENTES"
+                            android:textAlignment="center"
+                            android:textStyle="bold"
+                            android:textSize="10sp"
+                            android:textColor="#312E81"
+                            android:layout_marginTop="6dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- 5. HISTORIAL DE MOVIMIENTOS -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/toolLoansMovements"
+                    android:layout_width="0dp"
+                    android:layout_height="105dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="#ECFDF5"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="#A7F3D0"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📊"
+                            android:textSize="36sp"
+                            android:layout_marginBottom="4dp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="MOVIMIENTOS"
+                            android:textAlignment="center"
+                            android:textStyle="bold"
+                            android:textSize="10sp"
+                            android:textColor="#064E3B"
+                            android:layout_marginTop="6dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- 6. REORGANIZACIÓN FINANCIERA -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/toolLoansReorganization"
+                    android:layout_width="0dp"
+                    android:layout_height="105dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="#FFF7ED"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="#FFEDD5"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔄"
+                            android:textSize="36sp"
+                            android:layout_marginBottom="4dp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="REORGANIZAR"
+                            android:textAlignment="center"
+                            android:textStyle="bold"
+                            android:textSize="10sp"
+                            android:textColor="#C2410C"
+                            android:layout_marginTop="6dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- SEPARADOR DE SECCIÓN: Herramientas y Soporte -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp">
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="?attr/colorOnSurfaceVariant"
+                    android:alpha="0.15" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🛠️ Herramientas y Soporte"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:layout_marginHorizontal="12dp"
+                    android:letterSpacing="0.1" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"
+                    android:background="?attr/colorOnSurfaceVariant"
+                    android:alpha="0.15" />
+            </LinearLayout>
+
+            <!-- TERCERA FILA DE ACCESOS DIRECTOS: Herramientas de Soporte -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
+                android:weightSum="3">
+
+                <!-- 7. ASESOR IA -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/toolLoansAiChat"
                     android:layout_width="0dp"
@@ -745,7 +961,7 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- 5. BUZÓN / MENSAJES -->
+                <!-- 8. BUZÓN / MENSAJES -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/toolLoansMailbox"
                     android:layout_width="0dp"
@@ -784,9 +1000,9 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- 6. HISTORIAL DE MOVIMIENTOS -->
+                <!-- 9. OFRECER SERVICIO EN MERCADO -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/toolLoansMovements"
+                    android:id="@+id/toolLoansOfferMarket"
                     android:layout_width="0dp"
                     android:layout_height="105dp"
                     android:layout_weight="1"
@@ -807,131 +1023,34 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="📊"
+                            android:text="🛒"
                             android:textSize="36sp"
                             android:layout_marginBottom="4dp" />
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="MOVIMIENTOS"
+                            android:text="MERCADO"
+                            android:gravity="center"
                             android:textAlignment="center"
                             android:textStyle="bold"
                             android:textSize="10sp"
-                            android:textColor="#064E3B"
+                            android:textColor="#065F46"
                             android:layout_marginTop="6dp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
-
-            <!-- TERCERA FILA DE ACCESOS DIRECTOS -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="8dp"
-                android:weightSum="3">
-
-                <!-- 7. MIS CUENTAS Y DINERO -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/toolLoansAccounts"
-                    android:layout_width="0dp"
-                    android:layout_height="105dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="4dp"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="2dp"
-                    app:cardBackgroundColor="#F5F3FF"
-                    app:strokeWidth="1dp"
-                    app:strokeColor="#DDD6FE"
-                    android:clickable="true"
-                    android:focusable="true">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="8dp">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="🏦"
-                            android:textSize="36sp"
-                            android:layout_marginBottom="4dp" />
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="CUENTAS"
-                            android:textAlignment="center"
-                            android:textStyle="bold"
-                            android:textSize="10sp"
-                            android:textColor="#5B21B6"
-                            android:layout_marginTop="6dp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Espacios vacíos para mantener alineación de 3 columnas -->
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp" />
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp" />
             </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="32dp" />
 
-            <!-- BOTÓN APOYAR AL CREADOR (MUY DISCRETO) -->
-            <LinearLayout
-                android:id="@+id/btnSupportCreatorHome"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:orientation="horizontal"
-                android:padding="6dp"
-                android:gravity="center_vertical"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:alpha="0.8">
-                <ImageView
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
-                    android:src="@android:drawable/btn_star_big_on"
-                    app:tint="@color/emerald_600" />
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginStart="8dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Presiona aquí para apoyar al creador"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Ayúdame a mantener GoMezMart gratuito y sin anuncios"
-                        android:textSize="9sp"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-                </LinearLayout>
-            </LinearLayout>
+
 
             <!-- FOOTER INFO -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="GoMezMart Préstamos v1.5.40"
+                android:text="GoMezMart Préstamos v1.5.52"
                 android:textAlignment="center"
                 android:textSize="10sp"
                 android:textColor="?attr/colorOnSurfaceVariant"

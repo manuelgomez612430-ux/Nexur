@@ -63,6 +63,8 @@ class AccountSettingsActivity : BaseActivity() {
     private var selectedPhotoUri: Uri? = null
     private var photoFile: File? = null
     private var initialPhotoUrl: String? = null
+    private var isUpdatingPrivacyUi = false
+    private var currentMessagePrivacy = com.gomezmart.app.data.MessagePrivacy.EVERYONE_WITH_REQUEST
 
     private lateinit var systemsAdapter: SystemsAdapter
 
@@ -79,11 +81,24 @@ class AccountSettingsActivity : BaseActivity() {
     }
 
     private fun updateGoogleLinkStatus() {
-        val user = auth.currentUser ?: return
-        binding.tvEditAccountEmail.text = user.email
-        
+        val user = auth.currentUser
+        val isGuest = user == null || user.isAnonymous || isGuestUser()
+
+        if (isGuest || user == null) {
+            binding.tvEditAccountEmail.text = "Sin correo (Modo Invitado)"
+            binding.tvEditGoogleStatus.text = "No vinculado con Google"
+            binding.tvEditGoogleStatus.setTextColor(getColor(R.color.slate_400))
+            binding.ivGoogleLinkedCheck.visibility = View.GONE
+            binding.btnLinkGoogle.visibility = View.VISIBLE
+            binding.btnLinkGoogle.isEnabled = true
+            binding.btnLinkGoogle.alpha = 1.0f
+            binding.btnLinkGoogle.text = "Vincular"
+            return
+        }
+
+        binding.tvEditAccountEmail.text = user.email ?: "Sin correo"
         val isLinked = user.providerData.any { it.providerId == GoogleAuthProvider.PROVIDER_ID }
-        
+
         if (isLinked) {
             binding.tvEditGoogleStatus.text = "Vinculado con Google ✅"
             binding.tvEditGoogleStatus.setTextColor(getColor(R.color.emerald_600))
@@ -94,6 +109,7 @@ class AccountSettingsActivity : BaseActivity() {
             binding.tvEditGoogleStatus.setTextColor(getColor(R.color.slate_400))
             binding.ivGoogleLinkedCheck.visibility = View.GONE
             binding.btnLinkGoogle.visibility = View.VISIBLE
+            binding.btnLinkGoogle.text = "Vincular"
         }
     }
 
@@ -126,6 +142,39 @@ class AccountSettingsActivity : BaseActivity() {
         user.linkWithCredential(credential).addOnCompleteListener { task ->
             loading.dismiss()
             if (task.isSuccessful) {
+                val linkedUser = auth.currentUser
+                if (linkedUser != null) {
+                    val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+                    val name = appPrefs.getString("user_full_name", null)?.takeIf { it.isNotBlank() } ?: linkedUser.displayName ?: ""
+                    val photo = appPrefs.getString("user_photo_url", null)?.takeIf { it.isNotBlank() } ?: linkedUser.photoUrl?.toString() ?: ""
+                    val email = linkedUser.email ?: ""
+
+                    appPrefs.edit().apply {
+                        putBoolean("is_guest", false)
+                        if (name.isNotBlank()) putString("user_full_name", name)
+                        if (photo.isNotBlank()) putString("user_photo_url", photo)
+                        if (email.isNotBlank()) putString("user_email", email)
+                        apply()
+                    }
+
+                    val updates = mutableMapOf<String, Any>("email" to email)
+                    if (name.isNotBlank()) {
+                        updates["name"] = name
+                        updates["user_full_name"] = name
+                    }
+                    if (photo.isNotBlank()) {
+                        updates["photoUrl"] = photo
+                        updates["user_photo_url"] = photo
+                    }
+                    db.collection("users").document(linkedUser.uid).collection("profile").document("info")
+                        .set(updates, SetOptions.merge())
+                    db.collection("users").document(linkedUser.uid)
+                        .set(updates, SetOptions.merge())
+
+                    SyncManager(this).scheduleOfflineSync()
+                    loadUserData()
+                    loadSavedSystems()
+                }
                 Toast.makeText(this, "Cuenta vinculada con éxito ✅", Toast.LENGTH_SHORT).show()
                 updateGoogleLinkStatus()
             } else {
@@ -181,16 +230,23 @@ class AccountSettingsActivity : BaseActivity() {
         binding = ActivityAccountSettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Manejar insets de la barra de herramientas
-        applyWindowInsets(binding.toolbarAccountSettings, applyTop = true, applyBottom = false)
+        // Manejar insets en el AppBarLayout (en lugar de comprimir el MaterialToolbar de altura fija)
+        applyWindowInsets(binding.appBarAccountSettings, applyTop = true, applyBottom = false)
         applyWindowInsets(binding.root, applyTop = false, applyBottom = true)
 
         binding.toolbarAccountSettings.setNavigationOnClickListener { finish() }
 
         setupRecyclerView()
         loadUserData()
-        loadSavedSystems()
         setupListeners()
+
+        // Diferir consultas pesadas (Firestore y Room DB) hasta terminar la animación de entrada (180ms)
+        binding.root.postDelayed({
+            if (!isFinishing && !isDestroyed) {
+                syncRemoteProfileAndRole()
+                loadSavedSystems()
+            }
+        }, 200L)
     }
 
     private fun setupRecyclerView() {
@@ -199,27 +255,161 @@ class AccountSettingsActivity : BaseActivity() {
         }
         binding.rvSavedSystems.layoutManager = LinearLayoutManager(this)
         binding.rvSavedSystems.adapter = systemsAdapter
+
+        // Pre-cargar el sistema local activo inmediatamente para evitar saltos de diseño tras la transición
+        val bizPrefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val activeType = bizPrefs.getString("business_type", null)
+        if (!activeType.isNullOrEmpty()) {
+            val isGuest = isGuestUser() || auth.currentUser == null || auth.currentUser?.isAnonymous == true
+            val userId = if (isGuest) "guest" else (auth.currentUser?.uid ?: "")
+            val activeName = bizPrefs.getString("${activeType}_name", "")
+                ?.takeIf { it.isNotBlank() }
+                ?: bizPrefs.getString("business_name", "")
+                ?.takeIf { it.isNotBlank() }
+                ?: when (activeType) {
+                    "LOANS" -> "Sistema de Préstamos"
+                    "HOTEL" -> "Hospedaje y Hotel"
+                    else -> "Tienda de Productos"
+                }
+            val activeLogo = bizPrefs.getString("${activeType}_logo_url", "")
+                ?: bizPrefs.getString("business_logo_url", "")
+            val isOnline = if (isGuest) false else bizPrefs.getBoolean("is_online_store", false)
+
+            binding.rvSavedSystems.visibility = View.VISIBLE
+            binding.layoutEmptySystems.visibility = View.GONE
+            systemsAdapter.setItems(
+                listOf(
+                    StoreModel(
+                        id = userId,
+                        name = activeName,
+                        businessType = activeType.uppercase(),
+                        logoUrl = activeLogo,
+                        address = "",
+                        phone = if (isOnline) "ONLINE" else "OFFLINE"
+                    )
+                )
+            )
+        }
     }
 
     private fun loadUserData() {
         val user = auth.currentUser
-        if (user == null) {
+        val isGuest = isGuestUser() || user == null || user.isAnonymous
+
+        if (isGuest) {
+            binding.cardGuestBannerAccountSettings.visibility = View.VISIBLE
+            binding.btnGuestLoginInSettings.setOnClickListener {
+                val intent = Intent(this, LoginActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+            }
+
             binding.tvProfileNameDisplay.text = "Modo Invitado"
-            binding.tvProfileEmailDisplay.text = "Inicia sesión para más funciones"
+            binding.tvProfileEmailDisplay.text = "Sin cuenta registrada"
             binding.tvProfileInitial.text = "?"
-            binding.tvUserAccountType.text = "COMPRADOR"
+            binding.tvUserAccountType.text = "INVITADO"
+
+            // Ocultar campos de información personal, privacidad y contraseña para Modo Invitado
+            binding.tvHeaderPersonalInfo.visibility = View.GONE
+            binding.cardPersonalInfoContainer.visibility = View.GONE
+            binding.tvHeaderPrivacySettings.visibility = View.GONE
+            binding.cardPrivacySettingsContainer.visibility = View.GONE
+            binding.cardPasswordSettingsContainer.visibility = View.GONE
+
+            binding.btnChangeProfilePhoto.isEnabled = false
+            binding.btnChangeProfilePhoto.alpha = 0.5f
+
+            binding.btnLinkGoogle.isEnabled = true
+            binding.btnLinkGoogle.alpha = 1.0f
+
+            binding.tvSignOutLabel.text = "Salir del Modo Invitado"
+
+            updateGoogleLinkStatus()
             return
+        } else {
+            binding.cardGuestBannerAccountSettings.visibility = View.GONE
+            binding.tvHeaderPersonalInfo.visibility = View.VISIBLE
+            binding.cardPersonalInfoContainer.visibility = View.VISIBLE
+            binding.tvHeaderPrivacySettings.visibility = View.VISIBLE
+            binding.cardPrivacySettingsContainer.visibility = View.VISIBLE
+            binding.cardPasswordSettingsContainer.visibility = View.VISIBLE
+
+            binding.etFullName.isEnabled = true
+            binding.etDni.isEnabled = true
+            binding.etPhone.isEnabled = true
+            binding.etAddress.isEnabled = true
+            binding.btnSaveProfile.isEnabled = true
+            binding.btnSaveProfile.alpha = 1.0f
+
+            binding.btnChangeProfilePhoto.isEnabled = true
+            binding.btnChangeProfilePhoto.alpha = 1.0f
+
+            binding.btnLinkGoogle.isEnabled = true
+            binding.btnLinkGoogle.alpha = 1.0f
+
+            binding.etAccountPassword.isEnabled = true
+            binding.btnSaveAccountPassword.isEnabled = true
+            binding.btnSaveAccountPassword.alpha = 1.0f
+
+            binding.tvSignOutLabel.text = "Cerrar Sesión"
         }
 
         binding.tvProfileEmailDisplay.text = user.email
         updateGoogleLinkStatus()
 
         val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        binding.etFullName.setText(appPrefs.getString("user_full_name", user.displayName))
+        val nameToDisplay = com.gomezmart.app.util.UserNameGenerator.getOrGenerateName(this, appPrefs.getString("user_full_name", user.displayName), user.uid)
+
+        val textInputLayouts = listOf(binding.etFullName, binding.etDni, binding.etPhone, binding.etAddress)
+            .mapNotNull { it.parent?.parent as? com.google.android.material.textfield.TextInputLayout }
+        textInputLayouts.forEach { it.isHintAnimationEnabled = false }
+
+        binding.etFullName.setText(nameToDisplay)
+        binding.tvProfileNameDisplay.text = nameToDisplay
+        binding.tvProfileInitial.text = if (nameToDisplay.isNotEmpty()) nameToDisplay[0].uppercaseChar().toString() else "?"
+
         binding.etPhone.setText(appPrefs.getString("user_phone", ""))
         binding.etDni.setText(appPrefs.getString("user_dni", ""))
         binding.etAddress.setText(appPrefs.getString("user_address", ""))
+
+        binding.root.post {
+            textInputLayouts.forEach { it.isHintAnimationEnabled = true }
+        }
+
         initialPhotoUrl = appPrefs.getString("user_photo_url", user.photoUrl?.toString())
+        if (!initialPhotoUrl.isNullOrEmpty()) {
+            binding.ivProfileImage.visibility = View.VISIBLE
+            Glide.with(this).load(initialPhotoUrl).circleCrop().into(binding.ivProfileImage)
+        } else {
+            binding.ivProfileImage.visibility = View.GONE
+        }
+
+        val bizPrefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val hasLocalBiz = !bizPrefs.getString("business_type", "").isNullOrEmpty()
+        val isOnlineLocal = bizPrefs.getBoolean("is_online_store", false)
+        val isCollabLocal = bizPrefs.getBoolean("is_collaborator_mode", false)
+        binding.tvUserAccountType.text = when {
+            isCollabLocal -> "COLABORADOR"
+            hasLocalBiz && isOnlineLocal -> "DUEÑO DE NEGOCIO"
+            hasLocalBiz -> "ADMINISTRADOR"
+            else -> "ADMINISTRADOR"
+        }
+
+        isUpdatingPrivacyUi = true
+        binding.switchAllowDirectorySearch.isChecked = appPrefs.getBoolean("allow_directory_search", true)
+        binding.switchShareContactWithFriends.isChecked = appPrefs.getBoolean("share_contact_with_friends", false)
+        currentMessagePrivacy = com.gomezmart.app.data.MessagePrivacy.fromValue(
+            appPrefs.getString("message_privacy", com.gomezmart.app.data.MessagePrivacy.EVERYONE_WITH_REQUEST.value)
+        )
+        binding.tvMessagePrivacyCurrent.text = currentMessagePrivacy.label
+        isUpdatingPrivacyUi = false
+    }
+
+    private fun syncRemoteProfileAndRole() {
+        val user = auth.currentUser ?: return
+        if (isGuestUser() || user.isAnonymous) return
+        val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
 
         // Escuchar cambios en tiempo real del perfil en Firestore
         profileRegistration?.remove()
@@ -231,19 +421,43 @@ class AccountSettingsActivity : BaseActivity() {
                 val firestorePhoto = snapshot.getString("photoUrl")
                 val firestoreEmail = snapshot.getString("email") ?: user.email
 
-                val finalName = firestoreName ?: user.displayName ?: "Usuario GoMezMart"
+                val finalName = com.gomezmart.app.util.UserNameGenerator.getOrGenerateName(this, firestoreName ?: user.displayName, user.uid)
                 val finalPhoto = firestorePhoto ?: user.photoUrl?.toString()
 
                 binding.tvProfileNameDisplay.text = finalName
+                if (binding.etFullName.text?.toString() != finalName && !binding.etFullName.hasFocus()) {
+                    binding.etFullName.setText(finalName)
+                }
                 binding.tvProfileEmailDisplay.text = firestoreEmail
                 binding.tvProfileInitial.text = if (finalName.isNotEmpty()) finalName[0].uppercaseChar().toString() else "?"
 
                 if (!finalPhoto.isNullOrEmpty()) {
                     binding.ivProfileImage.visibility = View.VISIBLE
-                    Glide.with(this).load(finalPhoto).circleCrop().into(binding.ivProfileImage)
+                    if (finalPhoto != initialPhotoUrl) {
+                        initialPhotoUrl = finalPhoto
+                        Glide.with(this).load(finalPhoto).circleCrop().into(binding.ivProfileImage)
+                    }
                 } else {
+                    initialPhotoUrl = null
                     binding.ivProfileImage.visibility = View.GONE
                 }
+
+                val allowDir = snapshot.getBoolean("allowDirectorySearch") ?: true
+                val shareContact = snapshot.getBoolean("shareContactWithFriends") ?: false
+                val msgPrivacy = com.gomezmart.app.data.MessagePrivacy.fromValue(snapshot.getString("messagePrivacy"))
+
+                isUpdatingPrivacyUi = true
+                binding.switchAllowDirectorySearch.isChecked = allowDir
+                binding.switchShareContactWithFriends.isChecked = shareContact
+                currentMessagePrivacy = msgPrivacy
+                binding.tvMessagePrivacyCurrent.text = msgPrivacy.label
+                isUpdatingPrivacyUi = false
+
+                appPrefs.edit()
+                    .putBoolean("allow_directory_search", allowDir)
+                    .putBoolean("share_contact_with_friends", shareContact)
+                    .putString("message_privacy", msgPrivacy.value)
+                    .apply()
             }
 
         // Determinar Tipo de Cuenta (Rol) en IO con timeout
@@ -266,6 +480,7 @@ class AccountSettingsActivity : BaseActivity() {
                     || (settingsSnap?.documents?.any { it.getBoolean("is_online") == true || it.getBoolean("is_online_store") == true } == true)
 
                 withContext(Dispatchers.Main) {
+                    if (isFinishing || isDestroyed) return@withContext
                     val roleText: String
                     val roleIcon: String
                     when {
@@ -297,127 +512,160 @@ class AccountSettingsActivity : BaseActivity() {
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    binding.tvUserAccountType.text = "ADMINISTRADOR"
+                    if (!isFinishing && !isDestroyed) {
+                        binding.tvUserAccountType.text = "ADMINISTRADOR"
+                    }
                 }
             }
         }
     }
 
     private fun loadSavedSystems() {
-        val user = auth.currentUser ?: return
-        val userId = user.uid
-        val userEmail = user.email?.lowercase() ?: ""
+        val user = auth.currentUser
+        val isGuest = isGuestUser() || user == null || user.isAnonymous
+        val userId = if (isGuest) "guest" else (user?.uid ?: "")
+        val userEmail = if (isGuest) "" else (user?.email?.lowercase() ?: "")
         val bizPrefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val roomDb = AppDatabase.getDatabase(this)
+        val dynamicManager = com.gomezmart.app.utils.DynamicModuleManager(this)
 
         lifecycleScope.launch(Dispatchers.IO) {
             val items = mutableListOf<StoreModel>()
 
             // 1. Cargar desde SharedPreferences locales (El sistema activo actual)
             try {
-                val activeType = bizPrefs.getString("business_type", "LOANS") ?: "LOANS"
-                val activeName = bizPrefs.getString("${activeType}_name", "")
-                    ?.takeIf { it.isNotBlank() }
-                    ?: bizPrefs.getString("business_name", "")
-                    ?.takeIf { it.isNotBlank() }
-                    ?: when(activeType) {
-                        "LOANS" -> "Sistema de Préstamos"
-                        "HOTEL" -> "Hospedaje y Hotel"
-                        else -> "Tienda de Productos"
+                val activeType = bizPrefs.getString("business_type", null)
+                if (!activeType.isNullOrEmpty()) {
+                    val module = when(activeType) {
+                        "HOTEL" -> com.gomezmart.app.utils.DynamicFeatureModule.HOTEL
+                        "LOANS" -> com.gomezmart.app.utils.DynamicFeatureModule.LOANS
+                        else -> com.gomezmart.app.utils.DynamicFeatureModule.PRODUCTS
                     }
-                val activeLogo = bizPrefs.getString("${activeType}_logo_url", "")
-                    ?: bizPrefs.getString("business_logo_url", "")
-                val isOnline = bizPrefs.getBoolean("is_online_store", false)
+                    if (dynamicManager.isModuleInstalled(module)) {
+                        val activeName = bizPrefs.getString("${activeType}_name", "")
+                            ?.takeIf { it.isNotBlank() }
+                            ?: bizPrefs.getString("business_name", "")
+                            ?.takeIf { it.isNotBlank() }
+                            ?: when(activeType) {
+                                "LOANS" -> "Sistema de Préstamos"
+                                "HOTEL" -> "Hospedaje y Hotel"
+                                else -> "Tienda de Productos"
+                            }
+                        val activeLogo = bizPrefs.getString("${activeType}_logo_url", "")
+                            ?: bizPrefs.getString("business_logo_url", "")
+                        val isOnline = if (isGuest) false else bizPrefs.getBoolean("is_online_store", false)
 
-                items.add(
-                    StoreModel(
-                        id = userId,
-                        name = activeName,
-                        businessType = activeType.uppercase(),
-                        logoUrl = activeLogo,
-                        address = "",
-                        phone = if (isOnline) "ONLINE" else "OFFLINE"
-                    )
-                )
-            } catch (e: Exception) { }
-
-            // 2. Cargar desde Firestore settings con timeout
-            try {
-                val settingsSnap = kotlinx.coroutines.withTimeoutOrNull(3000L) {
-                    db.collection("users").document(userId).collection("settings").get().await()
-                }
-                settingsSnap?.documents?.forEach { doc ->
-                    if (doc.id == "business") return@forEach
-                    val name = doc.getString("business_name") 
-                        ?: doc.getString("${doc.id}_name") 
-                        ?: doc.getString("${doc.getString("business_type")}_name") 
-                        ?: ""
-                    val type = doc.getString("business_type") ?: doc.id
-                    val logo = doc.getString("business_logo_url")
-                    val isOnlineStore = doc.getBoolean("is_online") ?: doc.getBoolean("is_online_store") ?: false
-
-                    if (name.isNotEmpty() && !name.equals("Mi Negocio", ignoreCase = true)) {
                         items.add(
                             StoreModel(
                                 id = userId,
-                                name = name,
-                                businessType = type.uppercase(),
-                                logoUrl = logo,
-                                address = doc.getString("business_address") ?: "",
-                                phone = if (isOnlineStore) "ONLINE" else "OFFLINE"
+                                name = activeName,
+                                businessType = activeType.uppercase(),
+                                logoUrl = activeLogo,
+                                address = "",
+                                phone = if (isOnline) "ONLINE" else "OFFLINE"
                             )
                         )
                     }
                 }
             } catch (e: Exception) { }
 
-            // 3. Cargar Colaboraciones de Firestore con timeout
-            try {
-                val colabsSnap = kotlinx.coroutines.withTimeoutOrNull(3000L) {
-                    db.collection("access_keys").whereEqualTo("email", userEmail).get().await()
-                }
-                colabsSnap?.documents?.forEach { doc ->
-                    val ownerId = doc.getString("ownerId")
-                    if (ownerId == userId) return@forEach
-                    items.add(
-                        StoreModel(
-                            id = ownerId ?: "",
-                            name = doc.getString("businessName") ?: "Colaboración",
-                            businessType = (doc.getString("businessType") ?: "HOTEL").uppercase(),
-                            phone = "COLLAB",
-                            description = doc.getString("role") ?: "EQUIPO",
-                            logoUrl = doc.getString("collab_business_logo")
+            if (!isGuest && userId.isNotEmpty()) {
+                // 2. Cargar desde Firestore settings con timeout (Solo cuentas registradas)
+                try {
+                    val settingsSnap = kotlinx.coroutines.withTimeoutOrNull(3000L) {
+                        db.collection("users").document(userId).collection("settings").get().await()
+                    }
+                    settingsSnap?.documents?.forEach { doc ->
+                        if (doc.id == "business") return@forEach
+                        val name = doc.getString("business_name") 
+                            ?: doc.getString("${doc.id}_name") 
+                            ?: doc.getString("${doc.getString("business_type")}_name") 
+                            ?: ""
+                        val type = doc.getString("business_type") ?: doc.id
+                        val logo = doc.getString("business_logo_url")
+                        val isOnlineStore = doc.getBoolean("is_online") ?: doc.getBoolean("is_online_store") ?: false
+
+                        val module = when(type.uppercase()) {
+                            "HOTEL" -> com.gomezmart.app.utils.DynamicFeatureModule.HOTEL
+                            "LOANS" -> com.gomezmart.app.utils.DynamicFeatureModule.LOANS
+                            else -> com.gomezmart.app.utils.DynamicFeatureModule.PRODUCTS
+                        }
+                        if (dynamicManager.isModuleInstalled(module) && name.isNotEmpty() && !name.equals("Mi Negocio", ignoreCase = true)) {
+                            items.add(
+                                StoreModel(
+                                    id = userId,
+                                    name = name,
+                                    businessType = type.uppercase(),
+                                    logoUrl = logo,
+                                    address = doc.getString("business_address") ?: "",
+                                    phone = if (isOnlineStore) "ONLINE" else "OFFLINE"
+                                )
+                            )
+                        }
+                    }
+                } catch (e: Exception) { }
+
+                // 3. Cargar Colaboraciones de Firestore con timeout (Solo cuentas registradas)
+                try {
+                    val colabsSnap = kotlinx.coroutines.withTimeoutOrNull(3000L) {
+                        db.collection("access_keys").whereEqualTo("email", userEmail).get().await()
+                    }
+                    colabsSnap?.documents?.forEach { doc ->
+                        val ownerId = doc.getString("ownerId")
+                        if (ownerId == userId) return@forEach
+                        items.add(
+                            StoreModel(
+                                id = ownerId ?: "",
+                                name = doc.getString("businessName") ?: "Colaboración",
+                                businessType = (doc.getString("businessType") ?: "HOTEL").uppercase(),
+                                phone = "COLLAB",
+                                description = doc.getString("role") ?: "EQUIPO",
+                                logoUrl = doc.getString("collab_business_logo")
+                            )
                         )
-                    )
-                }
-            } catch (e: Exception) { }
+                    }
+                } catch (e: Exception) { }
+            }
 
-            // 4. Cargar sistemas con datos locales Room DB si aún no están listados
+            // 4. Cargar sistemas con datos locales Room DB si aún no están listados (solo si el módulo está instalado)
             try {
-                val loansCount = roomDb.loanDao().getAllLoansOnce().size
-                val clientsCount = roomDb.loanDao().getAllClientsOnce().size
-                if ((loansCount > 0 || clientsCount > 0) && items.none { it.businessType == "LOANS" }) {
-                    val name = bizPrefs.getString("LOANS_name", "")?.takeIf { it.isNotBlank() } ?: "Sistema de Préstamos"
-                    items.add(StoreModel(id = userId, name = name, businessType = "LOANS", phone = "OFFLINE"))
+                if (dynamicManager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.LOANS)) {
+                    val loansCount = roomDb.loanDao().getAllLoansOnce().size
+                    val clientsCount = roomDb.loanDao().getAllClientsOnce().size
+                    if ((loansCount > 0 || clientsCount > 0) && items.none { it.businessType == "LOANS" }) {
+                        val name = bizPrefs.getString("LOANS_name", "")?.takeIf { it.isNotBlank() } ?: "Sistema de Préstamos"
+                        items.add(StoreModel(id = userId.ifEmpty { "guest" }, name = name, businessType = "LOANS", phone = "OFFLINE"))
+                    }
                 }
 
-                val roomsCount = roomDb.hotelDao().getAllRoomsOnce().size
-                if (roomsCount > 0 && items.none { it.businessType == "HOTEL" }) {
-                    val name = bizPrefs.getString("HOTEL_name", "")?.takeIf { it.isNotBlank() } ?: "Hospedaje y Hotel"
-                    items.add(StoreModel(id = userId, name = name, businessType = "HOTEL", phone = "OFFLINE"))
+                if (dynamicManager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.HOTEL)) {
+                    val roomsCount = roomDb.hotelDao().getAllRoomsOnce().size
+                    if (roomsCount > 0 && items.none { it.businessType == "HOTEL" }) {
+                        val name = bizPrefs.getString("HOTEL_name", "")?.takeIf { it.isNotBlank() } ?: "Hospedaje y Hotel"
+                        items.add(StoreModel(id = userId.ifEmpty { "guest" }, name = name, businessType = "HOTEL", phone = "OFFLINE"))
+                    }
                 }
 
-                val productsCount = roomDb.productDao().allProducts.size
-                if (productsCount > 0 && items.none { it.businessType == "PRODUCTS" }) {
-                    val name = bizPrefs.getString("PRODUCTS_name", "")?.takeIf { it.isNotBlank() } ?: "Tienda de Productos"
-                    items.add(StoreModel(id = userId, name = name, businessType = "PRODUCTS", phone = "OFFLINE"))
+                if (dynamicManager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.PRODUCTS)) {
+                    val productsCount = roomDb.productDao().allProducts.size
+                    if (productsCount > 0 && items.none { it.businessType == "PRODUCTS" }) {
+                        val name = bizPrefs.getString("PRODUCTS_name", "")?.takeIf { it.isNotBlank() } ?: "Tienda de Productos"
+                        items.add(StoreModel(id = userId.ifEmpty { "guest" }, name = name, businessType = "PRODUCTS", phone = "OFFLINE"))
+                    }
                 }
             } catch (e: Exception) { }
 
             val fullList = items.distinctBy { "${it.businessType}_${it.id}" }
             withContext(Dispatchers.Main) {
                 if (isFinishing || isDestroyed) return@withContext
-                systemsAdapter.setItems(fullList)
+                if (fullList.isEmpty()) {
+                    binding.rvSavedSystems.visibility = View.GONE
+                    binding.layoutEmptySystems.visibility = View.VISIBLE
+                } else {
+                    binding.rvSavedSystems.visibility = View.VISIBLE
+                    binding.layoutEmptySystems.visibility = View.GONE
+                    systemsAdapter.setItems(fullList)
+                }
             }
         }
     }
@@ -430,11 +678,86 @@ class AccountSettingsActivity : BaseActivity() {
         binding.layoutAddress.setEndIconOnClickListener { detectCurrentCity() }
         binding.btnLinkGoogle.setOnClickListener { startGoogleSignInForLinking() }
 
+        binding.btnDownloadManagementSystem.setOnClickListener {
+            val intent = Intent(this, DownloadedModulesActivity::class.java)
+            startActivity(intent)
+        }
+
+        binding.cardCheckUpdateAccount.setOnClickListener {
+            Updater(this).checkAndDownload(autoCheck = false)
+        }
+
         binding.cardSignOutAccount.setOnClickListener { showSignOutConfirmationDialog() }
-        binding.btnDeleteAccountPermanent.setOnClickListener { showDeleteAccountConfirmationDialog() }
+        binding.cardOpenDeleteOptions.setOnClickListener {
+            val intent = Intent(this, DeleteDataOrAccountActivity::class.java)
+            startActivity(intent)
+        }
+
+        binding.switchAllowDirectorySearch.setOnCheckedChangeListener { _, isChecked ->
+            if (!isUpdatingPrivacyUi) savePrivacySettings(allowDirectory = isChecked)
+        }
+        binding.switchShareContactWithFriends.setOnCheckedChangeListener { _, isChecked ->
+            if (!isUpdatingPrivacyUi) savePrivacySettings(shareContact = isChecked)
+        }
+        binding.layoutMessagePrivacySelector.setOnClickListener {
+            showMessagePrivacyDialog()
+        }
+    }
+
+    private fun showMessagePrivacyDialog() {
+        val options = com.gomezmart.app.data.MessagePrivacy.entries
+        val labels = options.map { it.label }.toTypedArray()
+        val currentIndex = options.indexOf(currentMessagePrivacy).coerceAtLeast(0)
+
+        AlertDialog.Builder(this)
+            .setTitle("Quién puede enviarme mensajes 🔒")
+            .setSingleChoiceItems(labels, currentIndex) { dialog, which ->
+                val chosen = options[which]
+                currentMessagePrivacy = chosen
+                binding.tvMessagePrivacyCurrent.text = chosen.label
+                savePrivacySettings(messagePrivacy = chosen)
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun savePrivacySettings(
+        allowDirectory: Boolean = binding.switchAllowDirectorySearch.isChecked,
+        shareContact: Boolean = binding.switchShareContactWithFriends.isChecked,
+        messagePrivacy: com.gomezmart.app.data.MessagePrivacy = currentMessagePrivacy
+    ) {
+        val userId = auth.currentUser?.uid ?: return
+        if (isGuestUser()) return
+
+        getSharedPreferences("AppPrefs", MODE_PRIVATE).edit()
+            .putBoolean("allow_directory_search", allowDirectory)
+            .putBoolean("share_contact_with_friends", shareContact)
+            .putString("message_privacy", messagePrivacy.value)
+            .apply()
+
+        val privacyUpdates = mapOf(
+            "allowDirectorySearch" to allowDirectory,
+            "shareContactWithFriends" to shareContact,
+            "messagePrivacy" to messagePrivacy.value,
+            "updatedAt" to System.currentTimeMillis()
+        )
+
+        lifecycleScope.launch {
+            try {
+                db.collection("users").document(userId).collection("profile").document("info")
+                    .set(privacyUpdates, SetOptions.merge()).await()
+                db.collection("users").document(userId)
+                    .set(privacyUpdates, SetOptions.merge()).await()
+                Toast.makeText(this@AccountSettingsActivity, "Privacidad actualizada 🔒", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this@AccountSettingsActivity, "No se pudo guardar privacidad en la nube", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun validateAndSavePassword() {
+        if (requireLoginForGuest("configurar una contraseña")) return
         val newPassword = binding.etAccountPassword.text.toString().trim()
         if (newPassword.length < 6) {
             Toast.makeText(this, "La contraseña debe tener al menos 6 caracteres ⚠️", Toast.LENGTH_SHORT).show()
@@ -477,6 +800,7 @@ class AccountSettingsActivity : BaseActivity() {
     }
 
     private fun showPhotoOptionsDialog() {
+        if (requireLoginForGuest("cambiar tu foto de perfil")) return
         val options = arrayOf("📸 Tomar Foto", "🖼️ Elegir de Galería")
         AlertDialog.Builder(this)
             .setTitle("Cambiar Foto de Perfil")
@@ -540,6 +864,7 @@ class AccountSettingsActivity : BaseActivity() {
     }
 
     private fun validateAndSaveProfile() {
+        if (requireLoginForGuest("guardar tu perfil en la nube")) return
         val fullName = binding.etFullName.text.toString().trim()
         val phone = binding.etPhone.text.toString().trim()
         val dni = binding.etDni.text.toString().trim()
@@ -554,6 +879,7 @@ class AccountSettingsActivity : BaseActivity() {
     }
 
     private fun saveAllProfileInfo(fullName: String, phone: String, dni: String, address: String) {
+        if (isGuestUser()) return
         val loading = AlertDialog.Builder(this).setMessage("Guardando cambios de cuenta...").setCancelable(false).show()
 
         lifecycleScope.launch {
@@ -592,6 +918,9 @@ class AccountSettingsActivity : BaseActivity() {
                     "address" to address,
                     "user_address" to address,
                     "email" to (auth.currentUser?.email ?: ""),
+                    "allowDirectorySearch" to binding.switchAllowDirectorySearch.isChecked,
+                    "shareContactWithFriends" to binding.switchShareContactWithFriends.isChecked,
+                    "messagePrivacy" to currentMessagePrivacy.value,
                     "updatedAt" to System.currentTimeMillis()
                 )
 
@@ -635,23 +964,26 @@ class AccountSettingsActivity : BaseActivity() {
     }
 
     private fun switchSystem(store: StoreModel) {
-        if (store.phone == "COLLAB") {
-            switchToCollaborativeEnvironment(store.id, store.businessType, store.name, store.logoUrl)
-            return
-        }
+        ensureModuleInstalled(store.businessType) {
+            if (store.phone == "COLLAB") {
+                switchToCollaborativeEnvironment(store.id, store.businessType, store.name, store.logoUrl)
+                return@ensureModuleInstalled
+            }
 
-        val loading = AlertDialog.Builder(this)
-            .setMessage("Cambiando a ${store.name}...")
-            .setCancelable(false)
-            .show()
+            val loading = AlertDialog.Builder(this)
+                .setMessage("Cambiando a ${store.name}...")
+                .setCancelable(false)
+                .show()
 
-        lifecycleScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    AppDatabase.getDatabase(this@AccountSettingsActivity).clearAllTables()
-                }
+            lifecycleScope.launch {
+                try {
+                    if (!isGuestUser()) {
+                        withContext(Dispatchers.IO) {
+                            AppDatabase.getDatabase(this@AccountSettingsActivity).clearAllTables()
+                        }
+                    }
 
-                val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+                    val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
                 prefs.edit().apply {
                     putString("business_type", store.businessType)
                     putBoolean("is_collaborator_mode", false)
@@ -662,17 +994,27 @@ class AccountSettingsActivity : BaseActivity() {
                     apply()
                 }
 
-                SyncManager(this@AccountSettingsActivity).downloadBusinessSettingsFromCloud(store.businessType)
-                SyncManager(this@AccountSettingsActivity).scheduleOfflineSync()
-
-                loading.dismiss()
-
-                val intent = Intent(this@AccountSettingsActivity, MainActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
-            } catch (e: Exception) {
-                loading.dismiss()
+                if (!isGuestUser()) {
+                    SyncManager(this@AccountSettingsActivity).downloadBusinessSettingsFromCloud(store.businessType)
+                    SyncManager(this@AccountSettingsActivity).downloadEverythingFromCloud {
+                        if (!isFinishing && !isDestroyed) {
+                            loading.dismiss()
+                            val intent = Intent(this@AccountSettingsActivity, MainActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            startActivity(intent)
+                            finish()
+                        }
+                    }
+                } else {
+                    loading.dismiss()
+                    val intent = Intent(this@AccountSettingsActivity, MainActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
+                } catch (e: Exception) {
+                    loading.dismiss()
+                }
             }
         }
     }
@@ -704,11 +1046,15 @@ class AccountSettingsActivity : BaseActivity() {
                     apply()
                 }
 
-                loading.dismiss()
-                val intent = Intent(this@AccountSettingsActivity, MainActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
+                SyncManager(this@AccountSettingsActivity).downloadEverythingFromCloud {
+                    if (!isFinishing && !isDestroyed) {
+                        loading.dismiss()
+                        val intent = Intent(this@AccountSettingsActivity, MainActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    }
+                }
             } catch (e: Exception) {
                 loading.dismiss()
             }
@@ -729,13 +1075,7 @@ class AccountSettingsActivity : BaseActivity() {
     private fun signOutAndGoToLogin() {
         lifecycleScope.launch {
             try {
-                auth.signOut()
-                SessionManager.clearSessionData(this@AccountSettingsActivity)
-                getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().clear().apply()
-                getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit().clear().apply()
-                getSharedPreferences("BuyerPrefs", MODE_PRIVATE).edit().clear().apply()
-                getSharedPreferences("CollabPermissions", MODE_PRIVATE).edit().clear().apply()
-                CartManager.clear()
+                SessionManager.signOutCompletely(this@AccountSettingsActivity)
 
                 val intent = Intent(this@AccountSettingsActivity, LoginActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -744,156 +1084,6 @@ class AccountSettingsActivity : BaseActivity() {
                 finish()
             } catch (e: Exception) {
                 Toast.makeText(this@AccountSettingsActivity, "Error al cerrar sesión: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun showDeleteAccountConfirmationDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("¿Eliminar Cuenta Definitivamente? ⚠️")
-            .setMessage("Esta acción es IRREVERSIBLE. Se borrarán permanentemente:\n\n" +
-                    "• Tu perfil de usuario y configuraciones.\n" +
-                    "• Todos tus negocios, productos e inventario.\n" +
-                    "• Todas las fotos subidas a la nube de Supabase.\n" +
-                    "• Tus conversaciones, chats y mensajes.\n" +
-                    "• Tus ubicaciones registradas e historial.\n\n" +
-                    "¿Estás seguro de que deseas continuar?")
-            .setPositiveButton("Sí, Eliminar Todo") { _, _ ->
-                confirmFinalAccountDeletion()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-
-    private fun confirmFinalAccountDeletion() {
-        AlertDialog.Builder(this)
-            .setTitle("Confirmación Final 🗑️")
-            .setMessage("Por seguridad, presiona 'Confirmar' para iniciar el borrado total e irrecuperable de tu cuenta.")
-            .setPositiveButton("Confirmar y Borrar") { _, _ ->
-                executeFullAccountDeletion()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-
-    private fun executeFullAccountDeletion() {
-        val user = auth.currentUser
-        if (user == null) {
-            Toast.makeText(this, "No hay sesión activa", Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
-
-        val userId = user.uid
-        val userEmail = user.email?.lowercase() ?: ""
-
-        val progressDialog = AlertDialog.Builder(this)
-            .setTitle("Borrando Cuenta y Datos ⏳")
-            .setMessage("Eliminando perfiles, inventario, chats e imágenes de la nube de Supabase. Por favor no cierres la app...")
-            .setCancelable(false)
-            .create()
-
-        progressDialog.show()
-
-        lifecycleScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    val supabasePaths = listOf(
-                        "profiles/$userId.jpg",
-                        "user_photos/$userId.jpg",
-                        "logos/$userId/PRODUCTS.png",
-                        "logos/$userId/SERVICES.png",
-                        "logos/$userId/LOANS.png",
-                        "covers/$userId/PRODUCTS.png",
-                        "covers/$userId/SERVICES.png",
-                        "covers/$userId/LOANS.png"
-                    )
-                    SupabaseManager.deleteFiles("naxor-imagenes-usuarios", supabasePaths)
-                }
-
-                val userRef = db.collection("users").document(userId)
-                val subcollections = listOf("profile", "settings", "locations", "reviews", "messages", "blocked_users", "inventory", "hotel_rooms")
-                for (sub in subcollections) {
-                    val snap = userRef.collection(sub).get().await()
-                    val batch = db.batch()
-                    for (doc in snap.documents) {
-                        batch.delete(doc.reference)
-                    }
-                    batch.commit().await()
-                }
-                userRef.delete().await()
-
-                if (userEmail.isNotEmpty()) {
-                    val keysSnap = db.collection("access_keys")
-                        .whereEqualTo("email", userEmail)
-                        .get().await()
-                    val batch = db.batch()
-                    for (doc in keysSnap.documents) {
-                        batch.delete(doc.reference)
-                    }
-                    batch.commit().await()
-                }
-
-                val directChatsSnap = db.collection("direct_chats")
-                    .whereArrayContains("participants", userId)
-                    .get().await()
-
-                for (chatDoc in directChatsSnap.documents) {
-                    val msgsSnap = chatDoc.reference.collection("messages").get().await()
-                    val batch = db.batch()
-                    for (msg in msgsSnap.documents) {
-                        batch.delete(msg.reference)
-                    }
-                    batch.delete(chatDoc.reference)
-                    batch.commit().await()
-                }
-
-                val ordersSnap = db.collection("orders")
-                    .whereEqualTo("buyerId", userId)
-                    .get().await()
-
-                for (orderDoc in ordersSnap.documents) {
-                    val msgsSnap = orderDoc.reference.collection("messages").get().await()
-                    val batch = db.batch()
-                    for (msg in msgsSnap.documents) {
-                        batch.delete(msg.reference)
-                    }
-                    batch.delete(orderDoc.reference)
-                    batch.commit().await()
-                }
-
-                withContext(Dispatchers.IO) {
-                    getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().clear().apply()
-                    getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit().clear().apply()
-                    getSharedPreferences("BuyerPrefs", MODE_PRIVATE).edit().clear().apply()
-                    getSharedPreferences("CollabPermissions", MODE_PRIVATE).edit().clear().apply()
-                    CartManager.clear()
-
-                    val filesDir = getExternalFilesDir(null)
-                    filesDir?.walkTopDown()?.forEach { if (it.isFile) it.delete() }
-                    cacheDir.walkTopDown().forEach { if (it.isFile) it.delete() }
-                }
-
-                try {
-                    user.delete().await()
-                } catch (authError: Exception) {
-                    Log.w("AccountSettings", "Auth delete requiere re-autenticación reciente: ${authError.message}")
-                    auth.signOut()
-                }
-
-                progressDialog.dismiss()
-                Toast.makeText(this@AccountSettingsActivity, "Tu cuenta y datos fueron eliminados totalmente 🗑️", Toast.LENGTH_LONG).show()
-
-                val intent = Intent(this@AccountSettingsActivity, LoginActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                }
-                startActivity(intent)
-                finish()
-
-            } catch (e: Exception) {
-                progressDialog.dismiss()
-                Log.e("AccountSettings", "Error durante eliminación de cuenta: ${e.message}")
-                Toast.makeText(this@AccountSettingsActivity, "Error al eliminar datos: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }

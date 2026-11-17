@@ -8,7 +8,7 @@ import androidx.room.RoomDatabase;
 import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
-@Database(entities = {CalculationEntity.class, ProductEntity.class, SaleEntity.class, DebtorEntity.class, DebtDetailEntity.class, ExpenseEntity.class, ProviderEntity.class, CustomerEntity.class, CashSessionEntity.class, PriceHistoryEntity.class, MovementLogEntity.class, BusinessDebtEntity.class, CommitmentEntity.class, HotelRoomEntity.class, HotelBookingEntity.class, HotelRoomLayoutEntity.class, HotelChargeEntity.class, HotelPaymentEntity.class, HotelMaintenanceEntity.class, HotelToolEntity.class, LoanClientEntity.class, LoanEntity.class, LoanInstallmentEntity.class, LoanExpenseEntity.class, LoanPaymentEntity.class, LoanBudgetEntity.class, LoanFundingSourceEntity.class, AccountEntity.class}, version = 57, exportSchema = false)
+@Database(entities = {CalculationEntity.class, ProductEntity.class, SaleEntity.class, DebtorEntity.class, DebtDetailEntity.class, ExpenseEntity.class, ProviderEntity.class, CustomerEntity.class, CashSessionEntity.class, PriceHistoryEntity.class, MovementLogEntity.class, BusinessDebtEntity.class, CommitmentEntity.class, HotelRoomEntity.class, HotelBookingEntity.class, HotelRoomLayoutEntity.class, HotelChargeEntity.class, HotelPaymentEntity.class, HotelMaintenanceEntity.class, HotelToolEntity.class, LoanClientEntity.class, LoanEntity.class, LoanInstallmentEntity.class, LoanExpenseEntity.class, LoanPaymentEntity.class, LoanBudgetEntity.class, LoanFundingSourceEntity.class, AccountEntity.class}, version = 61, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract CalculationDao calculationDao();
     public abstract ProductDao productDao();
@@ -137,6 +137,42 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    public static final Migration MIGRATION_58_59 = new Migration(58, 59) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            try {
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_products_isDeleted_nombre ON products(isDeleted, nombre)");
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_products_isDeleted_categoria_nombre ON products(isDeleted, categoria, nombre)");
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_products_isDeleted_codigo ON products(isDeleted, codigo)");
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_products_isSynced_isDeleted ON products(isSynced, isDeleted)");
+
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_sales_isDeleted_timestamp ON sales(isDeleted, timestamp)");
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_sales_isDeleted_categoria ON sales(isDeleted, categoria)");
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_sales_productId ON sales(productId)");
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_sales_transactionId ON sales(transactionId)");
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_sales_isSynced_isDeleted ON sales(isSynced, isDeleted)");
+            } catch (Exception e) {}
+        }
+    };
+
+    public static final Migration MIGRATION_59_60 = new Migration(59, 60) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            try {
+                // Sincronizar índices
+            } catch (Exception e) {}
+        }
+    };
+
+    public static final Migration MIGRATION_60_61 = new Migration(60, 61) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            try {
+                // Sincronizar migración 60 -> 61
+            } catch (Exception e) {}
+        }
+    };
+
     private static final java.util.concurrent.atomic.AtomicReference<Context> context_holder =
             new java.util.concurrent.atomic.AtomicReference<>();
 
@@ -168,13 +204,9 @@ public abstract class AppDatabase extends RoomDatabase {
                     context_holder.set(context.getApplicationContext());
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "asistente_comercial_db")
-                            .addMigrations(MIGRATION_48_49, MIGRATION_49_50, MIGRATION_50_51, MIGRATION_51_52, MIGRATION_52_53, MIGRATION_53_54, MIGRATION_54_55, MIGRATION_55_56, MIGRATION_56_57, MIGRATION_57_58)
-                            // IMPORTANTE: Este "fallback" evita que la app CRASHEE al
-                            // actualizar desde una versión muy antigua, pero BORRA la base
-                            // local. Por eso DB_CALLBACK deja constancia y la app avisa
-                            // al usuario. Cada vez que se sube la versión de la base hay
-                            // que añadir la migración correspondiente (MIGRATION_X_Y).
+                            .addMigrations(MIGRATION_48_49, MIGRATION_49_50, MIGRATION_50_51, MIGRATION_51_52, MIGRATION_52_53, MIGRATION_53_54, MIGRATION_54_55, MIGRATION_55_56, MIGRATION_56_57, MIGRATION_57_58, MIGRATION_58_59, MIGRATION_59_60, MIGRATION_60_61)
                             .fallbackToDestructiveMigration(true)
+                            .fallbackToDestructiveMigrationOnDowngrade(true)
                             .addCallback(DB_CALLBACK)
                             .build();
                 }

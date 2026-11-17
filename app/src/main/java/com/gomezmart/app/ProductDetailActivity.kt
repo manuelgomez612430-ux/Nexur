@@ -1,6 +1,7 @@
 package com.gomezmart.app
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -44,6 +45,7 @@ import com.gomezmart.app.databinding.ItemStoreReviewBinding
 import com.gomezmart.app.util.FavoritesManager
 import com.gomezmart.app.util.FloatingCartHelper
 import com.gomezmart.app.util.GlideHelper
+import com.gomezmart.app.util.SocialShareHelper
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
@@ -61,6 +63,19 @@ class ProductDetailActivity : BaseActivity() {
     private lateinit var productReviewsAdapter: ProductReviewsAdapter
     private var myProductReview: StoreReview? = null
     private var productReviewsRegistration: ListenerRegistration? = null
+    private var currentLoadedPhotoUrl: String? = null
+
+    private var currentProductId = ""
+    private var currentProductName = ""
+    private var currentProductPrice = 0.0
+    private var currentProductCategory = ""
+    private var currentProductDesc = ""
+    private var currentProductPhoto: String? = null
+    private var currentStoreId = ""
+    private var currentStoreName = ""
+    private var currentStoreAddr = ""
+    private var currentStoreLogo: String? = null
+    private var currentStoreType = "PRODUCTS"
 
     private var pendingProdId = ""
     private var pendingProdName = ""
@@ -88,58 +103,90 @@ class ProductDetailActivity : BaseActivity() {
         applyWindowInsets(binding.toolbarProductDetail, applyTop = true, applyBottom = false)
         applyWindowInsets(binding.layoutProductDetailBottomButtons, applyTop = false, applyBottom = true)
 
-        val id = intent.getStringExtra("PROD_ID") ?: ""
-        val name = intent.getStringExtra("PROD_NAME") ?: "Producto"
-        val desc = intent.getStringExtra("PROD_DESC") ?: "Sin descripción"
-        val price = intent.getDoubleExtra("PROD_PRICE", 0.0)
-        val cat = intent.getStringExtra("PROD_CAT") ?: "General"
-        val photo = intent.getStringExtra("PROD_PHOTO")
-        val storeId = intent.getStringExtra("STORE_ID") ?: ""
-        val storeName = intent.getStringExtra("STORE_NAME") ?: "Tienda"
-        val storeAddr = intent.getStringExtra("STORE_ADDR") ?: "Sin dirección"
-        val storeLogo = intent.getStringExtra("STORE_LOGO")
-        val storeType = intent.getStringExtra("STORE_TYPE") ?: "PRODUCTS"
+        initProductFromIntent()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        registrations.forEach { it.remove() }
+        registrations.clear()
+        productReviewsRegistration?.remove()
+        initProductFromIntent()
+    }
+
+    private fun initProductFromIntent() {
+        val deepLinkData: Uri? = intent.data
+        val deepId = deepLinkData?.getQueryParameter("id") ?: ""
+        val deepStore = deepLinkData?.getQueryParameter("store") ?: ""
+        val deepType = deepLinkData?.getQueryParameter("type") ?: "PRODUCTS"
+        val deepName = deepLinkData?.getQueryParameter("name") ?: ""
+        val deepPrice = deepLinkData?.getQueryParameter("price")?.toDoubleOrNull() ?: 0.0
+        val deepStoreName = deepLinkData?.getQueryParameter("sname") ?: ""
+        val deepPhoto = deepLinkData?.getQueryParameter("photo") ?: ""
+
+        currentProductId = intent.getStringExtra("PROD_ID")?.takeIf { it.isNotBlank() } ?: deepId
+        currentProductName = intent.getStringExtra("PROD_NAME")?.takeIf { it.isNotBlank() }
+            ?: deepName.takeIf { it.isNotBlank() }
+            ?: if (deepId.isNotBlank()) "Cargando..." else "Producto"
+        currentProductDesc = intent.getStringExtra("PROD_DESC") ?: "Sin descripción"
+        currentProductPrice = intent.getDoubleExtra("PROD_PRICE", 0.0).takeIf { it > 0 } ?: deepPrice
+        currentProductCategory = intent.getStringExtra("PROD_CAT") ?: "General"
+        currentProductPhoto = intent.getStringExtra("PROD_PHOTO")?.takeIf { it.isNotBlank() }
+            ?: deepPhoto.takeIf { it.isNotBlank() }
+        currentStoreId = intent.getStringExtra("STORE_ID")?.takeIf { it.isNotBlank() } ?: deepStore
+        currentStoreName = intent.getStringExtra("STORE_NAME")?.takeIf { it.isNotBlank() }
+            ?: deepStoreName.takeIf { it.isNotBlank() }
+            ?: "Tienda"
+        currentStoreAddr = intent.getStringExtra("STORE_ADDR") ?: "Sin dirección"
+        currentStoreLogo = intent.getStringExtra("STORE_LOGO")
+        currentStoreType = intent.getStringExtra("STORE_TYPE")?.takeIf { it.isNotBlank() } ?: deepType
 
         setupToolbar()
-        setupUI(name, desc, price, cat, photo, storeName, storeAddr, storeLogo)
-        setupRecyclerViews(storeId, storeName, storeType)
-        setupListeners(id, name, price, cat, storeId, storeName, storeLogo, storeType, photo, desc, storeAddr)
+        setupUI()
+        setupRecyclerViews()
+        setupListeners()
         
-        if (id.isNotEmpty()) {
+        if (currentProductId.isNotEmpty()) {
             saveToRecentlyViewed(MarketplaceProduct(
-                id = id,
-                name = name,
-                category = cat,
-                price = price,
-                description = desc,
-                photoUrl = photo,
-                storeId = storeId,
-                storeName = storeName,
-                storeAddress = storeAddr,
-                storeLogoUrl = storeLogo,
-                storeType = storeType
+                id = currentProductId,
+                name = currentProductName,
+                category = currentProductCategory,
+                price = currentProductPrice,
+                description = currentProductDesc,
+                photoUrl = currentProductPhoto,
+                storeId = currentStoreId,
+                storeName = currentStoreName,
+                storeAddress = currentStoreAddr,
+                storeLogoUrl = currentStoreLogo,
+                storeType = currentStoreType
             ))
         }
 
-        loadProductRealtime(id, storeId, storeType)
-        loadStoreRealtime(storeId, storeType)
-        loadSimilarAndRecommended(id, storeId, cat, storeType, storeLogo)
+        loadProductRealtime(currentProductId, currentStoreId, currentStoreType)
+        loadStoreRealtime(currentStoreId, currentStoreType)
+        loadSimilarAndRecommended(currentProductId, currentStoreId, currentProductCategory, currentStoreType, currentStoreLogo)
     }
 
     private fun saveToRecentlyViewed(product: MarketplaceProduct) {
-        try {
-            val prefs = getSharedPreferences("BuyerPrefs", MODE_PRIVATE)
-            val json = prefs.getString("recently_viewed", null)
-            val type = object : TypeToken<MutableList<MarketplaceProduct>>() {}.type
-            val list: MutableList<MarketplaceProduct> = if (json != null) Gson().fromJson(json, type) ?: mutableListOf() else mutableListOf()
-            list.removeAll { it.id == product.id }
-            list.add(0, product)
-            if (list.size > 10) list.removeAt(list.size - 1)
-            prefs.edit().putString("recently_viewed", Gson().toJson(list)).apply()
-        } catch (e: Exception) {}
+        val appContext = applicationContext
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val prefs = appContext.getSharedPreferences("BuyerPrefs", MODE_PRIVATE)
+                val json = prefs.getString("recently_viewed", null)
+                val type = object : TypeToken<MutableList<MarketplaceProduct>>() {}.type
+                val gson = Gson()
+                val list: MutableList<MarketplaceProduct> = if (json != null) gson.fromJson(json, type) ?: mutableListOf() else mutableListOf()
+                list.removeAll { it.id == product.id }
+                list.add(0, product)
+                if (list.size > 10) list.removeAt(list.size - 1)
+                prefs.edit().putString("recently_viewed", gson.toJson(list)).apply()
+            } catch (e: Exception) {}
+        }
     }
 
     private fun loadStoreRealtime(sId: String, sType: String) {
+        if (sId.isEmpty()) return
         val docId = if (sType == "PRODUCTS" || sType == "SERVICES") "business" else sType
         
         val reg = db.collection("users").document(sId).collection("settings").document(docId)
@@ -152,9 +199,20 @@ class ProductDetailActivity : BaseActivity() {
                 }
                 
                 lifecycleScope.launch(Dispatchers.IO) {
+                    val storeNameDoc = snapshot.getString("business_name") ?: snapshot.getString("hotel_name") ?: snapshot.getString("name")
+                    val storeAddrDoc = snapshot.getString("business_address") ?: snapshot.getString("address")
                     val logoUrl = snapshot.getString("business_logo_url")
                     withContext(Dispatchers.Main) {
+                        if (!storeNameDoc.isNullOrBlank()) {
+                            currentStoreName = storeNameDoc
+                            binding.tvDetailStoreName.text = storeNameDoc
+                        }
+                        if (!storeAddrDoc.isNullOrBlank()) {
+                            currentStoreAddr = storeAddrDoc
+                            binding.tvDetailStoreAddress.text = storeAddrDoc
+                        }
                         if (!logoUrl.isNullOrEmpty()) {
+                            currentStoreLogo = logoUrl
                             binding.tvStoreEmojiPlaceholder.visibility = View.GONE
                             binding.ivDetailStoreLogo.visibility = View.VISIBLE
                             Glide.with(this@ProductDetailActivity)
@@ -169,6 +227,37 @@ class ProductDetailActivity : BaseActivity() {
     }
 
     private fun loadProductRealtime(id: String, sId: String, sType: String) {
+        if (id.isEmpty()) return
+        if (sId.isEmpty()) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                val local = runCatching {
+                    AppDatabase.getDatabase(this@ProductDetailActivity).productDao().getProductById(id)
+                }.getOrNull()
+                if (local != null) {
+                    val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                    withContext(Dispatchers.Main) {
+                        currentStoreId = myUid
+                        loadProductRealtime(id, myUid, sType)
+                        loadStoreRealtime(myUid, sType)
+                    }
+                    return@launch
+                }
+                
+                db.collectionGroup("inventory")
+                    .whereEqualTo(com.google.firebase.firestore.FieldPath.documentId(), id)
+                    .limit(1)
+                    .get()
+                    .addOnSuccessListener { query ->
+                        val doc = query.documents.firstOrNull() ?: return@addOnSuccessListener
+                        val parentUserId = doc.reference.parent.parent?.id ?: return@addOnSuccessListener
+                        currentStoreId = parentUserId
+                        loadProductRealtime(id, parentUserId, sType)
+                        loadStoreRealtime(parentUserId, sType)
+                    }
+            }
+            return
+        }
+
         val collectionName = if (sType == "HOTEL") "hotel_rooms" else "inventory"
         val reg = db.collection("users").document(sId).collection(collectionName).document(id)
             .addSnapshotListener { snapshot, e ->
@@ -176,28 +265,80 @@ class ProductDetailActivity : BaseActivity() {
                 
                 lifecycleScope.launch(Dispatchers.IO) {
                     val name = if (sType == "HOTEL") "Habitación ${snapshot.getString("number")}" else snapshot.getString("nombre") ?: ""
-                    val desc = snapshot.getString("descripcion") ?: snapshot.getString("specificDescription") ?: snapshot.getString("description") ?: ""
+                    val descFromDoc = snapshot.getString("descripcion") ?: snapshot.getString("specificDescription") ?: snapshot.getString("description") ?: ""
                     val price = if (sType == "HOTEL") snapshot.getDouble("baseRate") ?: 0.0 else snapshot.getDouble("precioVenta") ?: 0.0
                     val cat = snapshot.getString("categoria") ?: snapshot.getString("type") ?: ""
-                    val photo = snapshot.getString("photoUrl")
+                    val photoFromDoc = snapshot.getString("photoUrl")?.takeIf { it.isNotBlank() }
+                        ?: snapshot.getString("photoPath")?.takeIf { it.isNotBlank() }
+                        ?: snapshot.getString("photo")?.takeIf { it.isNotBlank() }
+                        ?: snapshot.getString("image")?.takeIf { it.isNotBlank() }
+
+                    // Si no vino foto o descripción en el documento de nube, buscar en base de datos local
+                    val localProduct = if (photoFromDoc.isNullOrEmpty() || descFromDoc.isBlank()) {
+                        runCatching {
+                            AppDatabase.getDatabase(this@ProductDetailActivity).productDao().getProductById(id)
+                        }.getOrNull()
+                    } else null
+
+                    val photo = photoFromDoc
+                        ?: localProduct?.photoUrl?.takeIf { it.isNotBlank() }
+                        ?: localProduct?.photoPath?.takeIf { it.isNotBlank() }
+                        ?: currentProductPhoto
+
+                    val desc = if (descFromDoc.isNotBlank()) {
+                        descFromDoc
+                    } else if (!localProduct?.descripcion.isNullOrBlank()) {
+                        localProduct.descripcion
+                    } else {
+                        "Producto disponible en tienda. Puedes consultar detalles adicionales o coordinar entregas directamente con el vendedor usando el botón de Chat."
+                    }
                     
                     withContext(Dispatchers.Main) {
-                        binding.tvDetailName.text = name
-                        binding.tvDetailCategory.text = cat
+                        if (name.isNotBlank()) {
+                            currentProductName = name
+                            binding.tvDetailName.text = name
+                        }
+                        if (cat.isNotBlank()) {
+                            currentProductCategory = cat
+                            binding.tvDetailCategory.text = cat
+                        }
+                        currentProductDesc = desc
                         binding.tvDetailDescription.text = desc
-                        binding.tvDetailPrice.text = if (sType == "HOTEL") "S/ ${String.format(Locale.US, "%.2f", price)} la noche" else "S/ ${String.format(Locale.US, "%.2f", price)}"
+
+                        if (price > 0) {
+                            currentProductPrice = price
+                            binding.tvDetailPrice.text = if (sType == "HOTEL") "S/ ${String.format(Locale.US, "%.2f", price)} la noche" else "S/ ${String.format(Locale.US, "%.2f", price)}"
+                        }
                         
-                        if (!photo.isNullOrEmpty()) {
+                        if (!photo.isNullOrEmpty() && (photo != currentLoadedPhotoUrl)) {
+                            currentLoadedPhotoUrl = photo
+                            currentProductPhoto = photo
                             GlideHelper.loadImageWithProgressBar(
                                 this@ProductDetailActivity,
                                 photo,
                                 binding.ivProductDetailImage,
                                 binding.pbProductDetailLoading,
-                                skipCache = true
+                                skipCache = false,
+                                overrideWidth = 1080,
+                                overrideHeight = 1080
                             )
-                        } else {
+                        } else if (photo.isNullOrEmpty() && currentLoadedPhotoUrl.isNullOrEmpty()) {
                             binding.pbProductDetailLoading.visibility = View.GONE
                         }
+
+                        saveToRecentlyViewed(MarketplaceProduct(
+                            id = currentProductId,
+                            name = currentProductName,
+                            category = currentProductCategory,
+                            price = currentProductPrice,
+                            description = currentProductDesc,
+                            photoUrl = currentProductPhoto,
+                            storeId = currentStoreId,
+                            storeName = currentStoreName,
+                            storeAddress = currentStoreAddr,
+                            storeLogoUrl = currentStoreLogo,
+                            storeType = currentStoreType
+                        ))
                     }
                 }
             }
@@ -215,36 +356,34 @@ class ProductDetailActivity : BaseActivity() {
         binding.toolbarProductDetail.setNavigationOnClickListener { finish() }
     }
 
-    private fun setupUI(name: String, desc: String, price: Double, cat: String, photo: String?, sName: String, sAddr: String, sLogo: String?) {
-        val storeType = intent.getStringExtra("STORE_TYPE") ?: "PRODUCTS"
-        
-        binding.tvDetailName.text = name
-        binding.tvDetailCategory.text = cat
-        binding.tvDetailDescription.text = desc
-        binding.tvDetailPrice.text = if (storeType == "HOTEL") "S/ ${String.format(Locale.US, "%.2f", price)} la noche" else "S/ ${String.format(Locale.US, "%.2f", price)}"
-        binding.tvDetailStoreName.text = sName
-        binding.tvDetailStoreAddress.text = sAddr
+    private fun setupUI() {
+        binding.tvDetailName.text = currentProductName
+        binding.tvDetailCategory.text = currentProductCategory
+        binding.tvDetailDescription.text = currentProductDesc
+        binding.tvDetailPrice.text = if (currentStoreType == "HOTEL") "S/ ${String.format(Locale.US, "%.2f", currentProductPrice)} la noche" else "S/ ${String.format(Locale.US, "%.2f", currentProductPrice)}"
+        binding.tvDetailStoreName.text = currentStoreName
+        binding.tvDetailStoreAddress.text = currentStoreAddr
 
-        if (storeType == "HOTEL") {
+        if (currentStoreType == "HOTEL") {
             binding.btnDetailDirectOrder.text = "Reservar 🛎️"
         } else {
             binding.btnDetailDirectOrder.text = "Hacer Pedido 🛵"
         }
 
-        if (!sLogo.isNullOrEmpty()) {
+        if (!currentStoreLogo.isNullOrEmpty()) {
             binding.tvStoreEmojiPlaceholder.visibility = View.GONE
             binding.ivDetailStoreLogo.visibility = View.VISIBLE
-            Glide.with(this).load(sLogo).into(binding.ivDetailStoreLogo)
+            Glide.with(this).load(currentStoreLogo).into(binding.ivDetailStoreLogo)
         } else {
             binding.tvStoreEmojiPlaceholder.visibility = View.VISIBLE
             binding.ivDetailStoreLogo.visibility = View.GONE
         }
 
-        if (!photo.isNullOrEmpty()) {
-            binding.ivProductDetailImage.setImageDrawable(null)
+        if (!currentProductPhoto.isNullOrEmpty()) {
+            currentLoadedPhotoUrl = currentProductPhoto
             GlideHelper.loadImageWithProgressBar(
                 this,
-                photo,
+                currentProductPhoto,
                 binding.ivProductDetailImage,
                 binding.pbProductDetailLoading
             )
@@ -290,10 +429,10 @@ class ProductDetailActivity : BaseActivity() {
         startActivityWithFade(intent)
     }
 
-    private fun setupRecyclerViews(sId: String, sName: String, sType: String) {
+    private fun setupRecyclerViews() {
         similarAdapter = SmallProductAdapter(
             onProductClick = { product -> navigateToProduct(product) },
-            onSeeMoreStoreClick = { openStoreProfile(sId, sName, sType) }
+            onSeeMoreStoreClick = { openStoreProfile(currentStoreId, currentStoreName, currentStoreType) }
         )
         binding.rvSimilarProducts.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         binding.rvSimilarProducts.adapter = similarAdapter
@@ -309,22 +448,48 @@ class ProductDetailActivity : BaseActivity() {
         binding.rvProductReviews.adapter = productReviewsAdapter
     }
 
-    private fun setupListeners(id: String, name: String, price: Double, cat: String, sId: String, sName: String, sLogo: String?, storeType: String, photo: String?, desc: String, storeAddr: String) {
+    private fun setupListeners() {
         binding.cardDetailStoreInfo.setOnClickListener {
-            openStoreProfile(sId, sName, storeType)
+            openStoreProfile(currentStoreId, currentStoreName, currentStoreType)
         }
         binding.btnDetailChatStore.setOnClickListener {
-            openChatWithStore(sId, sName, sLogo)
+            openChatWithStore(currentStoreId, currentStoreName, currentStoreLogo)
+        }
+        binding.btnShareProductHeader.setOnClickListener {
+            val currentName = binding.tvDetailName.text?.toString()?.takeIf { it.isNotBlank() } ?: currentProductName
+            val currentPrice = binding.tvDetailPrice.text?.toString()
+                ?.replace("S/", "")?.replace("la noche", "")?.trim()?.toDoubleOrNull() ?: currentProductPrice
+            val currentStoreNameFromView = binding.tvDetailStoreName.text?.toString()?.takeIf { it.isNotBlank() } ?: currentStoreName
+            val currentCat = binding.tvDetailCategory.text?.toString()?.takeIf { it.isNotBlank() } ?: currentProductCategory
+
+            SocialShareHelper.showShareProductDialog(
+                activity = this,
+                productId = currentProductId,
+                productName = currentName,
+                productPrice = currentPrice,
+                productCategory = currentCat,
+                productPhoto = currentLoadedPhotoUrl ?: currentProductPhoto,
+                storeId = currentStoreId,
+                storeName = currentStoreNameFromView,
+                storeType = currentStoreType
+            )
         }
         binding.btnSubmitProductReview.setOnClickListener {
-            submitProductReview(sId, id, storeType)
+            if (requireLoginForGuest("calificar este producto")) return@setOnClickListener
+            submitProductReview(currentStoreId, currentProductId, currentStoreType)
+        }
+        binding.etNewProductReviewComment.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus && isGuestUser()) {
+                binding.etNewProductReviewComment.clearFocus()
+                requireLoginForGuest("calificar este producto")
+            }
         }
         binding.btnCancelProductReview.setOnClickListener {
             resetProductReviewForm()
         }
-        startProductReviewsListener(sId, id, storeType)
+        startProductReviewsListener(currentStoreId, currentProductId, currentStoreType)
 
-        updateFavoriteUI(id)
+        updateFavoriteUI(currentProductId)
         binding.btnDetailFavorite.setOnClickListener {
             // Animación de escala al presionar
             binding.btnDetailFavorite.animate()
@@ -340,25 +505,48 @@ class ProductDetailActivity : BaseActivity() {
                 }
                 .start()
 
-            val p = MarketplaceProduct(id, name, cat, price, desc, photo, sId, sName, storeAddr, sLogo, storeType)
+            val p = MarketplaceProduct(
+                currentProductId,
+                currentProductName,
+                currentProductCategory,
+                currentProductPrice,
+                currentProductDesc,
+                currentProductPhoto,
+                currentStoreId,
+                currentStoreName,
+                currentStoreAddr,
+                currentStoreLogo,
+                currentStoreType
+            )
             FavoritesManager.toggleFavorite(this, p)
-            updateFavoriteUI(id)
+            updateFavoriteUI(currentProductId)
         }
 
-        if (storeType == "HOTEL") {
+        if (currentStoreType == "HOTEL") {
             binding.btnDetailAddToCartOnly.visibility = View.GONE
         }
         
         binding.btnDetailAddToCartOnly.setOnClickListener {
-            showQuantitySelectorDialog(name, price, "AGREGAR AL CARRITO") { qty ->
-                if (CartManager.currentStoreId != sId && CartManager.getItems().isNotEmpty()) {
+            if (requireLoginForGuest("agregar al carrito")) return@setOnClickListener
+            
+            showQuantitySelectorDialog(currentProductName, currentProductPrice, "AGREGAR AL CARRITO") { qty ->
+                if (CartManager.currentStoreId != currentStoreId && CartManager.getItems().isNotEmpty()) {
                     AlertDialog.Builder(this)
                         .setTitle("Cambiar de Tienda")
-                        .setMessage("Tu carrito pertenece a otra tienda. ¿Deseas vaciarlo y comprar en $sName?")
+                        .setMessage("Tu carrito pertenece a otra tienda. ¿Deseas vaciarlo y comprar en $currentStoreName?")
                         .setPositiveButton("Sí, Cambiar") { _, _ ->
                             CartManager.clear()
                             repeat(qty) {
-                                CartManager.addItemFromManualData(id, name, price, cat, sId, sName, sLogo ?: "", photo)
+                                CartManager.addItemFromManualData(
+                                    currentProductId,
+                                    currentProductName,
+                                    currentProductPrice,
+                                    currentProductCategory,
+                                    currentStoreId,
+                                    currentStoreName,
+                                    currentStoreLogo ?: "",
+                                    currentProductPhoto
+                                )
                             }
                             Toast.makeText(this, "Añadido al nuevo carrito 🛒", Toast.LENGTH_SHORT).show()
                             updateAddToCartUI()
@@ -368,7 +556,16 @@ class ProductDetailActivity : BaseActivity() {
                         .show()
                 } else {
                     repeat(qty) {
-                        CartManager.addItemFromManualData(id, name, price, cat, sId, sName, sLogo ?: "", photo)
+                        CartManager.addItemFromManualData(
+                            currentProductId,
+                            currentProductName,
+                            currentProductPrice,
+                            currentProductCategory,
+                            currentStoreId,
+                            currentStoreName,
+                            currentStoreLogo ?: "",
+                            currentProductPhoto
+                        )
                     }
                     Toast.makeText(this, "Añadido al carrito 🛒", Toast.LENGTH_SHORT).show()
                     updateAddToCartUI()
@@ -377,29 +574,39 @@ class ProductDetailActivity : BaseActivity() {
             }
         }
 
-        if (storeType == "HOTEL") {
+        if (currentStoreType == "HOTEL") {
             binding.btnDetailDirectOrder.text = "Reservar 🛎️"
         }
 
         binding.btnDetailDirectOrder.setOnClickListener {
-            if (storeType == "HOTEL") {
-                val intent = Intent(this, HotelBookingRequestActivity::class.java).apply {
-                    putExtra("ROOM_ID", id)
-                    putExtra("ROOM_NAME", name)
-                    putExtra("ROOM_PRICE", price)
-                    putExtra("STORE_ID", sId)
-                    putExtra("STORE_NAME", sName)
+            if (requireLoginForGuest("realizar un pedido o reserva")) return@setOnClickListener
+
+            if (currentStoreType == "HOTEL") {
+                val intent = Intent().setClassName(packageName, "com.gomezmart.feature_hotel.HotelBookingRequestActivity").apply {
+                    putExtra("ROOM_ID", currentProductId)
+                    putExtra("ROOM_NAME", currentProductName)
+                    putExtra("ROOM_PRICE", currentProductPrice)
+                    putExtra("STORE_ID", currentStoreId)
+                    putExtra("STORE_NAME", currentStoreName)
                 }
                 startActivity(intent)
                 return@setOnClickListener
             }
             
-            showQuantitySelectorDialog(name, price, "REALIZAR PEDIDO") { qty ->
-                startProductOrderFlow(id, name, price, cat, sId, sName, qty)
+            showQuantitySelectorDialog(currentProductName, currentProductPrice, "REALIZAR PEDIDO") { qty ->
+                startProductOrderFlow(
+                    currentProductId,
+                    currentProductName,
+                    currentProductPrice,
+                    currentProductCategory,
+                    currentStoreId,
+                    currentStoreName,
+                    qty
+                )
             }
         }
 
-        if (CartManager.getItems().any { it.productId == id }) {
+        if (CartManager.getItems().any { it.productId == currentProductId }) {
             updateAddToCartUI()
         }
     }
@@ -629,10 +836,11 @@ class ProductDetailActivity : BaseActivity() {
         val storeLogo = sLogo ?: intent.getStringExtra("STORE_LOGO")
         
         lifecycleScope.launch {
-            try {
-                val collectionName = if (sType == "HOTEL") "hotel_rooms" else "inventory"
-                val storeInvRef = db.collection("users").document(sId).collection(collectionName)
-                val similarSnap = storeInvRef.get().await()
+            if (sId.isNotEmpty()) {
+                try {
+                    val collectionName = if (sType == "HOTEL") "hotel_rooms" else "inventory"
+                    val storeInvRef = db.collection("users").document(sId).collection(collectionName)
+                    val similarSnap = storeInvRef.get().await()
                 
                 val similarList = mutableListOf<MarketplaceProduct>()
                 for (doc in similarSnap.documents) {
@@ -670,35 +878,62 @@ class ProductDetailActivity : BaseActivity() {
                     binding.layoutSimilarHeader.visibility = View.GONE
                     binding.rvSimilarProducts.visibility = View.GONE
                 }
-            } catch (e: Exception) {
-                Log.e("ProductDetail", "Error similares: ${e.message}")
+                } catch (e: Exception) {
+                    Log.e("ProductDetail", "Error similares: ${e.message}")
+                }
             }
 
             try {
-                val collGroup = if (sType == "HOTEL") "hotel_rooms" else "inventory"
-                val allInvSnap = db.collectionGroup(collGroup).limit(50).get().await()
-                val recList = mutableListOf<MarketplaceProduct>()
-                
-                for (doc in allInvSnap.documents) {
-                    if (doc.id == currentProdId || doc.getBoolean("isDeleted") == true) continue
-                    
-                    val pathParts = doc.reference.path.split("/")
-                    val foundStoreId = if (pathParts.size >= 2) pathParts[1] else ""
-                    
-                    if (foundStoreId != sId && foundStoreId.isNotEmpty()) {
-                        recList.add(mapToMarketplace(doc, foundStoreId, "Vendedor GoMezMart", "", sType))
+                val settingsSnap = db.collectionGroup("settings")
+                    .whereEqualTo("is_online", true)
+                    .limit(150)
+                    .get().await()
+
+                val publishedStoresById = mutableMapOf<String, Pair<String, String>>()
+                for (sDoc in settingsSnap.documents) {
+                    val pathParts = sDoc.reference.path.split("/")
+                    if (pathParts.size < 2) continue
+                    val ownerUid = pathParts[1]
+                    val bType = (sDoc.getString("business_type") ?: sDoc.id).uppercase(Locale.ROOT)
+                    val matchesType = if (sType == "HOTEL") {
+                        bType == "HOTEL"
+                    } else {
+                        bType != "HOTEL" && bType != "LOANS"
                     }
+                    if (!matchesType) continue
+                    val bName = sDoc.getString("business_name") ?: continue
+                    if (bName.isBlank() || bName.equals("Mi Negocio", ignoreCase = true)) continue
+                    val bAddr = sDoc.getString("business_address") ?: ""
+                    publishedStoresById[ownerUid] = bName to bAddr
                 }
 
-                val filteredRecs = recList.filter { it.category == category }.toMutableList()
-                if (filteredRecs.size < 5) {
-                    filteredRecs.addAll(recList.filter { it.category != category }.take(5 - filteredRecs.size))
-                }
+                if (publishedStoresById.isNotEmpty()) {
+                    val collGroup = if (sType == "HOTEL") "hotel_rooms" else "inventory"
+                    val allInvSnap = db.collectionGroup(collGroup).limit(50).get().await()
+                    val recList = mutableListOf<MarketplaceProduct>()
+                    
+                    for (doc in allInvSnap.documents) {
+                        if (doc.id == currentProdId || doc.getBoolean("isDeleted") == true) continue
+                        
+                        val pathParts = doc.reference.path.split("/")
+                        val foundStoreId = if (pathParts.size >= 2) pathParts[1] else ""
+                        val storeInfo = publishedStoresById[foundStoreId] ?: continue
+                        
+                        if (foundStoreId != sId && foundStoreId.isNotEmpty()) {
+                            recList.add(mapToMarketplace(doc, foundStoreId, storeInfo.first, storeInfo.second, sType))
+                        }
+                    }
 
-                if (filteredRecs.isNotEmpty()) {
-                    binding.tvRecommendedTitle.visibility = View.VISIBLE
-                    binding.rvRecommendedProducts.visibility = View.VISIBLE
-                    recommendedAdapter.updateData(filteredRecs.distinctBy { it.id }.take(10))
+                    val filteredRecs = recList.filter { it.category == category }.toMutableList()
+                    if (filteredRecs.size < 5) {
+                        filteredRecs.addAll(recList.filter { it.category != category }.take(5 - filteredRecs.size))
+                    }
+
+                    if (filteredRecs.isNotEmpty()) {
+                        binding.tvRecommendedTitle.visibility = View.VISIBLE
+                        binding.rvRecommendedProducts.visibility = View.VISIBLE
+                        recommendedAdapter.updateData(filteredRecs.distinctBy { it.id }.take(10))
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("ProductDetail", "Error recomendados: ${e.message}")
@@ -713,17 +948,25 @@ class ProductDetailActivity : BaseActivity() {
         productReviewsRegistration?.remove()
         productReviewsRegistration = db.collection("users").document(sId)
             .collection(collectionName).document(prodId).collection("reviews")
-            .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot == null) return@addSnapshotListener
-                val reviews = snapshot.documents.mapNotNull { it.toObject(StoreReview::class.java) }.distinctBy { it.userId }
+                val reviews = snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(StoreReview::class.java)?.let { r ->
+                        if (r.id.isBlank()) r.copy(id = doc.id) else r
+                    }
+                }
+                    .sortedByDescending { it.timestamp }
+                    .distinctBy { it.userId.ifBlank { it.id } }
                 productReviewsAdapter.updateData(reviews)
 
                 if (reviews.isNotEmpty()) {
                     val avg = reviews.map { it.rating }.average()
+                    val roundedAvg = kotlin.math.round(avg * 10.0) / 10.0
                     binding.tvProductAverageRating.text = "★ ${String.format(Locale.US, "%.1f", avg)} (${reviews.size} opiniones)"
                     binding.tvNoProductReviews.visibility = View.GONE
                     binding.rvProductReviews.visibility = View.VISIBLE
+                    db.collection("users").document(sId).collection(collectionName).document(prodId)
+                        .update(mapOf("average_rating" to roundedAvg, "review_count" to reviews.size))
                 } else {
                     binding.tvProductAverageRating.text = "Sin calificaciones aún"
                     binding.tvNoProductReviews.visibility = View.VISIBLE
@@ -733,9 +976,13 @@ class ProductDetailActivity : BaseActivity() {
                 val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
                 myProductReview = reviews.find { it.userId == currentUserId }
 
-                if (myProductReview != null) {
+                if (isGuestUser()) {
+                    binding.cardAddProductReview.visibility = View.GONE
+                } else if (myProductReview != null) {
+                    binding.cardAddProductReview.visibility = View.VISIBLE
                     binding.btnSubmitProductReview.text = "ACTUALIZAR CALIFICACIÓN"
                 } else {
+                    binding.cardAddProductReview.visibility = View.VISIBLE
                     binding.btnSubmitProductReview.text = "PUBLICAR CALIFICACIÓN"
                     binding.btnCancelProductReview.visibility = View.GONE
                 }
@@ -745,6 +992,7 @@ class ProductDetailActivity : BaseActivity() {
     }
 
     private fun submitProductReview(sId: String, prodId: String, sType: String) {
+        if (requireLoginForGuest("calificar este producto")) return
         val user = FirebaseAuth.getInstance().currentUser
         if (user == null) {
             Toast.makeText(this, "Inicia sesión para calificar este producto 🔐", Toast.LENGTH_SHORT).show()
@@ -752,12 +1000,7 @@ class ProductDetailActivity : BaseActivity() {
         }
 
         val comment = binding.etNewProductReviewComment.text.toString().trim()
-        val rating = binding.rbNewProductReview.rating.toInt()
-
-        if (comment.isEmpty()) {
-            Toast.makeText(this, "Escribe una opinión sobre el producto", Toast.LENGTH_SHORT).show()
-            return
-        }
+        val rating = binding.rbNewProductReview.rating.toInt().coerceIn(1, 5)
 
         val collectionName = if (sType == "HOTEL") "hotel_rooms" else "inventory"
         val reviewId = user.uid
@@ -792,6 +1035,7 @@ class ProductDetailActivity : BaseActivity() {
     }
 
     private fun startEditProductReview(review: StoreReview) {
+        if (requireLoginForGuest("editar tu calificación")) return
         binding.etNewProductReviewComment.setText(review.comment)
         binding.rbNewProductReview.rating = review.rating.toFloat()
         binding.btnCancelProductReview.visibility = View.VISIBLE
@@ -826,7 +1070,12 @@ class ProductDetailActivity : BaseActivity() {
             val item = items[position]
             with(holder.b) {
                 tvReviewUserName.text = item.userName
-                tvReviewComment.text = item.comment
+                if (item.comment.isBlank()) {
+                    tvReviewComment.visibility = View.GONE
+                } else {
+                    tvReviewComment.visibility = View.VISIBLE
+                    tvReviewComment.text = item.comment
+                }
                 rbReviewStars.rating = item.rating.toFloat()
 
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -867,7 +1116,9 @@ class ProductDetailActivity : BaseActivity() {
             storeId = sId,
             storeName = sName,
             storeAddress = sAddr,
-            storeType = sType
+            storeType = sType,
+            averageRating = doc.getDouble("average_rating") ?: 0.0,
+            reviewCount = (doc.getLong("review_count") ?: 0L).toInt()
         )
     }
 
@@ -925,6 +1176,7 @@ class ProductDetailActivity : BaseActivity() {
                     tvRecentProductPrice.text = "➕ Ver más"
                     tvRecentProductPrice.setTextColor(ContextCompat.getColor(root.context, R.color.purple_600))
                     tvRecentProductName.text = "Ver catálogo"
+                    tvRecentProductRating.visibility = View.GONE
                     
                     val pad = (10 * root.resources.displayMetrics.density).toInt()
                     ivRecentProductImage.setPadding(pad, pad, pad, pad)
@@ -947,8 +1199,18 @@ class ProductDetailActivity : BaseActivity() {
                     }
                 } else {
                     tvRecentProductName.text = p.name
-                    tvRecentProductPrice.text = if (p.storeType == "HOTEL") "S/ ${String.format(Locale.US, "%.2f", p.price)} noche" else "S/ ${String.format(Locale.US, "%.2f", p.price)}"
+                    tvRecentProductPrice.text = if (p.storeType == "HOTEL") "S/ ${String.format(Locale.US, "%.2f", p.price)} la noche" else "S/ ${String.format(Locale.US, "%.2f", p.price)}"
                     tvRecentProductPrice.setTextColor(ContextCompat.getColor(root.context, R.color.slate_900))
+                    tvRecentProductRating.visibility = View.VISIBLE
+                    if (p.reviewCount > 0) {
+                        tvRecentProductRating.text = "★ ${String.format(Locale.US, "%.1f", p.averageRating)} (${p.reviewCount})"
+                        tvRecentProductRating.setBackgroundResource(R.drawable.bg_pill_amber_light)
+                        tvRecentProductRating.setTextColor(Color.parseColor("#B45309"))
+                    } else {
+                        tvRecentProductRating.text = "☆ 0.0 (0)"
+                        tvRecentProductRating.setBackgroundResource(R.drawable.bg_pill_slate_light)
+                        tvRecentProductRating.setTextColor(ContextCompat.getColor(root.context, R.color.slate_500))
+                    }
                     
                     ivRecentProductImage.setPadding(0, 0, 0, 0)
                     ivRecentProductImage.scaleType = ImageView.ScaleType.CENTER_CROP

@@ -53,14 +53,16 @@ class SettingsFragment : Fragment() {
 
     private fun loadUserProfile() {
         val user = auth.currentUser
-        if (user == null) {
+        val isGuest = (activity as? BaseActivity)?.isGuestUser() == true || user == null || user.isAnonymous
+        if (isGuest) {
             binding.tvUserNameSettings.text = "Modo Invitado"
-            binding.tvUserEmailSettings.text = "Inicia sesión para más funciones"
+            binding.tvUserEmailSettings.text = "Inicia sesión para guardar en la nube"
             binding.tvUserAccountTypeSettings.text = "INVITADO"
             try {
                 binding.tvUserAccountRoleIconSettings.text = "👤"
             } catch (e: Exception) {}
             binding.tvProfileInitialSettings.text = "?"
+            binding.ivProfileImageSettings.visibility = View.GONE
             return
         }
 
@@ -112,10 +114,6 @@ class SettingsFragment : Fragment() {
     }
 
     private fun setupListeners() {
-        binding.cardSystemSettings.setOnClickListener {
-            startActivity(Intent(requireContext(), com.gomezmart.app.SystemSettingsActivity::class.java))
-        }
-
         binding.cardAccountSettings.setOnClickListener {
             startActivity(Intent(requireContext(), AccountSettingsActivity::class.java))
         }
@@ -124,9 +122,7 @@ class SettingsFragment : Fragment() {
             checkUpdates()
         }
 
-        binding.cardSupportCreator.setOnClickListener {
-            startActivity(Intent(requireContext(), com.gomezmart.app.SupportCreatorActivity::class.java))
-        }
+
 
         binding.cardRestartTutorial.setOnClickListener {
             val main = activity as? com.gomezmart.app.MainActivity

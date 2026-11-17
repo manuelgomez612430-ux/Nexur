@@ -224,6 +224,10 @@ class LoanStoreEditorActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (requireLoginForGuest("publicar tu tienda de préstamos en el Mercado en Línea")) {
+            finish()
+            return
+        }
         if (savedInstanceState != null) {
             cameraImageUri = savedInstanceState.getParcelable("camera_uri")
             currentCropType = savedInstanceState.getString("crop_type") ?: ""
@@ -282,11 +286,11 @@ class LoanStoreEditorActivity : BaseActivity() {
 
     private fun updateButtonState() {
         val complete = isDataComplete().first
-        if (complete) {
-            binding.btnSaveLoanStore.text = "GUARDAR Y PUBLICAR ✨"
-            binding.switchActivateLoanMarket.isChecked = true
+        val willPublish = complete && binding.switchActivateLoanMarket.isChecked
+        binding.btnSaveLoanStore.text = if (willPublish) {
+            "GUARDAR Y PUBLICAR ✨"
         } else {
-            binding.btnSaveLoanStore.text = "GUARDAR CAMBIOS 💾"
+            "GUARDAR CAMBIOS 💾"
         }
 
         // IA Button validation
@@ -335,25 +339,49 @@ class LoanStoreEditorActivity : BaseActivity() {
                     Toast.makeText(this, "⚠️ Para publicar en el mercado, completa: ${validation.second}", Toast.LENGTH_LONG).show()
                 }
             }
+            updateButtonState()
         }
     }
 
     private fun showMainImageOptions(type: String) {
-        val options = arrayOf("🗑️ Quitar Imagen", "🔄 Reemplazar Imagen")
+        val options = arrayOf("🔄 Reemplazar Imagen", "✏️ Editar Imagen")
         AlertDialog.Builder(this).setTitle("Gestionar Imagen").setItems(options) { _, which ->
-            if (which == 0) {
-                if (type == "LOGO") {
-                    selectedLogoUri = null
-                    binding.ivEditLogo.tag = null
-                    binding.ivEditLogo.setImageResource(R.drawable.gomezmart_icon)
-                } else {
-                    selectedCoverUri = null
-                    binding.ivEditCover.tag = null
-                    binding.ivEditCover.setImageResource(R.drawable.gomezmart_full_bg)
+            when (which) {
+                0 -> showImagePickerOptions(type)
+                1 -> {
+                    val currentTag = if (type == "LOGO") binding.ivEditLogo.tag?.toString() else binding.ivEditCover.tag?.toString()
+                    val currentUri = if (type == "LOGO") selectedLogoUri else selectedCoverUri
+
+                    if (currentUri != null) {
+                        startCrop(currentUri, type)
+                    } else if (!currentTag.isNullOrEmpty()) {
+                        Toast.makeText(this, "Preparando imagen...", Toast.LENGTH_SHORT).show()
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            try {
+                                val file = Glide.with(this@LoanStoreEditorActivity)
+                                    .downloadOnly()
+                                    .load(currentTag)
+                                    .submit()
+                                    .get()
+
+                                val localUri = androidx.core.content.FileProvider.getUriForFile(
+                                    this@LoanStoreEditorActivity,
+                                    "$packageName.provider",
+                                    file
+                                )
+                                withContext(Dispatchers.Main) {
+                                    startCrop(localUri, type)
+                                }
+                            } catch (e: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(this@LoanStoreEditorActivity, "Error al cargar la imagen para editar", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    } else {
+                        Toast.makeText(this, "No hay imagen para editar", Toast.LENGTH_SHORT).show()
+                    }
                 }
-                updateButtonState()
-            } else {
-                showImagePickerOptions(type)
             }
         }.show()
     }
@@ -476,7 +504,7 @@ class LoanStoreEditorActivity : BaseActivity() {
                         binding.ivEditLogo.tag = it
                         Glide.with(this@LoanStoreEditorActivity)
                             .load(it)
-                            .placeholder(R.drawable.gomezmart_icon)
+                            .placeholder(R.drawable.logo_sistema_prestamos)
                             .priority(Priority.HIGH)
                             .circleCrop()
                             .into(binding.ivEditLogo)
@@ -536,8 +564,7 @@ class LoanStoreEditorActivity : BaseActivity() {
         val addr = binding.etEditStoreAddress.text.toString().trim()
         
         val isComplete = isDataComplete().first
-        // Si está completo se publica automáticamente, si no, respeta el estado del switch
-        val isOnline = if (isComplete) true else binding.switchActivateLoanMarket.isChecked
+        val isOnline = isComplete && binding.switchActivateLoanMarket.isChecked
 
         if (name.isEmpty() && desc.isEmpty()) {
             Toast.makeText(this, "Ingresa al menos el nombre del negocio para guardar", Toast.LENGTH_SHORT).show()
@@ -548,7 +575,7 @@ class LoanStoreEditorActivity : BaseActivity() {
         syncPaymentMethodsFromLayout()
 
         val progress = ProgressDialog(this).apply {
-            setMessage(if (isComplete) "Guardando y publicando en el mercado... 🚀✨" else "Guardando cambios... 💾")
+            setMessage(if (isOnline) "Guardando y publicando en el mercado... 🚀✨" else "Guardando cambios... 💾")
             setCancelable(false)
             show()
         }
@@ -559,6 +586,7 @@ class LoanStoreEditorActivity : BaseActivity() {
             try {
                 var detectedCity = ""
                 var detectedPostalCode = ""
+                var detectedCountry = ""
                 try {
                     val geocoder = Geocoder(this@LoanStoreEditorActivity, Locale.getDefault())
                     val addresses = geocoder.getFromLocation(businessLat, businessLng, 1)
@@ -566,6 +594,7 @@ class LoanStoreEditorActivity : BaseActivity() {
                         val addrRes = addresses[0]
                         detectedCity = addrRes.locality ?: addrRes.subAdminArea ?: ""
                         detectedPostalCode = addrRes.postalCode ?: ""
+                        detectedCountry = addrRes.countryName ?: ""
                     }
                 } catch (e: Exception) {
                     Log.e("LoanStoreEditor", "Error detectando zona: ${e.message}")
@@ -586,6 +615,7 @@ class LoanStoreEditorActivity : BaseActivity() {
                     "longitude" to businessLng,
                     "business_city" to detectedCity,
                     "business_postal_code" to detectedPostalCode,
+                    "business_country" to detectedCountry,
                     "theme" to currentTheme,
                     "paymentMethods" to paymentMethods
                 )
@@ -639,18 +669,33 @@ class LoanStoreEditorActivity : BaseActivity() {
                     .collection("settings").document("LOANS")
                     .set(data, SetOptions.merge()).await()
 
+                // Limpieza preventiva de documentos legacy/duplicados ("business")
+                try {
+                    db.collection("users").document(userId).collection("settings").document("business").delete().await()
+                } catch (e: Exception) {}
+
+                SyncManager(this@LoanStoreEditorActivity).cleanTempCacheFiles()
+
                 if (owner.isNotEmpty()) {
                     db.collection("users").document(userId).collection("profile").document("info")
                         .set(mapOf("name" to owner), SetOptions.merge()).await()
                 }
 
-                getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit()
-                    .putBoolean("is_online_store", isOnline)
-                    .apply()
+                getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit().apply {
+                    putBoolean("is_online_store", isOnline)
+                    putBoolean("LOANS_is_online", isOnline)
+                    putString("LOANS_name", name)
+                    putString("LOANS_owner_name", owner)
+                    putString("LOANS_phone", phone)
+                    putString("LOANS_address", addr)
+                    (data["business_logo_url"] as? String)?.let { putString("LOANS_logo_url", it) }
+                    apply()
+                }
 
                 withContext(Dispatchers.Main) {
+                    com.gomezmart.app.fragment.BuyerMarketplaceFragment.needsMarketplaceRefresh = true
                     progress.dismiss()
-                    val msg = if (isComplete) "¡Negocio guardado y publicado en el mercado! 🚀✨" else "¡Cambios guardados correctamente! 💾"
+                    val msg = if (isOnline) "¡Negocio guardado y publicado en el mercado! 🚀✨" else "¡Cambios guardados correctamente! 💾"
                     Toast.makeText(this@LoanStoreEditorActivity, msg, Toast.LENGTH_SHORT).show()
                     finish()
                 }

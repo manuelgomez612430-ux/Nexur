@@ -8,6 +8,7 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -130,6 +131,10 @@ class MyBusinessesActivity : BaseActivity() {
     }
 
     private fun loadMyBusinesses() {
+        if (isGuestUser()) {
+            binding.btnSkipToMarket.visibility = View.VISIBLE
+            return
+        }
         val user = auth.currentUser ?: return
         val userId = user.uid
         val userEmail = user.email?.lowercase() ?: ""
@@ -198,6 +203,41 @@ class MyBusinessesActivity : BaseActivity() {
     }
 
     private fun switchSystem(store: StoreModel) {
+        val dynamicManager = com.gomezmart.app.utils.DynamicModuleManager(this)
+        val targetModule = when (store.businessType) {
+            "HOTEL" -> com.gomezmart.app.utils.DynamicFeatureModule.HOTEL
+            "LOANS" -> com.gomezmart.app.utils.DynamicFeatureModule.LOANS
+            else -> com.gomezmart.app.utils.DynamicFeatureModule.PRODUCTS
+        }
+
+        if (!dynamicManager.isModuleInstalled(targetModule)) {
+            val systemName = when (store.businessType) {
+                "HOTEL" -> "Sistema de Hotel"
+                "LOANS" -> "Sistema de Préstamos"
+                else -> "Sistema de Productos"
+            }
+            AlertDialog.Builder(this)
+                .setTitle("$systemName desinstalado")
+                .setMessage("Este sistema no está instalado en tu dispositivo. ¿Deseas descargarlo e instalarlo para acceder a ${store.name}?")
+                .setPositiveButton("Instalar e Ingresar") { _, _ ->
+                    dynamicManager.launchOrDownloadModule(
+                        module = targetModule,
+                        onProgress = { progress ->
+                            Toast.makeText(this, "Instalando $systemName: $progress%", Toast.LENGTH_SHORT).show()
+                        },
+                        onSuccess = {
+                            switchSystem(store)
+                        },
+                        onError = { err ->
+                            Toast.makeText(this, "Error al instalar: $err", Toast.LENGTH_LONG).show()
+                        }
+                    )
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+            return
+        }
+
         if (store.phone == "COLLAB") {
             switchToCollaborativeEnvironment(store.id, store.businessType, store.name, store.logoUrl)
             return
@@ -226,14 +266,15 @@ class MyBusinessesActivity : BaseActivity() {
                 }
 
                 SyncManager(this@MyBusinessesActivity).downloadBusinessSettingsFromCloud(store.businessType)
-                SyncManager(this@MyBusinessesActivity).scheduleOfflineSync()
-
-                loading.dismiss()
-                
-                val intent = Intent(this@MyBusinessesActivity, MainActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
+                SyncManager(this@MyBusinessesActivity).downloadEverythingFromCloud {
+                    if (!isFinishing && !isDestroyed) {
+                        loading.dismiss()
+                        val intent = Intent(this@MyBusinessesActivity, MainActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    }
+                }
             } catch (e: Exception) {
                 loading.dismiss()
             }
@@ -267,11 +308,15 @@ class MyBusinessesActivity : BaseActivity() {
                     apply()
                 }
                 
-                loading.dismiss()
-                val intent = Intent(this@MyBusinessesActivity, MainActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
+                SyncManager(this@MyBusinessesActivity).downloadEverythingFromCloud {
+                    if (!isFinishing && !isDestroyed) {
+                        loading.dismiss()
+                        val intent = Intent(this@MyBusinessesActivity, MainActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    }
+                }
             } catch (e: Exception) {
                 loading.dismiss()
             }

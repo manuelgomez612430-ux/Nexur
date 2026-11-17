@@ -5,19 +5,40 @@
     android:layout_height="match_parent"
     android:background="#F0000000">
 
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/vpFullScreenGallery"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <ImageView
         android:id="@+id/ivFullScreenPhoto"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="fitCenter"
-        android:contentDescription="Foto ampliada" />
+        android:contentDescription="Foto ampliada"
+        android:visibility="gone" />
 
     <ProgressBar
         android:id="@+id/pbFullScreenPhoto"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_gravity="center"
-        android:indeterminateTint="@color/white" />
+        android:indeterminateTint="@color/white"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvFullScreenPhotoCounter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="36dp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="8dp"
+        android:text="1 / 1"
+        android:textColor="@color/white"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/btnCloseFullScreenPhoto"

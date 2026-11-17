@@ -8,7 +8,10 @@ plugins {
 
 android {
     namespace = "com.gomezmart.app"
-    compileSdk = 35
+    compileSdk = 36
+    ndkVersion = "30.0.16248370"
+
+    dynamicFeatures += setOf(":feature_hotel", ":feature_loans", ":feature_products")
 
     val localProperties = Properties()
     val localPropertiesFile = project.rootProject.file("local.properties")
@@ -20,12 +23,16 @@ android {
     defaultConfig {
         applicationId = "com.naxor.app"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 52
-        versionName = "1.5.40"
+        targetSdk = 36
+        versionCode = 65
+        versionName = "1.5.52"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
+
+        ndk {
+            debugSymbolLevel = "SYMBOL_TABLE"
+        }
     }
 
     signingConfigs {
@@ -48,6 +55,7 @@ android {
             
             ndk {
                 abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a"))
+                debugSymbolLevel = "SYMBOL_TABLE"
             }
 
             val keystorePath = project.findProperty("MYAPP_RELEASE_STORE_FILE")?.toString() ?: "gomezmart.jks"
@@ -95,6 +103,40 @@ android {
         outputs.all {
             val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
             output.outputFileName = "GoMezMart_v${defaultConfig.versionName}_${variantName}.apk"
+        }
+    }
+}
+
+// Garantiza que todas las librerías nativas (.so) de terceros incluyan su archivo .so.sym
+// dentro del App Bundle (BUNDLE-METADATA/com.android.tools.build.debugsymbols) para evitar
+// la advertencia de símbolos nativos en Google Play Console.
+tasks.matching { it.name == "extractReleaseNativeSymbolTables" }.configureEach {
+    doLast {
+        val mergedLibDir = layout.buildDirectory.dir("intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib").get().asFile
+        val outSymDir = layout.buildDirectory.dir("intermediates/native_symbol_tables/release/extractReleaseNativeSymbolTables/out").get().asFile
+        val sdkDir = android.sdkDirectory
+        val objcopy = File(sdkDir, "ndk/${android.ndkVersion}/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-objcopy.exe")
+        if (mergedLibDir.exists()) {
+            mergedLibDir.listFiles()?.filter { it.isDirectory }?.forEach { abiDir ->
+                val targetAbiDir = File(outSymDir, abiDir.name)
+                targetAbiDir.mkdirs()
+                abiDir.listFiles()?.filter { it.extension == "so" }?.forEach { soFile ->
+                    val symFile = File(targetAbiDir, "${soFile.name}.sym")
+                    if (!symFile.exists()) {
+                        if (objcopy.exists()) {
+                            ProcessBuilder(
+                                objcopy.absolutePath,
+                                "--only-keep-debug",
+                                soFile.absolutePath,
+                                symFile.absolutePath
+                            ).start().waitFor()
+                        }
+                        if (!symFile.exists()) {
+                            soFile.copyTo(symFile, overwrite = true)
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -167,6 +209,16 @@ dependencies {
 
     // Recorte de Imágenes (Moderno)
     implementation("com.github.CanHub:Android-Image-Cropper:4.5.0")
+
+    // Play Feature Delivery y Updates (Descarga de Módulos y Actualización desde Play Store)
+    implementation(libs.play.feature.delivery)
+    implementation("com.google.android.play:app-update-ktx:2.1.0")
+
+    // Google Play Billing (Suscripciones y Productos In-App)
+    implementation(libs.play.billing)
+
+    // Forzar j2objc-annotations como implementation para compatibilidad con AGP Dynamic Features
+    implementation("com.google.j2objc:j2objc-annotations:2.8")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)

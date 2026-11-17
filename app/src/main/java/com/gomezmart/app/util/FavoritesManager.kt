@@ -13,6 +13,23 @@ object FavoritesManager {
     private const val PREFS_NAME = "FavoritesPrefs"
     private const val KEY_FAVORITES = "favorites_list"
 
+    private fun isGuestUser(context: Context): Boolean {
+        return try {
+            val user = FirebaseAuth.getInstance().currentUser
+            val prefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+            if (user != null && !user.isAnonymous) {
+                if (prefs.getBoolean("is_guest", false)) {
+                    prefs.edit().putBoolean("is_guest", false).apply()
+                }
+                false
+            } else {
+                true
+            }
+        } catch (e: Exception) {
+            true
+        }
+    }
+
     fun toggleFavorite(context: Context, product: MarketplaceProduct) {
         val favorites = getFavorites(context).toMutableList()
         val isFav = isFavorite(context, product.id)
@@ -24,7 +41,7 @@ object FavoritesManager {
         }
         
         saveFavorites(context, favorites)
-        syncWithFirebase(favorites)
+        syncWithFirebase(context, favorites)
     }
 
     fun isFavorite(context: Context, productId: String): Boolean {
@@ -49,9 +66,10 @@ object FavoritesManager {
     }
 
     /**
-     * Sincroniza la lista local con Firebase Firestore.
+     * Sincroniza la lista local con Firebase Firestore (solo para cuentas registradas).
      */
-    private fun syncWithFirebase(list: List<MarketplaceProduct>) {
+    private fun syncWithFirebase(context: Context, list: List<MarketplaceProduct>) {
+        if (isGuestUser(context)) return
         val user = FirebaseAuth.getInstance().currentUser ?: return
         val db = FirebaseFirestore.getInstance()
         
@@ -69,7 +87,14 @@ object FavoritesManager {
      * Carga los favoritos desde Firebase (útil al iniciar sesión o cambiar de dispositivo).
      */
     fun loadFromFirebase(context: Context, onComplete: (() -> Unit)? = null) {
-        val user = FirebaseAuth.getInstance().currentUser ?: return
+        if (isGuestUser(context)) {
+            onComplete?.invoke()
+            return
+        }
+        val user = FirebaseAuth.getInstance().currentUser ?: run {
+            onComplete?.invoke()
+            return
+        }
         val db = FirebaseFirestore.getInstance()
         
         db.collection("users").document(user.uid)

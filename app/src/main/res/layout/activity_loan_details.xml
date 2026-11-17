@@ -88,13 +88,15 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:layout_marginEnd="48dp">
+                            android:orientation="vertical">
 
                             <TextView
                                 android:id="@+id/tvDetailClientName"
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:paddingStart="44dp"
+                                android:paddingEnd="44dp"
                                 android:text="Cargando Cliente..."
                                 android:textSize="22sp"
                                 android:textStyle="bold"
@@ -184,6 +186,7 @@
                                 android:orientation="horizontal">
 
                                 <LinearLayout
+                                    android:id="@+id/layoutDetailRegisterDate"
                                     android:layout_width="0dp"
                                     android:layout_height="wrap_content"
                                     android:layout_weight="1"
@@ -210,6 +213,7 @@
                                 </LinearLayout>
 
                                 <LinearLayout
+                                    android:id="@+id/layoutDetailStartDate"
                                     android:layout_width="0dp"
                                     android:layout_height="wrap_content"
                                     android:layout_weight="1"

@@ -23,6 +23,7 @@
 
         <!-- AVATAR CONTENEDOR CON INSIGNIA EN LA ESQUINA (FUERA DEL CORTE CIRCULAR) -->
         <FrameLayout
+            android:id="@+id/layoutChatListAvatarContainer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content">
 

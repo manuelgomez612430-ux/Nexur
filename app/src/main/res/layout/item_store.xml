@@ -49,14 +49,30 @@
             android:orientation="vertical"
             android:layout_marginStart="16dp">
 
-            <TextView
-                android:id="@+id/tvStoreName"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Nombre de la Tienda"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="@color/slate_900" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvStoreName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Nombre de la Tienda"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/slate_900" />
+
+                <ImageView
+                    android:id="@+id/ivStoreVerified"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="6dp"
+                    android:src="@drawable/ic_verified_badge"
+                    android:visibility="gone"
+                    android:contentDescription="Tienda Oficial" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvStoreCategory"
@@ -77,6 +93,41 @@
                 android:textSize="13sp"
                 android:textColor="@color/slate_500"
                 android:layout_marginTop="4dp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvStoreRating"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_pill_slate_light"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp"
+                    android:text="☆ 0.0 (0)"
+                    android:textColor="@color/slate_500"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="visible" />
+
+                <TextView
+                    android:id="@+id/tvStoreFollowers"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_pill_purple_light"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp"
+                    android:text="👥 0"
+                    android:textColor="@color/purple_700"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
 
         </LinearLayout>
 

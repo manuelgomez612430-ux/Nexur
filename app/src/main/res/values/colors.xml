@@ -17,7 +17,10 @@
 
     <!-- Accent Colors -->
     <color name="sky_50">#F0F9FF</color>
+    <color name="sky_200">#BAE6FD</color>
     <color name="sky_600">#0284C7</color>
+    <color name="sky_700">#0369A1</color>
+    <color name="red_500">#EF4444</color>
     <color name="red_600">#DC2626</color>
     <color name="red_700">#B91C1C</color>
     <color name="red_50">#FEF2F2</color>
@@ -31,10 +34,16 @@
     <color name="purple_50">#F5F3FF</color>
     <color name="green_600">#16A34A</color>
     <color name="orange_50">#FFF7ED</color>
+    <color name="orange_500">#F97316</color>
     <color name="orange_600">#EA580C</color>
+    <color name="amber_50">#FFFBEB</color>
+    <color name="amber_600">#D97706</color>
+    <color name="amber_700">#B45309</color>
 
     <!-- Emerald Palette -->
     <color name="emerald_50">#ECFDF5</color>
+    <color name="emerald_200">#A7F3D0</color>
+    <color name="emerald_500">#10B981</color>
     <color name="emerald_600">#059669</color>
     <color name="emerald_700">#047857</color>
     <color name="emerald_800">#065F46</color>

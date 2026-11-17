@@ -40,6 +40,10 @@ class AiChatActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (requireLoginForGuest("usar el Asesor IA")) {
+            finish()
+            return
+        }
         binding = ActivityAiChatBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -147,11 +151,19 @@ class AiChatActivity : BaseActivity() {
         }
 
         binding.btnActionNewLoan.setOnClickListener {
-            startActivity(android.content.Intent(this, AddLoanActivity::class.java))
+            val intent = android.content.Intent().setClassName(packageName, "com.gomezmart.feature_loans.AddLoanActivity")
+            startActivity(intent)
         }
 
         binding.btnActionExpenses.setOnClickListener {
-            startActivity(android.content.Intent(this, GastosActivity::class.java))
+            val bType = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+                .getString("business_type", "LOANS") ?: "LOANS"
+            if (bType == "LOANS") {
+                val intent = android.content.Intent().setClassName(packageName, "com.gomezmart.feature_loans.LoansExpensesActivity")
+                startActivity(intent)
+            } else {
+                startActivity(android.content.Intent(this, GastosActivity::class.java))
+            }
         }
     }
 

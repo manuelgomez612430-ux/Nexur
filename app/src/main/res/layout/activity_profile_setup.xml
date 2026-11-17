@@ -121,6 +121,20 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
+                        android:hint="Correo electrónico (Obligatorio)"
+                        app:startIconDrawable="@android:drawable/ic_dialog_email">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etSetupEmail"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textEmailAddress" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
                         android:hint="Nombres"
                         app:startIconDrawable="@android:drawable/ic_menu_edit">
                         <com.google.android.material.textfield.TextInputEditText
@@ -149,7 +163,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:hint="Número de Celular"
+                        android:hint="Número de Celular (Opcional)"
                         app:startIconDrawable="@android:drawable/stat_sys_phone_call">
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etSetupPhone"
@@ -163,7 +177,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
-                        android:text="* Toda la información es obligatoria para mejorar la seguridad y la logística de tus pedidos."
+                        android:text="* El correo, nombres y apellidos son obligatorios. El número de celular es opcional."
                         android:textSize="11sp"
                         android:textColor="@color/slate_500" />
 

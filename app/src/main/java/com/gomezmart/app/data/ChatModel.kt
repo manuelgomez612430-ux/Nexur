@@ -15,5 +15,8 @@ data class DirectChat(
     val unreadCount: Map<String, Int> = emptyMap(),
     val lastMessage: String = "",
     val lastMessageTime: Any? = null,
-    val clearedUntil: Map<String, Long> = emptyMap()
+    val clearedUntil: Map<String, Long> = emptyMap(),
+    val requestStatus: String = "ACCEPTED",
+    val requestedBy: String = "",
+    val chatType: String = "DIRECT"
 )

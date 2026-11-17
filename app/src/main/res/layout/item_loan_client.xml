@@ -101,6 +101,8 @@
             android:textSize="10sp"
             app:chipMinHeight="24dp"
             app:chipBackgroundColor="@color/emerald_50"
-            android:textColor="@color/emerald_600" />
+            android:textColor="@color/emerald_600"
+            android:clickable="false"
+            android:focusable="false" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

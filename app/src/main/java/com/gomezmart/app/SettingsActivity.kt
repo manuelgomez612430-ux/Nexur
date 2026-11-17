@@ -65,9 +65,7 @@ class SettingsActivity : BaseActivity() {
                 .setMessage("Es el dinero total que has invertido en tu negocio o el dinero que tienes disponible para trabajar.")
                 .setPositiveButton("Entendido", null).show()
         }
-        binding.btnSupportCreator.setOnClickListener {
-            startActivity(Intent(this, SupportCreatorActivity::class.java))
-        }
+
     }
 
     private fun loadSettings() {

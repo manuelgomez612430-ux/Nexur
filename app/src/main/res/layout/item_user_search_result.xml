@@ -5,8 +5,8 @@
     android:layout_height="wrap_content"
     android:layout_marginStart="16dp"
     android:layout_marginEnd="16dp"
-    android:layout_marginTop="4dp"
-    android:layout_marginBottom="4dp"
+    android:layout_marginTop="5dp"
+    android:layout_marginBottom="5dp"
     app:cardCornerRadius="16dp"
     app:cardElevation="1dp"
     app:strokeWidth="1dp"
@@ -27,6 +27,8 @@
             android:layout_height="50dp"
             app:cardCornerRadius="25dp"
             app:cardElevation="0dp"
+            app:strokeWidth="1.5dp"
+            app:strokeColor="@color/purple_100"
             app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
             <FrameLayout
@@ -57,7 +59,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginStart="16dp">
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="8dp">
 
             <TextView
                 android:id="@+id/tvSearchUserName"
@@ -66,23 +69,97 @@
                 android:text="Nombre del Usuario"
                 android:textSize="15sp"
                 android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:textColor="?attr/colorOnSurface" />
 
             <TextView
                 android:id="@+id/tvSearchUserRole"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Rol del Usuario"
-                android:textSize="10sp"
-                android:textColor="@color/slate_500" />
+                android:layout_marginTop="4dp"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:background="@drawable/bg_pill_emerald_light"
+                android:text="Comprador"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="@color/emerald_700" />
+
+            <TextView
+                android:id="@+id/tvSearchUserRequestNote"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text=""
+                android:textSize="11sp"
+                android:textColor="@color/slate_500"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:visibility="gone" />
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/layoutFriendRequestRowActions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/btnRejectFriendRow"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:background="@drawable/bg_pill_red_light"
+                android:text="✕"
+                android:textColor="@color/red_600"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/btnAcceptFriendRow"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="6dp"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:background="@drawable/bg_pill_emerald_light"
+                android:text="Aceptar"
+                android:textColor="@color/emerald_700"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvSearchUserActionBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_pill_purple_light"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="6dp"
+            android:text="Ver perfil ›"
+            android:textColor="@color/purple_700"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone" />
+
         <ImageView
+            android:id="@+id/ivSearchUserArrow"
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:src="@android:drawable/ic_menu_send"
             app:tint="@color/purple_600"
-            android:alpha="0.5" />
+            android:alpha="0.55" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

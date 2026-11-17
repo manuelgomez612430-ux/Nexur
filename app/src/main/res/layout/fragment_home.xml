@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface">
@@ -93,7 +94,7 @@
                             android:layout_height="match_parent"
                             android:padding="4dp"
                             android:scaleType="fitCenter"
-                            android:src="@drawable/logotipo_de_gomezmart" />
+                            android:src="@drawable/logo_sistema_productos" />
 
                         <View
                             android:id="@+id/viewCollabBadgeMain"
@@ -666,69 +667,29 @@
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <LinearLayout
-                android:id="@+id/btnSupportCreatorMain"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:orientation="horizontal"
-                android:padding="6dp"
-                android:gravity="center_vertical"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:alpha="0.8"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/layoutMainBody">
-                <ImageView
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
-                    android:src="@android:drawable/btn_star_big_on"
-                    app:tint="@color/emerald_600" />
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginStart="8dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Presiona aquí para apoyar al creador"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Ayúdame a mantener GoMezMart gratuito y sin anuncios"
-                        android:textSize="9sp"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-                </LinearLayout>
-            </LinearLayout>
-
             <View
+                android:id="@+id/viewSpacerMain"
                 android:layout_width="match_parent"
                 android:layout_height="20dp"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btnSupportCreatorMain" />
+                app:layout_constraintTop_toBottomOf="@id/layoutMainBody" />
 
             <!-- FOOTER INFO -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="GoMezMart v1.5.40"
+                android:text="GoMezMart v1.5.52"
                 android:textAlignment="center"
                 android:textSize="10sp"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                app:layout_constraintTop_toBottomOf="@id/btnSupportCreatorMain"
-                android:layout_marginTop="28dp" />
+                app:layout_constraintTop_toBottomOf="@id/viewSpacerMain"
+                android:layout_marginTop="8dp" />
 
             <View
-                android:layout_width="match_parent"
-                android:layout_height="80dp"
+                android:layout_width="717dp"
+                android:layout_height="81dp"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btnSupportCreatorMain" />
+                app:layout_constraintTop_toBottomOf="@id/viewSpacerMain" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>

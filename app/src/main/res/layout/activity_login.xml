@@ -81,7 +81,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="Crea una cuenta para acceder a la gestión avanzada, navegar y publicar en el mercado online, y colaborar con otros negocios en tiempo real."
+                        android:text="Crea una cuenta para acceder a la gestión avanzada, navegar y publicar en el mercado en línea, y colaborar con otros negocios en tiempo real; o accede a modo invitado para explorar y usar muchas funciones de gestión para tu negocio (tus datos se guardarán localmente, pero no tendrás copia de seguridad en caso pierdas el teléfono o por alguna actualización)."
                         android:textColor="@color/purple_700"
                         android:textSize="13sp"
                         android:textAlignment="center"
@@ -102,12 +102,13 @@
 
                 <TextView
                     android:id="@+id/tvLoginTitle"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Acceso al Sistema"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:textColor="@color/slate_900"
+                    android:textAlignment="center"
                     android:layout_marginBottom="24dp" />
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -143,23 +144,7 @@
                         android:inputType="textPassword" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/layoutConfirmPassword"
-                    style="?attr/textInputOutlinedStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Confirmar Contraseña"
-                    android:layout_marginBottom="16dp"
-                    android:visibility="gone"
-                    app:passwordToggleEnabled="true"
-                    app:cornerRadius="16dp"
-                    app:startIconDrawable="@android:drawable/ic_lock_idle_lock">
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etConfirmPassword"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textPassword" />
-                </com.google.android.material.textfield.TextInputLayout>
+                <!-- (Eliminado campo de confirmar contraseña ya que esto es solo Login) -->
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnLoginAction"
@@ -172,29 +157,7 @@
                     app:backgroundTint="@color/purple_600"
                     android:elevation="4dp" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnToggleLoginMode"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="¿No tienes cuenta? Regístrate aquí"
-                    android:textSize="13sp"
-                    android:textColor="@color/purple_700"
-                    android:textAllCaps="false" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnForgotPassword"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="¿Olvidaste tu contraseña?"
-                    android:textSize="12sp"
-                    android:textColor="@color/slate_500"
-                    android:textAllCaps="false"
-                    android:visibility="visible" />
-
+                <!-- SEPARADOR -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -207,6 +170,7 @@
                     <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" android:background="@color/slate_200" />
                 </LinearLayout>
 
+                <!-- BOTÓN GOOGLE -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/btnGoogleSignIn"
                     android:layout_width="match_parent"
@@ -245,11 +209,73 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <!-- BOTÓN MODO INVITADO -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnContinueGuest"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1.2dp"
+                    app:strokeColor="@color/slate_200"
+                    app:cardBackgroundColor="#F8FAFC"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="center"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="👤"
+                            android:textSize="20sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:text="Modo Invitado"
+                            android:textColor="@color/slate_700"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- LINKS SECUNDARIOS (CREAR CUENTA / OLVIDASTE CLAVE) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnToggleLoginMode"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="¿No tienes cuenta? Regístrate aquí"
+                    android:textSize="13sp"
+                    android:textColor="@color/purple_700"
+                    android:textAllCaps="false" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnForgotPassword"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="¿Olvidaste tu contraseña?"
+                    android:textSize="12sp"
+                    android:textColor="@color/slate_500"
+                    android:textAllCaps="false"
+                    android:visibility="visible"
+                    android:layout_marginBottom="16dp" />
+
             </LinearLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
-
-    <View android:id="@+id/btnContinueGuest" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

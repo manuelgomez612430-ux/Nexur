@@ -69,6 +69,7 @@ class SearchBusinessActivity : BaseActivity() {
     }
 
     private fun showCollaborationsDialog() {
+        if (requireLoginForGuest("ver tus colaboraciones")) return
         lifecycleScope.launch {
             try {
                 val email = auth.currentUser?.email?.lowercase() ?: return@launch
@@ -203,6 +204,7 @@ class SearchBusinessActivity : BaseActivity() {
     }
 
     private fun showJoinDialog(store: StoreModel) {
+        if (requireLoginForGuest("solicitar unirte al equipo de un negocio")) return
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Colaborar con ${store.name}")
         builder.setMessage("¿Deseas enviar una solicitud para unirte al equipo de este negocio?")

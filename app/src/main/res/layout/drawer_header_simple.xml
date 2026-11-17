@@ -69,76 +69,7 @@
             android:letterSpacing="0.2" />
     </LinearLayout>
 
-    <!-- Botón: Gestionar Colaboradores -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/btnDrawerManageTeam"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="16dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp"
-        app:cardBackgroundColor="@color/purple_600"
-        android:clickable="true"
-        android:focusable="true"
-        android:foreground="?attr/selectableItemBackground">
 
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="👥 Gestionar Colaboradores"
-                    android:textColor="@android:color/white"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Añade y controla los accesos de tu equipo de trabajo para una gestión compartida."
-                    android:textColor="@android:color/white"
-                    android:textSize="10sp"
-                    android:alpha="0.8" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnDrawerSearchToCollab"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_gravity="center_horizontal"
-                    android:text="🤝 Colaborar con un negocio"
-                    android:textSize="9sp"
-                    android:textStyle="bold"
-                    android:paddingHorizontal="8dp"
-                    app:cornerRadius="8dp"
-                    app:backgroundTint="@color/purple_100"
-                    app:iconSize="12dp" />
-            </LinearLayout>
-
-            <!-- Punto Rojo de Solicitud Nueva -->
-            <View
-                android:id="@+id/viewCollabBadgeDrawer"
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:layout_gravity="top|end"
-                android:layout_marginTop="12dp"
-                android:layout_marginEnd="12dp"
-                android:background="@drawable/bg_circle_red"
-                android:visibility="gone" />
-        </FrameLayout>
-    </com.google.android.material.card.MaterialCardView>
 
     <!-- Botón: Mi Cuenta (Solo para colaboradores) -->
     <com.google.android.material.card.MaterialCardView

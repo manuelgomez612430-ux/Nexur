@@ -20,9 +20,13 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.firestoreSettings
 import com.gomezmart.app.util.FavoritesManager
+import com.gomezmart.app.util.BillingManager
 import java.io.File
 import java.net.URL
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class SyncManager(private val context: Context) {
 
@@ -47,7 +51,30 @@ class SyncManager(private val context: Context) {
     private val localDb = try { AppDatabase.getDatabase(context) } catch (e: Exception) { null }
     private val syncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    companion object {
+        private val roomPhotoUploadMutex = Mutex()
+        private val uploadedRoomPhotosByPath = ConcurrentHashMap<String, String>()
+    }
+
+    fun isGuestUser(): Boolean {
+        return try {
+            val user = auth?.currentUser
+            val prefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+            if (user != null && !user.isAnonymous) {
+                if (prefs.getBoolean("is_guest", false)) {
+                    prefs.edit().putBoolean("is_guest", false).apply()
+                }
+                false
+            } else {
+                true
+            }
+        } catch (e: Exception) {
+            true
+        }
+    }
+
     private fun getEffectiveUserId(): String? {
+        if (isGuestUser()) return null
         try {
             val prefs = context.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
             val isCollaborator = prefs.getBoolean("is_collaborator_mode", false)
@@ -61,22 +88,52 @@ class SyncManager(private val context: Context) {
 
     // --- SUBIDAS INDIVIDUALES (OPTIMIZADAS CON SCOPE ÚNICO) ---
 
-    fun syncProductToCloud(product: ProductEntity) {
+    fun syncProductToCloud(product: ProductEntity, notifyFollowers: Boolean = false) {
         val userId = getEffectiveUserId() ?: return
         val firestore = db ?: return
         syncScope.launch {
             try {
                 if (!product.photoPath.isNullOrEmpty() && product.photoUrl.isNullOrEmpty()) {
-                    val file = File(product.photoPath)
-                    if (file.exists()) {
-                        val path = "users/$userId/products/${product.id}_${System.currentTimeMillis()}.jpg"
-                        val downloadUrl = SupabaseManager.uploadImage("naxor-imagenes-usuarios", path, file)
-                        if (downloadUrl != null) product.photoUrl = downloadUrl
+                    if (BillingManager.hasCloudSpaceAvailable(context)) {
+                        val file = File(product.photoPath)
+                        if (file.exists()) {
+                            val path = "users/$userId/products/${product.id}_${System.currentTimeMillis()}.jpg"
+                            val downloadUrl = SupabaseManager.uploadImage("naxor-imagenes-usuarios", path, file)
+                            if (downloadUrl != null) product.photoUrl = downloadUrl
+                        }
+                    } else {
+                        Log.w("SyncManager", "Límite de almacenamiento en la nube alcanzado. Foto del producto ${product.id} conservada localmente.")
                     }
                 }
                 firestore.collection("users").document(userId).collection("inventory").document(product.id).set(product).await()
                 product.isSynced = true
                 localDb?.productDao()?.update(product)
+
+                if (notifyFollowers) {
+                    val settingsDocs = runCatching {
+                        firestore.collection("users").document(userId).collection("settings").get().await().documents
+                    }.getOrNull().orEmpty()
+                    val storeDoc = settingsDocs.firstOrNull { it.id == "PRODUCTS" || it.id == "business" }
+                        ?: settingsDocs.firstOrNull()
+                    val storeName = storeDoc?.getString("business_name") ?: "Tienda GoMezMart"
+                    val storeLogo = storeDoc?.getString("business_logo_url")
+                    val storeType = storeDoc?.getString("business_type") ?: "PRODUCTS"
+                    val priceStr = String.format(Locale.US, "%.2f", product.precioVenta)
+                    val catText = product.categoria.takeIf { it.isNotBlank() }?.let { " • $it" } ?: ""
+                    SocialRepository.publishStoreUpdate(
+                        db = firestore,
+                        storeId = userId,
+                        storeName = storeName,
+                        storeLogoUrl = storeLogo,
+                        storeType = storeType,
+                        type = "NEW_PRODUCT",
+                        title = product.nombre.ifBlank { "Nuevo producto" },
+                        message = "Nuevo en catálogo por S/ $priceStr$catText",
+                        productId = product.id,
+                        productPrice = product.precioVenta,
+                        imageUrl = product.photoUrl
+                    )
+                }
             } catch (e: Exception) { Log.e("SyncManager", "Error product: ${e.message}") }
         }
     }
@@ -177,15 +234,78 @@ class SyncManager(private val context: Context) {
         }
     }
 
+    private suspend fun resolveAndUploadRoomPhotoUrl(userId: String, room: HotelRoomEntity): String? {
+        if (!room.photoUrl.isNullOrEmpty()) return room.photoUrl
+        val localPath = room.photoPath?.takeIf { it.isNotBlank() } ?: return null
+
+        uploadedRoomPhotosByPath[localPath]?.let { return it }
+
+        return roomPhotoUploadMutex.withLock {
+            uploadedRoomPhotosByPath[localPath]?.let { return@withLock it }
+
+            val existingUrl = runCatching {
+                localDb?.hotelDao()?.getAllRoomsOnce()
+                    ?.firstOrNull { it.photoPath == localPath && !it.photoUrl.isNullOrEmpty() }
+                    ?.photoUrl
+            }.getOrNull()
+            if (!existingUrl.isNullOrEmpty()) {
+                uploadedRoomPhotosByPath[localPath] = existingUrl
+                return@withLock existingUrl
+            }
+
+            if (!BillingManager.hasCloudSpaceAvailable(context)) {
+                Log.w("SyncManager", "Límite de almacenamiento en la nube alcanzado. Foto de habitación ${room.id} conservada localmente.")
+                return@withLock null
+            }
+
+            val file = File(localPath)
+            if (!file.exists()) return@withLock null
+
+            val storagePath = "users/$userId/hotel_rooms/${room.id}_${System.currentTimeMillis()}.jpg"
+            val downloadUrl = SupabaseManager.uploadImage("naxor-imagenes-usuarios", storagePath, file)
+            if (!downloadUrl.isNullOrEmpty()) {
+                uploadedRoomPhotosByPath[localPath] = downloadUrl
+            }
+            downloadUrl
+        }
+    }
+
     fun syncHotelRoomToCloud(room: HotelRoomEntity) {
         val userId = getEffectiveUserId() ?: return
         val firestore = db ?: return
         syncScope.launch {
             try {
-                firestore.collection("users").document(userId).collection("hotel_rooms").document(room.id).set(room, SetOptions.merge()).await()
-                room.isSynced = true
-                localDb?.hotelDao()?.updateRoom(room)
+                val resolvedPhotoUrl = resolveAndUploadRoomPhotoUrl(userId, room)
+                val syncedRoom = room.copy(
+                    photoUrl = resolvedPhotoUrl ?: room.photoUrl,
+                    isSynced = true
+                )
+                firestore.collection("users").document(userId).collection("hotel_rooms").document(syncedRoom.id)
+                    .set(syncedRoom, SetOptions.merge()).await()
+                localDb?.hotelDao()?.updateRoom(syncedRoom)
             } catch (e: Exception) { Log.e("SyncManager", "Error hotel room: ${e.message}") }
+        }
+    }
+
+    fun syncHotelRoomsBatchToCloud(rooms: List<HotelRoomEntity>) {
+        if (rooms.isEmpty()) return
+        val userId = getEffectiveUserId() ?: return
+        val firestore = db ?: return
+        syncScope.launch {
+            rooms.forEach { room ->
+                try {
+                    val resolvedPhotoUrl = resolveAndUploadRoomPhotoUrl(userId, room)
+                    val syncedRoom = room.copy(
+                        photoUrl = resolvedPhotoUrl ?: room.photoUrl,
+                        isSynced = true
+                    )
+                    firestore.collection("users").document(userId).collection("hotel_rooms").document(syncedRoom.id)
+                        .set(syncedRoom, SetOptions.merge()).await()
+                    localDb?.hotelDao()?.updateRoom(syncedRoom)
+                } catch (e: Exception) {
+                    Log.e("SyncManager", "Error hotel room batch (${room.number}): ${e.message}")
+                }
+            }
         }
     }
 
@@ -268,8 +388,12 @@ class SyncManager(private val context: Context) {
     // --- SINCRONIZACIÓN COMPLETA ---
 
     fun downloadEverythingFromCloud(onComplete: () -> Unit) {
-        val userId = getEffectiveUserId() ?: return
-        val firestore = db ?: return
+        if (isGuestUser()) {
+            onComplete()
+            return
+        }
+        val userId = getEffectiveUserId() ?: run { onComplete(); return }
+        val firestore = db ?: run { onComplete(); return }
         syncScope.launch {
             try {
                 // 0. Descargar Perfil del Usuario (Intentar primero en subcolección, luego en raíz)
@@ -280,51 +404,51 @@ class SyncManager(private val context: Context) {
                 }
 
                 if (profileDoc.exists()) {
-                    val name = profileDoc.getString("name") ?: profileDoc.getString("user_full_name") ?: profileDoc.getString("fullName") ?: profileDoc.getString("displayName")
-                    val photo = profileDoc.getString("photoUrl") ?: profileDoc.getString("user_photo_url") ?: profileDoc.getString("profilePhoto") ?: profileDoc.getString("photo")
-                    val email = profileDoc.getString("email") ?: profileDoc.getString("user_email") ?: auth?.currentUser?.email
-                    
-                    val edit = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE).edit()
-                    
-                    if (!name.isNullOrEmpty() && name != "Usuario") {
-                        edit.putString("user_full_name", name)
-                        // REGLA: Si descargamos un nombre real de la nube, el perfil ya está verificado
-                        edit.putBoolean("is_profile_verified", true)
-                    }
-                    if (!photo.isNullOrEmpty()) edit.putString("user_photo_url", photo)
-                    if (!email.isNullOrEmpty()) edit.putString("user_email", email)
-                    
-                    val phone = profileDoc.getString("phone") ?: profileDoc.getString("user_phone")
-                    if (!phone.isNullOrEmpty()) edit.putString("user_phone", phone)
-                    
-                    val dni = profileDoc.getString("dni") ?: profileDoc.getString("user_dni")
-                    if (!dni.isNullOrEmpty()) edit.putString("user_dni", dni)
-                    
-                    val address = profileDoc.getString("address") ?: profileDoc.getString("user_address")
-                    if (!address.isNullOrEmpty()) edit.putString("user_address", address)
-                    
-                    edit.apply()
-                    
-                    // Asegurar consistencia en raíz
+                    val name = profileDoc.getString("name") ?: profileDoc.getString("user_full_name") ?: profileDoc.getString("fullName") ?: profileDoc.getString("displayName") ?: ""
+                    val photo = profileDoc.getString("photoUrl") ?: profileDoc.getString("user_photo_url") ?: profileDoc.getString("profilePhoto") ?: profileDoc.getString("photo") ?: ""
+                    val email = profileDoc.getString("email") ?: profileDoc.getString("user_email") ?: auth?.currentUser?.email ?: ""
+                    val phone = profileDoc.getString("phone") ?: profileDoc.getString("user_phone") ?: ""
+                    val dni = profileDoc.getString("dni") ?: profileDoc.getString("user_dni") ?: ""
+                    val address = profileDoc.getString("address") ?: profileDoc.getString("user_address") ?: ""
+                    val allowDir = profileDoc.getBoolean("allowDirectorySearch") ?: true
+                    val shareContact = profileDoc.getBoolean("shareContactWithFriends") ?: false
+                    val msgPrivacy = profileDoc.getString("messagePrivacy")
+
+                    val appPrefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+                    val wasVerified = appPrefs.getBoolean("is_profile_verified", false)
+                    com.gomezmart.app.util.SessionManager.saveProfileLocally(
+                        context = context,
+                        fullName = name,
+                        email = email,
+                        phone = phone,
+                        dni = dni,
+                        address = address,
+                        photoUrl = photo,
+                        allowDirectorySearch = allowDir,
+                        shareContactWithFriends = shareContact,
+                        messagePrivacy = msgPrivacy,
+                        verified = wasVerified || com.gomezmart.app.util.SessionManager.isProfileComplete(name, email)
+                    )
+
+                    // Asegurar consistencia en raíz (sin escribir nombres placeholder)
                     val updates = mutableMapOf<String, Any>()
-                    if (!name.isNullOrEmpty()) updates["name"] = name
-                    if (!photo.isNullOrEmpty()) updates["photoUrl"] = photo
-                    if (!email.isNullOrEmpty()) updates["email"] = email
+                    if (!com.gomezmart.app.util.SessionManager.isPlaceholderName(name)) updates["name"] = name
+                    if (photo.isNotEmpty()) updates["photoUrl"] = photo
+                    if (email.isNotEmpty()) updates["email"] = email
                     if (updates.isNotEmpty()) firestore.collection("users").document(userId).set(updates, SetOptions.merge())
                     
                     // [NUEVO] Recuperar Rol sugerido solo si no se ha establecido uno previamente
                     val title = profileDoc.getString("businessTitle") ?: ""
                     val recoveredRole = when {
-                        title.contains("Dueño", true) -> "SELLER"
+                        title.contains("Dueño", true) || title.contains("Gestor", true) -> "SELLER"
                         title.contains("Colaborador", true) -> "COLLABORATOR"
                         title.contains("Comprador", true) -> "BUYER"
                         else -> null
                     }
-                    val currentRole = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE).getString("user_role", null)
+                    val currentRole = appPrefs.getString("user_role", null)
                     if (recoveredRole != null && currentRole == null) {
-                        edit.putString("user_role", recoveredRole)
+                        appPrefs.edit().putString("user_role", recoveredRole).apply()
                     }
-                    edit.apply()
                 }
 
                 // 0.2 Descargar Favoritos
@@ -338,8 +462,11 @@ class SyncManager(private val context: Context) {
                     settings.documents.forEach { doc ->
                         doc.data?.forEach { (k, v) -> 
                             if (k != "business_type") {
-                                if (v is String) bizPrefs.putString(k, v)
-                                else if (v is Boolean) bizPrefs.putBoolean(k, v)
+                                when (v) {
+                                    is String -> bizPrefs.putString(k, v)
+                                    is Boolean -> bizPrefs.putBoolean(k, v)
+                                    is Number -> bizPrefs.putFloat(k, v.toFloat())
+                                }
                             }
                         }
                     }
@@ -353,20 +480,18 @@ class SyncManager(private val context: Context) {
                     bizPrefs.apply()
                 }
 
-                // 1. Descargar Inventario
+                // 1. Descargar Inventario, Ventas y Gastos
                 // IMPORTANTE: Los registros que el usuario creó/editó SIN conexión (isSynced = 0)
-                // NUNCA deben ser sobrescritos por la versión de la nube, o esos cambios
-                // se perderían antes de poder subirse. Se filtran y se dejan intactos;
-                // el SyncWorker los subirá en el siguiente ciclo.
+                // NUNCA deben ser sobrescritos por la versión de la nube.
                 val inventory = firestore.collection("users").document(userId).collection("inventory").get().await()
-                val pendingProductIds = localDb?.productDao()?.getAllUnsyncedProducts()?.map { it.id }?.toSet() ?: emptySet()
+                val pendingProductIds = localDb?.productDao()?.allUnsyncedProducts?.map { it.id }?.toSet() ?: emptySet()
                 val productList = inventory.documents
                     .mapNotNull { it.toObject(ProductEntity::class.java)?.apply { isSynced = true } }
                     .filter { it.id !in pendingProductIds }
                 if (productList.isNotEmpty()) localDb?.productDao()?.insertAll(productList)
 
                 val sales = firestore.collection("users").document(userId).collection("sales").get().await()
-                val pendingSaleIds = localDb?.saleDao()?.getAllUnsyncedSales()?.map { it.id }?.toSet() ?: emptySet()
+                val pendingSaleIds = localDb?.saleDao()?.allUnsyncedSales?.map { it.id }?.toSet() ?: emptySet()
                 val saleList = sales.documents
                     .mapNotNull { it.toObject(SaleEntity::class.java)?.apply { isSynced = true } }
                     .filter { it.id !in pendingSaleIds }
@@ -379,7 +504,80 @@ class SyncManager(private val context: Context) {
                     .filter { it.id !in pendingExpenseIds }
                 if (expenseList.isNotEmpty()) localDb?.expenseDao()?.insertAll(expenseList)
 
-                // Descargar Préstamos, Presupuestos y Gastos de Préstamos
+                // 2. Descargar Deudores (Fiados), Clientes, Proveedores, Caja, Deudas de Negocio e Historial
+                try {
+                    val debtorsSnap = firestore.collection("users").document(userId).collection("debtors").get().await()
+                    val pendingDebtorIds = localDb?.debtorDao()?.getAllUnsyncedDebtors()?.map { it.id }?.toSet() ?: emptySet()
+                    debtorsSnap.documents
+                        .mapNotNull { it.toObject(DebtorEntity::class.java)?.apply { isSynced = true } }
+                        .filter { it.id !in pendingDebtorIds }
+                        .forEach { localDb?.debtorDao()?.insertDebtor(it) }
+
+                    val debtDetailsSnap = firestore.collection("users").document(userId).collection("debt_details").get().await()
+                    val pendingDebtDetailIds = localDb?.debtorDao()?.getAllUnsyncedDebtDetails()?.map { it.id }?.toSet() ?: emptySet()
+                    debtDetailsSnap.documents
+                        .mapNotNull { it.toObject(DebtDetailEntity::class.java)?.apply { isSynced = true } }
+                        .filter { it.id !in pendingDebtDetailIds }
+                        .forEach { localDb?.debtorDao()?.insertDebtDetail(it) }
+
+                    val customersSnap = firestore.collection("users").document(userId).collection("customers").get().await()
+                    val pendingCustomerIds = localDb?.customerDao()?.getAllUnsyncedCustomers()?.map { it.id }?.toSet() ?: emptySet()
+                    customersSnap.documents
+                        .mapNotNull { it.toObject(CustomerEntity::class.java)?.apply { isSynced = true } }
+                        .filter { it.id !in pendingCustomerIds }
+                        .forEach { localDb?.customerDao()?.insert(it) }
+
+                    val providersSnap = firestore.collection("users").document(userId).collection("providers").get().await()
+                    val pendingProviderIds = localDb?.providerDao()?.getAllUnsyncedProviders()?.map { it.id }?.toSet() ?: emptySet()
+                    providersSnap.documents
+                        .mapNotNull { it.toObject(ProviderEntity::class.java)?.apply { isSynced = true } }
+                        .filter { it.id !in pendingProviderIds }
+                        .forEach { localDb?.providerDao()?.insert(it) }
+
+                    val cashSnap = firestore.collection("users").document(userId).collection("cash_sessions").get().await()
+                    val pendingCashIds = localDb?.cashDao()?.getAllUnsyncedSessions()?.map { it.id }?.toSet() ?: emptySet()
+                    cashSnap.documents
+                        .mapNotNull { it.toObject(CashSessionEntity::class.java)?.apply { isSynced = true } }
+                        .filter { it.id !in pendingCashIds }
+                        .forEach { localDb?.cashDao()?.insert(it) }
+
+                    val bizDebtsSnap = firestore.collection("users").document(userId).collection("business_debts").get().await()
+                    val pendingBizDebtIds = localDb?.businessDebtDao()?.getUnsynced()?.map { it.id }?.toSet() ?: emptySet()
+                    bizDebtsSnap.documents
+                        .mapNotNull { it.toObject(BusinessDebtEntity::class.java)?.apply { isSynced = true } }
+                        .filter { it.id !in pendingBizDebtIds }
+                        .forEach { localDb?.businessDebtDao()?.insert(it) }
+
+                    val logsSnap = firestore.collection("users").document(userId).collection("movement_logs").get().await()
+                    val pendingLogIds = localDb?.movementLogDao()?.getUnsyncedLogs()?.map { it.id }?.toSet() ?: emptySet()
+                    val logsList = logsSnap.documents
+                        .mapNotNull { it.toObject(MovementLogEntity::class.java)?.apply { isSynced = true } }
+                        .filter { it.id !in pendingLogIds }
+                    if (logsList.isNotEmpty()) localDb?.movementLogDao()?.insertAll(logsList)
+                } catch (e: Exception) {
+                    Log.e("SyncManager", "Error downloading secondary collections: ${e.message}")
+                }
+
+                // 3. Descargar Cuentas Bancarias / Billeteras y Compromisos
+                try {
+                    val accountsSnap = firestore.collection("users").document(userId).collection("accounts").get().await()
+                    val pendingAccountIds = localDb?.accountDao()?.getUnsyncedAccounts()?.map { it.id }?.toSet() ?: emptySet()
+                    accountsSnap.documents
+                        .mapNotNull { it.toObject(AccountEntity::class.java)?.copy(isSynced = true) }
+                        .filter { it.id !in pendingAccountIds }
+                        .forEach { localDb?.accountDao()?.insert(it) }
+
+                    val commitmentsSnap = firestore.collection("users").document(userId).collection("commitments").get().await()
+                    val pendingCommitmentIds = localDb?.commitmentDao()?.getUnsynced()?.map { it.id }?.toSet() ?: emptySet()
+                    commitmentsSnap.documents
+                        .mapNotNull { it.toObject(CommitmentEntity::class.java)?.copy(isSynced = true) }
+                        .filter { it.id !in pendingCommitmentIds }
+                        .forEach { localDb?.commitmentDao()?.insertCommitment(it) }
+                } catch (e: Exception) {
+                    Log.e("SyncManager", "Error downloading accounts/commitments: ${e.message}")
+                }
+
+                // 4. Descargar Préstamos, Presupuestos y Gastos de Préstamos
                 val loanBudgetsSnap = firestore.collection("users").document(userId).collection("loan_budgets").get().await()
                 val pendingBudgetIds = localDb?.loanDao()?.getUnsyncedBudgets()?.map { it.id }?.toSet() ?: emptySet()
                 val loanBudgetsList = loanBudgetsSnap.documents
@@ -387,9 +585,11 @@ class SyncManager(private val context: Context) {
                     .filter { it.id !in pendingBudgetIds }
                 loanBudgetsList.forEach { localDb?.loanDao()?.insertBudget(it) }
 
-                val loanExpensesSnap = firestore.collection("users").document(userId).collection("loan_expenses").get().await()
                 val pendingLoanExpenseIds = localDb?.loanDao()?.getUnsyncedLoanExpenses()?.map { it.id }?.toSet() ?: emptySet()
-                val loanExpensesList = loanExpensesSnap.documents
+                val loanExpensesSnap = firestore.collection("users").document(userId).collection("loan_expenses").get().await()
+                val loanExpensesSysSnap = firestore.collection("users").document(userId).collection("loan_expenses_system").get().await()
+                val allLoanExpenseDocs = (loanExpensesSnap.documents + loanExpensesSysSnap.documents).distinctBy { it.id }
+                val loanExpensesList = allLoanExpenseDocs
                     .mapNotNull { it.toObject(LoanExpenseEntity::class.java)?.apply { isSynced = true } }
                     .filter { it.id !in pendingLoanExpenseIds }
                 loanExpensesList.forEach { localDb?.loanDao()?.insertExpense(it) }
@@ -421,6 +621,60 @@ class SyncManager(private val context: Context) {
                     .mapNotNull { it.toObject(LoanPaymentEntity::class.java)?.apply { isSynced = true } }
                     .filter { it.id !in pendingPaymentIds }
                 loanPaymentsList.forEach { localDb?.loanDao()?.insertPayment(it) }
+
+                // 5. Descargar Sistema de Hotelería (Habitaciones, Reservas, Cargos, Pagos, Mantenimiento, Planos y Herramientas)
+                try {
+                    val hotelDao = localDb?.hotelDao()
+                    val hotelToolDao = localDb?.hotelToolDao()
+                    if (hotelDao != null) {
+                        val pendingRoomIds = hotelDao.getUnsyncedRooms().map { it.id }.toSet()
+                        firestore.collection("users").document(userId).collection("hotel_rooms").get().await().documents
+                            .mapNotNull { it.toObject(HotelRoomEntity::class.java)?.apply { isSynced = true } }
+                            .filter { it.id !in pendingRoomIds }
+                            .forEach { hotelDao.insertRoom(it) }
+
+                        val pendingBookingIds = hotelDao.getUnsyncedBookings().map { it.id }.toSet()
+                        firestore.collection("users").document(userId).collection("hotel_bookings").get().await().documents
+                            .mapNotNull { it.toObject(HotelBookingEntity::class.java)?.apply { isSynced = true } }
+                            .filter { it.id !in pendingBookingIds }
+                            .forEach { hotelDao.insertBooking(it) }
+
+                        val pendingChargeIds = hotelDao.getUnsyncedCharges().map { it.id }.toSet()
+                        firestore.collection("users").document(userId).collection("hotel_charges").get().await().documents
+                            .mapNotNull { it.toObject(HotelChargeEntity::class.java)?.apply { isSynced = true } }
+                            .filter { it.id !in pendingChargeIds }
+                            .forEach { hotelDao.insertCharge(it) }
+
+                        val pendingHotelPaymentIds = hotelDao.getUnsyncedPayments().map { it.id }.toSet()
+                        firestore.collection("users").document(userId).collection("hotel_payments").get().await().documents
+                            .mapNotNull { it.toObject(HotelPaymentEntity::class.java)?.apply { isSynced = true } }
+                            .filter { it.id !in pendingHotelPaymentIds }
+                            .forEach { hotelDao.insertPayment(it) }
+
+                        val pendingMaintIds = hotelDao.getUnsyncedMaintenance().map { it.id }.toSet()
+                        firestore.collection("users").document(userId).collection("hotel_maintenance").get().await().documents
+                            .mapNotNull { it.toObject(HotelMaintenanceEntity::class.java)?.apply { isSynced = true } }
+                            .filter { it.id !in pendingMaintIds }
+                            .forEach { hotelDao.insertMaintenanceReport(it) }
+
+                        val pendingLayoutIds = hotelDao.getUnsyncedLayouts().map { it.id }.toSet()
+                        val layouts1 = firestore.collection("users").document(userId).collection("hotel_room_layouts").get().await().documents
+                        val layouts2 = firestore.collection("users").document(userId).collection("hotel_layouts").get().await().documents
+                        (layouts1 + layouts2).distinctBy { it.id }
+                            .mapNotNull { it.toObject(HotelRoomLayoutEntity::class.java)?.apply { isSynced = true } }
+                            .filter { it.id !in pendingLayoutIds }
+                            .forEach { hotelDao.insertLayout(it) }
+                    }
+                    if (hotelToolDao != null) {
+                        val pendingToolIds = hotelToolDao.getUnsyncedTools().map { it.id }.toSet()
+                        firestore.collection("users").document(userId).collection("hotel_tools").get().await().documents
+                            .mapNotNull { it.toObject(HotelToolEntity::class.java)?.apply { isSynced = true } }
+                            .filter { it.id !in pendingToolIds }
+                            .forEach { hotelToolDao.insertTool(it) }
+                    }
+                } catch (e: Exception) {
+                    Log.e("SyncManager", "Error downloading hotel data: ${e.message}")
+                }
 
                 // Sanitizar localmente y subir estado limpio a la nube
                 localDb?.loanDao()?.sanitizeAllLoans()
@@ -924,7 +1178,8 @@ class SyncManager(private val context: Context) {
     }
 
     fun startRealtimeBuyerActiveOrdersCountSync(onCountChanged: (Int) -> Unit): ListenerRegistration? {
-        val userId = auth?.currentUser?.uid ?: return null
+        if (isGuestUser()) return null
+        val userId = getEffectiveUserId() ?: return null
         val firestore = db ?: return null
 
         return firestore.collection("orders")
@@ -942,18 +1197,55 @@ class SyncManager(private val context: Context) {
     }
 
     fun scheduleOfflineSync() {
-        val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
-        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(constraints).build()
-        WorkManager.getInstance(context).enqueueUniqueWork("offline_sync", ExistingWorkPolicy.KEEP, syncRequest)
+        if (isGuestUser()) {
+            try {
+                WorkManager.getInstance(context).cancelUniqueWork("offline_sync")
+                WorkManager.getInstance(context).cancelUniqueWork("periodic_offline_sync")
+                WorkManager.getInstance(context).cancelUniqueWork("periodic_sync")
+            } catch (e: Exception) {}
+            return
+        }
+        try {
+            val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+            val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(constraints).build()
+            WorkManager.getInstance(context).enqueueUniqueWork("offline_sync", ExistingWorkPolicy.KEEP, syncRequest)
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Error scheduling offline sync: ${e.message}")
+        }
     }
 
-    fun deleteProductFromCloud(productId: String) {
+    fun deleteProductFromCloud(productId: String, photoUrl: String? = null) {
         val userId = getEffectiveUserId() ?: return
         val firestore = db ?: return
         syncScope.launch {
             try {
                 firestore.collection("users").document(userId).collection("inventory").document(productId).delete().await()
+                firestore.collection("users").document(userId).collection("products").document(productId).delete().await()
+                
+                if (!photoUrl.isNullOrEmpty() && photoUrl.contains("naxor-imagenes-usuarios")) {
+                    val path = photoUrl.substringAfter("naxor-imagenes-usuarios/")
+                    if (path.isNotBlank()) {
+                        SupabaseManager.deleteImage("naxor-imagenes-usuarios", path)
+                    }
+                }
             } catch (e: Exception) { Log.e("SyncManager", "Error delete product: ${e.message}") }
+        }
+    }
+
+    fun cleanTempCacheFiles() {
+        try {
+            context.cacheDir?.listFiles()?.forEach { file ->
+                if (file.name.endsWith(".jpg") || file.name.endsWith(".png") || file.name.contains("tmp")) {
+                    file.delete()
+                }
+            }
+            context.externalCacheDir?.listFiles()?.forEach { file ->
+                if (file.name.endsWith(".jpg") || file.name.endsWith(".png") || file.name.contains("tmp")) {
+                    file.delete()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Error cleaning temp cache: ${e.message}")
         }
     }
 
@@ -1002,8 +1294,18 @@ class SyncManager(private val context: Context) {
     }
 
     fun deleteEverythingFromCloud(onComplete: () -> Unit) {
-        val userId = auth?.currentUser?.uid ?: return
-        val firestore = db ?: return
+        if (isGuestUser()) {
+            onComplete()
+            return
+        }
+        val userId = getEffectiveUserId() ?: run {
+            onComplete()
+            return
+        }
+        val firestore = db ?: run {
+            onComplete()
+            return
+        }
         syncScope.launch {
             try {
                 val collections = listOf("inventory", "sales", "expenses", "debtors", "customers", "providers", "movement_logs", "cash_sessions", "hotel_bookings", "hotel_rooms", "hotel_maintenance", "loan_clients", "loans")
@@ -1084,11 +1386,15 @@ class SyncManager(private val context: Context) {
     }
 
     fun uploadAllLocalToCloud(onComplete: () -> Unit) {
-        getEffectiveUserId() ?: return
+        if (isGuestUser()) {
+            onComplete()
+            return
+        }
+        getEffectiveUserId() ?: run { onComplete(); return }
         syncScope.launch {
             try {
                 // Sincronizar productos no sincronizados
-                val unsyncedProducts = localDb?.productDao()?.getAllUnsyncedProducts()
+                val unsyncedProducts = localDb?.productDao()?.allUnsyncedProducts
                 unsyncedProducts?.forEach { syncProductToCloud(it) }
 
                 // Sincronizar deudores no sincronizados

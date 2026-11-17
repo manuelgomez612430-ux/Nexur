@@ -13,6 +13,7 @@ import com.gomezmart.app.data.AppDatabase
 import com.gomezmart.app.data.LoanBudgetEntity
 import com.gomezmart.app.data.LoanEntity
 import com.gomezmart.app.data.LoanExpenseEntity
+import com.gomezmart.app.data.LoanFundingSourceEntity
 import com.gomezmart.app.data.LoanInstallmentEntity
 import com.gomezmart.app.data.LoanPaymentEntity
 import com.gomezmart.app.databinding.ActivityMetricsDetailBinding
@@ -79,16 +80,6 @@ class MetricsDetailActivity : BaseActivity() {
 
         buildBreakdownHeader(binding.layoutCapitalBreakdown, "Concepto")
         buildBreakdownHeader(binding.layoutWeeklyBreakdown, "Día")
-
-        binding.btnRefreshLoansAi.setOnClickListener {
-            binding.progressLoansAi.visibility = View.VISIBLE
-            binding.tvLoansAiContent.alpha = 0.5f
-            generateAiAnalysis()
-        }
-
-        binding.btnChatLoansAi.setOnClickListener {
-            startActivityWithFade(android.content.Intent(this, AiChatActivity::class.java))
-        }
 
         loadDetailData()
     }
@@ -163,21 +154,24 @@ class MetricsDetailActivity : BaseActivity() {
             val paymentsFlow = db.loanDao().getAllPaymentsFlowV2()
             val expensesFlow = db.loanDao().getAllExpenses()
             val budgetFlow = db.loanDao().getLatestBudget()
+            val fundingFlow = db.loanDao().getAllFundingSourcesFlow()
 
-            combine(loansFlow, installmentsFlow, paymentsFlow, expensesFlow, budgetFlow) { args ->
+            combine(loansFlow, installmentsFlow, paymentsFlow, expensesFlow, budgetFlow, fundingFlow) { args ->
                 val loans = args[0] as List<LoanEntity>
                 val installments = args[1] as List<LoanInstallmentEntity>
                 val payments = args[2] as List<LoanPaymentEntity>
                 val expensesList = args[3] as List<LoanExpenseEntity>
                 val budget = args[4] as? LoanBudgetEntity
+                val fundingSources = args[5] as List<LoanFundingSourceEntity>
+                val fundingMap = fundingSources.associateBy { it.loanId }
 
                 // Solo gastos de negocio
-                val businessExpensesTotal = expensesList.filter { !it.isPersonal }.sumOf { it.amount }
+                val businessExpensesTotal = expensesList.filter { !it.isDeleted && !it.isPersonal }.sumOf { it.amount }
 
                 // 1. Ganancia cobrada (intereses + moras ya pagados)
                 var collectedProfit = 0.0
-                payments.forEach { p ->
-                    val loan = loans.find { it.id == p.loanId }
+                payments.filter { !it.isDeleted && it.type == 0 }.forEach { p ->
+                    val loan = loans.find { it.id == p.loanId && !it.isDeleted }
                     loan?.let {
                         val profitRatio = if (it.totalToPay > 0.0) (it.totalToPay - it.amount) / it.totalToPay else 0.0
                         collectedProfit += (p.amount * profitRatio) + p.lateFeeAmount
@@ -185,15 +179,16 @@ class MetricsDetailActivity : BaseActivity() {
                 }
 
                 // 2. Total cobrado bruto
-                val totalCollected = payments.sumOf { it.amount + it.lateFeeAmount }
+                val totalCollected = payments.filter { !it.isDeleted && it.type == 0 }.sumOf { it.amount + it.lateFeeAmount }
 
-                // 3. Capital en la calle (dinero real prestado que falta recuperar)
+                // 3. Capital en la calle (dinero real prestado que falta recuperar - negocio y personal)
                 var capitalInStreet = 0.0
+                var bizCapitalInStreet = 0.0
                 val activeLoans = loans.filter {
-                    !it.isDeleted && !it.isPersonal &&
-                        (it.status == "ACTIVE" || it.status == "OVERDUE")
+                    !it.isDeleted && (it.status == "ACTIVE" || it.status == "OVERDUE")
                 }
                 activeLoans.forEach { loan ->
+                    val isLoanPersonal = fundingMap[loan.id]?.isPersonal ?: loan.isPersonal
                     val loanInsts = installments.filter { it.loanId == loan.id && !it.isDeleted }
                     val totalPaidToLoan = loanInsts.sumOf { it.amountPaid }
                     val totalToPay = loan.totalToPay
@@ -203,12 +198,16 @@ class MetricsDetailActivity : BaseActivity() {
                     val capitalPaid = totalPaidToLoan * capitalRatio
                     val remCapital = (loan.amount - capitalPaid).coerceAtLeast(0.0)
                     capitalInStreet += remCapital
+                    if (!isLoanPersonal) {
+                        bizCapitalInStreet += remCapital
+                    }
                 }
 
                 // 4. Ganancia pendiente (intereses que faltan cobrar)
                 var pendingProfit = 0.0
-                installments.filter { it.status != "PAID" }.forEach { inst ->
-                    val loan = loans.find { it.id == inst.loanId }
+                val activeLoanIds = activeLoans.map { it.id }.toSet()
+                installments.filter { !it.isDeleted && it.status != "PAID" && activeLoanIds.contains(it.loanId) }.forEach { inst ->
+                    val loan = activeLoans.find { it.id == inst.loanId }
                     loan?.let {
                         val profitRatio =
                             if (it.totalToPay > 0.0) (it.totalToPay - it.amount) / it.totalToPay else 0.0
@@ -216,25 +215,30 @@ class MetricsDetailActivity : BaseActivity() {
                     }
                 }
 
-                // 5. Caja disponible (presupuesto + cobrado - en calle - gastos)
+                // 5. Caja disponible (presupuesto del negocio + cobrado negocio - en calle negocio - gastos)
                 var availableBudget = 0.0
                 budget?.let {
-                    if (capitalInStreet > it.amount && capitalInStreet <= it.amount * 1.25) {
-                        capitalInStreet = it.amount
-                    }
                     val initialCapital = it.amount
                     val startTime = it.startDate
                     val bizExpensesInPeriod = expensesList
-                        .filter { e -> e.timestamp >= startTime && !e.isPersonal }
+                        .filter { e -> !e.isDeleted && e.timestamp >= startTime && !e.isPersonal }
                         .sumOf { e -> e.amount }
-                    availableBudget = (initialCapital + collectedProfit - capitalInStreet - bizExpensesInPeriod)
+                    val bizCollectedProfit = payments.filter { !it.isDeleted && it.type == 0 }.sumOf { p ->
+                        val loan = loans.find { l -> l.id == p.loanId && !l.isDeleted }
+                        val isLoanPersonal = loan?.let { l -> fundingMap[l.id]?.isPersonal ?: l.isPersonal } ?: false
+                        if (loan != null && !isLoanPersonal && loan.totalToPay > 0.0) {
+                            val profitRatio = (loan.totalToPay - loan.amount) / loan.totalToPay
+                            (p.amount * profitRatio) + p.lateFeeAmount
+                        } else 0.0
+                    }
+                    availableBudget = (initialCapital + bizCollectedProfit - bizCapitalInStreet - bizExpensesInPeriod)
                         .coerceAtLeast(0.0)
                 }
 
                 // --- Datos cacheados para la IA ---
                 val netProfit = collectedProfit - businessExpensesTotal
-                lastTotalLent = loans.filter { it.status != "PAID" }.sumOf { it.amount }
-                lastPendingBalance = installments.filter { it.status != "PAID" }
+                lastTotalLent = loans.filter { !it.isDeleted && it.status != "PAID" }.sumOf { it.amount }
+                lastPendingBalance = installments.filter { !it.isDeleted && it.status != "PAID" }
                     .sumOf { it.amount - it.amountPaid }
                 lastNetProfit = netProfit
                 lastExpenses = businessExpensesTotal
@@ -578,23 +582,6 @@ class MetricsDetailActivity : BaseActivity() {
         row.findViewById<TextView>(R.id.tvIndicatorSubtitle).text = subtitle
         row.findViewById<TextView>(R.id.tvIndicatorValue).text = value
         parent.addView(row)
-    }
-
-    // ------------------------------------------------------------------ //
-    //  ANALISTA IA                                                         //
-    // ------------------------------------------------------------------ //
-    private fun generateAiAnalysis() {
-        lifecycleScope.launch {
-            val analysis = GeminiHelper.getLoanPortfolioAnalysis(
-                lastTotalLent, lastPendingBalance, lastNetProfit, lastExpenses,
-                lastClientsCount, lastOverdueCount, lastCommitments
-            )
-            withContext(Dispatchers.Main) {
-                binding.progressLoansAi.visibility = View.GONE
-                binding.tvLoansAiContent.alpha = 1.0f
-                binding.tvLoansAiContent.text = GeminiHelper.formatMarkdown(analysis)
-            }
-        }
     }
 
     /** Redondea a un decimal evitando el "-0.0". */

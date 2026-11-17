@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="128dp"
+    android:layout_width="136dp"
     android:layout_height="wrap_content"
     android:layout_margin="4dp"
-    app:cardCornerRadius="14dp"
+    app:cardCornerRadius="16dp"
     app:cardElevation="1dp"
     app:strokeWidth="1dp"
-    app:strokeColor="@color/slate_100"
+    app:strokeColor="@color/slate_200"
     android:clickable="true"
     android:focusable="true">
 
@@ -15,13 +15,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="8dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:paddingHorizontal="10dp"
         android:gravity="center">
 
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            app:cardCornerRadius="21dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            app:cardCornerRadius="22dp"
             app:cardElevation="0dp"
             app:cardBackgroundColor="@color/slate_50"
             app:strokeWidth="1dp"
@@ -33,7 +35,8 @@
                     android:id="@+id/ivStoreLogoSmall"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:scaleType="centerCrop" />
+                    android:scaleType="centerCrop"
+                    android:contentDescription="Logo de la tienda" />
                 <ProgressBar
                     android:id="@+id/pbStoreLogoSmallLoading"
                     android:layout_width="16dp"
@@ -44,28 +47,57 @@
             </FrameLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <TextView
-            android:id="@+id/tvStoreNameSmall"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Tienda"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:textColor="@color/slate_900"
+            android:orientation="horizontal"
             android:gravity="center"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:layout_marginTop="4dp" />
+            android:layout_marginTop="6dp">
+
+            <TextView
+                android:id="@+id/tvStoreNameSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tienda"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/slate_900"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <ImageView
+                android:id="@+id/ivStoreVerifiedSmall"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_verified_badge"
+                android:visibility="gone"
+                android:contentDescription="Tienda Verificada" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvStoreRatingSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/bg_pill_slate_light"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="2dp"
+            android:text="☆ 0.0 (0)"
+            android:textColor="@color/slate_500"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:visibility="visible" />
 
         <TextView
             android:id="@+id/tvStoreDateSmall"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Agregada"
-            android:textSize="9sp"
-            android:textColor="@color/slate_400"
+            android:textSize="10sp"
+            android:textColor="@color/slate_500"
             android:gravity="center"
-            android:layout_marginTop="1dp" />
+            android:layout_marginTop="3dp" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

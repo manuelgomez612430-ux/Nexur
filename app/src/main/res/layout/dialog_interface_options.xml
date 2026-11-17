@@ -5,7 +5,9 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="@drawable/bg_bottom_sheet_rounded"
-    android:padding="24dp">
+    android:paddingHorizontal="24dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="24dp">
 
     <!-- Handle bar -->
     <View
@@ -15,153 +17,417 @@
         android:background="@drawable/bg_bottom_sheet_handle"
         android:layout_marginBottom="16dp" />
 
-    <TextView
-        android:id="@+id/tvInterfaceMenuTitle"
+    <!-- SUB-VIEW 1: MENU DE OPCIONES DE INTERFAZ -->
+    <LinearLayout
+        android:id="@+id/layoutInterfaceMainMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Opciones de Interfaz"
-        android:gravity="center"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="?attr/colorOnSurface"
-        android:layout_marginBottom="16dp" />
+        android:orientation="vertical"
+        android:visibility="visible">
 
-    <!-- Item 1: Ir a Mercado / Gestión -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardOptionMarket"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="0dp"
-        app:cardBackgroundColor="?attr/colorSurfaceContainer"
-        app:strokeWidth="0dp"
-        android:clickable="true"
-        android:focusable="true">
-        <LinearLayout
+        <TextView
+            android:id="@+id/tvInterfaceMenuTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="16dp"
-            android:gravity="center_vertical">
-            <TextView
-                android:id="@+id/tvOption1Emoji"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🛒"
-                android:textSize="22sp" />
-            <TextView
-                android:id="@+id/tvOption1Title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:text="Ir a Mercado Online"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="?attr/colorOnSurface" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+            android:text="Opciones de Interfaz"
+            android:gravity="center"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/slate_900"
+            android:layout_marginBottom="20dp" />
 
-    <!-- Item 2: Abrir Negocio en Mercado -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardOptionOpenStore"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="0dp"
-        app:cardBackgroundColor="?attr/colorSurfaceContainer"
-        app:strokeWidth="0dp"
-        android:clickable="true"
-        android:focusable="true">
-        <LinearLayout
+        <!-- Item 1: Tienda en línea / Mercado Online -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardOptionMarket"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="16dp"
-            android:gravity="center_vertical">
-            <TextView
-                android:layout_width="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="1.2dp"
+            app:strokeColor="@color/purple_200"
+            app:cardBackgroundColor="@color/white"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🚀"
-                android:textSize="22sp" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:text="Abrir Negocio en Mercado"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="?attr/colorOnSurface" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+                android:orientation="horizontal"
+                android:padding="18dp"
+                android:gravity="center_vertical">
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp">
+                    <ImageView
+                        android:id="@+id/ivOptionMarketLogo"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/logo_tienda_online"
+                        android:contentDescription="Tienda en línea" />
+                    <TextView
+                        android:id="@+id/tvOption1Emoji"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="🛒"
+                        android:textSize="22sp"
+                        android:visibility="gone" />
+                </FrameLayout>
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="16dp">
+                    <TextView
+                        android:id="@+id/tvOption1Title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Mercado en Línea"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_900" />
+                    <TextView
+                        android:id="@+id/tvOption1Subtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Descubre y compra productos"
+                        android:textSize="12sp"
+                        android:textColor="@color/slate_500" />
+                </LinearLayout>
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="@color/purple_600" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-    <!-- Item 3: Cambiar de Sistema -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardOptionSwitchSystem"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="0dp"
-        app:cardBackgroundColor="?attr/colorSurfaceContainer"
-        app:strokeWidth="0dp"
-        android:clickable="true"
-        android:focusable="true">
-        <LinearLayout
+
+
+        <!-- Hidden Legacy Option Cards -->
+        <!-- Item: Cambiar de Sistema / Gestión -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardOptionSwitchSystem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="16dp"
-            android:gravity="center_vertical">
-            <TextView
-                android:layout_width="wrap_content"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="1.2dp"
+            app:strokeColor="@color/purple_200"
+            app:cardBackgroundColor="@color/white"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:visibility="gone">
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🏢"
-                android:textSize="22sp" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:text="Cambiar de Sistema"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="?attr/colorOnSurface" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+                android:orientation="horizontal"
+                android:padding="18dp"
+                android:gravity="center_vertical">
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_circle_light_purple">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="💼"
+                        android:textSize="22sp" />
+                </FrameLayout>
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="16dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Gestión"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_900" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ver sistemas de negocio"
+                        android:textSize="12sp"
+                        android:textColor="@color/slate_500" />
+                </LinearLayout>
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="@color/purple_600" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-    <!-- Item 4: Mis Colaboraciones -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardOptionMyCollabs"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="0dp"
-        app:cardBackgroundColor="?attr/colorSurfaceContainer"
-        app:strokeWidth="0dp"
-        android:clickable="true"
-        android:focusable="true">
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardOptionMyCollabs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="16dp"
-            android:gravity="center_vertical">
-            <TextView
-                android:layout_width="wrap_content"
+            android:visibility="gone">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Mis Colaboraciones" />
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+    <!-- SUB-VIEW 2: SISTEMAS DESCARGADOS / INSTALADOS -->
+    <LinearLayout
+        android:id="@+id/layoutDownloadedSystemsView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <!-- Header Titulo -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sistemas Disponibles"
+            android:gravity="center"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/slate_900"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/tvDownloadedSystemsSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Selecciona el sistema al que deseas acceder:"
+            android:textSize="13sp"
+            android:textColor="@color/slate_500"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/tvNoInstalledSystems"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Aún no tienes sistemas descargados en tu dispositivo."
+            android:gravity="center"
+            android:paddingVertical="18dp"
+            android:textSize="13sp"
+            android:textColor="@color/slate_500"
+            android:visibility="gone" />
+
+        <!-- CARDS SISTEMAS DESCARGADOS -->
+        <LinearLayout
+            android:id="@+id/containerInstalledSystemsList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- SISTEMA 1: VENTA DE PRODUCTOS -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardSystemProducts"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🤝"
-                android:textSize="22sp" />
-            <TextView
-                android:layout_width="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1.2dp"
+                app:strokeColor="@color/slate_200"
+                app:cardBackgroundColor="@color/white"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+                    <ImageView
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/logo_sistema_productos"
+                        android:contentDescription="Venta de Productos" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="14dp">
+                        <TextView
+                            android:id="@+id/tvSystemProductsTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Venta de Productos"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_900" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tiendas, bodegas y almacenes"
+                            android:textSize="12sp"
+                            android:textColor="@color/slate_500" />
+                    </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Entrar ➔"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/purple_600" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SISTEMA 2: GESTIÓN DE PRÉSTAMOS -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardSystemLoans"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:text="Mis Colaboraciones"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="?attr/colorOnSurface" />
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1.2dp"
+                app:strokeColor="@color/slate_200"
+                app:cardBackgroundColor="@color/white"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+                    <ImageView
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/logo_sistema_prestamos"
+                        android:contentDescription="Gestión de Préstamos" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="14dp">
+                        <TextView
+                            android:id="@+id/tvSystemLoansTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Gestión de Préstamos"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_900" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Cobros, moras y cronogramas"
+                            android:textSize="12sp"
+                            android:textColor="@color/slate_500" />
+                    </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Entrar ➔"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/purple_600" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SISTEMA 3: GESTIÓN DE HOTEL -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardSystemHotel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1.2dp"
+                app:strokeColor="@color/slate_200"
+                app:cardBackgroundColor="@color/white"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+                    <ImageView
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/logo_sistema_hoteles"
+                        android:contentDescription="Gestión de Hotel" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="14dp">
+                        <TextView
+                            android:id="@+id/tvSystemHotelTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Gestión de Hotel"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_900" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Habitaciones y reservaciones"
+                            android:textSize="12sp"
+                            android:textColor="@color/slate_500" />
+                    </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Entrar ➔"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/purple_600" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+
+        <!-- BOTÓN PARA DESCARGAR O REGISTRAR OTRO RUBRO -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddNewSystemFromInterface"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="6dp"
+            android:text="Obtener más sistemas 📥"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/purple_700"
+            app:backgroundTint="@color/purple_50"
+            app:strokeColor="@color/purple_200"
+            app:strokeWidth="1dp"
+            app:cornerRadius="14dp" />
+
+        <!-- BOTÓN RETROCEDER (POR DEBAJO DE OBTENER MÁS SISTEMAS) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBackToInterfaceMenu"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="6dp"
+            android:text="Atrás"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/purple_700"
+            app:icon="@drawable/ic_arrow_back"
+            app:iconTint="@color/purple_700"
+            app:iconGravity="textStart" />
+
+    </LinearLayout>
 
 </LinearLayout>

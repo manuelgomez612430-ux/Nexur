@@ -57,10 +57,6 @@ class ResumenActivity : BaseActivity() {
             }
         }
 
-        binding.btnRefreshAiAnalysis.setOnClickListener {
-            generateAiAnalysis()
-        }
-        
         setupCharts()
         loadStatistics()
     }
@@ -281,25 +277,6 @@ class ResumenActivity : BaseActivity() {
 
             } catch (e: Exception) {
                 e.printStackTrace()
-            }
-        }
-    }
-
-    private fun generateAiAnalysis() {
-        val range = binding.tvCurrentFilterRange.text.toString()
-        val capital = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getFloat("business_capital", 0f).toDouble()
-        
-        binding.progressAiAnalysis.visibility = android.view.View.VISIBLE
-        binding.tvAiAnalysisContent.alpha = 0.5f
-
-        lifecycleScope.launch {
-            val analysis = GeminiHelper.getBusinessAnalysis(
-                currentVentas, currentUtilidad, currentGastos, currentDeudores, currentDeudas, capital, currentCompromisos, range
-            )
-            withContext(Dispatchers.Main) {
-                binding.tvAiAnalysisContent.text = analysis
-                binding.tvAiAnalysisContent.alpha = 1.0f
-                binding.progressAiAnalysis.visibility = android.view.View.GONE
             }
         }
     }

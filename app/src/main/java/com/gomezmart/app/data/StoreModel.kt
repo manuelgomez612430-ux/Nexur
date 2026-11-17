@@ -16,9 +16,14 @@ data class StoreModel(
     val longitude: Double = 0.0,
     val city: String = "",
     val postalCode: String = "",
+    val country: String = "",
     val extraSections: List<StoreSection> = emptyList(),
     val theme: StoreTheme = StoreTheme(),
-    val paymentMethods: List<PaymentMethod> = emptyList()
+    val paymentMethods: List<PaymentMethod> = emptyList(),
+    val averageRating: Double = 0.0,
+    val reviewCount: Int = 0,
+    val followersCount: Int = 0,
+    val isVerified: Boolean = false
 )
 
 data class PaymentMethod(
@@ -39,6 +44,8 @@ data class StoreSection(
     val id: String = "",
     val title: String = "",
     val description: String = "",
+    val titleStyled: String = "",
+    val descriptionStyled: String = "",
     val imageUrls: List<String> = emptyList(), // Soporte para múltiples fotos
     val imageLocalPaths: List<String> = emptyList(),
     val aspectRatio: String = "16:9" // "1:1", "16:9", "FREE"

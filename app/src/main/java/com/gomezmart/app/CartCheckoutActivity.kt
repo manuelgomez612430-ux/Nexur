@@ -114,6 +114,8 @@ class CartCheckoutActivity : BaseActivity() {
         }
 
         binding.btnPlaceOrderGoMezMart.setOnClickListener {
+            if (requireLoginForGuest("enviar un pedido")) return@setOnClickListener
+
             if (CartManager.getItems().isEmpty()) {
                 Toast.makeText(this, "El carrito está vacío", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -122,6 +124,7 @@ class CartCheckoutActivity : BaseActivity() {
         }
 
         binding.btnSendOrderWhatsApp.setOnClickListener {
+            if (requireLoginForGuest("enviar un pedido")) return@setOnClickListener
             fetchStoreContactAndSend()
         }
 
@@ -261,6 +264,16 @@ class CartCheckoutActivity : BaseActivity() {
                 )
                 FirebaseFirestore.getInstance().collection("direct_chats").document(chatId)
                     .collection("messages").document(alertMessage.id).set(alertMessage)
+
+                // Enviar notificación Push instantánea al dueño del negocio vía Google Play Services (FCM)
+                com.gomezmart.app.network.FcmHelper.sendPushNotification(
+                    targetUserId = storeId,
+                    title = "¡Nuevo Pedido! 🛵",
+                    message = "$buyerName ha realizado un pedido de ${order.items.size} producto(s)",
+                    type = "order",
+                    chatId = chatId,
+                    senderId = myUid
+                )
 
                 loading.dismiss()
                 Toast.makeText(this@CartCheckoutActivity, "¡Pedido realizado con éxito! 🎉", Toast.LENGTH_LONG).show()

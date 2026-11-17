@@ -328,59 +328,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- COLLABORATOR CARD -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardCollabRole"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="3dp"
-                app:strokeColor="@color/slate_200"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="20dp">
-
-                    <TextView
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:layout_marginEnd="16dp"
-                        android:background="@drawable/bg_circle_light_green"
-                        android:gravity="center"
-                        android:text="🤝"
-                        android:textSize="24sp" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Colaborar con un Negocio"
-                            android:textColor="@color/slate_900"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Únete a un equipo y gestiona operaciones"
-                            android:textColor="@color/slate_500"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
             <!-- BOTÓN DE VOLVER A DATOS DE PERFIL -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnBackToProfileSetup"
@@ -407,7 +354,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"
-            android:text="GoMezMart v1.5.40 - Acceso Anticipado"
+            android:text="GoMezMart v1.5.52 - Acceso Anticipado"
             android:textColor="@color/slate_400"
             android:textSize="11sp" />
 

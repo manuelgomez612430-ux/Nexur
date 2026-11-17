@@ -4,7 +4,6 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -12,10 +11,7 @@
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <queries>
@@ -34,7 +30,7 @@
     <!-- Permisos de Bluetooth -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" tools:targetApi="31" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -75,25 +71,32 @@
         <!-- Pantalla de Login -->
         <activity
             android:name=".LoginActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
-        <activity android:name=".WelcomeRoleActivity" android:exported="false" />
+        <!-- Pantalla de Registro Unificada -->
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity android:name=".WelcomeRoleActivity" android:exported="true" />
 
         <!-- Pantalla Principal -->
         <activity
             android:name=".MainActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="Gomezmart"
-            android:windowSoftInputMode="adjustPan" />
+            android:windowSoftInputMode="adjustResize" />
 
-        <activity android:name=".ProfileSetupActivity" android:exported="false" android:label="Configuración de Perfil" />
+        <activity android:name=".ProfileSetupActivity" android:exported="true" android:label="Configuración de Perfil" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".EditProfileActivity" android:exported="false" android:label="Editar mi Información" />
         <activity android:name=".OrderTrackingActivity" android:exported="false" android:label="Seguimiento de Pedido" />
         <activity android:name=".OrderTrackingFullscreenActivity" android:exported="false" android:label="Mapa a Pantalla Completa" />
+        <activity android:name=".LoanDetailsActivity" android:exported="true" android:label="Detalles de Préstamo" />
 
         <activity android:name=".AsignadorDePreciosActivity" android:label="@string/title_asignador_precios" />
         <activity android:name=".HistorialActivity" android:label="Historial" />
-        <activity android:name=".InventarioActivity" android:label="Inventario" />
         <activity
             android:name=".VentasActivity"
             android:exported="false"
@@ -108,22 +111,12 @@
         <activity android:name=".CajaActivity" android:label="Arqueo de Caja" />
         <activity android:name=".SettingsActivity" android:label="Configuración de Negocio Virtual" />
         <activity android:name=".BusinessSelectionActivity" android:exported="false" android:theme="@style/Theme.Gomezmart" />
-        <activity android:name=".HotelCheckInActivity" android:exported="false" android:label="Check-in" />
-        <activity android:name=".HotelMapEditorActivity" android:exported="false" android:label="Editor de Plano" />
-        <activity android:name=".HotelManageRoomActivity" android:exported="false" android:label="Gestión de Habitación" />
-        <activity android:name=".HotelBookingsActivity" android:exported="false" android:label="Reservas" />
-        <activity android:name=".HotelToolsActivity" android:exported="false" android:label="Inventario de Herramientas" />
-        <activity android:name=".HotelGuestHistoryActivity" android:exported="false" android:label="Historial de Huéspedes" />
-        <activity android:name=".HotelMaintenanceActivity" android:exported="false" android:label="Fallas y Mantenimiento" />
-        <activity android:name=".AddLoanActivity" android:exported="false" android:label="Nuevo Préstamo" />
-        <activity android:name=".LoansClientsActivity" android:exported="false" android:label="Mis Clientes" />
-        <activity android:name=".LoanDetailsActivity" android:exported="false" android:label="Detalle del Préstamo" />
-        <activity android:name=".LoansCollectionsActivity" android:exported="false" android:label="Cobros del Día" />
-        <activity android:name=".LoansExpensesActivity" android:exported="false" android:label="Mis Gastos" />
-        <activity android:name=".SystemSettingsActivity" android:exported="false" android:label="Ajustes del Sistema" />
-        <activity android:name=".AccountSettingsActivity" android:exported="false" android:label="Configuración de Cuenta" />
+        <activity android:name=".DownloadedModulesActivity" android:exported="false" android:label="Módulos Descargados" />
+        <activity android:name=".AccountSettingsActivity" android:exported="false" android:label="Configuración de Cuenta" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".DeleteDataOrAccountActivity" android:exported="false" android:label="Eliminación de Datos o Cuenta" />
+        <activity android:name=".NotificationSettingsActivity" android:exported="false" android:label="Ajustes de Notificaciones" />
         <activity android:name=".PdfViewerActivity" android:exported="false" android:label="Vista Previa PDF" />
-        <activity android:name=".SupportCreatorActivity" android:exported="false" android:theme="@style/Theme.Gomezmart" />
+
         <activity android:name=".FutureVisionActivity" android:exported="false" android:theme="@style/Theme.Gomezmart" />
         <activity android:name=".CustomersActivity" android:label="Mis Clientes VIP" />
         <activity android:name=".SalesHistoryActivity" android:label="Historial de Ventas" />
@@ -135,21 +128,59 @@
         <activity android:name=".BusinessDebtsActivity" android:label="Mis Cuentas por Pagar" />
         <activity android:name=".CommitmentsActivity" android:exported="false" android:label="Mis Compromisos" />
         <activity android:name=".AccountsActivity" android:exported="false" android:label="Mis Cuentas" />
+        <activity android:name=".FinancialReorganizationActivity" android:exported="false" android:label="Reorganización Financiera" />
   <activity android:name=".MetricsDetailActivity" android:exported="false" android:label="Detalle de Rendimiento" />
         <activity android:name=".BuyerHomeActivity"
             android:exported="false"
             android:label="Gomezmart: Compras"
-            android:windowSoftInputMode="adjustPan" />
+            android:windowSoftInputMode="adjustResize" />
 
-        <activity android:name=".HotelBookingRequestActivity" android:exported="false" android:label="Reservar Habitación" />
         <activity android:name=".CartCheckoutActivity" android:exported="false" android:label="Mi Pedido" />
-        <activity android:name=".ProductDetailActivity" android:exported="false" android:label="Detalle del Producto" />
-        <activity android:name=".StoreProfileActivity" android:exported="false" android:label="Perfil del Negocio" />
+        <activity
+            android:name=".ProductDetailActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:label="Detalle del Producto">
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="gomezmart.app" android:pathPrefix="/producto" />
+                <data android:scheme="http" android:host="gomezmart.app" android:pathPrefix="/producto" />
+                <data android:scheme="https" android:host="www.gomezmart.app" android:pathPrefix="/producto" />
+                <data android:scheme="http" android:host="www.gomezmart.app" android:pathPrefix="/producto" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="gomezmart" android:host="producto" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".StoreProfileActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:label="Perfil del Negocio">
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="gomezmart.app" android:pathPrefix="/tienda" />
+                <data android:scheme="http" android:host="gomezmart.app" android:pathPrefix="/tienda" />
+                <data android:scheme="https" android:host="www.gomezmart.app" android:pathPrefix="/tienda" />
+                <data android:scheme="http" android:host="www.gomezmart.app" android:pathPrefix="/tienda" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="gomezmart" android:host="tienda" />
+            </intent-filter>
+        </activity>
         <activity android:name=".StoreEditorActivity" android:exported="false" android:label="Editor de Tienda" />
-        <activity android:name=".LoanStoreProfileActivity" android:exported="false" android:label="Perfil de Servicios Financieros" />
-        <activity android:name=".LoanStoreEditorActivity" android:exported="false" android:label="Configurar Negocio de Préstamos" />
-        <activity android:name=".HotelInteractiveMapActivity" android:exported="false" android:label="Mapa del Hotel" />
-        <activity android:name=".HotelManageTeamActivity" android:exported="false" android:label="Gestionar Colaboradores" />
+        <activity android:name=".LoanStoreProfileActivity" android:exported="false" android:label="Perfil de Financiera" />
+        <activity android:name=".LoanStoreEditorActivity" android:exported="false" android:label="Editor de Financiera" />
         <activity android:name=".SearchBusinessActivity" android:exported="false" android:label="Buscar Negocio" />
         <activity android:name=".MyBusinessesActivity" android:exported="false" android:label="Mis Sistemas" />
         <activity android:name=".BuyerBookingsActivity" android:exported="false" android:label="Mis Reservas" />
@@ -179,6 +210,12 @@
             android:name="com.canhub.cropper.CropImageActivity"
             android:theme="@style/Theme.AppCompat.Light.DarkActionBar" />
 
+        <!-- Anular restricción de orientación portrait de GmsBarcodeScanningDelegateActivity para pantallas grandes (Android 16+) -->
+        <activity
+            android:name="com.google.mlkit.vision.codescanner.internal.GmsBarcodeScanningDelegateActivity"
+            android:screenOrientation="unspecified"
+            tools:replace="android:screenOrientation" />
+
         <!-- Servicio para Notificaciones Push (FCM) -->
         <service
             android:name=".network.MyFirebaseMessagingService"
@@ -188,10 +225,18 @@
             </intent-filter>
         </service>
 
-        <service
-            android:name=".network.GomezmartSyncService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync|location" />
+        <!-- Configuración predeterminada de Notificaciones Push (FCM) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="gomezmart_notifications" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification_gomezmart" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/gomezmart_primary" />
+
+
 
         <receiver
             android:name=".network.BootReceiver"

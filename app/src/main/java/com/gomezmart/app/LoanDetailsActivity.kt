@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
+import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
@@ -15,6 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.RadioButton
@@ -36,6 +38,7 @@ import com.gomezmart.app.util.LoanPdfGenerator
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +75,34 @@ class LoanDetailsActivity : BaseActivity() {
     private var paymentReceiptFile: File? = null
     private var currentPaymentReceiptCard: View? = null
     private var currentPaymentReceiptImage: ImageView? = null
+    private var pendingPhoneEditText: EditText? = null
+
+    private val pickPhoneContactLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val contactUri = result.data?.data ?: return@registerForActivityResult
+            val projection = arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER)
+            contentResolver.query(contactUri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val number = cursor.getString(0)?.replace(" ", "")?.replace("-", "")?.trim() ?: ""
+                    pendingPhoneEditText?.setText(number)
+                    pendingPhoneEditText?.setSelection(number.length)
+                }
+            }
+        }
+    }
+
+    private val requestContactsPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            launchPhoneContactPicker()
+        } else {
+            Toast.makeText(this, "Permiso denegado para acceder a contactos", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun launchPhoneContactPicker() {
+        val intent = Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)
+        pickPhoneContactLauncher.launch(intent)
+    }
 
     private val pickPaymentReceiptLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -120,8 +151,11 @@ class LoanDetailsActivity : BaseActivity() {
         }
 
         binding.btnCallClient.setOnClickListener {
-            currentClient?.let {
-                val intent = Intent(Intent.ACTION_DIAL, android.net.Uri.parse("tel:${it.phone}"))
+            val client = currentClient ?: return@setOnClickListener
+            if (client.phone.isBlank()) {
+                showNoPhoneRegisteredDialog()
+            } else {
+                val intent = Intent(Intent.ACTION_DIAL, android.net.Uri.parse("tel:${client.phone}"))
                 startActivity(intent)
             }
         }
@@ -175,6 +209,10 @@ class LoanDetailsActivity : BaseActivity() {
     }
 
     private fun setupSyncIndicator() {
+        if (isGuestUser()) {
+            binding.btnSyncIndicator.visibility = View.GONE
+            return
+        }
         val cm = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
         val networkCallback = object : android.net.ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: android.net.Network) {
@@ -208,6 +246,10 @@ class LoanDetailsActivity : BaseActivity() {
     }
 
     private fun updateSyncIconState() {
+        if (isGuestUser()) {
+            binding.btnSyncIndicator.visibility = View.GONE
+            return
+        }
         val color: Int
         val iconRes: Int
         
@@ -406,6 +448,14 @@ class LoanDetailsActivity : BaseActivity() {
             val existingLoan = activeLoans.maxByOrNull { it.createdAt }
             var targetLoanId = ""
 
+            val allAccounts = database.accountDao().getAllAccountsList().filter { !it.isDeleted }
+            val targetOrigin = if (isPersonal) "PERSONAL" else "BUSINESS"
+            val sourceAccount = allAccounts.firstOrNull { it.origin == targetOrigin && it.balance >= amount }
+                ?: allAccounts.firstOrNull { it.origin == targetOrigin }
+                ?: allAccounts.firstOrNull()
+            val usedAccountId = sourceAccount?.id ?: ""
+            val usedAccountName = sourceAccount?.name ?: ""
+
             database.runInTransaction {
                 if (existingLoan != null) {
                     targetLoanId = existingLoan.id
@@ -445,6 +495,8 @@ class LoanDetailsActivity : BaseActivity() {
                         installmentId = null,
                         amount = amount,
                         type = 1, // AUMENTO
+                        accountId = usedAccountId,
+                        accountName = usedAccountName,
                         isSynced = false
                     ))
                 } else {
@@ -484,9 +536,23 @@ class LoanDetailsActivity : BaseActivity() {
                         installmentId = null,
                         amount = amount,
                         type = 1, // AUMENTO
+                        accountId = usedAccountId,
+                        accountName = usedAccountName,
                         isSynced = false
                     ))
                 }
+            }
+
+            // Descontar el aumento de la cuenta de origen si existe
+            if (sourceAccount != null) {
+                try {
+                    val updatedAcc = sourceAccount.copy(
+                        balance = (sourceAccount.balance - amount).coerceAtLeast(0.0),
+                        updatedAt = System.currentTimeMillis(),
+                        isSynced = false
+                    )
+                    database.accountDao().update(updatedAcc)
+                } catch (e: Exception) { }
             }
 
             if (targetLoanId.isNotEmpty()) {
@@ -969,11 +1035,18 @@ class LoanDetailsActivity : BaseActivity() {
                         
                         // 1. Fecha de Registro en App
                         val regDate = if ((loan?.createdAt ?: 0L) > 0L) loan?.createdAt ?: 0L else (loan?.startDate ?: 0L)
-                        binding.tvDetailRegisterDate.text = if (regDate > 0L) sdf.format(Date(regDate)) else "Reciente"
+                        val regDateStr = if (regDate > 0L) sdf.format(Date(regDate)) else "Reciente"
+                        binding.tvDetailRegisterDate.text = regDateStr
 
                         // 2. Fecha de Inicio del Préstamo
                         val startDate = loan?.startDate ?: 0L
-                        binding.tvDetailStartDate.text = if (startDate > 0L) sdf.format(Date(startDate)) else "Reciente"
+                        val startDateStr = if (startDate > 0L) sdf.format(Date(startDate)) else "Reciente"
+                        binding.tvDetailStartDate.text = startDateStr
+
+                        // Si registro en app coincide con inicio de crédito, mostrar únicamente registro en app centrado
+                        val sameDates = regDateStr == startDateStr
+                        binding.layoutDetailStartDate.visibility = if (sameDates) View.GONE else View.VISIBLE
+                        binding.layoutDetailRegisterDate.gravity = if (sameDates) android.view.Gravity.CENTER_HORIZONTAL else android.view.Gravity.START
 
                         // 3. Fecha de Cobro
                         val firstUnpaid = sortedInstallments.firstOrNull { it.status != "PAID" }
@@ -1040,12 +1113,17 @@ class LoanDetailsActivity : BaseActivity() {
                                 binding.ivCollateralPreview.visibility = View.GONE
                             }
 
-                            // ESCUCHAR TODOS LOS PAGOS DEL CLIENTE PARA EL HISTORIAL UNIFICADO
+                            // ESCUCHAR TODOS LOS PAGOS Y PRÉSTAMOS DEL CLIENTE PARA EL HISTORIAL UNIFICADO
                             lifecycleScope.launch(Dispatchers.IO) {
-                                database.loanDao().getAllPaymentsByClientFlow(clientId).collectLatest { payments ->
+                                kotlinx.coroutines.flow.combine(
+                                    database.loanDao().getAllPaymentsByClientFlow(clientId),
+                                    database.loanDao().getLoansByClient(clientId)
+                                ) { payments, loans ->
+                                    groupPayments(payments, loans)
+                                }.collectLatest { historyRows ->
                                     withContext(Dispatchers.Main) {
                                         if (::binding.isInitialized) {
-                                            paymentsAdapter.submitList(groupPayments(payments))
+                                            paymentsAdapter.submitList(historyRows)
                                         }
                                     }
                                 }
@@ -1085,10 +1163,85 @@ class LoanDetailsActivity : BaseActivity() {
         }
     }
 
+    private fun showNoPhoneRegisteredDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("📵 Sin número registrado")
+            .setMessage("No hay un número de teléfono registrado para este cliente.")
+            .setNegativeButton("Cerrar", null)
+            .setPositiveButton("Agregar número") { _, _ ->
+                showAddPhoneDialog()
+            }
+            .show()
+    }
+
+    private fun showAddPhoneDialog() {
+        val client = currentClient ?: return
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_client_phone, null)
+        val etPhone = dialogView.findViewById<EditText>(R.id.etAddClientPhone)
+        val btnPickContacts = dialogView.findViewById<MaterialButton>(R.id.btnPickPhoneFromContacts)
+        val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btnCancelAddPhone)
+        val btnConfirm = dialogView.findViewById<MaterialButton>(R.id.btnConfirmAddPhone)
+
+        pendingPhoneEditText = etPhone
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.setOnDismissListener {
+            if (pendingPhoneEditText === etPhone) {
+                pendingPhoneEditText = null
+            }
+        }
+
+        btnPickContacts.setOnClickListener {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+                requestContactsPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+            } else {
+                launchPhoneContactPicker()
+            }
+        }
+
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        btnConfirm.setOnClickListener {
+            val newPhone = etPhone.text.toString().trim()
+            if (newPhone.isEmpty()) {
+                Toast.makeText(this, "Por favor escribe o selecciona un número", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            lifecycleScope.launch {
+                val updated = client.copy(phone = newPhone, isSynced = false)
+                database.loanDao().updateClient(updated)
+                currentClient = updated
+
+                val clientLog = MovementLogEntity(
+                    type = "CLIENT_UPDATED",
+                    title = "Teléfono Registrado",
+                    description = "Se registró el número de ${updated.name}",
+                    value = newPhone,
+                    colorHex = "#3B82F6",
+                    iconRes = android.R.drawable.ic_menu_call
+                )
+                database.movementLogDao().insert(clientLog)
+                SyncManager(this@LoanDetailsActivity).syncLogToCloud(clientLog)
+                SyncManager(this@LoanDetailsActivity).scheduleOfflineSync()
+
+                Toast.makeText(this@LoanDetailsActivity, "Número guardado correctamente ✅", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+            }
+        }
+
+        dialog.show()
+    }
+
     private fun sendWhatsAppReminderFromDetails() {
-        val client = currentClient
-        if (client == null || client.phone.isBlank()) {
-            Toast.makeText(this, "Este cliente no tiene un teléfono registrado", Toast.LENGTH_SHORT).show()
+        val client = currentClient ?: return
+        if (client.phone.isBlank()) {
+            showNoPhoneRegisteredDialog()
             return
         }
 
@@ -1295,45 +1448,80 @@ class LoanDetailsActivity : BaseActivity() {
     private fun showSettlementDialog() {
         val client = currentClient ?: return
         val pendingTotal = currentInstallments.filter { it.status != "PAID" }.sumOf { it.amount - it.amountPaid }
-        
-        AlertDialog.Builder(this)
-            .setTitle("Liquidar Deuda Total")
-            .setMessage("El saldo total acumulado de todas las deudas es de S/ ${String.format(Locale.US, "%.2f", pendingTotal)}.\n\n¿Deseas marcar TODO como pagado ahora?")
-            .setPositiveButton("Sí, Liquidar Todo") { _, _ ->
-                lifecycleScope.launch(Dispatchers.IO) {
-                    val activeLoans = database.loanDao().getLoansByClientSync(client.id).filter { it.status != "PAID" }
-                    
-                    database.runInTransaction {
-                        activeLoans.forEach { loan ->
-                            val installments = database.loanDao().getInstallmentsByLoanTransaction(loan.id)
-                            installments.filter { it.status != "PAID" }.forEach { inst ->
-                                database.loanDao().updateInstallmentTransaction(inst.copy(
-                                    amountPaid = inst.amount, 
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val accounts = database.accountDao().getAllAccountsList().filter { !it.isDeleted }
+            val isPersonalLoan = protectedFundingSource ?: (currentLoan?.isPersonal == true)
+            val preferredOrigin = if (isPersonalLoan) "PERSONAL" else "BUSINESS"
+            val sortedAccounts = accounts.sortedByDescending { it.origin == preferredOrigin }
+
+            withContext(Dispatchers.Main) {
+                var selectedAcc: AccountEntity? = sortedAccounts.firstOrNull()
+                val builder = AlertDialog.Builder(this@LoanDetailsActivity)
+                    .setTitle("Liquidar Deuda Total (S/ ${String.format(Locale.US, "%.2f", pendingTotal)})")
+
+                if (sortedAccounts.isNotEmpty()) {
+                    val labels = sortedAccounts.map { "${it.name} (${it.bankName}) - S/ ${String.format(Locale.US, "%.2f", it.balance)}" }.toTypedArray()
+                    builder.setSingleChoiceItems(labels, 0) { _, which ->
+                        selectedAcc = sortedAccounts.getOrNull(which)
+                    }
+                } else {
+                    builder.setMessage("El saldo total acumulado de todas las deudas es de S/ ${String.format(Locale.US, "%.2f", pendingTotal)}.\n\n¿Deseas marcar TODO como pagado ahora?")
+                }
+
+                builder.setPositiveButton("Sí, Liquidar Todo") { _, _ ->
+                    val chosenAcc = selectedAcc
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val activeLoans = database.loanDao().getLoansByClientSync(client.id).filter { it.status != "PAID" }
+
+                        database.runInTransaction {
+                            activeLoans.forEach { loan ->
+                                val installments = database.loanDao().getInstallmentsByLoanTransaction(loan.id)
+                                installments.filter { it.status != "PAID" }.forEach { inst ->
+                                    database.loanDao().updateInstallmentTransaction(inst.copy(
+                                        amountPaid = inst.amount,
+                                        status = "PAID",
+                                        isSynced = false
+                                    ))
+                                    database.loanDao().insertPaymentTransaction(LoanPaymentEntity(
+                                        loanId = loan.id,
+                                        installmentId = inst.id,
+                                        amount = inst.amount - inst.amountPaid,
+                                        accountId = chosenAcc?.id ?: "",
+                                        accountName = chosenAcc?.name ?: "",
+                                        isSynced = false
+                                    ))
+                                }
+                                database.loanDao().updateLoanTransaction(loan.copy(
                                     status = "PAID",
                                     isSynced = false
                                 ))
-                                database.loanDao().insertPaymentTransaction(LoanPaymentEntity(
-                                    loanId = loan.id,
-                                    installmentId = inst.id,
-                                    amount = inst.amount - inst.amountPaid,
+                            }
+                        }
+
+                        if (chosenAcc != null && pendingTotal > 0.0) {
+                            try {
+                                val freshAcc = database.accountDao().getAllAccountsList().find { it.id == chosenAcc.id } ?: chosenAcc
+                                database.accountDao().update(freshAcc.copy(
+                                    balance = freshAcc.balance + pendingTotal,
+                                    updatedAt = System.currentTimeMillis(),
                                     isSynced = false
                                 ))
-                            }
-                            database.loanDao().updateLoanTransaction(loan.copy(
-                                status = "PAID",
-                                isSynced = false
-                            ))
+                            } catch (e: Exception) { }
+                        }
+
+                        SyncManager(this@LoanDetailsActivity).scheduleOfflineSync()
+                        withContext(Dispatchers.Main) {
+                            val accMsg = if (chosenAcc != null) " en ${chosenAcc.name}" else ""
+                            Toast.makeText(this@LoanDetailsActivity, "¡Deuda liquidada$accMsg!", Toast.LENGTH_SHORT).show()
+                            showCelebrationAnimation()
                         }
                     }
-                    SyncManager(this@LoanDetailsActivity).scheduleOfflineSync()
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(this@LoanDetailsActivity, "¡Toda la deuda ha sido liquidada!", Toast.LENGTH_SHORT).show()
-                        showCelebrationAnimation()
-                    }
                 }
+                .setNegativeButton("Cancelar", null)
+                .show()
             }
-            .setNegativeButton("Cancelar", null)
-            .show()
+        }
     }
 
     private fun showPaymentDialog(installment: LoanInstallmentEntity) {
@@ -1355,11 +1543,44 @@ class LoanDetailsActivity : BaseActivity() {
         val tvAmountDue = dialogView.findViewById<TextView>(R.id.tvDialogAmountDue)
         val tvLateFee = dialogView.findViewById<TextView>(R.id.tvDialogLateFee)
         val etAmount = dialogView.findViewById<EditText>(R.id.etPaymentAmount)
+        val autoAccount = dialogView.findViewById<MaterialAutoCompleteTextView>(R.id.autoCompletePaymentAccount)
         val btnAddReceipt = dialogView.findViewById<MaterialButton>(R.id.btnAddPaymentReceipt)
         val cardReceiptContainer = dialogView.findViewById<View>(R.id.cardPaymentReceiptContainer)
         val ivReceiptThumbnail = dialogView.findViewById<ImageView>(R.id.ivPaymentReceiptThumbnail)
         val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btnCancelPayment)
         val btnConfirm = dialogView.findViewById<MaterialButton>(R.id.btnConfirmPayment)
+
+        var accountList = emptyList<AccountEntity>()
+        var selectedAccountId = ""
+        var selectedAccountName = ""
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val allAccs = database.accountDao().getAllAccountsList().filter { !it.isDeleted }
+                val isPersonalLoan = protectedFundingSource ?: loan.isPersonal
+                val preferredOrigin = if (isPersonalLoan) "PERSONAL" else "BUSINESS"
+                accountList = allAccs.sortedByDescending { it.origin == preferredOrigin }
+
+                withContext(Dispatchers.Main) {
+                    if (accountList.isNotEmpty()) {
+                        val names = accountList.map { "${it.name} (${it.bankName}) - S/ ${String.format(Locale.US, "%.2f", it.balance)}" }
+                        autoAccount?.setAdapter(ArrayAdapter(this@LoanDetailsActivity, android.R.layout.simple_dropdown_item_1line, names))
+                        autoAccount?.setText(names[0], false)
+                        selectedAccountId = accountList[0].id
+                        selectedAccountName = accountList[0].name
+                    } else {
+                        autoAccount?.setText("Sin cuenta registrada", false)
+                    }
+                }
+            } catch (e: Exception) { }
+        }
+
+        autoAccount?.setOnItemClickListener { _, _, position, _ ->
+            if (position in accountList.indices) {
+                selectedAccountId = accountList[position].id
+                selectedAccountName = accountList[position].name
+            }
+        }
 
         currentPaymentReceiptCard = cardReceiptContainer
         currentPaymentReceiptImage = ivReceiptThumbnail
@@ -1418,7 +1639,7 @@ class LoanDetailsActivity : BaseActivity() {
                     Toast.makeText(this, "⚠️ No puede cobrar más de la deuda total (Máx: S/ ${String.format(Locale.US, "%.2f", totalToPayThisAmount)})", Toast.LENGTH_LONG).show()
                 } else {
                     val receiptPath = selectedPaymentReceiptUri?.toString()
-                    processUnifiedPayment(amountValue, lateFee, receiptPath)
+                    processUnifiedPayment(amountValue, lateFee, receiptPath, selectedAccountId, selectedAccountName)
                     dialog.dismiss()
                 }
             }
@@ -1426,7 +1647,13 @@ class LoanDetailsActivity : BaseActivity() {
         dialog.show()
     }
 
-    private fun processUnifiedPayment(amount: Double, lateFee: Double, receiptPhotoPath: String? = null) {
+    private fun processUnifiedPayment(
+        amount: Double,
+        lateFee: Double,
+        receiptPhotoPath: String? = null,
+        accountId: String = "",
+        accountName: String = ""
+    ) {
         val client = currentClient ?: return
         lifecycleScope.launch(Dispatchers.IO) {
             var remainingPayment = amount
@@ -1450,6 +1677,8 @@ class LoanDetailsActivity : BaseActivity() {
                         installmentId = inst.id, 
                         amount = paymentForThisInst, 
                         lateFeeAmount = if (inst.id == pendingInstallments.first().id) feeToPay else 0.0,
+                        accountId = accountId,
+                        accountName = accountName,
                         receiptPhotoPath = receiptPhotoPath,
                         isSynced = false
                     ))
@@ -1475,14 +1704,30 @@ class LoanDetailsActivity : BaseActivity() {
                     }
                 allPaid = remainingTotalAfter <= 0.01
             }
+
+            // Sumar el cobro recibido al saldo de la cuenta destino seleccionada
+            if (accountId.isNotEmpty()) {
+                try {
+                    val acc = database.accountDao().getAllAccountsList().find { it.id == accountId }
+                    acc?.let {
+                        database.accountDao().update(it.copy(
+                            balance = it.balance + amount,
+                            updatedAt = System.currentTimeMillis(),
+                            isSynced = false
+                        ))
+                    }
+                } catch (e: Exception) { }
+            }
+
             SyncManager(this@LoanDetailsActivity).scheduleOfflineSync()
 
             // Registrar en el Historial de Movimientos
             try {
+                val accSuffix = if (accountName.isNotEmpty()) " ➔ $accountName" else ""
                 val log = MovementLogEntity(
                     type = "PAYMENT_REGISTERED",
                     title = "Abono Registrado",
-                    description = "Abono de ${client.name} • ${String.format(Locale.US, "%.2f", amount)}",
+                    description = "Abono de ${client.name}$accSuffix • ${String.format(Locale.US, "%.2f", amount)}",
                     value = "S/ ${String.format(Locale.US, "%.2f", amount)}",
                     colorHex = "#059669",
                     iconRes = android.R.drawable.ic_menu_agenda
@@ -1492,7 +1737,8 @@ class LoanDetailsActivity : BaseActivity() {
             } catch (e: Exception) { }
 
             withContext(Dispatchers.Main) { 
-                Toast.makeText(this@LoanDetailsActivity, "Cobro registrado correctamente", Toast.LENGTH_SHORT).show() 
+                val accToast = if (accountName.isNotEmpty()) " en $accountName" else ""
+                Toast.makeText(this@LoanDetailsActivity, "Cobro registrado$accToast ✅", Toast.LENGTH_SHORT).show() 
                 if (allPaid) {
                     showCelebrationAnimation()
                 }
@@ -1565,17 +1811,22 @@ class LoanDetailsActivity : BaseActivity() {
     }
 
     /**
-     * Agrupa los pagos que pertenecen a una misma operación (mismo préstamo y mismo
-     * segundo) para mostrarlos como un único cobro en el historial.
+     * Agrupa los pagos y préstamos iniciales pertenecientes al cliente
+     * para mostrarlos de forma unificada en el historial de actividad.
      */
     data class PaymentRow(
         val primary: LoanPaymentEntity,
         val totalAmount: Double,
-        val paymentIds: List<String>
+        val paymentIds: List<String>,
+        val isInitialLoan: Boolean = false,
+        val initialAmount: Double = 0.0,
+        val interestRate: Double = 0.0,
+        val totalToPay: Double = 0.0
     )
 
-    private fun groupPayments(payments: List<LoanPaymentEntity>): List<PaymentRow> {
-        return payments
+    private fun groupPayments(payments: List<LoanPaymentEntity>, loans: List<LoanEntity>): List<PaymentRow> {
+        val paymentRows = payments
+            .filter { !it.isDeleted }
             .groupBy { it.loanId to (it.timestamp / 1000L) }
             .map { (_, group) ->
                 PaymentRow(
@@ -1583,8 +1834,31 @@ class LoanDetailsActivity : BaseActivity() {
                     totalAmount = group.sumOf { it.amount + it.lateFeeAmount },
                     paymentIds = group.map { it.id }
                 )
-            }
-            .sortedByDescending { it.primary.timestamp }
+            }.toMutableList()
+
+        loans.filter { !it.isDeleted }.forEach { loan ->
+            val timestamp = if (loan.startDate > 0L) loan.startDate else loan.createdAt
+            val dummyPayment = LoanPaymentEntity(
+                id = "loan_${loan.id}",
+                loanId = loan.id,
+                amount = loan.amount,
+                type = 2, // 2 = PRÉSTAMO OTORGADO
+                timestamp = timestamp
+            )
+            paymentRows.add(
+                PaymentRow(
+                    primary = dummyPayment,
+                    totalAmount = loan.amount,
+                    paymentIds = emptyList(),
+                    isInitialLoan = true,
+                    initialAmount = loan.amount,
+                    interestRate = loan.interestRate,
+                    totalToPay = loan.totalToPay
+                )
+            )
+        }
+
+        return paymentRows.sortedByDescending { it.primary.timestamp }
     }
 
     inner class PaymentsAdapter : RecyclerView.Adapter<PaymentsAdapter.ViewHolder>() {
@@ -1602,73 +1876,108 @@ class LoanDetailsActivity : BaseActivity() {
             val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
             
             with(holder.b) {
-                if (item.type == 1) {
+                if (row.isInitialLoan) {
+                    val initialStr = String.format(Locale.US, "%.2f", row.initialAmount)
+                    tvPaymentAmount.text = "Préstamo otorgado: S/ $initialStr"
+                    tvPaymentAmount.setTextColor(getColor(R.color.purple_600))
+                    tvPaymentDate.text = sdf.format(Date(item.timestamp))
+
+                    val hasInterest = row.interestRate > 0.01 || (row.totalToPay > row.initialAmount + 0.01)
+                    if (hasInterest) {
+                        val rate = row.interestRate
+                        val rateStr = if (rate % 1.0 == 0.0) "${rate.toInt()}%" else String.format(Locale.US, "%.1f%%", rate)
+                        val totalStr = String.format(Locale.US, "%.2f", row.totalToPay)
+                        tvPaymentDetail.visibility = View.VISIBLE
+                        tvPaymentDetail.text = "Más interés del $rateStr: S/ $totalStr"
+                    } else {
+                        tvPaymentDetail.visibility = View.VISIBLE
+                        tvPaymentDetail.text = "Sin interés"
+                    }
+
+                    btnReversePayment.visibility = View.GONE
+                    cardPaymentVoucher.visibility = View.GONE
+                    btnDownloadReceipt.visibility = View.GONE
+                } else if (item.type == 1) {
                     tvPaymentAmount.text = "Aumento: + S/ ${String.format(Locale.US, "%.2f", row.totalAmount)}"
                     tvPaymentAmount.setTextColor(getColor(R.color.indigo_500))
+                    tvPaymentDate.text = sdf.format(Date(item.timestamp))
+
+                    val details = mutableListOf<String>()
+                    if (item.accountName.isNotEmpty()) details.add("Desde: ${item.accountName}")
+                    if (item.lateFeeAmount > 0) details.add("Incluye S/ ${String.format(Locale.US, "%.2f", item.lateFeeAmount)} de mora")
+
+                    if (details.isNotEmpty()) {
+                        tvPaymentDetail.visibility = View.VISIBLE
+                        tvPaymentDetail.text = details.joinToString(" • ")
+                    } else {
+                        tvPaymentDetail.visibility = View.GONE
+                    }
+
+                    btnReversePayment.visibility = View.GONE
+                    cardPaymentVoucher.visibility = View.GONE
+                    btnDownloadReceipt.visibility = View.GONE
                 } else {
                     tvPaymentAmount.text = "Abono de S/ ${String.format(Locale.US, "%.2f", row.totalAmount)}"
                     tvPaymentAmount.setTextColor(getColor(R.color.emerald_600))
-                }
-                
-                tvPaymentDate.text = sdf.format(Date(item.timestamp))
-                
-                if (item.lateFeeAmount > 0) {
-                    tvPaymentDetail.visibility = View.VISIBLE
-                    tvPaymentDetail.text = "Incluye S/ ${String.format(Locale.US, "%.2f", item.lateFeeAmount)} de mora"
-                } else {
-                    tvPaymentDetail.visibility = View.GONE
-                }
-                
-                if (!item.receiptPhotoPath.isNullOrEmpty()) {
-                    cardPaymentVoucher.visibility = View.VISIBLE
-                    Glide.with(ivPaymentReceiptPreview.context)
-                        .load(item.receiptPhotoPath)
-                        .centerCrop()
-                        .into(ivPaymentReceiptPreview)
+                    tvPaymentDate.text = sdf.format(Date(item.timestamp))
 
-                    cardPaymentVoucher.setOnClickListener {
-                        showFullImageDialog(item.receiptPhotoPath)
+                    val details = mutableListOf<String>()
+                    if (item.accountName.isNotEmpty()) details.add("Cuenta: ${item.accountName}")
+                    if (item.lateFeeAmount > 0) details.add("Incluye S/ ${String.format(Locale.US, "%.2f", item.lateFeeAmount)} de mora")
+
+                    if (details.isNotEmpty()) {
+                        tvPaymentDetail.visibility = View.VISIBLE
+                        tvPaymentDetail.text = details.joinToString(" • ")
+                    } else {
+                        tvPaymentDetail.visibility = View.GONE
                     }
-                } else {
-                    cardPaymentVoucher.visibility = View.GONE
-                }
 
-                // Botón para DESHACER un cobro registrado por error
-                if (item.type != 1) {
+                    if (!item.receiptPhotoPath.isNullOrEmpty()) {
+                        cardPaymentVoucher.visibility = View.VISIBLE
+                        Glide.with(ivPaymentReceiptPreview.context)
+                            .load(item.receiptPhotoPath)
+                            .centerCrop()
+                            .into(ivPaymentReceiptPreview)
+
+                        cardPaymentVoucher.setOnClickListener {
+                            showFullImageDialog(item.receiptPhotoPath)
+                        }
+                    } else {
+                        cardPaymentVoucher.visibility = View.GONE
+                    }
+
                     btnReversePayment.visibility = View.VISIBLE
                     btnReversePayment.setOnClickListener {
                         showReversePaymentDialog(row)
                     }
-                } else {
-                    btnReversePayment.visibility = View.GONE
-                }
 
-                btnDownloadReceipt.setOnClickListener {
-                    lifecycleScope.launch {
-                        val client = currentClient ?: return@launch
-                        val loan = database.loanDao().getLoanById(item.loanId) ?: return@launch
-                        
-                        // Si tiene installmentId, buscar la cuota, sino crear una "virtual" para el recibo
-                        val inst = if (item.installmentId != null) {
-                            database.loanDao().getInstallmentById(item.installmentId)
-                        } else {
-                            LoanInstallmentEntity(
-                                loanId = item.loanId,
-                                installmentNumber = 0,
-                                amount = item.amount,
-                                dueDate = item.timestamp,
-                                status = "PAID"
-                            )
-                        } ?: return@launch
+                    btnDownloadReceipt.visibility = View.VISIBLE
+                    btnDownloadReceipt.setOnClickListener {
+                        // Recibo PDF
+                        lifecycleScope.launch {
+                            val client = currentClient ?: return@launch
+                            val loan = database.loanDao().getLoanById(item.loanId) ?: return@launch
+                            val inst = if (item.installmentId != null) {
+                                database.loanDao().getInstallmentById(item.installmentId)
+                            } else {
+                                LoanInstallmentEntity(
+                                    loanId = item.loanId,
+                                    installmentNumber = 0,
+                                    amount = item.amount,
+                                    dueDate = item.timestamp,
+                                    status = "PAID"
+                                )
+                            } ?: return@launch
 
-                        val receipt = LoanPdfGenerator(this@LoanDetailsActivity).generatePaymentReceipt(client, loan, inst, item.amount + item.lateFeeAmount)
-                        receipt?.let { file ->
-                            val intent = Intent(this@LoanDetailsActivity, PdfViewerActivity::class.java).apply {
-                                putExtra("PDF_PATH", file.absolutePath)
-                                putExtra("GUEST_PHONE", client.phone)
-                                putExtra("GUEST_NAME", client.name)
+                            val receipt = LoanPdfGenerator(this@LoanDetailsActivity).generatePaymentReceipt(client, loan, inst, item.amount + item.lateFeeAmount)
+                            receipt?.let { file ->
+                                val intent = Intent(this@LoanDetailsActivity, PdfViewerActivity::class.java).apply {
+                                    putExtra("PDF_PATH", file.absolutePath)
+                                    putExtra("GUEST_PHONE", client.phone)
+                                    putExtra("GUEST_NAME", client.name)
+                                }
+                                startActivity(intent)
                             }
-                            startActivity(intent)
                         }
                     }
                 }
@@ -1690,7 +1999,7 @@ class LoanDetailsActivity : BaseActivity() {
             .setMessage(
                 "Se anulará el cobro de S/ ${String.format(Locale.US, "%.2f", total)} " +
                 "registrado el ${sdf.format(Date(row.primary.timestamp))}.\n\n" +
-                "• El pago se eliminará del historial.\n" +
+                "• El pago se eliminará del historial y se descontará de la cuenta receptor.\n" +
                 "• La cuota volverá a estar pendiente o parcial.\n" +
                 "• Si el préstamo estaba cancelado, se reabrirá."
             )
@@ -1703,14 +2012,29 @@ class LoanDetailsActivity : BaseActivity() {
 
     private fun performReversePayment(row: PaymentRow) {
         lifecycleScope.launch(Dispatchers.IO) {
-            val ok = try {
+            val revertedAmount = try {
                 database.loanDao().reversePayments(row.paymentIds)
-                true
             } catch (e: Exception) {
-                false
+                0.0
             }
+            val ok = revertedAmount > 0.0
 
             if (ok) {
+                // Si el cobro había ingresado a una cuenta, revertir el saldo de esa cuenta
+                val targetAccountId = row.primary.accountId
+                if (targetAccountId.isNotEmpty()) {
+                    try {
+                        val acc = database.accountDao().getAllAccountsList().find { it.id == targetAccountId }
+                        acc?.let {
+                            database.accountDao().update(it.copy(
+                                balance = (it.balance - revertedAmount).coerceAtLeast(0.0),
+                                updatedAt = System.currentTimeMillis(),
+                                isSynced = false
+                            ))
+                        }
+                    } catch (e: Exception) { }
+                }
+
                 val total = row.totalAmount
                 val client = currentClient
                 val log = MovementLogEntity(

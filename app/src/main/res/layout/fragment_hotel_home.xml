@@ -6,25 +6,13 @@
     android:layout_height="match_parent"
     android:background="?attr/colorSurface">
 
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guidelineLeftRoot"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.06" />
-
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guidelineRightRoot"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.94" />
-
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollHotelContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:paddingBottom="100dp">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
@@ -277,16 +265,43 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="GESTIÓN OPERATIVA"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.1"
-                    android:layout_marginTop="32dp"
-                    android:layout_marginBottom="16dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="28dp"
+                    android:layout_marginBottom="12dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="GESTIÓN OPERATIVA"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="11sp"
+                        android:letterSpacing="0.1" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnHotelPlanPro"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:minHeight="0dp"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="0dp"
+                        android:text="⭐ Comprar Plan Profesional"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/purple_700"
+                        app:backgroundTint="@color/purple_50"
+                        app:strokeColor="@color/purple_200"
+                        app:strokeWidth="1dp"
+                        app:cornerRadius="16dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp" />
+                </LinearLayout>
 
                 <!-- TOOLS GRID -->
                 <androidx.recyclerview.widget.RecyclerView
@@ -296,61 +311,6 @@
                     android:layout_marginTop="8dp"
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_hotel_tool_card" />
-
-                <!-- SUPPORT -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/btnSupportCreatorHotel"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="0dp"
-                    app:strokeWidth="1dp"
-                    app:strokeColor="@color/emerald_600"
-                    app:cardBackgroundColor="@color/emerald_50"
-                    android:clickable="true"
-                    android:focusable="true">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:padding="16dp"
-                        android:gravity="center_vertical">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="⭐"
-                            android:textSize="20sp"
-                            android:layout_marginEnd="12dp" />
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical">
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Apoya al creador de GoMezMart"
-                                android:textSize="13sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/emerald_900" />
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Ayúdame a seguir mejorando tu sistema"
-                                android:textSize="11sp"
-                                android:textColor="@color/emerald_700" />
-                        </LinearLayout>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="GoMezMart Hotel v1.5.40"
-                    android:textAlignment="center"
-                    android:textSize="10sp"
-                    android:textColor="?attr/colorOutline"
-                    android:layout_marginTop="24dp" />
 
             </LinearLayout>
 

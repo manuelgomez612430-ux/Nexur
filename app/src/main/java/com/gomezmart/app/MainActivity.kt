@@ -1,6 +1,8 @@
 package com.gomezmart.app
 
 import android.Manifest
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -28,6 +30,7 @@ import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.work.*
@@ -43,7 +46,6 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.gomezmart.app.databinding.ActivityMainBinding
 import com.gomezmart.app.fragment.*
 import com.gomezmart.app.util.SessionManager
-import com.gomezmart.app.network.GomezmartSyncService
 import com.gomezmart.app.util.FavoritesManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
@@ -71,7 +73,7 @@ class MainActivity : BaseActivity() {
 
     private var loadJob: Job? = null
     private val registrations = mutableListOf<ListenerRegistration>()
-    private var doubleBackToExitPressedOnce = false
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,7 +94,6 @@ class MainActivity : BaseActivity() {
 
         setupListeners()
         setupCustomBottomNav()
-        checkNotificationPermission()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -103,19 +104,18 @@ class MainActivity : BaseActivity() {
 
                 if (lastActiveNavIndex != 0) {
                     navigateToInicio()
-                } else {
-                    if (doubleBackToExitPressedOnce) {
-                        finish()
-                        return
-                    }
-                    doubleBackToExitPressedOnce = true
-                    Toast.makeText(this@MainActivity, "Presiona otra vez para salir", Toast.LENGTH_SHORT).show()
-                    window.decorView.postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
+                    return
                 }
+
+                // Mover al fondo en lugar de matar la app
+                moveTaskToBack(true)
             }
         })
         
-        if (savedInstanceState == null) {
+        if (savedInstanceState != null) {
+            lastActiveNavIndex = savedInstanceState.getInt("saved_nav_index", 0)
+            binding.layoutCustomNav.post { refreshIndicatorPosition() }
+        } else if (checkCurrentModuleInstalled()) {
             navigateToInicio()
         }
         
@@ -127,7 +127,7 @@ class MainActivity : BaseActivity() {
             try {
                 delay(5000) // Mucho más margen para el Updater
                 if (intent.getBooleanExtra("START_UPDATE", false)) {
-                    Updater(this@MainActivity).checkAndDownload(autoDownload = true)
+                    Updater(this@MainActivity).checkAndDownload(autoCheck = true)
                 }
                 subscribeToSalesTopic()
                 schedulePeriodicSync()
@@ -136,6 +136,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun updatePublicIdentity() {
+        if (isGuestUser()) return
         val user = auth.currentUser ?: return
         val bizPrefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
@@ -162,33 +163,38 @@ class MainActivity : BaseActivity() {
         val publicLogo = if (bizLogo.isNotEmpty()) bizLogo else collabBizLogo
 
         // Obtener datos reales de identidad desde AppPrefs o Auth
-        val realName = appPrefs.getString("user_full_name", null) ?: user.displayName ?: "Usuario Gomezmart"
+        val storedName = appPrefs.getString("user_full_name", null) ?: user.displayName ?: ""
         val realPhoto = appPrefs.getString("user_photo_url", null) ?: user.photoUrl?.toString() ?: ""
 
         val updates = mutableMapOf<String, Any>(
             "businessTitle" to title,
-            "name" to realName,
             "photoUrl" to realPhoto,
             "user_photo_url" to realPhoto,
             "email" to (user.email ?: "")
         )
+        if (!SessionManager.isPlaceholderName(storedName)) {
+            updates["name"] = storedName.trim()
+        }
         
         if (publicLogo.isNotEmpty()) updates["businessLogoUrl"] = publicLogo
 
         db.collection("users").document(user.uid).collection("profile").document("info")
             .set(updates, SetOptions.merge())
             
-        val rootUpdates = mapOf(
-            "name" to realName,
+        val rootUpdates = mutableMapOf<String, Any>(
             "photoUrl" to realPhoto,
             "businessTitle" to title,
             "email" to (user.email ?: ""),
             "phone" to (appPrefs.getString("user_phone", "") ?: "")
         )
+        if (!SessionManager.isPlaceholderName(storedName)) {
+            rootUpdates["name"] = storedName.trim()
+        }
         db.collection("users").document(user.uid).set(rootUpdates, SetOptions.merge())
     }
 
     private fun startCloudSyncListeners() {
+        if (isGuestUser()) return
         val user = auth.currentUser ?: return
         
         // 1. Escuchar info del Perfil (Nombre completo desde la cuenta)
@@ -251,14 +257,11 @@ class MainActivity : BaseActivity() {
     }
 
     private fun refreshIndicatorPosition() {
-        val icons = listOf(binding.tvIconInicio, binding.tvIconStock, binding.tvIconMetricas, binding.tvIconConfig, binding.tvIconMarket)
-        val activeIdx = icons.indexOfFirst { it.alpha == 1.0f }
-        if (activeIdx != -1) {
-            updateCustomNavUI(activeIdx, animate = false)
-        }
+        updateCustomNavUI(lastActiveNavIndex, animate = false)
     }
 
     private fun checkCollaboratorAccess() {
+        if (isGuestUser()) return
         val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val isCollab = prefs.getBoolean("is_collaborator_mode", false)
         val ownerId = prefs.getString("collaborator_owner_id", null)
@@ -281,7 +284,7 @@ class MainActivity : BaseActivity() {
                         it.permissions.forEach { (key, value) -> editor.putBoolean(key, value) }
                         editor.putString("collab_name", it.name)
                         editor.putString("collab_role", if (it.roles.isNotEmpty()) it.roles.joinToString(", ") else it.role)
-                        editor.commit() 
+                        editor.apply() 
                         runOnUiThread { updateMenuForBusinessType() }
                     }
                 }
@@ -338,15 +341,11 @@ class MainActivity : BaseActivity() {
             
             val tvHeaderTitle = headerView.findViewById<TextView>(R.id.tvHeaderTitle)
             val ivDrawerLogo = headerView.findViewById<ImageView>(R.id.ivDrawerLogo)
-            val btnTeam = headerView.findViewById<View>(R.id.btnDrawerManageTeam)
-            val btnCollab = headerView.findViewById<View>(R.id.btnDrawerSearchToCollab)
             val btnCollabAccount = headerView.findViewById<View>(R.id.btnDrawerCollabAccount)
 
             if (isCollabMode) {
-                btnTeam?.visibility = View.GONE
                 btnCollabAccount?.visibility = View.VISIBLE
             } else {
-                btnTeam?.visibility = if (businessType == "HOTEL") View.VISIBLE else View.GONE
                 btnCollabAccount?.visibility = View.GONE
             }
 
@@ -389,8 +388,6 @@ class MainActivity : BaseActivity() {
                 }
             }
 
-            btnTeam?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startToolActivity(Intent(this, HotelManageTeamActivity::class.java)) }
-            btnCollab?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startToolActivity(Intent(this, SearchBusinessActivity::class.java)) }
             btnCollabAccount?.setOnClickListener { binding.drawerLayoutMain.closeDrawer(GravityCompat.START); startToolActivity(Intent(this, CollabAccountActivity::class.java)) }
         }
 
@@ -407,7 +404,7 @@ class MainActivity : BaseActivity() {
 
         // --- Navegación Inferior Dinámica (PESO EXACTO) ---
         binding.btnNavInicio.isVisible = true
-        binding.btnNavConfig.isVisible = true
+        binding.btnNavConfig.isVisible = false
 
         if (isCollabMode) {
             binding.btnNavMetricas.isVisible = collabPrefs.getBoolean("can_view_metrics", false)
@@ -422,7 +419,7 @@ class MainActivity : BaseActivity() {
         val hasLoans = !prefs.getString("LOANS_name", "").isNullOrEmpty()
         val hasBiz = hasHotel || hasProducts || hasLoans || !prefs.getString("business_type", "").isNullOrEmpty()
         
-        binding.btnNavMarket.isVisible = isCollabMode || hasBiz
+        binding.btnNavMarket.isVisible = isCollabMode || hasBiz || isGuestUser()
         
         // CORRECCIÓN: Labels dinámicos para el menú inferior
         binding.tvLabelStock.text = when(businessType) { 
@@ -441,19 +438,30 @@ class MainActivity : BaseActivity() {
     }
 
     private var lastActiveNavIndex = 0
+    private var pendingIndicatorRunnable: Runnable? = null
 
     private fun setupCustomBottomNav() {
-        binding.btnNavInicio.setOnClickListener { hideFloatingInterfaceMenu(); lastActiveNavIndex = 0; navigateToInicio(); updateCustomNavUI(0) }
-        binding.btnNavStock.setOnClickListener { hideFloatingInterfaceMenu(); lastActiveNavIndex = 1; navigateToStock(); updateCustomNavUI(1) }
-        binding.btnNavMetricas.setOnClickListener { hideFloatingInterfaceMenu(); lastActiveNavIndex = 2; navigateToMetricas(); updateCustomNavUI(2) }
-        binding.btnNavConfig.setOnClickListener { hideFloatingInterfaceMenu(); lastActiveNavIndex = 3; navigateToSettings(); updateCustomNavUI(3) }
-        binding.btnNavMarket.setOnClickListener { 
+        binding.btnNavInicio.setOnClickListener { hideFloatingInterfaceMenu(immediate = true); lastActiveNavIndex = 0; navigateToInicio() }
+        binding.btnNavStock.setOnClickListener { hideFloatingInterfaceMenu(immediate = true); lastActiveNavIndex = 1; navigateToStock() }
+        binding.btnNavMetricas.setOnClickListener { hideFloatingInterfaceMenu(immediate = true); lastActiveNavIndex = 2; navigateToMetricas() }
+        binding.btnNavMarket.setOnClickListener {
             binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
             showFloatingInterfaceMenu()
         }
 
-        binding.layoutCustomNav.post {
-            refreshIndicatorPosition()
+        binding.layoutCustomNav.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+            if ((right - left) != (oldRight - oldLeft) && (right - left) > 0) {
+                binding.navIndicatorCustom.post {
+                    if (this::binding.isInitialized && !isDestroyed && !isFinishing) {
+                        refreshIndicatorPosition()
+                    }
+                }
+            }
+        }
+        binding.navIndicatorCustom.post {
+            if (this::binding.isInitialized && !isDestroyed && !isFinishing) {
+                refreshIndicatorPosition()
+            }
         }
     }
 
@@ -496,8 +504,9 @@ class MainActivity : BaseActivity() {
             return
         }
 
-        updateCustomNavUI(4, animate = false) // Salta instantáneamente al botón Interfaz sin animación de deslizamiento
+        updateCustomNavUI(4, animate = false, updateSavedIndex = false) // Salta instantáneamente al botón Interfaz sin sobrescribir la pestaña activa
 
+        binding.cardInterfaceMenuOverlay.animate().setListener(null).withEndAction(null).cancel()
         binding.viewInterfaceBackdrop.visibility = View.VISIBLE
         binding.cardInterfaceMenuOverlay.visibility = View.VISIBLE
         binding.cardInterfaceMenuOverlay.translationY = 60f
@@ -511,11 +520,43 @@ class MainActivity : BaseActivity() {
             .start()
 
         val optionsBinding = binding.includeInterfaceOptions
-        val cards = listOf(
+        optionsBinding.tvOption1Emoji.text = "🛒"
+        optionsBinding.tvOption1Title.text = "Mercado en Línea"
+        optionsBinding.tvOption1Subtitle.text = "Descubre y compra productos"
+
+        val hasProductsInstalled = dynamicModuleManager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.PRODUCTS)
+        val hasLoansInstalled = dynamicModuleManager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.LOANS)
+        val hasHotelInstalled = dynamicModuleManager.isModuleInstalled(com.gomezmart.app.utils.DynamicFeatureModule.HOTEL)
+        
+        val installedCount = listOf(hasProductsInstalled, hasLoansInstalled, hasHotelInstalled).count { it }
+
+        optionsBinding.cardOptionSwitchSystem.visibility = View.VISIBLE
+        optionsBinding.cardOptionMyCollabs.visibility = View.GONE
+
+        // Restablecer vista inicial
+        optionsBinding.layoutInterfaceMainMenu.visibility = View.VISIBLE
+        optionsBinding.layoutDownloadedSystemsView.visibility = View.GONE
+
+        // Colores para el menú principal cuando estás dentro de un sistema
+        val menuColorActive = ContextCompat.getColor(this, R.color.purple_600)
+        val menuBgActive = ContextCompat.getColor(this, R.color.purple_50)
+        val menuColorInactive = ContextCompat.getColor(this, R.color.purple_200)
+        val menuBgInactive = ContextCompat.getColor(this, R.color.white)
+        
+        // Mercado no está activo, la Gestión (el sistema en el que estás) sí está activo
+        optionsBinding.cardOptionMarket.apply {
+            strokeColor = menuColorInactive
+            setCardBackgroundColor(menuBgInactive)
+        }
+        
+        optionsBinding.cardOptionSwitchSystem.apply {
+            strokeColor = menuColorActive
+            setCardBackgroundColor(menuBgActive)
+        }
+
+        val cards = mutableListOf<View>(
             optionsBinding.cardOptionMarket,
-            optionsBinding.cardOptionOpenStore,
-            optionsBinding.cardOptionSwitchSystem,
-            optionsBinding.cardOptionMyCollabs
+            optionsBinding.cardOptionSwitchSystem
         )
 
         cards.forEachIndexed { i, card ->
@@ -538,28 +579,134 @@ class MainActivity : BaseActivity() {
             hideFloatingInterfaceMenu()
             startToolActivity(Intent(this, BuyerHomeActivity::class.java))
         }
-
-        optionsBinding.cardOptionOpenStore.setOnClickListener {
-            hideFloatingInterfaceMenu()
-            openMarketBusiness()
-        }
-
+        
         optionsBinding.cardOptionSwitchSystem.setOnClickListener {
-            hideFloatingInterfaceMenu()
-            startActivity(Intent(this, MyBusinessesActivity::class.java))
+            if (binding.cardInterfaceMenuOverlay.isLaidOut) {
+                android.transition.TransitionManager.beginDelayedTransition(
+                    binding.cardInterfaceMenuOverlay,
+                    android.transition.TransitionSet().apply {
+                        addTransition(android.transition.Fade())
+                        addTransition(android.transition.ChangeBounds())
+                        duration = 220
+                    }
+                )
+            }
+            optionsBinding.layoutInterfaceMainMenu.animate().cancel()
+            optionsBinding.layoutDownloadedSystemsView.animate().cancel()
+            optionsBinding.layoutInterfaceMainMenu.visibility = View.GONE
+            optionsBinding.layoutDownloadedSystemsView.visibility = View.VISIBLE
+            optionsBinding.layoutDownloadedSystemsView.alpha = 0f
+            optionsBinding.layoutDownloadedSystemsView.translationX = 30f
+            optionsBinding.layoutDownloadedSystemsView.animate()
+                .alpha(1f)
+                .translationX(0f)
+                .setDuration(220)
+                .start()
         }
 
-        optionsBinding.cardOptionMyCollabs.setOnClickListener {
-            hideFloatingInterfaceMenu()
-            val intent = Intent(this, MyBusinessesActivity::class.java).apply {
-                putExtra("COLLAB_ONLY_MODE", true)
+        // Botón retroceder dentro del recuadro con animación de transición
+        optionsBinding.btnBackToInterfaceMenu.setOnClickListener {
+            if (binding.cardInterfaceMenuOverlay.isLaidOut) {
+                android.transition.TransitionManager.beginDelayedTransition(
+                    binding.cardInterfaceMenuOverlay,
+                    android.transition.TransitionSet().apply {
+                        addTransition(android.transition.Fade())
+                        addTransition(android.transition.ChangeBounds())
+                        duration = 220
+                    }
+                )
             }
-            startActivity(intent)
+            optionsBinding.layoutInterfaceMainMenu.animate().cancel()
+            optionsBinding.layoutDownloadedSystemsView.animate().cancel()
+            optionsBinding.layoutDownloadedSystemsView.visibility = View.GONE
+            optionsBinding.layoutInterfaceMainMenu.visibility = View.VISIBLE
+            optionsBinding.layoutInterfaceMainMenu.alpha = 0f
+            optionsBinding.layoutInterfaceMainMenu.translationX = -30f
+            optionsBinding.layoutInterfaceMainMenu.animate()
+                .alpha(1f)
+                .translationX(0f)
+                .setDuration(220)
+                .start()
+        }
+
+        optionsBinding.cardSystemProducts.visibility = if (hasProductsInstalled) View.VISIBLE else View.GONE
+        optionsBinding.cardSystemLoans.visibility = if (hasLoansInstalled) View.VISIBLE else View.GONE
+        optionsBinding.cardSystemHotel.visibility = if (hasHotelInstalled) View.VISIBLE else View.GONE
+        
+        // Resaltar el sistema actual con un borde morado
+        val currentSystem = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE).getString("business_type", "PRODUCTS") ?: "PRODUCTS"
+        
+        val colorActive = ContextCompat.getColor(this, R.color.purple_600)
+        val colorInactive = ContextCompat.getColor(this, R.color.slate_200)
+        val bgActive = ContextCompat.getColor(this, R.color.purple_50)
+        val bgInactive = ContextCompat.getColor(this, R.color.white)
+
+        optionsBinding.cardSystemProducts.apply {
+            strokeColor = if (currentSystem == "PRODUCTS") colorActive else colorInactive
+            setCardBackgroundColor(if (currentSystem == "PRODUCTS") bgActive else bgInactive)
+        }
+        
+        optionsBinding.cardSystemLoans.apply {
+            strokeColor = if (currentSystem == "LOANS") colorActive else colorInactive
+            setCardBackgroundColor(if (currentSystem == "LOANS") bgActive else bgInactive)
+        }
+        
+        optionsBinding.cardSystemHotel.apply {
+            strokeColor = if (currentSystem == "HOTEL") colorActive else colorInactive
+            setCardBackgroundColor(if (currentSystem == "HOTEL") bgActive else bgInactive)
+        }
+
+        val anyInstalled = hasProductsInstalled || hasLoansInstalled || hasHotelInstalled
+        optionsBinding.tvNoInstalledSystems.visibility = if (anyInstalled) View.GONE else View.VISIBLE
+        optionsBinding.tvDownloadedSystemsSubtitle.visibility = if (anyInstalled) View.VISIBLE else View.GONE
+        optionsBinding.btnAddNewSystemFromInterface.visibility = if (hasProductsInstalled && hasLoansInstalled && hasHotelInstalled) View.GONE else View.VISIBLE
+
+        // Selección de sistemas dentro del recuadro
+        optionsBinding.cardSystemProducts.setOnClickListener {
+            switchToBusinessSystem("PRODUCTS")
+        }
+
+        optionsBinding.cardSystemLoans.setOnClickListener {
+            switchToBusinessSystem("LOANS")
+        }
+
+        optionsBinding.cardSystemHotel.setOnClickListener {
+            switchToBusinessSystem("HOTEL")
+        }
+
+        optionsBinding.btnAddNewSystemFromInterface.setOnClickListener {
+            hideFloatingInterfaceMenu()
+            startActivity(Intent(this, BusinessSelectionActivity::class.java))
         }
     }
 
-    private fun hideFloatingInterfaceMenu() {
-        if (!this::binding.isInitialized || binding.cardInterfaceMenuOverlay.visibility == View.GONE) return
+    private fun switchToBusinessSystem(type: String) {
+        hideFloatingInterfaceMenu()
+        ensureModuleInstalled(type) {
+            getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE).edit()
+                .putString("business_type", type)
+                .apply()
+            startActivity(Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            })
+            finish()
+        }
+    }
+
+    private fun hideFloatingInterfaceMenu(immediate: Boolean = false) {
+        if (!this::binding.isInitialized) return
+        binding.cardInterfaceMenuOverlay.animate().setListener(null).withEndAction(null).cancel()
+        if (binding.cardInterfaceMenuOverlay.visibility == View.GONE && binding.viewInterfaceBackdrop.visibility == View.GONE) {
+            return
+        }
+
+        if (immediate) {
+            binding.cardInterfaceMenuOverlay.visibility = View.GONE
+            binding.cardInterfaceMenuOverlay.alpha = 1f
+            binding.cardInterfaceMenuOverlay.translationY = 0f
+            binding.viewInterfaceBackdrop.visibility = View.GONE
+            return
+        }
 
         binding.cardInterfaceMenuOverlay.animate()
             .translationY(40f)
@@ -567,6 +714,7 @@ class MainActivity : BaseActivity() {
             .setDuration(160)
             .setInterpolator(AccelerateDecelerateInterpolator())
             .withEndAction {
+                if (!this::binding.isInitialized || isDestroyed || isFinishing) return@withEndAction
                 binding.cardInterfaceMenuOverlay.visibility = View.GONE
                 binding.viewInterfaceBackdrop.visibility = View.GONE
                 updateCustomNavUI(lastActiveNavIndex, animate = false) // Salta instantáneamente al último botón activo
@@ -574,7 +722,12 @@ class MainActivity : BaseActivity() {
             .start()
     }
 
-    private fun updateCustomNavUI(index: Int, animate: Boolean = true) {
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt("saved_nav_index", lastActiveNavIndex)
+    }
+
+    private fun updateCustomNavUI(index: Int, animate: Boolean = true, updateSavedIndex: Boolean = true) {
         val activeColor = Color.WHITE
         val inactiveColor = Color.parseColor("#94A3B8")
         val buttons = listOf(binding.btnNavInicio, binding.btnNavStock, binding.btnNavMetricas, binding.btnNavConfig, binding.btnNavMarket)
@@ -589,6 +742,9 @@ class MainActivity : BaseActivity() {
         if (targetIdx !in buttons.indices || !buttons[targetIdx].isVisible) {
             targetIdx = buttons.indexOf(visibleButtons.firstOrNull() ?: buttons[0])
         }
+        if (updateSavedIndex) {
+            lastActiveNavIndex = targetIdx
+        }
 
         // 2. Sincronización visual inmediata (Evita jank visual)
         labels.forEachIndexed { i, tv -> 
@@ -601,84 +757,123 @@ class MainActivity : BaseActivity() {
         }
 
         val targetView = buttons[targetIdx]
-        
-        // Función de alineación milimétrica optimizada
-        val r = Runnable {
-            if (!this::binding.isInitialized) return@Runnable
-            
+
+        pendingIndicatorRunnable?.let { binding.navIndicatorCustom.removeCallbacks(it) }
+        val updateAction = Runnable {
+            if (!this::binding.isInitialized || isDestroyed || isFinishing) return@Runnable
             val w = targetView.width
             val x = targetView.x
-            
-            if (w > 0) {
-                val params = binding.navIndicatorCustom.layoutParams
-                if (params.width != w) {
-                    params.width = w
-                    binding.navIndicatorCustom.layoutParams = params
-                }
-                
-                if (animate) {
-                    binding.navIndicatorCustom.animate()
-                        .translationX(x)
-                        .setDuration(120) // Más rápido para mejor sensación
-                        .setInterpolator(AccelerateDecelerateInterpolator())
-                        .start()
-                } else {
-                    binding.navIndicatorCustom.animate().cancel()
-                    binding.navIndicatorCustom.translationX = x
-                }
+            if (w <= 0) return@Runnable
+
+            val params = binding.navIndicatorCustom.layoutParams
+            if (params.width != w) {
+                params.width = w
+                binding.navIndicatorCustom.layoutParams = params
+                binding.navIndicatorCustom.requestLayout()
+            }
+            if (binding.navIndicatorCustom.visibility != View.VISIBLE) {
+                binding.navIndicatorCustom.visibility = View.VISIBLE
+            }
+
+            if (animate) {
+                binding.navIndicatorCustom.animate()
+                    .translationX(x)
+                    .setDuration(120)
+                    .setInterpolator(AccelerateDecelerateInterpolator())
+                    .start()
+            } else {
+                binding.navIndicatorCustom.animate().cancel()
+                binding.navIndicatorCustom.translationX = x
             }
         }
+        pendingIndicatorRunnable = updateAction
 
-        if (targetView.width > 0) r.run() else targetView.post(r)
+        val navParentInLayout = (binding.navIndicatorCustom.parent as? View)?.isInLayout == true
+        if (targetView.isLaidOut && targetView.width > 0 && !targetView.isInLayout && !binding.navIndicatorCustom.isInLayout && !navParentInLayout) {
+            updateAction.run()
+        } else {
+            binding.navIndicatorCustom.post(updateAction)
+        }
     }
 
     private fun replaceFragment(fragment: Fragment) {
+        if (binding.mainFragmentContainer.visibility != View.VISIBLE) {
+            binding.mainFragmentContainer.visibility = View.VISIBLE
+        }
+        if (binding.cardBottomNavContainer.visibility != View.VISIBLE) {
+            binding.cardBottomNavContainer.visibility = View.VISIBLE
+        }
+        val currentFragment = supportFragmentManager.findFragmentById(R.id.mainFragmentContainer)
+        if (currentFragment != null && currentFragment::class.java == fragment::class.java && currentFragment.isAdded) {
+            currentFragment.view?.let { v ->
+                if (v.width == 0 || v.height == 0) {
+                    binding.mainFragmentContainer.post {
+                        if (this::binding.isInitialized && !isDestroyed && !isFinishing) {
+                            v.requestLayout()
+                            binding.mainFragmentContainer.requestLayout()
+                        }
+                    }
+                }
+            }
+            return
+        }
+
         val transaction = supportFragmentManager.beginTransaction()
-        // Animaciones suaves y ligeras para evitar congelamientos al navegar
-        transaction.setCustomAnimations(
-            android.R.anim.fade_in, 
-            android.R.anim.fade_out
-        )
         transaction.replace(R.id.mainFragmentContainer, fragment)
-        transaction.commit()
+        if (supportFragmentManager.isStateSaved) {
+            transaction.commitAllowingStateLoss()
+        } else {
+            transaction.commit()
+        }
+        
+        // Ejecutar las transacciones pendientes al instante para evitar vacíos
+        supportFragmentManager.executePendingTransactions()
+        
+        binding.mainContentRoot.post {
+            if (!this::binding.isInitialized || isDestroyed || isFinishing) return@post
+            binding.mainFragmentContainer.visibility = View.GONE
+            binding.mainFragmentContainer.visibility = View.VISIBLE
+            binding.mainFragmentContainer.requestLayout()
+            binding.mainContentRoot.requestLayout()
+        }
     }
 
     fun getEffectiveBusinessType(): String {
         val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
         val bType = prefs.getString("business_type", null)
-        val hasLoans = prefs.getString("LOANS_name", "")?.isNotEmpty() == true
-        val hasHotel = prefs.getString("HOTEL_name", "")?.isNotEmpty() == true
-
-        if (bType.isNullOrEmpty() || bType == "PRODUCTS") {
-            if (hasLoans) {
-                prefs.edit().putString("business_type", "LOANS").apply()
-                return "LOANS"
-            }
-        }
-
         if (!bType.isNullOrEmpty()) return bType
 
-        val activeType = if (hasLoans) "LOANS" else if (hasHotel) "HOTEL" else "LOANS"
+        val hasLoans = prefs.getString("LOANS_name", "")?.isNotEmpty() == true
+        val hasHotel = prefs.getString("HOTEL_name", "")?.isNotEmpty() == true
+        val hasProducts = prefs.getString("PRODUCTS_name", "")?.isNotEmpty() == true
+
+        val activeType = when {
+            hasProducts -> "PRODUCTS"
+            hasLoans -> "LOANS"
+            hasHotel -> "HOTEL"
+            else -> "PRODUCTS"
+        }
         prefs.edit().putString("business_type", activeType).apply()
         return activeType
     }
 
     private fun autoCorrectBusinessTypeIfNeeded() {
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val currentType = prefs.getString("business_type", null)
+        if (!currentType.isNullOrEmpty()) return
+
         lifecycleScope.launch(Dispatchers.IO) {
-            val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
-            val currentType = prefs.getString("business_type", null)
             val dbInstance = AppDatabase.getDatabase(this@MainActivity)
-            
             val loansCount = try { dbInstance.loanDao().getAllLoansOnce().size } catch(e: Exception) { 0 }
             val clientsCount = try { dbInstance.loanDao().getAllClientsOnce().size } catch(e: Exception) { 0 }
             val productsCount = try { dbInstance.productDao().allProducts.size } catch(e: Exception) { 0 }
             val hasLoansPref = prefs.getString("LOANS_name", "")?.isNotEmpty() == true
 
             if ((loansCount > 0 || clientsCount > 0 || hasLoansPref) && productsCount == 0) {
-                if (currentType != "LOANS") {
-                    prefs.edit().putString("business_type", "LOANS").apply()
-                    withContext(Dispatchers.Main) {
-                        updateMenuForBusinessType()
+                prefs.edit().putString("business_type", "LOANS").apply()
+                withContext(Dispatchers.Main) {
+                    updateMenuForBusinessType()
+                    if (checkCurrentModuleInstalled()) {
                         navigateToInicio()
                     }
                 }
@@ -688,18 +883,84 @@ class MainActivity : BaseActivity() {
 
     override fun onResume() { 
         super.onResume()
+        val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        if (appPrefs.getString("last_active_interface", null) != "BUSINESS" ||
+            appPrefs.getBoolean("login_in_progress", false)
+        ) {
+            appPrefs.edit()
+                .putString("last_active_interface", "BUSINESS")
+                .putBoolean("login_in_progress", false)
+                .apply()
+        }
         autoCorrectBusinessTypeIfNeeded()
+        if (!checkCurrentModuleInstalled()) {
+            binding.mainFragmentContainer.visibility = View.INVISIBLE
+            binding.cardBottomNavContainer.visibility = View.INVISIBLE
+            return
+        }
+        if (binding.mainFragmentContainer.visibility != View.VISIBLE) {
+            binding.mainFragmentContainer.visibility = View.VISIBLE
+        }
+        if (binding.cardBottomNavContainer.visibility != View.VISIBLE) {
+            binding.cardBottomNavContainer.visibility = View.VISIBLE
+        }
+        hideFloatingInterfaceMenu(immediate = true)
         updateMenuForBusinessType()
-        SyncManager(this).scheduleOfflineSync() 
+        if (supportFragmentManager.findFragmentById(R.id.mainFragmentContainer) == null) {
+            navigateToInicio()
+        }
+        binding.mainContentRoot.post {
+            if (!this::binding.isInitialized || isDestroyed || isFinishing) return@post
+            ViewCompat.requestApplyInsets(binding.cardBottomNavContainer)
+        }
+        SyncManager(this).scheduleOfflineSync()
+        checkAndShowGuestSystemWelcome()
+    }
+
+    private var isUninstalledDialogShowing = false
+    private var isWelcomeDialogShowing = false
+
+    private fun checkCurrentModuleInstalled(): Boolean {
+        val bType = getEffectiveBusinessType()
+        val module = when (bType) {
+            "HOTEL" -> com.gomezmart.app.utils.DynamicFeatureModule.HOTEL
+            "LOANS" -> com.gomezmart.app.utils.DynamicFeatureModule.LOANS
+            else -> com.gomezmart.app.utils.DynamicFeatureModule.PRODUCTS
+        }
+        if (!dynamicModuleManager.isModuleInstalled(module)) {
+            binding.mainFragmentContainer.visibility = View.INVISIBLE
+            binding.cardBottomNavContainer.visibility = View.INVISIBLE
+            showUninstalledModuleDialog(module, bType)
+            return false
+        }
+        if (binding.mainFragmentContainer.visibility != View.VISIBLE) {
+            binding.mainFragmentContainer.visibility = View.VISIBLE
+        }
+        if (binding.cardBottomNavContainer.visibility != View.VISIBLE) {
+            binding.cardBottomNavContainer.visibility = View.VISIBLE
+        }
+        return true
+    }
+
+    private fun showUninstalledModuleDialog(module: com.gomezmart.app.utils.DynamicFeatureModule, bType: String) {
+        if (isUninstalledDialogShowing) return
+        isUninstalledDialogShowing = true
+
+        ensureModuleInstalled(bType) {
+            isUninstalledDialogShowing = false
+            recreate()
+        }
     }
 
     fun navigateToInicio() {
+        if (!checkCurrentModuleInstalled()) return
         val bType = getEffectiveBusinessType()
         replaceFragment(when(bType) { "HOTEL" -> HotelHomeFragment(); "LOANS" -> LoansHomeFragment(); else -> HomeFragment() })
         updateCustomNavUI(0)
     }
 
     fun navigateToStock(forceGraph: Boolean = false) {
+        if (!checkCurrentModuleInstalled()) return
         if (forceGraph) getSharedPreferences("HotelPrefs", MODE_PRIVATE).edit().putBoolean("FORCE_MAP_VIEW", true).apply()
         val bType = getEffectiveBusinessType()
         replaceFragment(when(bType) { "HOTEL" -> HotelRoomsFragment(); "LOANS" -> LoansClientsFragment(); else -> StockFragment() })
@@ -707,58 +968,129 @@ class MainActivity : BaseActivity() {
     }
 
     fun navigateToMetricas() {
+        if (!checkCurrentModuleInstalled()) return
         val bType = getEffectiveBusinessType()
         replaceFragment(when(bType) { "HOTEL" -> HotelMetricsFragment(); "LOANS" -> LoansMetricsFragment(); else -> MetricasFragment() })
         updateCustomNavUI(2)
     }
 
-    fun navigateToSettings() { replaceFragment(SettingsFragment()); updateCustomNavUI(3) }
-
 
     fun openSideMenu() = binding.drawerLayoutMain.openDrawer(GravityCompat.START)
     fun navigateToGestion() = binding.drawerLayoutMain.openDrawer(GravityCompat.START)
     private fun startSyncService() {
+        if (isGuestUser()) return
         try {
-            val intent = Intent(this, GomezmartSyncService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(intent)
-            } else {
-                startService(intent)
-            }
+            SyncManager(this).scheduleOfflineSync()
         } catch (e: Exception) {
-            Log.e("MainActivity", "Error starting sync service: ${e.message}")
+            Log.e("MainActivity", "Error scheduling offline sync: ${e.message}")
         }
     }
-    private fun subscribeToSalesTopic() { val userId = auth.currentUser?.uid ?: return; FirebaseMessaging.getInstance().subscribeToTopic("sales_$userId") }
+    private fun subscribeToSalesTopic() {
+        if (isGuestUser()) return
+        val userId = auth.currentUser?.uid ?: return
+        FirebaseMessaging.getInstance().subscribeToTopic("sales_$userId")
+    }
+
+    private val dynamicModuleManager by lazy { com.gomezmart.app.utils.DynamicModuleManager(this) }
 
     private fun setupListeners() {
         binding.navigationViewMain.setNavigationItemSelectedListener { menuItem ->
-            binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
             when (menuItem.itemId) {
-                R.id.menu_hotel_guests -> { startToolActivity(Intent(this, HotelGuestHistoryActivity::class.java)); true }
-                R.id.menu_hotel_bookings -> { startToolActivity(Intent(this, HotelBookingsActivity::class.java)); true }
+                // --- HOTEL ---
+                R.id.menu_hotel_guests -> {
+                    startToolActivity(Intent().setClassName(packageName, "com.gomezmart.feature_hotel.HotelGuestHistoryActivity"))
+                    true
+                }
+                R.id.menu_hotel_bookings -> {
+                    startToolActivity(Intent().setClassName(packageName, "com.gomezmart.feature_hotel.HotelBookingsActivity"))
+                    true
+                }
+                R.id.menu_hotel_tools -> {
+                    startToolActivity(Intent().setClassName(packageName, "com.gomezmart.feature_hotel.HotelToolsActivity"))
+                    true
+                }
                 R.id.menu_hotel_payments -> { startToolActivity(Intent(this, BusinessDebtsActivity::class.java)); true }
-                R.id.menu_hotel_rooms_graph -> { navigateToStock(true); true }
-                R.id.menu_hotel_maintenance -> { startToolActivity(Intent(this, HotelMaintenanceActivity::class.java)); true }
-                R.id.menu_hotel_tools -> { startToolActivity(Intent(this, HotelToolsActivity::class.java)); true }
-                R.id.menu_loans_clients -> { navigateToStock(); true }
-                R.id.menu_loans_collections -> { startToolActivity(Intent(this, LoansCollectionsActivity::class.java)); true }
+                R.id.menu_hotel_rooms_graph -> {
+                    binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
+                    navigateToStock(true)
+                    true
+                }
+                R.id.menu_hotel_maintenance -> {
+                    startToolActivity(Intent().setClassName(packageName, "com.gomezmart.feature_hotel.HotelMaintenanceActivity"))
+                    true
+                }
+
+                // --- PRÉSTAMOS ---
+                R.id.menu_loans_clients -> {
+                    startToolActivity(Intent().setClassName(packageName, "com.gomezmart.feature_loans.LoansClientsActivity"))
+                    true
+                }
+                R.id.menu_loans_new -> {
+                    startToolActivity(Intent().setClassName(packageName, "com.gomezmart.feature_loans.AddLoanActivity"))
+                    true
+                }
+                R.id.menu_loans_collections -> {
+                    startToolActivity(Intent().setClassName(packageName, "com.gomezmart.feature_loans.LoansCollectionsActivity"))
+                    true
+                }
+                R.id.menu_loans_profit -> {
+                    binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
+                    lastActiveNavIndex = 2
+                    navigateToMetricas()
+                    true
+                }
+                R.id.menu_loans_expenses -> {
+                    startToolActivity(Intent().setClassName(packageName, "com.gomezmart.feature_loans.LoansExpensesActivity"))
+                    true
+                }
+
+                // --- PRODUCTOS / COMÚN ---
+                R.id.menu_manage_orders -> { startToolActivity(Intent(this, DeliveriesActivity::class.java)); true }
                 R.id.menu_caja -> { startToolActivity(Intent(this, CajaActivity::class.java)); true }
                 R.id.menu_gastos -> { startToolActivity(Intent(this, GastosActivity::class.java)); true }
-                R.id.menu_settings -> { navigateToSettings(); true }
-                R.id.menu_logout -> { showLogoutDialog(); true }
+                R.id.menu_fiados -> { startToolActivity(Intent(this, DeudoresActivity::class.java)); true }
+                R.id.menu_commitments -> { startToolActivity(Intent(this, CommitmentsActivity::class.java)); true }
+                R.id.menu_proveedores -> { startToolActivity(Intent(this, ProveedoresActivity::class.java)); true }
+                R.id.menu_emitir_comprobante -> { startToolActivity(Intent(this, EmitirComprobanteActivity::class.java)); true }
+                R.id.menu_lista_compras -> { startToolActivity(Intent(this, ListaComprasActivity::class.java)); true }
+                R.id.menu_asignador -> { startToolActivity(Intent(this, AsignadorDePreciosActivity::class.java)); true }
+                R.id.menu_customers -> { startToolActivity(Intent(this, CustomersActivity::class.java)); true }
+                R.id.menu_sales_history -> { startToolActivity(Intent(this, SalesHistoryActivity::class.java)); true }
+                R.id.menu_view_history -> { startToolActivity(Intent(this, HistorialActivity::class.java)); true }
+                R.id.menu_instructions -> { startToolActivity(Intent(this, InstruccionesActivity::class.java)); true }
+                R.id.menu_sync -> {
+                    binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
+                    if (!requireLoginForGuest("sincronizar tus datos en la nube")) {
+                        Toast.makeText(this, "Sincronizando datos con la nube... ☁️", Toast.LENGTH_SHORT).show()
+                        SyncManager(this).scheduleOfflineSync()
+                    }
+                    true
+                }
+                R.id.menu_customize_actions -> {
+                    binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
+                    lastActiveNavIndex = 0
+                    navigateToInicio()
+                    true
+                }
+                R.id.menu_account_settings -> {
+                    if (!requireLoginForGuest("configurar tu cuenta")) {
+                        startToolActivity(Intent(this, AccountSettingsActivity::class.java))
+                    } else {
+                        binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
+                    }
+                    true
+                }
+                R.id.menu_logout -> {
+                    binding.drawerLayoutMain.closeDrawer(GravityCompat.START)
+                    showLogoutDialog()
+                    true
+                }
                 else -> false
             }
         }
     }
 
-    private fun checkNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
-            }
-        }
-    }
+
 
     private fun startToolActivity(intent: Intent) { startActivityWithFade(intent) }
 
@@ -770,10 +1102,22 @@ class MainActivity : BaseActivity() {
     }
 
     private fun showLogoutDialog() {
-        AlertDialog.Builder(this).setTitle("Cerrar Sesión").setMessage("¿Deseas salir?").setPositiveButton("Salir") { _, _ -> lifecycleScope.launch { SessionManager.clearSessionData(this@MainActivity); startActivity(Intent(this@MainActivity, WelcomeRoleActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)); finish() } }.setNegativeButton("Cancelar", null).show()
+        AlertDialog.Builder(this)
+            .setTitle("Cerrar Sesión")
+            .setMessage("¿Deseas salir?")
+            .setPositiveButton("Salir") { _, _ ->
+                lifecycleScope.launch {
+                    SessionManager.signOutCompletely(this@MainActivity)
+                    startActivity(Intent(this@MainActivity, LoginActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                    finish()
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun switchToPersonalBusiness() {
+        if (requireLoginForGuest("cambiar de negocio en la nube")) return
         val user = auth.currentUser ?: return
         lifecycleScope.launch {
             val loading = AlertDialog.Builder(this@MainActivity).setMessage("Cambiando...").setCancelable(false).show()
@@ -792,6 +1136,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun showCollaborationsDialog() {
+        if (requireLoginForGuest("ver colaboraciones")) return
         lifecycleScope.launch {
             try {
                 val email = auth.currentUser?.email?.lowercase() ?: return@launch
@@ -804,6 +1149,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun switchToCollaborativeEnvironment(ownerId: String, businessType: String, name: String? = null) {
+        if (isGuestUser()) return
         lifecycleScope.launch {
             withContext(Dispatchers.IO) { AppDatabase.getDatabase(this@MainActivity).clearAllTables() }
             getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit().apply { putBoolean("is_collaborator_mode", true); putString("collaborator_owner_id", ownerId); putString("business_type", businessType); apply() }
@@ -836,6 +1182,9 @@ class MainActivity : BaseActivity() {
 
     override fun onStop() {
         super.onStop()
+        if (this::binding.isInitialized && binding.drawerLayoutMain.isDrawerOpen(GravityCompat.START)) {
+            binding.drawerLayoutMain.closeDrawer(GravityCompat.START, false)
+        }
         // Ya NO detenemos los escuchadores al salir, para que lleguen notificaciones en segundo plano
         
         // Limpiar escuchadores de la actividad para evitar fugas
@@ -849,6 +1198,12 @@ class MainActivity : BaseActivity() {
     }
 
     private fun schedulePeriodicSync() {
+        if (isGuestUser()) {
+            try {
+                WorkManager.getInstance(this).cancelUniqueWork("periodic_sync")
+            } catch (e: Exception) {}
+            return
+        }
         // IMPORTANTE: Sin constraint de red el trabajo se ejecutaba cada 15 min
         // aunque no hubiera conexión, fallando ~40 escrituras y agotando la
         // batería y los datos móviles. Ahora solo corre con red disponible.
@@ -874,4 +1229,64 @@ class MainActivity : BaseActivity() {
     fun manualSync() { SyncManager(this).scheduleOfflineSync() }
     private fun showTutorialDialog() { currentTutorialStep = 0; showNextTutorialStep() }
     private fun showNextTutorialStep() { if (currentTutorialStep < tutorialSteps.size) { val step = tutorialSteps[currentTutorialStep]; AlertDialog.Builder(this, R.style.Theme_Gomezmart_Dialog).setTitle(step.first).setMessage(step.second).setCancelable(false).setPositiveButton(if (currentTutorialStep == tutorialSteps.size - 1) "Empezar" else "Siguiente") { _, _ -> currentTutorialStep++; showNextTutorialStep() }.create().show() } }
+
+    private fun checkAndShowGuestSystemWelcome() {
+        if (isUninstalledDialogShowing || isWelcomeDialogShowing) return
+        val currentType = getEffectiveBusinessType()
+        val module = when (currentType) {
+            "HOTEL" -> com.gomezmart.app.utils.DynamicFeatureModule.HOTEL
+            "LOANS" -> com.gomezmart.app.utils.DynamicFeatureModule.LOANS
+            else -> com.gomezmart.app.utils.DynamicFeatureModule.PRODUCTS
+        }
+        if (!dynamicModuleManager.isModuleInstalled(module)) return
+
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val flagKey = "has_shown_guest_system_welcome_$currentType"
+        val justInstalledKey = "just_installed_module_$currentType"
+        val hasShown = prefs.getBoolean(flagKey, false)
+        val justInstalled = prefs.getBoolean(justInstalledKey, false)
+
+        if (!hasShown || justInstalled) {
+            isWelcomeDialogShowing = true
+            prefs.edit()
+                .putBoolean(flagKey, true)
+                .putBoolean(justInstalledKey, false)
+                .putBoolean("just_installed_module", false)
+                .apply()
+
+            binding.btnNavMarket.visibility = View.VISIBLE
+            highlightInterfazButton()
+
+            val dialogView = layoutInflater.inflate(R.layout.dialog_guest_system_welcome, null)
+            val dialog = AlertDialog.Builder(this, R.style.Theme_Gomezmart_Dialog)
+                .setView(dialogView)
+                .setCancelable(false)
+                .create()
+
+            dialog.setOnDismissListener {
+                isWelcomeDialogShowing = false
+            }
+
+            val btnOk = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnGuestWelcomeOk)
+            btnOk?.setOnClickListener {
+                dialog.dismiss()
+                highlightInterfazButton()
+            }
+
+            dialog.show()
+        }
+    }
+
+    private fun highlightInterfazButton() {
+        binding.btnNavMarket.visibility = View.VISIBLE
+        binding.btnNavMarket.post {
+            val scaleX = ObjectAnimator.ofFloat(binding.btnNavMarket, "scaleX", 1f, 1.35f, 1f, 1.35f, 1f)
+            val scaleY = ObjectAnimator.ofFloat(binding.btnNavMarket, "scaleY", 1f, 1.35f, 1f, 1.35f, 1f)
+            AnimatorSet().apply {
+                playTogether(scaleX, scaleY)
+                duration = 1400
+                start()
+            }
+        }
+    }
 }

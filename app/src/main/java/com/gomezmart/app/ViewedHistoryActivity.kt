@@ -11,7 +11,6 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.gomezmart.app.data.MarketplaceProduct
@@ -75,7 +74,7 @@ class ViewedHistoryActivity : BaseActivity() {
         } else {
             binding.rvViewedHistory.visibility = View.VISIBLE
             binding.layoutEmptyHistory.visibility = View.GONE
-            adapter.updateData(historyList)
+            adapter.updateData(ArrayList(historyList))
         }
     }
 
@@ -116,15 +115,17 @@ class ViewedHistoryActivity : BaseActivity() {
         private var items = listOf<MarketplaceProduct>()
 
         fun updateData(newList: List<MarketplaceProduct>) {
-            if (items == newList) return
+            val oldItems = items
+            val newItems = ArrayList(newList)
+
             val diffCallback = object : DiffUtil.Callback() {
-                override fun getOldListSize(): Int = items.size
-                override fun getNewListSize(): Int = newList.size
-                override fun areItemsTheSame(oldPos: Int, newPos: Int): Boolean = items[oldPos].id == newList[newPos].id
-                override fun areContentsTheSame(oldPos: Int, newPos: Int): Boolean = items[oldPos] == newList[newPos]
+                override fun getOldListSize(): Int = oldItems.size
+                override fun getNewListSize(): Int = newItems.size
+                override fun areItemsTheSame(oldPos: Int, newPos: Int): Boolean = oldItems[oldPos].id == newItems[newPos].id
+                override fun areContentsTheSame(oldPos: Int, newPos: Int): Boolean = oldItems[oldPos] == newItems[newPos]
             }
             val diffResult = DiffUtil.calculateDiff(diffCallback)
-            items = newList
+            items = newItems
             diffResult.dispatchUpdatesTo(this)
         }
 
@@ -137,8 +138,13 @@ class ViewedHistoryActivity : BaseActivity() {
             val p = items[position]
             with(holder.b) {
                 tvHistoryProductName.text = p.name
-                tvHistoryProductStore.text = p.storeName
-                tvHistoryProductPrice.text = "S/ ${String.format(Locale.US, "%.2f", p.price)}"
+                tvHistoryProductStore.text = p.storeName.ifEmpty { "Tienda GomezMart" }
+                
+                if (p.storeType == "HOTEL") {
+                    tvHistoryProductPrice.text = "S/ ${String.format(Locale.US, "%.2f", p.price)} la noche"
+                } else {
+                    tvHistoryProductPrice.text = "S/ ${String.format(Locale.US, "%.2f", p.price)}"
+                }
                 
                 if (!p.photoUrl.isNullOrEmpty()) {
                     Glide.with(ivHistoryProductImage.context)

@@ -6,10 +6,12 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.gomezmart.app.R
 import com.gomezmart.app.data.HotelRoomEntity
 import com.gomezmart.app.databinding.ItemFloorHeaderBinding
 import com.gomezmart.app.databinding.ItemHotelRoomBinding
+import java.io.File
 import java.util.Locale
 
 data class RoomListItem(
@@ -28,6 +30,8 @@ class HotelRoomAdapter(
     private val onAction: (HotelRoomEntity) -> Unit,
     private val onSecondAction: ((HotelRoomEntity) -> Unit)? = null,
     private val onThirdAction: ((HotelRoomEntity) -> Unit)? = null,
+    private val onPhotoClick: ((HotelRoomEntity) -> Unit)? = null,
+    private val isCollaborator: Boolean = false,
     private val onCardClick: (HotelRoomEntity, Boolean, Boolean) -> Unit // Entidad, falla, reserva
 ) : ListAdapter<RoomListType, RecyclerView.ViewHolder>(DiffCallback) {
 
@@ -54,6 +58,22 @@ class HotelRoomAdapter(
         }
     }
 
+    private var startOfTodayMs: Long = computeStartOfToday()
+
+    private fun computeStartOfToday(): Long {
+        return java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+
+    override fun submitList(list: List<RoomListType>?) {
+        startOfTodayMs = computeStartOfToday()
+        super.submitList(list)
+    }
+
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val item = getItem(position)
         if (holder is HeaderViewHolder && item is RoomListType.Header) {
@@ -62,35 +82,29 @@ class HotelRoomAdapter(
             val roomData = item.data
             val room = roomData.entity
             with(holder.binding) {
-                val cal = java.util.Calendar.getInstance()
-                cal.set(java.util.Calendar.HOUR_OF_DAY, 0); cal.set(java.util.Calendar.MINUTE, 0); cal.set(java.util.Calendar.SECOND, 0); cal.set(java.util.Calendar.MILLISECOND, 0)
-                val startOfToday = cal.timeInMillis
-                val needsCleaning = room.lastCleaned < startOfToday
+                val needsCleaning = room.lastCleaned < startOfTodayMs
 
                 // --- Lógica Unificada de Alertas en el Título ---
                 val statusText = StringBuilder("Habitación ${room.number}")
                 var titleColor = root.context.getColor(R.color.slate_900)
 
                 if (roomData.hasPendingFailure) {
-                    // Prioridad Máxima: Falla Técnica (Crítico - Rojo)
                     statusText.append(" 🛠️ (!)")
                     titleColor = root.context.getColor(R.color.red_600)
                 } else if (needsCleaning || room.status == "DIRTY" || room.status == "MAINTENANCE") {
-                    // Prioridad 2: Limpieza/Aseo Pendiente (Advertencia - Naranja)
                     statusText.append(" 🧹 (!)")
                     titleColor = root.context.getColor(R.color.orange_600)
                 } else if (room.status == "OCCUPIED") {
-                    // Si está ocupada y limpia: Color Verde sin brillitos
                     titleColor = root.context.getColor(R.color.emerald_600)
                 }
 
                 tvRoomNumber.text = statusText.toString()
                 tvRoomNumber.setTextColor(titleColor)
-                
+
                 tvRoomType.text = room.type
                 tvRoomPrice.text = String.format(Locale.US, "S/ %.2f", room.baseRate)
 
-                val emoji = when(room.type.uppercase()) {
+                val emoji = when (room.type.uppercase()) {
                     "SIMPLE" -> "🛏️"
                     "DOBLE" -> "👥"
                     "MATRIMONIAL" -> "❤️"
@@ -99,6 +113,32 @@ class HotelRoomAdapter(
                 }
                 tvRoomEmoji.text = emoji
 
+                val localFile = room.photoPath?.takeIf { it.isNotBlank() }?.let { File(it) }?.takeIf { it.exists() }
+                val remoteUrl = room.photoUrl?.takeIf { it.isNotBlank() }
+                val photoModel: Any? = localFile ?: remoteUrl
+
+                if (photoModel != null) {
+                    ivRoomThumb.visibility = View.VISIBLE
+                    tvRoomEmoji.visibility = View.GONE
+                    tvRoomPhotoBadge.visibility = View.GONE
+                    Glide.with(root.context).load(photoModel).centerCrop().into(ivRoomThumb)
+                } else {
+                    Glide.with(root.context).clear(ivRoomThumb)
+                    ivRoomThumb.visibility = View.GONE
+                    tvRoomEmoji.visibility = View.VISIBLE
+                    tvRoomPhotoBadge.visibility = if (!isCollaborator && onPhotoClick != null) View.VISIBLE else View.GONE
+                }
+
+                val handlePhotoTap = View.OnClickListener {
+                    if (!isCollaborator && onPhotoClick != null) {
+                        onPhotoClick.invoke(room)
+                    } else {
+                        onCardClick(room, roomData.hasPendingFailure, roomData.hasReservation)
+                    }
+                }
+                cardRoomThumb.setOnClickListener(handlePhotoTap)
+                tvRoomPhotoBadge.setOnClickListener(handlePhotoTap)
+
                 // Botón Reparado (🛠️)
                 if (roomData.hasPendingFailure) {
                     btnThirdAction.text = "Reparado"
@@ -106,6 +146,7 @@ class HotelRoomAdapter(
                     btnThirdAction.setOnClickListener { onThirdAction?.invoke(room) }
                 } else {
                     btnThirdAction.visibility = View.GONE
+                    btnThirdAction.setOnClickListener(null)
                 }
 
                 when (room.status) {
@@ -114,9 +155,9 @@ class HotelRoomAdapter(
                             chipRoomStatus.text = "RESERVADA"
                             chipRoomStatus.setChipBackgroundColorResource(R.color.sky_600)
                             chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
-                            
-                            // Bloquear Check-in desde la lista si hay reserva
+
                             btnRoomAction.text = "Reservada"
+                            btnRoomAction.icon = null
                             btnRoomAction.setBackgroundColor(root.context.getColor(R.color.slate_100))
                             btnRoomAction.setTextColor(root.context.getColor(R.color.slate_400))
                             btnRoomAction.isEnabled = false
@@ -124,7 +165,7 @@ class HotelRoomAdapter(
                             chipRoomStatus.text = "LIBRE"
                             chipRoomStatus.setChipBackgroundColorResource(R.color.emerald_50)
                             chipRoomStatus.setTextColor(root.context.getColor(R.color.emerald_600))
-                            
+
                             btnRoomAction.text = "Check-in"
                             btnRoomAction.setIconResource(android.R.drawable.ic_input_add)
                             btnRoomAction.setBackgroundColor(root.context.getColor(R.color.emerald_50))
@@ -132,20 +173,7 @@ class HotelRoomAdapter(
                             btnRoomAction.setIconTintResource(R.color.emerald_600)
                             btnRoomAction.isEnabled = true
                         }
-                        
-                        btnSecondAction.visibility = if (needsCleaning) View.VISIBLE else View.GONE
-                    }
-                    "OCCUPIED" -> {
-                        chipRoomStatus.text = "OCUPADA"; chipRoomStatus.setChipBackgroundColorResource(R.color.red_600)
-                        chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
-                        
-                        // Botón Gestionar en MORADO
-                        btnRoomAction.text = "Gestionar"
-                        btnRoomAction.setIconResource(android.R.drawable.ic_menu_manage)
-                        btnRoomAction.setBackgroundColor(root.context.getColor(R.color.vibrant_purple))
-                        btnRoomAction.setTextColor(root.context.getColor(R.color.white))
-                        btnRoomAction.setIconTintResource(R.color.white)
-                        
+
                         if (needsCleaning) {
                             btnSecondAction.text = "Aseado"
                             btnSecondAction.visibility = View.VISIBLE
@@ -154,24 +182,47 @@ class HotelRoomAdapter(
                             btnSecondAction.setOnClickListener { onSecondAction?.invoke(room) }
                         } else {
                             btnSecondAction.visibility = View.GONE
+                            btnSecondAction.setOnClickListener(null)
+                        }
+                    }
+                    "OCCUPIED" -> {
+                        chipRoomStatus.text = "OCUPADA"
+                        chipRoomStatus.setChipBackgroundColorResource(R.color.red_600)
+                        chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
+
+                        btnRoomAction.text = "Gestionar"
+                        btnRoomAction.setIconResource(android.R.drawable.ic_menu_manage)
+                        btnRoomAction.setBackgroundColor(root.context.getColor(R.color.vibrant_purple))
+                        btnRoomAction.setTextColor(root.context.getColor(R.color.white))
+                        btnRoomAction.setIconTintResource(R.color.white)
+                        btnRoomAction.isEnabled = true
+
+                        if (needsCleaning) {
+                            btnSecondAction.text = "Aseado"
+                            btnSecondAction.visibility = View.VISIBLE
+                            btnSecondAction.setBackgroundColor(root.context.getColor(R.color.orange_600))
+                            btnSecondAction.setTextColor(root.context.getColor(R.color.white))
+                            btnSecondAction.setOnClickListener { onSecondAction?.invoke(room) }
+                        } else {
+                            btnSecondAction.visibility = View.GONE
+                            btnSecondAction.setOnClickListener(null)
                         }
                     }
                     "DIRTY", "MAINTENANCE" -> {
-                        val statusLabel = if(room.status == "DIRTY") "SUCIA" else "POR ASEAR"
-                        val statusColor = if(room.status == "DIRTY") R.color.orange_600 else R.color.vibrant_purple
-                        
+                        val statusLabel = if (room.status == "DIRTY") "SUCIA" else "POR ASEAR"
+                        val statusColor = if (room.status == "DIRTY") R.color.orange_600 else R.color.vibrant_purple
+
                         chipRoomStatus.text = statusLabel
                         chipRoomStatus.setChipBackgroundColorResource(statusColor)
                         chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
-                        
-                        // Check-in se mantiene visible
+
                         btnRoomAction.text = "Check-in"
                         btnRoomAction.setIconResource(android.R.drawable.ic_input_add)
                         btnRoomAction.setBackgroundColor(root.context.getColor(R.color.emerald_50))
                         btnRoomAction.setTextColor(root.context.getColor(R.color.emerald_600))
                         btnRoomAction.setIconTintResource(R.color.emerald_600)
+                        btnRoomAction.isEnabled = true
 
-                        // Botón Aseado al costado en NARANJA
                         btnSecondAction.text = "Aseado"
                         btnSecondAction.visibility = View.VISIBLE
                         btnSecondAction.setBackgroundColor(root.context.getColor(R.color.orange_600))
@@ -182,15 +233,16 @@ class HotelRoomAdapter(
                         chipRoomStatus.text = "RESERVADA"
                         chipRoomStatus.setChipBackgroundColorResource(R.color.sky_600)
                         chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
-                        
+
                         btnRoomAction.text = "Check-in"
                         btnRoomAction.setIconResource(android.R.drawable.ic_input_add)
                         btnRoomAction.setBackgroundColor(root.context.getColor(R.color.emerald_50))
                         btnRoomAction.setTextColor(root.context.getColor(R.color.emerald_600))
                         btnRoomAction.setIconTintResource(R.color.emerald_600)
                         btnRoomAction.isEnabled = true
-                        
+
                         btnSecondAction.visibility = View.GONE
+                        btnSecondAction.setOnClickListener(null)
                     }
                 }
                 btnRoomAction.setOnClickListener { onAction(room) }

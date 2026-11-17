@@ -103,6 +103,11 @@ class HotelMapView @JvmOverloads constructor(
 
     private val viewMatrix = Matrix()
     private val inverseMatrix = Matrix()
+    private val badgePaint = Paint().apply { color = Color.parseColor("#F59E0B"); style = Paint.Style.FILL }
+    private val badgeIconPaint = Paint().apply { color = Color.WHITE; textSize = 40f; isFakeBoldText = true; textAlign = Paint.Align.CENTER }
+    private val axisPaint = Paint().apply { color = Color.parseColor("#CBD5E1"); strokeWidth = 3f }
+    private val textBoundsRect = Rect()
+    private val aabbMatrix = Matrix()
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
@@ -161,12 +166,10 @@ class HotelMapView @JvmOverloads constructor(
     }
 
     private fun drawMaintenanceBadges(canvas: Canvas) {
-        val badgePaint = Paint().apply { color = Color.parseColor("#F59E0B"); style = Paint.Style.FILL }
-        val iconPaint = Paint().apply { color = Color.WHITE; textSize = 40f; isFakeBoldText = true; textAlign = Paint.Align.CENTER }
         layoutElements.filter { it.type == "ROOM" && roomsWithFailures.contains(it.roomId) }.forEach { element ->
             val cX = element.x + element.width / 2; val badgeY = element.y + 35f
             canvas.drawCircle(cX + element.width/2 - 30f, badgeY, 25f, badgePaint)
-            canvas.drawText("!", cX + element.width/2 - 30f, badgeY + 14f, iconPaint)
+            canvas.drawText("!", cX + element.width/2 - 30f, badgeY + 14f, badgeIconPaint)
         }
     }
 
@@ -176,7 +179,6 @@ class HotelMapView @JvmOverloads constructor(
         var y = 0f; while (y <= CANVAS_HEIGHT) { canvas.drawLine(0f, y, CANVAS_WIDTH, y, gridMinorPaint); y += GRID_MINOR }
         x = 0f; while (x <= CANVAS_WIDTH) { canvas.drawLine(x, 0f, x, CANVAS_HEIGHT, gridMajorPaint); x += GRID_MAJOR }
         y = 0f; while (y <= CANVAS_HEIGHT) { canvas.drawLine(0f, y, CANVAS_WIDTH, y, gridMajorPaint); y += GRID_MAJOR }
-        val axisPaint = Paint().apply { color = Color.parseColor("#CBD5E1"); strokeWidth = 3f }
         canvas.drawLine(CANVAS_WIDTH / 2, 0f, CANVAS_WIDTH / 2, CANVAS_HEIGHT, axisPaint)
         canvas.drawLine(0f, CANVAS_HEIGHT / 2, CANVAS_WIDTH, CANVAS_HEIGHT / 2, axisPaint)
     }
@@ -205,8 +207,8 @@ class HotelMapView @JvmOverloads constructor(
                             val displayText = if (isEditMode) name else "HAB. $name"; val rMin = minOf(element.width, element.height); val tSize = (rMin * 0.32f); textPaint.textSize = tSize
                             val maxWidth = element.width * 0.80f; val tWidth = textPaint.measureText(displayText)
                             if (tWidth > maxWidth) textPaint.textSize = tSize * (maxWidth / tWidth)
-                            val tBounds = Rect(); textPaint.getTextBounds(displayText, 0, displayText.length, tBounds)
-                            textPaint.setShadowLayer(6f, 0f, 0f, Color.BLACK); canvas.drawText(displayText, centerX, centerY + tBounds.height() / 2f, textPaint)
+                            textPaint.getTextBounds(displayText, 0, displayText.length, textBoundsRect)
+                            textPaint.setShadowLayer(6f, 0f, 0f, Color.BLACK); canvas.drawText(displayText, centerX, centerY + textBoundsRect.height() / 2f, textPaint)
                         }
                     }
                 }
@@ -402,10 +404,11 @@ class HotelMapView @JvmOverloads constructor(
     }
 
     private fun getAABB(e: HotelRoomLayoutEntity): RectF {
-        val m = Matrix(); m.postRotate(e.rotation, e.x + e.width / 2, e.y + e.height / 2)
+        aabbMatrix.reset()
+        aabbMatrix.postRotate(e.rotation, e.x + e.width / 2, e.y + e.height / 2)
         val ex = if (e.type == "WALL" && e.isHollow) e.strokeWidth / 2 else 0f
         val p = floatArrayOf(e.x - ex, e.y - ex, e.x + e.width + ex, e.y - ex, e.x + e.width + ex, e.y + e.height + ex, e.x - ex, e.y + e.height + ex)
-        m.mapPoints(p); var miX = p[0]; var maX = p[0]; var miY = p[1]; var maY = p[1]
+        aabbMatrix.mapPoints(p); var miX = p[0]; var maX = p[0]; var miY = p[1]; var maY = p[1]
         for (i in 0 until p.size step 2) { miX = minOf(miX, p[i]); maX = maxOf(maX, p[i]); miY = minOf(miY, p[i+1]); maY = maxOf(maY, p[i+1]) }
         return RectF(miX, miY, maX, maY)
     }

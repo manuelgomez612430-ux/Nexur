@@ -12,6 +12,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.DocumentReference
 import com.gomezmart.app.network.SupabaseManager
+import com.gomezmart.app.util.BillingManager
 import kotlinx.coroutines.tasks.await
 import java.io.File
 
@@ -38,7 +39,25 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
     
     private val localDb = try { AppDatabase.getDatabase(appContext) } catch (e: Exception) { null }
 
+    private fun isGuestUser(): Boolean {
+        return try {
+            val user = auth?.currentUser
+            val prefs = applicationContext.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+            if (user != null && !user.isAnonymous) {
+                if (prefs.getBoolean("is_guest", false)) {
+                    prefs.edit().putBoolean("is_guest", false).apply()
+                }
+                false
+            } else {
+                true
+            }
+        } catch (e: Exception) {
+            true
+        }
+    }
+
     private fun getEffectiveUserId(): String? {
+        if (isGuestUser()) return null
         try {
             val prefs = applicationContext.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
             val isCollaborator = prefs.getBoolean("is_collaborator_mode", false)
@@ -51,6 +70,9 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
     }
 
     override suspend fun doWork(): Result {
+        if (isGuestUser()) {
+            return Result.success()
+        }
         Log.d("SyncWorker", "Iniciando sincronización en segundo plano...")
         
         // Si no hay sesión o no hay base de datos NO se debe marcar como "success":
@@ -79,6 +101,7 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
         deleteContacts(ldb, userRef)
         deleteLoans(ldb, userRef)
         deleteCommitments(ldb, userRef)
+        deleteAccounts(ldb, userRef)
         deleteHotelData(ldb, userRef)
     }
 
@@ -178,6 +201,7 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
             hotel.deleteMaintenanceHard(it.id)
         }
         hotel.getDeletedLayouts().forEach {
+            userRef.collection("hotel_layouts").document(it.id).delete().await()
             userRef.collection("hotel_room_layouts").document(it.id).delete().await()
             hotel.deleteLayoutHard(it.id)
         }
@@ -187,13 +211,30 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
         }
     }
 
+    private suspend fun deleteAccounts(ldb: AppDatabase, userRef: DocumentReference) {
+        ldb.accountDao().getDeletedAccounts().forEach {
+            userRef.collection("accounts").document(it.id).delete().await()
+            ldb.accountDao().delete(it)
+        }
+    }
+
+    private suspend fun syncAccounts(ldb: AppDatabase, userRef: DocumentReference) {
+        val unsyncedAccounts = ldb.accountDao().getUnsyncedAccounts()
+        unsyncedAccounts.forEach {
+            val syncedAccount = it.copy(isSynced = true)
+            userRef.collection("accounts").document(it.id).set(syncedAccount, SetOptions.merge()).await()
+            ldb.accountDao().update(syncedAccount)
+        }
+    }
+
     private suspend fun processAllUpserts(userRef: DocumentReference, userId: String) {
         val ldb = localDb ?: return
         syncInventory(ldb, userRef, userId)
         syncSalesAndExpenses(ldb, userRef)
         syncBusinessContactsAndLogs(ldb, userRef)
         syncLoansSystem(ldb, userRef)
-        syncHotelSystem(ldb, userRef)
+        syncHotelSystem(ldb, userRef, userId)
+        syncAccounts(ldb, userRef)
     }
 
     private suspend fun syncInventory(ldb: AppDatabase, userRef: DocumentReference, userId: String) {
@@ -205,21 +246,25 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
             // a recoger).
             var pendingPhoto = false
             if (!p.photoPath.isNullOrEmpty() && p.photoUrl.isNullOrEmpty()) {
-                try {
-                    val file = File(p.photoPath)
-                    if (file.exists()) {
-                        val path = "users/$userId/products/${p.id}.jpg"
-                        val downloadUrl = SupabaseManager.uploadImage("naxor-imagenes-usuarios", path, file)
-                        if (downloadUrl != null) {
-                            p.photoUrl = downloadUrl
-                            ldb.productDao().update(p)
-                        } else {
-                            pendingPhoto = true
+                if (BillingManager.hasCloudSpaceAvailable(applicationContext)) {
+                    try {
+                        val file = File(p.photoPath)
+                        if (file.exists()) {
+                            val path = "users/$userId/products/${p.id}.jpg"
+                            val downloadUrl = SupabaseManager.uploadImage("naxor-imagenes-usuarios", path, file)
+                            if (downloadUrl != null) {
+                                p.photoUrl = downloadUrl
+                                ldb.productDao().update(p)
+                            } else {
+                                pendingPhoto = true
+                            }
                         }
+                    } catch (e: Exception) {
+                        Log.e("SyncWorker", "Fallo al subir la foto del producto ${p.id}: ${e.message}")
+                        pendingPhoto = true
                     }
-                } catch (e: Exception) {
-                    Log.e("SyncWorker", "Fallo al subir la foto del producto ${p.id}: ${e.message}")
-                    pendingPhoto = true
+                } else {
+                    Log.w("SyncWorker", "Límite de almacenamiento en la nube alcanzado para ${p.id}; la foto se conserva localmente en el dispositivo.")
                 }
             }
             userRef.collection("inventory").document(p.id).set(p, SetOptions.merge()).await()
@@ -298,6 +343,7 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
             ldb.loanDao().markInstallmentSynced(it.id)
         }
         ldb.loanDao().getUnsyncedLoanExpenses().forEach {
+            userRef.collection("loan_expenses").document(it.id).set(it, SetOptions.merge()).await()
             userRef.collection("loan_expenses_system").document(it.id).set(it, SetOptions.merge()).await()
             ldb.loanDao().markLoanExpenseSynced(it.id)
         }
@@ -316,10 +362,46 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
         }
     }
 
-    private suspend fun syncHotelSystem(ldb: AppDatabase, userRef: DocumentReference) {
-        ldb.hotelDao().getUnsyncedRooms().forEach {
-            userRef.collection("hotel_rooms").document(it.id).set(it, SetOptions.merge()).await()
-            ldb.hotelDao().markRoomSynced(it.id)
+    private suspend fun syncHotelSystem(ldb: AppDatabase, userRef: DocumentReference, userId: String) {
+        val uploadedByPath = ldb.hotelDao().getAllRoomsOnce()
+            .filter { !it.photoPath.isNullOrEmpty() && !it.photoUrl.isNullOrEmpty() }
+            .associate { it.photoPath!! to it.photoUrl!! }
+            .toMutableMap()
+
+        ldb.hotelDao().getUnsyncedRooms().forEach { room ->
+            var pendingPhoto = false
+            var roomToSync = room
+            val localPath = room.photoPath?.takeIf { it.isNotBlank() }
+            if (localPath != null && room.photoUrl.isNullOrEmpty()) {
+                val cachedUrl = uploadedByPath[localPath]
+                if (!cachedUrl.isNullOrEmpty()) {
+                    roomToSync = room.copy(photoUrl = cachedUrl)
+                    ldb.hotelDao().updateRoom(roomToSync)
+                } else if (BillingManager.hasCloudSpaceAvailable(applicationContext)) {
+                    try {
+                        val file = File(localPath)
+                        if (file.exists()) {
+                            val storagePath = "users/$userId/hotel_rooms/${room.id}.jpg"
+                            val downloadUrl = SupabaseManager.uploadImage("naxor-imagenes-usuarios", storagePath, file)
+                            if (!downloadUrl.isNullOrEmpty()) {
+                                uploadedByPath[localPath] = downloadUrl
+                                roomToSync = room.copy(photoUrl = downloadUrl)
+                                ldb.hotelDao().updateRoom(roomToSync)
+                            } else {
+                                pendingPhoto = true
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("SyncWorker", "Fallo al subir foto de habitación ${room.id}: ${e.message}")
+                        pendingPhoto = true
+                    }
+                }
+            }
+            val finalRoom = if (pendingPhoto) roomToSync else roomToSync.copy(isSynced = true)
+            userRef.collection("hotel_rooms").document(finalRoom.id).set(finalRoom, SetOptions.merge()).await()
+            if (!pendingPhoto) {
+                ldb.hotelDao().markRoomSynced(finalRoom.id)
+            }
         }
         ldb.hotelDao().getUnsyncedBookings().forEach {
             userRef.collection("hotel_bookings").document(it.id).set(it, SetOptions.merge()).await()
@@ -338,7 +420,7 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters) :
             ldb.hotelDao().markMaintenanceSynced(it.id)
         }
         ldb.hotelDao().getUnsyncedLayouts().forEach {
-            userRef.collection("hotel_room_layouts").document(it.id).set(it, SetOptions.merge()).await()
+            userRef.collection("hotel_layouts").document(it.id).set(it, SetOptions.merge()).await()
             ldb.hotelDao().markLayoutSynced(it.id)
         }
         ldb.hotelToolDao().getUnsyncedTools().forEach {

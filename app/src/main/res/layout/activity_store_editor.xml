@@ -103,7 +103,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:scaleType="centerCrop"
-                    android:src="@drawable/gomezmart_icon" />
+                    android:src="@drawable/logo_sistema_productos" />
             </com.google.android.material.card.MaterialCardView>
 
             <!-- INFORMACIÓN -->
