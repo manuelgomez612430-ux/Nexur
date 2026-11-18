@@ -20,6 +20,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Base64
 import android.util.Log
 import android.util.TypedValue
 import android.graphics.drawable.GradientDrawable
@@ -27,6 +28,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -1543,6 +1545,79 @@ class StoreProfileActivity : BaseActivity() {
         container.layoutParams = params
     }
 
+    private fun loadHeaderBackgroundImage(source: String?) {
+        val raw = source.orEmpty().trim()
+        val localBgFile = File(filesDir, "header_bg_live.jpg")
+
+        val rawBase64 = when {
+            raw.startsWith("data:image/") && raw.contains(",") -> raw.substringAfter(",")
+            raw.length > 500 && !raw.startsWith("http") && !raw.startsWith("/") && !raw.startsWith("content:") && !raw.startsWith("file:") -> raw
+            else -> null
+        }
+
+        try {
+            when {
+                rawBase64 != null -> {
+                    val bytes = Base64.decode(rawBase64, Base64.DEFAULT)
+                    Glide.with(this)
+                        .asBitmap()
+                        .load(bytes)
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .skipMemoryCache(true)
+                        .centerCrop()
+                        .into(storeProfileBinding.ivHeaderCustomBg)
+                }
+                raw.startsWith("http://") || raw.startsWith("https://") -> {
+                    Glide.with(this)
+                        .load(raw)
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .centerCrop()
+                        .into(storeProfileBinding.ivHeaderCustomBg)
+                }
+                raw.startsWith("content://") || raw.startsWith("file://") -> {
+                    Glide.with(this)
+                        .load(Uri.parse(raw))
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .skipMemoryCache(true)
+                        .centerCrop()
+                        .into(storeProfileBinding.ivHeaderCustomBg)
+                }
+                raw.isNotEmpty() && File(raw).exists() -> {
+                    Glide.with(this)
+                        .load(File(raw))
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .skipMemoryCache(true)
+                        .centerCrop()
+                        .into(storeProfileBinding.ivHeaderCustomBg)
+                }
+                localBgFile.exists() -> {
+                    Glide.with(this)
+                        .load(localBgFile)
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .skipMemoryCache(true)
+                        .centerCrop()
+                        .into(storeProfileBinding.ivHeaderCustomBg)
+                }
+                else -> {
+                    storeProfileBinding.ivHeaderCustomBg.setImageDrawable(null)
+                    storeProfileBinding.ivHeaderCustomBg.visibility = View.GONE
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("StoreProfile", "Error al cargar imagen de cabecera: ${e.message}")
+            if (localBgFile.exists()) {
+                try {
+                    Glide.with(this)
+                        .load(localBgFile)
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .skipMemoryCache(true)
+                        .centerCrop()
+                        .into(storeProfileBinding.ivHeaderCustomBg)
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
     private fun applyHeaderBackgroundUI(
         bgType: String?,
         bgValue: String?,
@@ -1577,20 +1652,14 @@ class StoreProfileActivity : BaseActivity() {
             "IMAGE" -> {
                 storeProfileBinding.ivHeaderCustomBg.visibility = View.VISIBLE
                 storeProfileBinding.viewHeaderBgOverlay.visibility = View.VISIBLE
-                storeProfileBinding.cardStoreHeaderBox.setCardBackgroundColor(Color.parseColor("#1E293B"))
+                storeProfileBinding.cardStoreHeaderBox.setCardBackgroundColor(Color.TRANSPARENT)
                 storeProfileBinding.cardStoreHeaderBox.cardElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 3f, resources.displayMetrics)
 
                 val alpha = (overlayAlpha ?: 0.45).toFloat().coerceIn(0.1f, 0.9f)
                 storeProfileBinding.viewHeaderBgOverlay.alpha = alpha
                 storeProfileBinding.viewHeaderBgOverlay.setBackgroundColor(Color.BLACK)
 
-                if (value.isNotEmpty()) {
-                    Glide.with(this)
-                        .load(value)
-                        .apply(GlideHelper.getOptions(this))
-                        .centerCrop()
-                        .into(storeProfileBinding.ivHeaderCustomBg)
-                }
+                loadHeaderBackgroundImage(value)
             }
             else -> {
                 storeProfileBinding.ivHeaderCustomBg.visibility = View.GONE
@@ -1652,19 +1721,26 @@ class StoreProfileActivity : BaseActivity() {
     )
 
     private fun showCustomHeaderBackgroundDialog() {
-        showLiveHeaderBackgroundStudio("GRADIENTS")
+        showLiveHeaderBackgroundStudio("AUTO")
     }
 
-    private fun showLiveHeaderBackgroundStudio(startCategory: String = "GRADIENTS") {
+    private fun showLiveHeaderBackgroundStudio(startCategory: String = "AUTO") {
         if (isFinishing || isDestroyed || !isOwner) return
 
-        storeProfileBinding.nsvStoreProfile.smoothScrollTo(0, 0)
+        fun scrollToFocusCard() {
+            storeProfileBinding.nsvStoreProfile.post {
+                val targetY = (storeProfileBinding.cardStoreHeaderBox.top - (14 * resources.displayMetrics.density)).toInt()
+                storeProfileBinding.nsvStoreProfile.smoothScrollTo(0, Math.max(0, targetY))
+            }
+        }
+        scrollToFocusCard()
 
         val dialog = BottomSheetDialog(this)
         val sheetView = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_header_background, null)
         dialog.setContentView(sheetView)
 
-        dialog.window?.setDimAmount(0.12f)
+        dialog.window?.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        dialog.window?.setDimAmount(0f)
 
         val initialType = headerBgType
         val initialValue = headerBgValue
@@ -1673,10 +1749,11 @@ class StoreProfileActivity : BaseActivity() {
         var isSaved = false
 
         var currentSelectedCategory = when {
-            startCategory == "COLORS" || (initialType == "COLOR" && startCategory == "AUTO") -> "COLOR"
-            startCategory == "PHOTO" || (initialType == "IMAGE" && startCategory == "AUTO") -> "PHOTO"
-            startCategory == "NONE" || (initialType == "NONE" && startCategory == "AUTO") -> "NONE"
-            else -> "GRADIENT"
+            startCategory == "COLORS" || (startCategory == "AUTO" && initialType == "COLOR") -> "COLOR"
+            startCategory == "PHOTO" || (startCategory == "AUTO" && initialType == "IMAGE") -> "PHOTO"
+            startCategory == "NONE" || (startCategory == "AUTO" && initialType == "NONE") -> "NONE"
+            startCategory == "GRADIENTS" || (startCategory == "AUTO" && initialType == "GRADIENT") -> "GRADIENT"
+            else -> if (initialType == "COLOR") "COLOR" else if (initialType == "IMAGE") "PHOTO" else if (initialType == "NONE") "NONE" else "GRADIENT"
         }
 
         var activeOverlay = headerBgOverlay
@@ -1741,6 +1818,11 @@ class StoreProfileActivity : BaseActivity() {
         val btnDiscard = sheetView.findViewById<View>(R.id.btnDiscardHeaderBg)
         val btnSave = sheetView.findViewById<View>(R.id.btnSaveHeaderBg)
 
+        val layoutCollapsible = sheetView.findViewById<View>(R.id.layoutCollapsibleDetails)
+        val btnToggleCompact = sheetView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnToggleCompactSheet)
+        val btnScrollBg = sheetView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnScrollBackgroundView)
+        var isCompactMode = false
+
         fun updateOverlayButtonsUI() {
             val selectedStroke = (2 * resources.displayMetrics.density).toInt()
             val normalStroke = (1 * resources.displayMetrics.density).toInt()
@@ -1767,10 +1849,22 @@ class StoreProfileActivity : BaseActivity() {
 
         fun applyCurrentSelectionLive() {
             if (currentSelectedCategory == "PHOTO") {
-                val photoUrl = if (headerBgType == "IMAGE") headerBgValue else initialValue
-                applyHeaderBackgroundUI("IMAGE", photoUrl, activeOverlay, "LIGHT")
-                tvName.text = "Foto de Fondo Personalizada 📷"
-                tvCounter.text = "Oscurecimiento actual: ${(activeOverlay * 100).toInt()}%"
+                val localBg = File(filesDir, "header_bg_live.jpg")
+                val photoUrl = when {
+                    headerBgType == "IMAGE" && headerBgValue.isNotEmpty() -> headerBgValue
+                    localBg.exists() -> localBg.absolutePath
+                    initialType == "IMAGE" && initialValue.isNotEmpty() -> initialValue
+                    else -> ""
+                }
+
+                if (photoUrl.isNotEmpty()) {
+                    applyHeaderBackgroundUI("IMAGE", photoUrl, activeOverlay, "LIGHT")
+                    tvName.text = "Foto de Fondo Personalizada 📷"
+                    tvCounter.text = "Oscurecimiento actual: ${(activeOverlay * 100).toInt()}%"
+                } else {
+                    tvName.text = "Sin foto de fondo 📷"
+                    tvCounter.text = "Toca abajo para elegir o tomar una foto"
+                }
                 return
             }
 
@@ -1863,49 +1957,111 @@ class StoreProfileActivity : BaseActivity() {
             }
         }
 
-        fun switchCategory(category: String) {
-            currentSelectedCategory = category
-            when (category) {
-                "GRADIENT" -> {
-                    activeOptionsList = gradientOptions
-                    activeIndex = 0
-                    cardStepper.visibility = View.VISIBLE
-                    hsvThumbnails.visibility = View.VISIBLE
-                    layoutPhotoControls.visibility = View.GONE
-                    populateThumbnails()
-                    applyCurrentSelectionLive()
-                }
-                "COLOR" -> {
-                    activeOptionsList = colorOptions
-                    activeIndex = 0
-                    cardStepper.visibility = View.VISIBLE
-                    hsvThumbnails.visibility = View.VISIBLE
-                    layoutPhotoControls.visibility = View.GONE
-                    populateThumbnails()
-                    applyCurrentSelectionLive()
-                }
-                "PHOTO" -> {
-                    cardStepper.visibility = View.VISIBLE
-                    hsvThumbnails.visibility = View.GONE
-                    layoutPhotoControls.visibility = View.VISIBLE
-                    updateOverlayButtonsUI()
-                    applyCurrentSelectionLive()
-                }
-                "NONE" -> {
-                    cardStepper.visibility = View.VISIBLE
-                    hsvThumbnails.visibility = View.GONE
-                    layoutPhotoControls.visibility = View.GONE
-                    applyCurrentSelectionLive()
+        fun updateStepperHeaderUI() {
+            if (activeOptionsList.isEmpty()) return
+            val option = activeOptionsList[activeIndex.coerceIn(0, activeOptionsList.size - 1)]
+            if (option.value == "HEX_CUSTOM") {
+                tvName.text = "Color Hex Personalizado ✏️"
+                tvCounter.text = "Toca para escribir tu código #HEX"
+            } else {
+                tvName.text = option.name
+                tvCounter.text = "Opción ${activeIndex + 1} de ${activeOptionsList.size} • En vivo"
+            }
+            for (i in 0 until layoutThumbnails.childCount) {
+                val card = layoutThumbnails.getChildAt(i) as? com.google.android.material.card.MaterialCardView ?: continue
+                if (i == activeIndex) {
+                    card.strokeColor = ContextCompat.getColor(this, R.color.purple_600)
+                    card.strokeWidth = (2.5f * resources.displayMetrics.density).toInt()
+                    card.cardElevation = 4f
+                } else {
+                    card.strokeColor = Color.parseColor("#E2E8F0")
+                    card.strokeWidth = (1f * resources.displayMetrics.density).toInt()
+                    card.cardElevation = 0f
                 }
             }
         }
 
-        chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
-            when {
-                checkedIds.contains(R.id.chipCategoryGradients) -> switchCategory("GRADIENT")
-                checkedIds.contains(R.id.chipCategoryColors) -> switchCategory("COLOR")
-                checkedIds.contains(R.id.chipCategoryPhoto) -> switchCategory("PHOTO")
-                checkedIds.contains(R.id.chipCategoryDefault) -> switchCategory("NONE")
+        fun switchCategory(category: String, isInitialSetup: Boolean = false) {
+            currentSelectedCategory = category
+            when (category) {
+                "GRADIENT" -> {
+                    activeOptionsList = gradientOptions
+                    if (isInitialSetup && initialType == "GRADIENT") {
+                        val found = gradientOptions.indexOfFirst { it.value == initialValue }
+                        activeIndex = if (found >= 0) found else 0
+                    } else if (!isInitialSetup) {
+                        activeIndex = 0
+                    }
+                    cardStepper.visibility = View.VISIBLE
+                    btnPrev.visibility = View.VISIBLE
+                    btnNext.visibility = View.VISIBLE
+                    hsvThumbnails.visibility = View.VISIBLE
+                    layoutPhotoControls.visibility = View.GONE
+                    populateThumbnails()
+                    if (!isInitialSetup) {
+                        applyCurrentSelectionLive()
+                    } else {
+                        updateStepperHeaderUI()
+                    }
+                }
+                "COLOR" -> {
+                    activeOptionsList = colorOptions
+                    if (isInitialSetup && initialType == "COLOR") {
+                        val found = colorOptions.indexOfFirst { it.value.equals(initialValue, ignoreCase = true) }
+                        activeIndex = if (found >= 0) found else 0
+                    } else if (!isInitialSetup) {
+                        activeIndex = 0
+                    }
+                    cardStepper.visibility = View.VISIBLE
+                    btnPrev.visibility = View.VISIBLE
+                    btnNext.visibility = View.VISIBLE
+                    hsvThumbnails.visibility = View.VISIBLE
+                    layoutPhotoControls.visibility = View.GONE
+                    populateThumbnails()
+                    if (!isInitialSetup) {
+                        applyCurrentSelectionLive()
+                    } else {
+                        updateStepperHeaderUI()
+                    }
+                }
+                "PHOTO" -> {
+                    cardStepper.visibility = View.VISIBLE
+                    btnPrev.visibility = View.GONE
+                    btnNext.visibility = View.GONE
+                    hsvThumbnails.visibility = View.GONE
+                    layoutPhotoControls.visibility = View.VISIBLE
+                    updateOverlayButtonsUI()
+                    if (!isInitialSetup) {
+                        applyCurrentSelectionLive()
+                    } else {
+                        val localBg = File(filesDir, "header_bg_live.jpg")
+                        val photoUrl = when {
+                            headerBgType == "IMAGE" && headerBgValue.isNotEmpty() -> headerBgValue
+                            localBg.exists() -> localBg.absolutePath
+                            else -> ""
+                        }
+                        if (photoUrl.isNotEmpty()) {
+                            tvName.text = "Foto de Fondo Personalizada 📷"
+                            tvCounter.text = "Oscurecimiento actual: ${(activeOverlay * 100).toInt()}%"
+                        } else {
+                            tvName.text = "Sin foto de fondo 📷"
+                            tvCounter.text = "Toca abajo para elegir o tomar una foto"
+                        }
+                    }
+                }
+                "NONE" -> {
+                    cardStepper.visibility = View.VISIBLE
+                    btnPrev.visibility = View.GONE
+                    btnNext.visibility = View.GONE
+                    hsvThumbnails.visibility = View.GONE
+                    layoutPhotoControls.visibility = View.GONE
+                    if (!isInitialSetup) {
+                        applyCurrentSelectionLive()
+                    } else {
+                        tvName.text = "Fondo Transparente / Predeterminado 🔄"
+                        tvCounter.text = "Estilo limpio original de la tienda"
+                    }
+                }
             }
         }
 
@@ -1920,6 +2076,29 @@ class StoreProfileActivity : BaseActivity() {
             if (activeOptionsList.isNotEmpty()) {
                 activeIndex = (activeIndex + 1) % activeOptionsList.size
                 applyCurrentSelectionLive()
+            }
+        }
+
+        btnToggleCompact.setOnClickListener {
+            isCompactMode = !isCompactMode
+            if (isCompactMode) {
+                layoutCollapsible.visibility = View.GONE
+                btnToggleCompact.text = "🔼 Opciones"
+                storeProfileBinding.nsvStoreProfile.smoothScrollTo(0, 0)
+            } else {
+                layoutCollapsible.visibility = View.VISIBLE
+                btnToggleCompact.text = "👁️ Ver fondo"
+                scrollToFocusCard()
+            }
+        }
+
+        btnScrollBg.setOnClickListener {
+            val targetY = (storeProfileBinding.cardStoreHeaderBox.top - (14 * resources.displayMetrics.density)).toInt()
+            val currentScroll = storeProfileBinding.nsvStoreProfile.scrollY
+            if (currentScroll > targetY / 2) {
+                storeProfileBinding.nsvStoreProfile.smoothScrollTo(0, 0)
+            } else {
+                storeProfileBinding.nsvStoreProfile.smoothScrollTo(0, Math.max(0, targetY))
             }
         }
 
@@ -1956,6 +2135,10 @@ class StoreProfileActivity : BaseActivity() {
                 }
                 "PHOTO" -> {
                     headerBgType = "IMAGE"
+                    val localBg = File(filesDir, "header_bg_live.jpg")
+                    if (headerBgValue.isEmpty() && localBg.exists()) {
+                        headerBgValue = localBg.absolutePath
+                    }
                     headerBgOverlay = activeOverlay
                     headerTextTheme = "LIGHT"
                 }
@@ -1987,13 +2170,25 @@ class StoreProfileActivity : BaseActivity() {
             }
         }
 
+        var isInitializingChips = true
         when (currentSelectedCategory) {
             "COLOR" -> chipColors.isChecked = true
             "PHOTO" -> chipPhoto.isChecked = true
             "NONE" -> chipDefault.isChecked = true
             else -> chipGradients.isChecked = true
         }
-        switchCategory(currentSelectedCategory)
+        switchCategory(currentSelectedCategory, isInitialSetup = true)
+        isInitializingChips = false
+
+        chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
+            if (isInitializingChips) return@setOnCheckedStateChangeListener
+            when {
+                checkedIds.contains(R.id.chipCategoryGradients) -> switchCategory("GRADIENT")
+                checkedIds.contains(R.id.chipCategoryColors) -> switchCategory("COLOR")
+                checkedIds.contains(R.id.chipCategoryPhoto) -> switchCategory("PHOTO")
+                checkedIds.contains(R.id.chipCategoryDefault) -> switchCategory("NONE")
+            }
+        }
 
         dialog.show()
     }
@@ -2104,7 +2299,16 @@ class StoreProfileActivity : BaseActivity() {
             storeProfileBinding.layoutCoverPlaceholder.visibility = View.GONE
             Glide.with(this).load(uri).centerCrop().into(storeProfileBinding.ivStoreCover)
         } else if (type == "HEADER_BG") {
-            Toast.makeText(this, "Subiendo foto de fondo... ⏳", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Aplicando foto de fondo... ✨", Toast.LENGTH_SHORT).show()
+            headerBgType = "IMAGE"
+            headerBgOverlay = 0.45
+            headerTextTheme = "LIGHT"
+            storeProfileBinding.ivHeaderCustomBg.visibility = View.VISIBLE
+            storeProfileBinding.viewHeaderBgOverlay.visibility = View.VISIBLE
+            storeProfileBinding.viewHeaderBgOverlay.alpha = 0.45f
+            storeProfileBinding.viewHeaderBgOverlay.setBackgroundColor(Color.BLACK)
+            loadHeaderBackgroundImage(uri.toString())
+            applyHeaderBackgroundUI("IMAGE", uri.toString(), 0.45, "LIGHT")
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
@@ -2141,13 +2345,25 @@ class StoreProfileActivity : BaseActivity() {
                                 "header_text_theme" to "LIGHT"
                             )
                         )
-                        Toast.makeText(this@StoreProfileActivity, "Fondo de cabecera actualizado ✨", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@StoreProfileActivity, "Fondo de cabecera guardado ✨", Toast.LENGTH_SHORT).show()
                     } else {
                         val field = if (type == "LOGO") "business_logo_url" else "business_cover_url"
                         saveStoreFields(mapOf(field to uploadedUrl))
                     }
                 } else {
-                    Toast.makeText(this@StoreProfileActivity, "No se pudo subir la imagen", Toast.LENGTH_SHORT).show()
+                    if (type == "HEADER_BG") {
+                        val localBg = File(filesDir, "header_bg_live.jpg")
+                        if (localBg.exists()) {
+                            headerBgType = "IMAGE"
+                            headerBgValue = localBg.absolutePath
+                            applyHeaderBackgroundUI("IMAGE", localBg.absolutePath, 0.45, "LIGHT")
+                            Toast.makeText(this@StoreProfileActivity, "Fondo de cabecera aplicado localmente ✨", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this@StoreProfileActivity, "No se pudo subir la imagen", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Toast.makeText(this@StoreProfileActivity, "No se pudo subir la imagen", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }

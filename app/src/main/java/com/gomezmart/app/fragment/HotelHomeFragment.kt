@@ -43,7 +43,6 @@ class HotelHomeFragment : Fragment() {
         get() = context?.applicationContext?.let { AppDatabase.getDatabase(it) }
     private val hotelRegistrations = mutableListOf<ListenerRegistration>()
     
-    private lateinit var toolsAdapter: HotelToolsGridAdapter
     private var hasNewBooking = false
     private var hasNewCollabRequest = false
     private var hasNewMessage = false
@@ -59,7 +58,7 @@ class HotelHomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupHeader()
         setupPlanProButton()
-        setupRecyclerView()
+        setupBentoActions()
         updateDashboard()
         updateWelcomeMessage()
     }
@@ -83,115 +82,152 @@ class HotelHomeFragment : Fragment() {
         }
     }
 
-    private fun setupRecyclerView() {
-        val ctx = context ?: return
-        toolsAdapter = HotelToolsGridAdapter()
-        binding.rvHotelToolsGrid.layoutManager = GridLayoutManager(ctx, 3)
-        binding.rvHotelToolsGrid.adapter = toolsAdapter
+    private fun setupBentoActions() {
+        val b = _binding ?: return
+
+        // Hero: Subir negocio al mercado / Mi página web
+        b.cardMarketHero.setOnClickListener { handleMarketClick() }
+
+        // Bento Asymmetric: Reservas, Averías, Historial
+        b.cardToolBookings.setOnClickListener {
+            startToolActivity(Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_hotel.HotelBookingsActivity"))
+        }
+        b.cardToolMaintenance.setOnClickListener {
+            startToolActivity(Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_hotel.HotelMaintenanceActivity"))
+        }
+        b.cardToolGuests.setOnClickListener {
+            startToolActivity(Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_hotel.HotelGuestHistoryActivity"))
+        }
+
+        // Acciones Adicionales: Cuentas, Herramientas, Colaboradores, Mensajes
+        b.cardToolPayments.setOnClickListener {
+            startToolActivity(Intent(requireContext(), BusinessDebtsActivity::class.java))
+        }
+        b.cardToolInventory.setOnClickListener {
+            startToolActivity(Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_hotel.HotelToolsActivity"))
+        }
+        b.cardToolTeam.setOnClickListener {
+            startToolActivity(Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_hotel.HotelManageTeamActivity"))
+        }
+        b.cardToolMessages.setOnClickListener {
+            startToolActivity(Intent(requireContext(), MailboxActivity::class.java))
+        }
+
         renderTools()
     }
 
-    private fun renderTools() {
-        val ctx = context ?: return
-        if (_binding == null || !isAdded) return
-        val bizPrefs = ctx.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
-        val collabPrefs = ctx.getSharedPreferences("CollabPermissions", Context.MODE_PRIVATE)
-        val isCollab = bizPrefs.getBoolean("is_collaborator_mode", false)
-
-        val allTools = mutableListOf<HotelTool>()
-
-        // 1. Historial
-        if (!isCollab || collabPrefs.getBoolean("can_view_history", true)) {
-            allTools.add(HotelTool("guests", "Historial", "📋", { startToolActivity(Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_hotel.HotelGuestHistoryActivity")) }))
-        }
-
-        // 2. Reservas
-        if (!isCollab || collabPrefs.getBoolean("can_manage_bookings", true)) {
-            allTools.add(HotelTool("bookings", "Reservas", "🛎️", { startToolActivity(Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_hotel.HotelBookingsActivity")) }, hasNewBooking))
-        }
-
-        // 3. Averías
-        if (!isCollab || collabPrefs.getBoolean("can_manage_failures", true)) {
-            allTools.add(HotelTool("maintenance", "Averías", "🛠️", { startToolActivity(Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_hotel.HotelMaintenanceActivity")) }))
-        }
-
-        // 4. Pagos
-        if (!isCollab || collabPrefs.getBoolean("can_manage_debts", false)) {
-            allTools.add(HotelTool("payments", "Cuentas por pagar", "💰", { startToolActivity(Intent(requireContext(), BusinessDebtsActivity::class.java)) }))
-        }
-
-        // 5. Herramientas
-        if (!isCollab || collabPrefs.getBoolean("can_manage_tools", true)) {
-            allTools.add(HotelTool("inventory", "Herramientas", "🧰", { startToolActivity(Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_hotel.HotelToolsActivity")) }))
-        }
-
-        // 6. Colaboradores
-        if (!isCollab || collabPrefs.getBoolean("can_manage_team", false)) {
-            allTools.add(HotelTool("team", "Colaboradores", "👥", { startToolActivity(Intent().setClassName(requireContext().packageName, "com.gomezmart.feature_hotel.HotelManageTeamActivity")) }, hasNewCollabRequest))
-        }
-
-        // 7. Mensajes
-        allTools.add(HotelTool("messages", "Mensajes", "📬", {
-            startToolActivity(Intent(requireContext(), MailboxActivity::class.java))
-        }, hasNewMessage))
-
-        // 8. Subir negocio al mercado / Mi página online
-        if (!isCollab) {
+    private fun handleMarketClick() {
+        val baseActivity = activity as? BaseActivity
+        if (baseActivity?.requireLoginForGuest("publicar o editar tu negocio en el Mercado en Línea") != true) {
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+            val openLivePage = {
+                startToolActivity(Intent(requireContext(), StoreProfileActivity::class.java).apply {
+                    putExtra("STORE_ID", uid)
+                    putExtra("IS_OWNER", true)
+                    putExtra("FORCE_RUBRO", "HOTEL")
+                })
+            }
+            val ctx = context ?: return
+            val bizPrefs = ctx.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
             val isHotelOnline = bizPrefs.getBoolean("HOTEL_is_online", bizPrefs.getBoolean("is_online_store", false))
             val savedHotelName = bizPrefs.getString("HOTEL_name", "") ?: ""
             val hasStartedWorkingOnPage = savedHotelName.isNotBlank() && !savedHotelName.equals("Mi Negocio", ignoreCase = true)
             val hideIntroDialog = bizPrefs.getBoolean("HOTEL_hide_create_page_intro", false) || hasStartedWorkingOnPage
-            val marketTitle = if (isHotelOnline) "Mi página" else "Subir al mercado"
-            allTools.add(HotelTool("market", marketTitle, "🏪", {
-                val baseActivity = activity as? BaseActivity
-                if (baseActivity?.requireLoginForGuest("publicar o editar tu negocio en el Mercado en Línea") != true) {
-                    val uid = FirebaseAuth.getInstance().currentUser?.uid
-                    val openLivePage = {
-                        startToolActivity(Intent(requireContext(), StoreProfileActivity::class.java).apply {
-                            putExtra("STORE_ID", uid)
-                            putExtra("IS_OWNER", true)
-                            putExtra("FORCE_RUBRO", "HOTEL")
-                        })
-                    }
-                    if (isHotelOnline || hideIntroDialog) {
-                        openLivePage()
-                    } else {
-                        val density = resources.displayMetrics.density
-                        val dialogContainer = android.widget.LinearLayout(requireContext()).apply {
-                            orientation = android.widget.LinearLayout.VERTICAL
-                            val hPad = (24 * density).toInt()
-                            val topPad = (12 * density).toInt()
-                            setPadding(hPad, topPad, hPad, 0)
-                        }
-                        val cbDontShowAgain = android.widget.CheckBox(requireContext()).apply {
-                            text = "No volver a mostrar otra vez"
-                            textSize = 13.5f
-                        }
-                        dialogContainer.addView(cbDontShowAgain)
 
-                        androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                            .setTitle("Crear página de negocio")
-                            .setMessage("Antes de subir al mercado tu negocio, vamos a crear tu página.")
-                            .setView(dialogContainer)
-                            .setNegativeButton("Salir") { _, _ ->
-                                if (cbDontShowAgain.isChecked) {
-                                    bizPrefs.edit().putBoolean("HOTEL_hide_create_page_intro", true).apply()
-                                    renderTools()
-                                }
-                            }
-                            .setPositiveButton("Crear mi página") { _, _ ->
-                                if (cbDontShowAgain.isChecked) {
-                                    bizPrefs.edit().putBoolean("HOTEL_hide_create_page_intro", true).apply()
-                                }
-                                openLivePage()
-                            }
-                            .show()
-                    }
+            if (isHotelOnline || hideIntroDialog) {
+                openLivePage()
+            } else {
+                val density = resources.displayMetrics.density
+                val dialogContainer = android.widget.LinearLayout(requireContext()).apply {
+                    orientation = android.widget.LinearLayout.VERTICAL
+                    val hPad = (24 * density).toInt()
+                    val topPad = (12 * density).toInt()
+                    setPadding(hPad, topPad, hPad, 0)
                 }
-            }))
+                val cbDontShowAgain = android.widget.CheckBox(requireContext()).apply {
+                    text = "No volver a mostrar otra vez"
+                    textSize = 13.5f
+                }
+                dialogContainer.addView(cbDontShowAgain)
+
+                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle("Crear página de negocio")
+                    .setMessage("Antes de subir al mercado tu negocio, vamos a crear tu página.")
+                    .setView(dialogContainer)
+                    .setNegativeButton("Salir") { _, _ ->
+                        if (cbDontShowAgain.isChecked) {
+                            bizPrefs.edit().putBoolean("HOTEL_hide_create_page_intro", true).apply()
+                            renderTools()
+                        }
+                    }
+                    .setPositiveButton("Crear mi página") { _, _ ->
+                        if (cbDontShowAgain.isChecked) {
+                            bizPrefs.edit().putBoolean("HOTEL_hide_create_page_intro", true).apply()
+                        }
+                        openLivePage()
+                    }
+                    .show()
+            }
+        }
+    }
+
+    private fun renderTools() {
+        val ctx = context ?: return
+        val b = _binding ?: return
+        if (!isAdded) return
+        val bizPrefs = ctx.getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+        val collabPrefs = ctx.getSharedPreferences("CollabPermissions", Context.MODE_PRIVATE)
+        val isCollab = bizPrefs.getBoolean("is_collaborator_mode", false)
+
+        // Hero: Mi página / Subir al mercado
+        if (isCollab) {
+            b.cardMarketHero.visibility = View.GONE
+        } else {
+            b.cardMarketHero.visibility = View.VISIBLE
+            val isHotelOnline = bizPrefs.getBoolean("HOTEL_is_online", bizPrefs.getBoolean("is_online_store", false))
+            if (isHotelOnline) {
+                b.tvMarketHeroTag.text = "🌐 MI PÁGINA VIRTUAL"
+                b.tvMarketHeroTitle.text = "Mi Página & Catálogo Online"
+                b.tvMarketHeroSubtitle.text = "Gestiona tu vitrina virtual y reservas"
+                b.tvMarketHeroAction.text = "Ver en vivo ➔"
+            } else {
+                b.tvMarketHeroTag.text = "🏪 MERCADO EN LÍNEA"
+                b.tvMarketHeroTitle.text = "Subir negocio al mercado"
+                b.tvMarketHeroSubtitle.text = "Crea tu página web gratis y recibe reservas"
+                b.tvMarketHeroAction.text = "Crear mi página ➔"
+            }
         }
 
-        toolsAdapter.submitList(allTools)
+        // Permisos del Bento principal
+        val canBookings = !isCollab || collabPrefs.getBoolean("can_manage_bookings", true)
+        val canFailures = !isCollab || collabPrefs.getBoolean("can_manage_failures", true)
+        val canHistory = !isCollab || collabPrefs.getBoolean("can_view_history", true)
+
+        b.cardToolBookings.visibility = if (canBookings) View.VISIBLE else View.GONE
+        b.cardToolMaintenance.visibility = if (canFailures) View.VISIBLE else View.GONE
+        b.cardToolGuests.visibility = if (canHistory) View.VISIBLE else View.GONE
+        b.layoutBentoRightCol.visibility = if (canFailures || canHistory) View.VISIBLE else View.GONE
+        b.layoutBentoMain.visibility = if (canBookings || canFailures || canHistory) View.VISIBLE else View.GONE
+
+        // Permisos de herramientas adicionales
+        val canPayments = !isCollab || collabPrefs.getBoolean("can_manage_debts", false)
+        val canInventory = !isCollab || collabPrefs.getBoolean("can_manage_tools", true)
+        val canTeam = !isCollab || collabPrefs.getBoolean("can_manage_team", false)
+
+        b.cardToolPayments.visibility = if (canPayments) View.VISIBLE else View.GONE
+        b.cardToolInventory.visibility = if (canInventory) View.VISIBLE else View.GONE
+        b.layoutRowTools1.visibility = if (canPayments || canInventory) View.VISIBLE else View.GONE
+
+        b.cardToolTeam.visibility = if (canTeam) View.VISIBLE else View.GONE
+        b.cardToolMessages.visibility = View.VISIBLE
+        b.layoutRowTools2.visibility = View.VISIBLE
+
+        b.tvExtraToolsTitle.visibility = if (canPayments || canInventory || canTeam) View.VISIBLE else View.GONE
+
+        // Badges en vivo
+        b.badgeBookings.visibility = if (hasNewBooking) View.VISIBLE else View.GONE
+        b.badgeTeam.visibility = if (hasNewCollabRequest) View.VISIBLE else View.GONE
+        b.badgeMessages.visibility = if (hasNewMessage) View.VISIBLE else View.GONE
     }
 
     private fun checkCollaboratorRequests() {
@@ -406,34 +442,6 @@ class HotelHomeFragment : Fragment() {
     }
 
     fun refreshQuickActions() { renderTools() }
-
-    inner class HotelToolsGridAdapter : ListAdapter<HotelTool, HotelToolsGridAdapter.ViewHolder>(ToolDiffCallback) {
-
-        inner class ViewHolder(val b: ItemHotelToolCardBinding) : RecyclerView.ViewHolder(b.root)
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            return ViewHolder(ItemHotelToolCardBinding.inflate(LayoutInflater.from(parent.context), parent, false))
-        }
-
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val tool = getItem(position)
-            with(holder.b) {
-                tvToolName.text = tool.name
-                tvToolEmoji.text = tool.emoji
-                viewToolBadge.visibility = if (tool.hasBadge) View.VISIBLE else View.GONE
-                root.setOnClickListener { tool.action() }
-            }
-        }
-    }
-
-    private object ToolDiffCallback : DiffUtil.ItemCallback<HotelTool>() {
-        override fun areItemsTheSame(oldItem: HotelTool, newItem: HotelTool): Boolean = oldItem.id == newItem.id
-        override fun areContentsTheSame(oldItem: HotelTool, newItem: HotelTool): Boolean =
-            oldItem.id == newItem.id &&
-            oldItem.name == newItem.name &&
-            oldItem.emoji == newItem.emoji &&
-            oldItem.hasBadge == newItem.hasBadge
-    }
 
     override fun onStop() {
         super.onStop()

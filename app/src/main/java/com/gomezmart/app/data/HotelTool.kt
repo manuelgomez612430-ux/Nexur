@@ -5,5 +5,6 @@ data class HotelTool(
     val name: String,
     val emoji: String,
     val action: () -> Unit,
-    val hasBadge: Boolean = false
+    val hasBadge: Boolean = false,
+    val iconResId: Int? = null
 )

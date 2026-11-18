@@ -682,6 +682,10 @@ class AccountSettingsActivity : BaseActivity() {
             val intent = Intent(this, DownloadedModulesActivity::class.java)
             startActivity(intent)
         }
+        binding.btnManageAllModules.setOnClickListener {
+            val intent = Intent(this, DownloadedModulesActivity::class.java)
+            startActivity(intent)
+        }
 
         binding.cardCheckUpdateAccount.setOnClickListener {
             Updater(this).checkAndDownload(autoCheck = false)

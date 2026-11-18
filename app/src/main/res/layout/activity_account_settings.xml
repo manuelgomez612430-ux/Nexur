@@ -597,7 +597,22 @@
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false"
                 tools:listitem="@layout/item_business_profile"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnManageAllModules"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="Gestionar o descargar otros sistemas ☁️"
+                android:textColor="@color/purple_700"
+                app:backgroundTint="@color/purple_50"
+                app:strokeColor="@color/purple_200"
+                app:strokeWidth="1dp"
+                app:cornerRadius="12dp"
+                android:textSize="13sp"
+                android:textStyle="bold" />
 
             <!-- MENSAJE Y BOTÓN CUANDO NO HAY SISTEMAS ACTIVOS -->
             <LinearLayout
