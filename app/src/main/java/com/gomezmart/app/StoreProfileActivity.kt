@@ -1,11 +1,16 @@
 package com.gomezmart.app
 
 import android.Manifest
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
+import android.os.Build
+import android.view.MotionEvent
 import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.LinearInterpolator
 import android.content.ClipData
 import android.app.Dialog
 import android.content.ClipboardManager
@@ -158,12 +163,24 @@ class StoreProfileActivity : BaseActivity() {
     private val paymentMethods = mutableListOf<PaymentMethod>()
     private val extraSections = mutableListOf<StoreSection>()
 
+    // Cinta continua infinita de métodos de pago (Marquee)
+    private var paymentMarqueeAnimator: ValueAnimator? = null
+    private val paymentMarqueeHandler = Handler(Looper.getMainLooper())
+    private var paymentMarqueeSingleWidth = 0
+    private var isUserTouchingPaymentMarquee = false
+    private var isPaymentMarqueeActive = false
+
     private var headerBgType: String = "NONE" // "NONE", "COLOR", "GRADIENT", "IMAGE"
     private var headerBgValue: String = ""
     private var headerBgOverlay: Double = 0.45
     private var headerTextTheme: String = "DARK" // "DARK" or "LIGHT"
 
-    private var currentCropType = "" // "LOGO", "COVER", "SECTION", "HEADER_BG"
+    private var descBgType: String = "NONE" // "NONE", "COLOR", "GRADIENT", "IMAGE"
+    private var descBgValue: String = ""
+    private var descBgOverlay: Double = 0.45
+    private var descTextTheme: String = "DARK" // "DARK" or "LIGHT"
+
+    private var currentCropType = "" // "LOGO", "COVER", "SECTION", "HEADER_BG", "DESC_BG"
     private var currentTargetSectionId: String? = null
     private var cameraImageUri: Uri? = null
 
@@ -176,6 +193,7 @@ class StoreProfileActivity : BaseActivity() {
                 "SECTION" -> uploadMultipleSectionImages(listOf(uriContent))
                 "SECTION_REPLACE" -> replaceSectionImage(uriContent)
                 "HEADER_BG" -> uploadInlineImage(uriContent, "HEADER_BG")
+                "DESC_BG" -> uploadInlineImage(uriContent, "DESC_BG")
             }
         }
     }
@@ -204,6 +222,10 @@ class StoreProfileActivity : BaseActivity() {
 
     private val pickHeaderBgLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let { startCrop(it, "HEADER_BG") }
+    }
+
+    private val pickDescBgLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { startCrop(it, "DESC_BG") }
     }
 
     private val pickSectionImagesLauncher = registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
@@ -298,18 +320,15 @@ class StoreProfileActivity : BaseActivity() {
             }
             billingManager?.startConnection()
             setupOwnerLiveEditorUI()
-        } else {
-            storeProfileBinding.btnPublishStoreUpdate.visibility = View.GONE
+            prePopulateFromLocalCache()
         }
 
         setupReviewsRecyclerView()
         setupRecommendationsRecyclerView()
         setupProductsRecyclerView()
-        setupStoreUpdatesRecyclerView()
         startStoreListener(storeId, forcedRubro)
         startReviewsListener(storeId)
         startFollowersListener(storeId)
-        startUpdatesListener(storeId)
 
         storeProfileBinding.btnSubmitReview.setOnClickListener { 
             if (requireLoginForGuest("publicar un comentario o reseña")) return@setOnClickListener
@@ -405,7 +424,8 @@ class StoreProfileActivity : BaseActivity() {
                     if (sType == "HOTEL") {
                         val number = doc.getString("number") ?: return@mapNotNull null
                         val status = doc.getString("status") ?: "FREE"
-                        if (status == "FREE") availableRooms++
+                        val isAvailable = status != "OCCUPIED" && status != "MAINTENANCE"
+                        if (isAvailable) availableRooms++
                         
                         MarketplaceProduct(
                             doc.id, "Habitación $number", doc.getString("type") ?: "Hospedaje", 
@@ -704,8 +724,127 @@ class StoreProfileActivity : BaseActivity() {
             .show()
     }
 
+    private fun stopPaymentMarquee() {
+        paymentMarqueeAnimator?.cancel()
+        paymentMarqueeAnimator = null
+        paymentMarqueeHandler.removeCallbacksAndMessages(null)
+    }
+
+    private fun startPaymentMarquee() {
+        stopPaymentMarquee()
+        if (!isPaymentMarqueeActive || paymentMarqueeSingleWidth <= 0 || isFinishing || isDestroyed) return
+        val hsv = storeProfileBinding.hsvPaymentMethods
+        val singleWidth = paymentMarqueeSingleWidth
+
+        // Normalizar la posición de scroll actual dentro del conjunto central [singleWidth, singleWidth * 2)
+        val currentScroll = hsv.scrollX
+        val normalizedScroll = singleWidth + (((currentScroll - singleWidth) % singleWidth + singleWidth) % singleWidth)
+        hsv.scrollTo(normalizedScroll, 0)
+
+        val targetScroll = singleWidth * 2
+        val remainingDistance = (targetScroll - normalizedScroll).coerceAtLeast(1)
+
+        // Velocidad constante suave (~30 dp por segundo para una lectura elegante tipo cinta de presentación)
+        val speedDpPerSec = 30f
+        val speedPxPerMs = (speedDpPerSec * resources.displayMetrics.density) / 1000f
+        val durationMs = (remainingDistance / speedPxPerMs).toLong().coerceIn(100L, 60000L)
+
+        val animator = ValueAnimator.ofInt(normalizedScroll, targetScroll).apply {
+            duration = durationMs
+            interpolator = LinearInterpolator()
+            addUpdateListener { anim ->
+                if (isUserTouchingPaymentMarquee || !isPaymentMarqueeActive) return@addUpdateListener
+                val value = anim.animatedValue as Int
+                if (value < targetScroll) {
+                    hsv.scrollTo(value, 0)
+                }
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                private var isCancelled = false
+                override fun onAnimationCancel(animation: Animator) {
+                    isCancelled = true
+                }
+                override fun onAnimationEnd(animation: Animator) {
+                    if (!isCancelled && isPaymentMarqueeActive && !isUserTouchingPaymentMarquee && !isFinishing && !isDestroyed) {
+                        hsv.scrollTo(singleWidth, 0)
+                        startPaymentMarquee()
+                    }
+                }
+            })
+        }
+        paymentMarqueeAnimator = animator
+        animator.start()
+    }
+
+    private fun createPaymentItemView(method: PaymentMethod, density: Float): View {
+        val titleLower = method.title.lowercase(Locale.ROOT)
+        val rawTitle = method.title.replace("🟣 ", "").replace("🟢 ", "").replace("💵 ", "").replace("💳 ", "").replace("🏦 ", "").replace("🤝 ", "")
+
+        val drawableRes = when {
+            titleLower.contains("yape") -> R.drawable.logo_yape
+            titleLower.contains("bcp") -> R.drawable.logo_bcp
+            titleLower.contains("plin") -> R.drawable.logo_plin
+            titleLower.contains("interbank") -> R.drawable.logo_interbank
+            titleLower.contains("bbva") -> R.drawable.logo_bbva
+            titleLower.contains("naci") -> R.drawable.logo_banco_de_la_nacion
+            else -> 0
+        }
+
+        return if (drawableRes != 0) {
+            val isCompactLogo = drawableRes == R.drawable.logo_yape || drawableRes == R.drawable.logo_plin
+            val logoHeightPx = if (isCompactLogo) (50 * density).toInt() else (36 * density).toInt()
+            ImageView(this).apply {
+                adjustViewBounds = true
+                setImageResource(drawableRes)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                contentDescription = rawTitle
+                setOnClickListener {
+                    if (isEditingStore) showManagePaymentMethodsDialog() else showPaymentMethodsDialog()
+                }
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    logoHeightPx
+                ).apply {
+                    marginEnd = (18 * density).toInt()
+                }
+            }
+        } else {
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setBackgroundResource(R.drawable.bg_pill_purple_light)
+                setPadding(28, 14, 28, 14)
+                setOnClickListener {
+                    if (isEditingStore) showManagePaymentMethodsDialog() else showPaymentMethodsDialog()
+                }
+                val tvName = TextView(this@StoreProfileActivity).apply {
+                    text = rawTitle
+                    textSize = 12f
+                    typeface = Typeface.DEFAULT_BOLD
+                    isSingleLine = true
+                    maxLines = 1
+                    setTextColor(ContextCompat.getColor(this@StoreProfileActivity, R.color.purple_700))
+                }
+                addView(tvName)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    marginEnd = (14 * density).toInt()
+                }
+            }
+        }
+    }
+
     private fun renderPublicPaymentMethods() {
-        storeProfileBinding.layoutPaymentIconsContainer.removeAllViews()
+        stopPaymentMarquee()
+        isPaymentMarqueeActive = false
+        paymentMarqueeSingleWidth = 0
+
+        val container = storeProfileBinding.layoutPaymentIconsContainer
+        val hsv = storeProfileBinding.hsvPaymentMethods
+        container.removeAllViews()
+
         if (paymentMethods.isEmpty()) {
             if (isEditingStore) {
                 storeProfileBinding.layoutPublicPaymentMethods.visibility = View.VISIBLE
@@ -715,7 +854,7 @@ class StoreProfileActivity : BaseActivity() {
                     setTextColor(ContextCompat.getColor(this@StoreProfileActivity, R.color.slate_400))
                     setOnClickListener { showManagePaymentMethodsDialog() }
                 }
-                storeProfileBinding.layoutPaymentIconsContainer.addView(tvHint)
+                container.addView(tvHint)
             } else {
                 storeProfileBinding.layoutPublicPaymentMethods.visibility = View.GONE
             }
@@ -724,68 +863,92 @@ class StoreProfileActivity : BaseActivity() {
 
         storeProfileBinding.layoutPublicPaymentMethods.visibility = View.VISIBLE
         val density = resources.displayMetrics.density
+
+        // Agregar primero un conjunto base para medir su ancho exacto
         paymentMethods.forEach { method ->
-            val titleLower = method.title.lowercase(Locale.ROOT)
-            val rawTitle = method.title.replace("🟣 ", "").replace("🟢 ", "").replace("💵 ", "").replace("💳 ", "").replace("🏦 ", "").replace("🤝 ", "")
+            container.addView(createPaymentItemView(method, density))
+        }
 
-            val drawableRes = when {
-                titleLower.contains("yape") -> R.drawable.logo_yape
-                titleLower.contains("bcp") -> R.drawable.logo_bcp
-                titleLower.contains("plin") -> R.drawable.logo_plin
-                titleLower.contains("interbank") -> R.drawable.logo_interbank
-                titleLower.contains("bbva") -> R.drawable.logo_bbva
-                titleLower.contains("naci") -> R.drawable.logo_banco_de_la_nacion
-                else -> 0
+        hsv.post {
+            if (isFinishing || isDestroyed) return@post
+            val count = paymentMethods.size
+            if (count == 0 || container.childCount < count) return@post
+
+            val lastChildInFirstSet = container.getChildAt(count - 1)
+            val singleSetWidth = lastChildInFirstSet.right
+            val hsvWidth = hsv.width.takeIf { it > 0 } ?: (resources.displayMetrics.widthPixels - (48 * density).toInt())
+
+            // Condición solicitada: si hay más de 4 métodos o si los logos alcanzan/superan el ancho de la pantalla
+            val shouldAnimateMarquee = count >= 4 || singleSetWidth >= (hsvWidth - (16 * density).toInt())
+
+            if (!shouldAnimateMarquee) {
+                isPaymentMarqueeActive = false
+                hsv.scrollTo(0, 0)
+                hsv.setOnTouchListener(null)
+                return@post
             }
 
-            if (drawableRes != 0) {
-                // Solo debe ir el logo: tamaño optimizado (los logos circulares/cuadrados como Yape y Plin se muestran a 50dp para igualar el peso visual de los logos horizontales)
-                val isCompactLogo = drawableRes == R.drawable.logo_yape || drawableRes == R.drawable.logo_plin
-                val logoHeightPx = if (isCompactLogo) (50 * density).toInt() else (36 * density).toInt()
-                val ivLogo = ImageView(this@StoreProfileActivity).apply {
-                    adjustViewBounds = true
-                    setImageResource(drawableRes)
-                    scaleType = ImageView.ScaleType.FIT_CENTER
-                    contentDescription = rawTitle
-                    setOnClickListener {
-                        if (isEditingStore) showManagePaymentMethodsDialog() else showPaymentMethodsDialog()
-                    }
-                }
-                val params = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    logoHeightPx
-                ).apply {
-                    marginEnd = (16 * density).toInt()
-                }
-                storeProfileBinding.layoutPaymentIconsContainer.addView(ivLogo, params)
-            } else {
-                // Opciones genéricas sin icono oficial
-                val pillView = LinearLayout(this).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.CENTER_VERTICAL
-                    setBackgroundResource(R.drawable.bg_pill_purple_light)
-                    setPadding(28, 14, 28, 14)
-                    setOnClickListener {
-                        if (isEditingStore) showManagePaymentMethodsDialog() else showPaymentMethodsDialog()
-                    }
+            // Activar cinta continua infinita
+            isPaymentMarqueeActive = true
+            paymentMarqueeSingleWidth = singleSetWidth
 
-                    val tvName = TextView(this@StoreProfileActivity).apply {
-                        text = rawTitle
-                        textSize = 12f
-                        typeface = Typeface.DEFAULT_BOLD
-                        isSingleLine = true
-                        maxLines = 1
-                        setTextColor(ContextCompat.getColor(this@StoreProfileActivity, R.color.purple_700))
-                    }
-                    addView(tvName)
+            // Duplicar conjuntos suficientes para que el recorrido sea infinito y sin cortes
+            val copiesNeeded = Math.max(3, (hsvWidth / singleSetWidth.coerceAtLeast(1)) + 3)
+            repeat(copiesNeeded - 1) {
+                paymentMethods.forEach { method ->
+                    container.addView(createPaymentItemView(method, density))
                 }
-
-                val params = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { marginEnd = (12 * density).toInt() }
-                storeProfileBinding.layoutPaymentIconsContainer.addView(pillView, params)
             }
+
+            // Configurar interactividad táctil fluida (swipe hacia adelante / atrás)
+            hsv.setOnTouchListener { _, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        isUserTouchingPaymentMarquee = true
+                        storeProfileBinding.nsvStoreProfile.requestDisallowInterceptTouchEvent(true)
+                        stopPaymentMarquee()
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        storeProfileBinding.nsvStoreProfile.requestDisallowInterceptTouchEvent(true)
+                        if (paymentMarqueeSingleWidth > 0 && isPaymentMarqueeActive) {
+                            val sw = paymentMarqueeSingleWidth
+                            if (hsv.scrollX < sw / 2) {
+                                hsv.scrollBy(sw, 0)
+                            } else if (hsv.scrollX > sw * 2 + (sw / 2)) {
+                                hsv.scrollBy(-sw, 0)
+                            }
+                        }
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        isUserTouchingPaymentMarquee = false
+                        storeProfileBinding.nsvStoreProfile.requestDisallowInterceptTouchEvent(false)
+                        paymentMarqueeHandler.removeCallbacksAndMessages(null)
+                        paymentMarqueeHandler.postDelayed({
+                            if (!isUserTouchingPaymentMarquee && isPaymentMarqueeActive && !isFinishing && !isDestroyed) {
+                                startPaymentMarquee()
+                            }
+                        }, 1200L)
+                    }
+                }
+                false
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                hsv.setOnScrollChangeListener { _, scrollX, _, _, _ ->
+                    if (paymentMarqueeSingleWidth > 0 && isPaymentMarqueeActive) {
+                        val sw = paymentMarqueeSingleWidth
+                        if (scrollX < sw / 2) {
+                            hsv.scrollBy(sw, 0)
+                        } else if (scrollX > sw * 2 + (sw / 2)) {
+                            hsv.scrollBy(-sw, 0)
+                        }
+                    }
+                }
+            }
+
+            // Iniciar en el conjunto central y arrancar la animación continua
+            hsv.scrollTo(singleSetWidth, 0)
+            startPaymentMarquee()
         }
     }
 
@@ -883,11 +1046,6 @@ class StoreProfileActivity : BaseActivity() {
             }
         }
 
-        storeProfileBinding.btnPublishStoreUpdate.setOnClickListener {
-            if (requireLoginForGuest("publicar novedades para tus seguidores")) return@setOnClickListener
-            showPublishStoreUpdateDialog()
-        }
-
         storeProfileBinding.flCoverContainer.setOnClickListener {
             if (isEditingStore) {
                 if (storeCoverUrl.isNullOrEmpty()) showImagePickerOptions("COVER")
@@ -937,6 +1095,10 @@ class StoreProfileActivity : BaseActivity() {
             showCustomHeaderBackgroundDialog()
         }
 
+        storeProfileBinding.btnEditDescBgInline.setOnClickListener {
+            showCustomDescBackgroundDialog()
+        }
+
         storeProfileBinding.btnEditDescInline.setOnClickListener {
             showEditTextFieldDialog(
                 title = "Descripción del Negocio",
@@ -978,19 +1140,6 @@ class StoreProfileActivity : BaseActivity() {
 
         storeProfileBinding.btnEditAddressInline.setOnClickListener {
             showInlineAddressOptions()
-        }
-
-        storeProfileBinding.btnEditPhoneInline.setOnClickListener {
-            showEditTextFieldDialog(
-                title = "Número de Contacto (WhatsApp)",
-                hint = "Ej. 987654321",
-                initialValue = storePhone,
-                initialStyledHtml = "",
-                multiline = false,
-                enableColorPicker = false
-            ) { newValue, _ ->
-                saveStoreFields(mapOf("business_phone" to newValue))
-            }
         }
 
         storeProfileBinding.btnEditPaymentMethodsInline.setOnClickListener {
@@ -1039,24 +1188,24 @@ class StoreProfileActivity : BaseActivity() {
         storeProfileBinding.btnEditNameInline.visibility = editVis
         storeProfileBinding.btnEditHeaderBgInline.visibility = editVis
         storeProfileBinding.btnEditDescInline.visibility = editVis
+        storeProfileBinding.btnEditDescBgInline.visibility = editVis
         storeProfileBinding.btnEditOwnerInline.visibility = editVis
         storeProfileBinding.btnEditAddressInline.visibility = editVis
-        storeProfileBinding.layoutOwnerPhoneRow.visibility = editVis
         storeProfileBinding.btnEditPaymentMethodsInline.visibility = editVis
         storeProfileBinding.layoutExtraSectionsHeaderOwner.visibility = editVis
         storeProfileBinding.btnAddExtraSectionBottom.visibility = editVis
-        storeProfileBinding.btnPublishStoreUpdate.visibility = editVis
+
+        if (isEditingStore) {
+            storeProfileBinding.layoutPublicPaymentMethods.visibility = View.VISIBLE
+            if (paymentMethods.isEmpty()) {
+                renderPublicPaymentMethods()
+            }
+        }
 
         storeProfileBinding.btnFollowStore.visibility = View.VISIBLE
         storeProfileBinding.btnChatStoreOwner.visibility = clientVis
         storeProfileBinding.cardAddReview.visibility = clientVis
         storeProfileBinding.btnContactWhatsApp.visibility = if (isClientPreviewMode && storePhone.isNotEmpty()) View.VISIBLE else View.GONE
-
-        if (isClientPreviewMode) {
-            storeProfileBinding.layoutStoreUpdatesSection.visibility = if (currentStoreUpdates.isNotEmpty()) View.VISIBLE else View.GONE
-        } else {
-            storeProfileBinding.layoutStoreUpdatesSection.visibility = View.VISIBLE
-        }
         updateVerifiedBadgeUI()
     }
 
@@ -1114,7 +1263,7 @@ class StoreProfileActivity : BaseActivity() {
         val addr = storeAddress
         val owner = storeOwnerName
 
-        if (headerTextTheme == "LIGHT") {
+        if (headerTextTheme == "LIGHT" && headerBgType != "NONE") {
             storeProfileBinding.tvProfileStoreName.setTextColor(
                 if (cleanName.isBlank() && isEditingStore) Color.parseColor("#CBD5E1") else Color.WHITE
             )
@@ -1133,9 +1282,17 @@ class StoreProfileActivity : BaseActivity() {
             "Tienda GoMezMart"
         }
 
-        storeProfileBinding.tvProfileStoreDesc.setTextColor(
-            ContextCompat.getColor(this, if (desc.isBlank() && isEditingStore) R.color.slate_400 else R.color.slate_700)
-        )
+        if (descTextTheme == "LIGHT" && descBgType != "NONE") {
+            storeProfileBinding.tvProfileStoreDesc.setTextColor(
+                if (desc.isBlank() && isEditingStore) Color.parseColor("#CBD5E1") else Color.WHITE
+            )
+            storeProfileBinding.tvProfileStoreDesc.setShadowLayer(4f, 1f, 1.5f, Color.parseColor("#80000000"))
+        } else {
+            storeProfileBinding.tvProfileStoreDesc.setTextColor(
+                ContextCompat.getColor(this, if (desc.isBlank() && isEditingStore) R.color.slate_400 else R.color.slate_700)
+            )
+            storeProfileBinding.tvProfileStoreDesc.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
+        }
         storeProfileBinding.tvProfileStoreDesc.text = if (desc.isNotBlank()) {
             com.gomezmart.app.util.RichTextColorHelper.parseStyledText(storeDescriptionStyled, desc)
         } else if (isEditingStore) {
@@ -1160,12 +1317,6 @@ class StoreProfileActivity : BaseActivity() {
             "Nombre del Fundador / Dueño"
         } else {
             "Propietario GoMezMart"
-        }
-
-        storeProfileBinding.tvProfileOwnerPhone.text = if (storePhone.isNotBlank()) {
-            "WhatsApp: $storePhone"
-        } else {
-            "Número de WhatsApp (sin configurar)"
         }
 
         if (storeLogoUrl.isNullOrEmpty()) {
@@ -1398,7 +1549,7 @@ class StoreProfileActivity : BaseActivity() {
                 fixAspectRatio = true
                 aspectRatioX = 1
                 aspectRatioY = 1
-            } else if (type == "HEADER_BG") {
+            } else if (type == "HEADER_BG" || type == "DESC_BG") {
                 cropShape = CropImageView.CropShape.RECTANGLE
                 fixAspectRatio = false
             } else {
@@ -1626,7 +1777,7 @@ class StoreProfileActivity : BaseActivity() {
     ) {
         val type = bgType ?: "NONE"
         val value = bgValue.orEmpty()
-        val theme = textTheme ?: if (type == "IMAGE" || type == "GRADIENT") "LIGHT" else "DARK"
+        val theme = if (type == "NONE") "DARK" else (textTheme ?: if (type == "IMAGE" || type == "GRADIENT") "LIGHT" else "DARK")
 
         when (type) {
             "COLOR" -> {
@@ -1695,6 +1846,293 @@ class StoreProfileActivity : BaseActivity() {
         }
     }
 
+    private fun loadDescBackgroundImage(urlOrPath: String) {
+        val raw = urlOrPath.trim()
+        val localBgFile = File(filesDir, "desc_bg_live.jpg")
+
+        val rawBase64 = when {
+            raw.startsWith("data:image/") && raw.contains(",") -> raw.substringAfter(",")
+            raw.length > 500 && !raw.startsWith("http") && !raw.startsWith("/") && !raw.startsWith("content:") && !raw.startsWith("file:") -> raw
+            else -> null
+        }
+
+        try {
+            when {
+                rawBase64 != null -> {
+                    val bytes = Base64.decode(rawBase64, Base64.DEFAULT)
+                    Glide.with(this)
+                        .asBitmap()
+                        .load(bytes)
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .skipMemoryCache(true)
+                        .centerCrop()
+                        .into(storeProfileBinding.ivDescCustomBg)
+                }
+                raw.startsWith("http://") || raw.startsWith("https://") -> {
+                    Glide.with(this)
+                        .load(raw)
+                        .centerCrop()
+                        .into(storeProfileBinding.ivDescCustomBg)
+                }
+                raw.startsWith("content://") || raw.startsWith("file://") -> {
+                    Glide.with(this)
+                        .load(Uri.parse(raw))
+                        .centerCrop()
+                        .into(storeProfileBinding.ivDescCustomBg)
+                }
+                raw.isNotEmpty() && File(raw).exists() -> {
+                    Glide.with(this)
+                        .load(File(raw))
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .skipMemoryCache(true)
+                        .centerCrop()
+                        .into(storeProfileBinding.ivDescCustomBg)
+                }
+                localBgFile.exists() -> {
+                    Glide.with(this)
+                        .load(localBgFile)
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .skipMemoryCache(true)
+                        .centerCrop()
+                        .into(storeProfileBinding.ivDescCustomBg)
+                }
+                else -> {
+                    storeProfileBinding.ivDescCustomBg.setImageDrawable(null)
+                    storeProfileBinding.ivDescCustomBg.visibility = View.GONE
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("StoreProfile", "Error al cargar imagen de fondo de descripción: ${e.message}")
+            if (localBgFile.exists()) {
+                try {
+                    Glide.with(this)
+                        .load(localBgFile)
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .skipMemoryCache(true)
+                        .centerCrop()
+                        .into(storeProfileBinding.ivDescCustomBg)
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
+    private fun applyLogoImageUI(effectiveLogo: String?) {
+        val glide = Glide.with(this@StoreProfileActivity)
+        val localLogo = File(filesDir, "logo_live.png")
+        if (!effectiveLogo.isNullOrEmpty()) {
+            storeProfileBinding.layoutLogoPlaceholder.visibility = View.GONE
+            storeProfileBinding.pbLogoLoading.visibility = View.VISIBLE
+            storeProfileBinding.ivProfileStoreLogo.alpha = 0f
+            glide.load(effectiveLogo)
+                .apply(GlideHelper.getOptions(this@StoreProfileActivity))
+                .listener(object : RequestListener<Drawable> {
+                    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>, isFirstResource: Boolean): Boolean {
+                        storeProfileBinding.pbLogoLoading.visibility = View.GONE
+                        storeProfileBinding.ivProfileStoreLogo.alpha = 1f
+                        if (localLogo.exists() && effectiveLogo != localLogo.absolutePath) {
+                            try {
+                                Glide.with(this@StoreProfileActivity)
+                                    .load(localLogo)
+                                    .circleCrop()
+                                    .into(storeProfileBinding.ivProfileStoreLogo)
+                            } catch (_: Exception) {}
+                        }
+                        return false
+                    }
+                    override fun onResourceReady(resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean): Boolean {
+                        storeProfileBinding.pbLogoLoading.visibility = View.GONE
+                        storeProfileBinding.ivProfileStoreLogo.animate().alpha(1f).setDuration(400).start()
+                        return false
+                    }
+                })
+                .circleCrop()
+                .into(storeProfileBinding.ivProfileStoreLogo)
+        } else {
+            storeProfileBinding.ivProfileStoreLogo.setImageDrawable(null)
+            storeProfileBinding.layoutLogoPlaceholder.visibility = if (isEditingStore) View.VISIBLE else View.GONE
+        }
+    }
+
+    private fun applyCoverImageUI(effectiveCover: String?) {
+        val glide = Glide.with(this@StoreProfileActivity)
+        val localCover = File(filesDir, "cover_live.png")
+        if (!effectiveCover.isNullOrEmpty()) {
+            storeProfileBinding.layoutCoverPlaceholder.visibility = View.GONE
+            storeProfileBinding.pbCoverLoading.visibility = View.VISIBLE
+            storeProfileBinding.ivStoreCover.alpha = 0f
+            glide.load(effectiveCover)
+                .apply(GlideHelper.getOptions(this@StoreProfileActivity))
+                .listener(object : RequestListener<Drawable> {
+                    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>, isFirstResource: Boolean): Boolean {
+                        storeProfileBinding.pbCoverLoading.visibility = View.GONE
+                        storeProfileBinding.ivStoreCover.alpha = 1f
+                        if (localCover.exists() && effectiveCover != localCover.absolutePath) {
+                            try {
+                                Glide.with(this@StoreProfileActivity)
+                                    .load(localCover)
+                                    .centerCrop()
+                                    .into(storeProfileBinding.ivStoreCover)
+                            } catch (_: Exception) {}
+                        }
+                        return false
+                    }
+                    override fun onResourceReady(resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean): Boolean {
+                        storeProfileBinding.pbCoverLoading.visibility = View.GONE
+                        storeProfileBinding.ivStoreCover.animate().alpha(1f).setDuration(400).start()
+                        return false
+                    }
+                })
+                .centerCrop()
+                .into(storeProfileBinding.ivStoreCover)
+        } else {
+            storeProfileBinding.ivStoreCover.setImageDrawable(null)
+            storeProfileBinding.layoutCoverPlaceholder.visibility = if (isEditingStore) View.VISIBLE else View.GONE
+        }
+    }
+
+    private fun prePopulateFromLocalCache() {
+        if (!isOwner) return
+        val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE)
+        val prefix = if (businessType.isNotEmpty()) businessType else "business"
+        val savedName = prefs.getString("${prefix}_name", prefs.getString("business_name", "")) ?: ""
+        val savedNameStyled = prefs.getString("${prefix}_name_styled", prefs.getString("business_name_styled", "")) ?: ""
+        val savedDesc = prefs.getString("${prefix}_description", prefs.getString("business_description", "")) ?: ""
+        val savedDescStyled = prefs.getString("${prefix}_description_styled", prefs.getString("business_description_styled", "")) ?: ""
+        val savedAddr = prefs.getString("${prefix}_address", prefs.getString("business_address", "")) ?: ""
+        val savedPhone = prefs.getString("${prefix}_phone", prefs.getString("business_phone", "")) ?: ""
+        val savedOwner = prefs.getString("${prefix}_owner_name", prefs.getString("business_owner_name", "")) ?: ""
+        val savedLogo = prefs.getString("${prefix}_logo_url", prefs.getString("business_logo_url", "")) ?: ""
+        val savedCover = prefs.getString("${prefix}_cover_url", prefs.getString("business_cover_url", "")) ?: ""
+
+        val hType = prefs.getString("header_bg_type", "NONE") ?: "NONE"
+        val hVal = prefs.getString("header_bg_value", "") ?: ""
+        val dType = prefs.getString("desc_bg_type", "NONE") ?: "NONE"
+        val dVal = prefs.getString("desc_bg_value", "") ?: ""
+
+        if (savedName.isNotBlank() && storeDisplayName.isBlank()) {
+            storeDisplayName = savedName
+            storeDisplayNameStyled = savedNameStyled
+        }
+        if (savedDesc.isNotBlank() && storeDescription.isBlank()) {
+            storeDescription = savedDesc
+            storeDescriptionStyled = savedDescStyled
+        }
+        if (savedAddr.isNotBlank() && storeAddress.isBlank()) {
+            storeAddress = savedAddr
+        }
+        if (savedPhone.isNotBlank() && storePhone.isBlank()) {
+            storePhone = savedPhone
+        }
+        if (savedOwner.isNotBlank() && storeOwnerName.isBlank()) {
+            storeOwnerName = savedOwner
+        }
+        if (hType != "NONE" && headerBgType == "NONE") {
+            headerBgType = hType
+            headerBgValue = hVal
+            applyHeaderBackgroundUI(headerBgType, headerBgValue, 0.45, "DARK")
+        }
+        if (dType != "NONE" && descBgType == "NONE") {
+            descBgType = dType
+            descBgValue = dVal
+            applyDescBackgroundUI(descBgType, descBgValue, 0.45, "DARK")
+        }
+
+        refreshStoreTextAndPlaceholdersUI()
+
+        val localLogo = File(filesDir, "logo_live.png")
+        val effectiveLogo = if (savedLogo.isNotBlank()) savedLogo else if (localLogo.exists()) localLogo.absolutePath else null
+        if (!effectiveLogo.isNullOrEmpty() && storeLogoUrl.isNullOrEmpty()) {
+            applyLogoImageUI(effectiveLogo)
+        }
+
+        val localCover = File(filesDir, "cover_live.png")
+        val effectiveCover = if (savedCover.isNotBlank()) savedCover else if (localCover.exists()) localCover.absolutePath else null
+        if (!effectiveCover.isNullOrEmpty() && storeCoverUrl.isNullOrEmpty()) {
+            applyCoverImageUI(effectiveCover)
+        }
+
+        val cachedSectionsJson = prefs.getString("cached_store_extra_sections", "") ?: ""
+        if (cachedSectionsJson.isNotBlank() && extraSections.isEmpty()) {
+            val sectionsList = deserializeSectionsFromJson(cachedSectionsJson)
+            if (sectionsList.isNotEmpty()) {
+                renderExtraSections(sectionsList)
+            }
+        }
+    }
+
+    private fun applyDescBackgroundUI(
+        bgType: String?,
+        bgValue: String?,
+        overlayAlpha: Double?,
+        textTheme: String?
+    ) {
+        val type = bgType ?: "NONE"
+        val value = bgValue.orEmpty()
+        val theme = if (type == "NONE") "DARK" else (textTheme ?: if (type == "IMAGE" || type == "GRADIENT") "LIGHT" else "DARK")
+
+        val padDp = if (type == "NONE") 0 else 14
+        val padPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, padDp.toFloat(), resources.displayMetrics).toInt()
+        storeProfileBinding.layoutStoreDescBoxContent.setPadding(padPx, padPx, padPx, padPx)
+
+        when (type) {
+            "COLOR" -> {
+                storeProfileBinding.ivDescCustomBg.visibility = View.GONE
+                storeProfileBinding.ivDescCustomBg.setImageDrawable(null)
+                storeProfileBinding.viewDescBgOverlay.visibility = View.GONE
+                try {
+                    val color = Color.parseColor(if (value.startsWith("#")) value else "#$value")
+                    storeProfileBinding.cardStoreDescBox.setCardBackgroundColor(color)
+                    storeProfileBinding.cardStoreDescBox.cardElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2f, resources.displayMetrics)
+                } catch (_: Exception) {
+                    storeProfileBinding.cardStoreDescBox.setCardBackgroundColor(Color.TRANSPARENT)
+                }
+            }
+            "GRADIENT" -> {
+                storeProfileBinding.viewDescBgOverlay.visibility = View.GONE
+                val gradient = createHeaderGradient(value)
+                storeProfileBinding.ivDescCustomBg.visibility = View.VISIBLE
+                storeProfileBinding.ivDescCustomBg.setImageDrawable(gradient)
+                storeProfileBinding.cardStoreDescBox.setCardBackgroundColor(Color.TRANSPARENT)
+                storeProfileBinding.cardStoreDescBox.cardElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2f, resources.displayMetrics)
+            }
+            "IMAGE" -> {
+                storeProfileBinding.ivDescCustomBg.visibility = View.VISIBLE
+                storeProfileBinding.viewDescBgOverlay.visibility = View.VISIBLE
+                storeProfileBinding.cardStoreDescBox.setCardBackgroundColor(Color.TRANSPARENT)
+                storeProfileBinding.cardStoreDescBox.cardElevation = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 3f, resources.displayMetrics)
+
+                val alpha = (overlayAlpha ?: 0.45).toFloat().coerceIn(0.1f, 0.9f)
+                storeProfileBinding.viewDescBgOverlay.alpha = alpha
+                storeProfileBinding.viewDescBgOverlay.setBackgroundColor(Color.BLACK)
+
+                loadDescBackgroundImage(value)
+            }
+            else -> {
+                storeProfileBinding.ivDescCustomBg.visibility = View.GONE
+                storeProfileBinding.ivDescCustomBg.setImageDrawable(null)
+                storeProfileBinding.viewDescBgOverlay.visibility = View.GONE
+                storeProfileBinding.cardStoreDescBox.setCardBackgroundColor(Color.TRANSPARENT)
+                storeProfileBinding.cardStoreDescBox.cardElevation = 0f
+            }
+        }
+
+        if (theme == "LIGHT") {
+            if (storeDescription.isNotBlank()) {
+                storeProfileBinding.tvProfileStoreDesc.setTextColor(Color.WHITE)
+            } else {
+                storeProfileBinding.tvProfileStoreDesc.setTextColor(Color.parseColor("#CBD5E1"))
+            }
+            storeProfileBinding.tvProfileStoreDesc.setShadowLayer(4f, 1f, 1.5f, Color.parseColor("#80000000"))
+        } else {
+            if (storeDescription.isNotBlank()) {
+                storeProfileBinding.tvProfileStoreDesc.setTextColor(ContextCompat.getColor(this, R.color.slate_700))
+            } else {
+                storeProfileBinding.tvProfileStoreDesc.setTextColor(ContextCompat.getColor(this, R.color.slate_400))
+            }
+            storeProfileBinding.tvProfileStoreDesc.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
+        }
+    }
+
     private fun createHeaderGradient(gradientId: String): Drawable {
         val colors = when (gradientId) {
             "GRADIENT_SUNSET" -> intArrayOf(Color.parseColor("#FF512F"), Color.parseColor("#DD2476"))
@@ -1721,19 +2159,18 @@ class StoreProfileActivity : BaseActivity() {
     )
 
     private fun showCustomHeaderBackgroundDialog() {
-        showLiveHeaderBackgroundStudio("AUTO")
+        showLiveBackgroundStudio(target = "HEADER", startCategory = "AUTO")
     }
 
-    private fun showLiveHeaderBackgroundStudio(startCategory: String = "AUTO") {
+    private fun showCustomDescBackgroundDialog() {
+        showLiveBackgroundStudio(target = "DESC", startCategory = "AUTO")
+    }
+
+    private fun showLiveBackgroundStudio(target: String = "HEADER", startCategory: String = "AUTO") {
         if (isFinishing || isDestroyed || !isOwner) return
 
-        fun scrollToFocusCard() {
-            storeProfileBinding.nsvStoreProfile.post {
-                val targetY = (storeProfileBinding.cardStoreHeaderBox.top - (14 * resources.displayMetrics.density)).toInt()
-                storeProfileBinding.nsvStoreProfile.smoothScrollTo(0, Math.max(0, targetY))
-            }
-        }
-        scrollToFocusCard()
+        val isDesc = target == "DESC"
+        val targetCard = if (isDesc) storeProfileBinding.cardStoreDescBox else storeProfileBinding.cardStoreHeaderBox
 
         val dialog = BottomSheetDialog(this)
         val sheetView = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_header_background, null)
@@ -1742,11 +2179,79 @@ class StoreProfileActivity : BaseActivity() {
         dialog.window?.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         dialog.window?.setDimAmount(0f)
 
-        val initialType = headerBgType
-        val initialValue = headerBgValue
-        val initialOverlay = headerBgOverlay
-        val initialTheme = headerTextTheme
+        var isCompactMode = false
+
+        fun getCardScrollY(): Int {
+            val targetLoc = IntArray(2)
+            val svLoc = IntArray(2)
+            targetCard.getLocationOnScreen(targetLoc)
+            storeProfileBinding.nsvStoreProfile.getLocationOnScreen(svLoc)
+
+            val cardAbsoluteTop: Int = if (targetLoc[1] > 0 || targetLoc[0] > 0) {
+                (targetLoc[1] - svLoc[1]) + storeProfileBinding.nsvStoreProfile.scrollY
+            } else {
+                var top = 0
+                var curr: View? = targetCard
+                while (curr != null && curr != storeProfileBinding.nsvStoreProfile) {
+                    top += curr.top
+                    curr = curr.parent as? View
+                }
+                top
+            }
+
+            val svHeight = storeProfileBinding.nsvStoreProfile.height.takeIf { it > 0 }
+                ?: resources.displayMetrics.heightPixels
+            val density = resources.displayMetrics.density
+
+            // Obtener la posición del BottomSheet en pantalla para calcular el espacio visible disponible
+            val sheetLoc = IntArray(2)
+            sheetView.getLocationOnScreen(sheetLoc)
+
+            val visibleHeight = if (sheetLoc[1] > svLoc[1] && sheetLoc[1] < svLoc[1] + svHeight) {
+                sheetLoc[1] - svLoc[1]
+            } else {
+                val sheetHeight = sheetView.height.takeIf { it > 0 }
+                    ?: if (isCompactMode) (170 * density).toInt() else (360 * density).toInt()
+                (svHeight - sheetHeight).coerceAtLeast((svHeight * 0.35).toInt())
+            }
+
+            val cardHeight = targetCard.height.takeIf { it > 0 }
+                ?: targetCard.measuredHeight.takeIf { it > 0 }
+                ?: (140 * density).toInt()
+
+            // Centrado vertical simétrico en el área visible superior sobre el panel
+            val margin = if (visibleHeight > cardHeight) {
+                (visibleHeight - cardHeight) / 2
+            } else {
+                (16 * density).toInt()
+            }
+
+            return Math.max(0, cardAbsoluteTop - margin)
+        }
+
+        fun scrollToFocusCard() {
+            storeProfileBinding.nsvStoreProfile.post {
+                storeProfileBinding.nsvStoreProfile.smoothScrollTo(0, getCardScrollY())
+            }
+        }
+        scrollToFocusCard()
+
+        sheetView.findViewById<TextView>(R.id.tvHeaderBgStudioTitle)?.text =
+            if (isDesc) "🎨 Fondo de Descripción" else "🎨 Fondo de Cabecera"
+
+        val initialType = if (isDesc) descBgType else headerBgType
+        val initialValue = if (isDesc) descBgValue else headerBgValue
+        val initialOverlay = if (isDesc) descBgOverlay else headerBgOverlay
+        val initialTheme = if (isDesc) descTextTheme else headerTextTheme
         var isSaved = false
+
+        fun applyLive(type: String, value: String, overlay: Double, theme: String) {
+            if (isDesc) {
+                applyDescBackgroundUI(type, value, overlay, theme)
+            } else {
+                applyHeaderBackgroundUI(type, value, overlay, theme)
+            }
+        }
 
         var currentSelectedCategory = when {
             startCategory == "COLORS" || (startCategory == "AUTO" && initialType == "COLOR") -> "COLOR"
@@ -1756,7 +2261,7 @@ class StoreProfileActivity : BaseActivity() {
             else -> if (initialType == "COLOR") "COLOR" else if (initialType == "IMAGE") "PHOTO" else if (initialType == "NONE") "NONE" else "GRADIENT"
         }
 
-        var activeOverlay = headerBgOverlay
+        var activeOverlay = initialOverlay
 
         val gradientOptions = listOf(
             HeaderBgStudioOption("GRADIENT", "🌅 Atardecer Cálido (Sunset)", "GRADIENT_SUNSET", "LIGHT", createHeaderGradient("GRADIENT_SUNSET")),
@@ -1821,7 +2326,6 @@ class StoreProfileActivity : BaseActivity() {
         val layoutCollapsible = sheetView.findViewById<View>(R.id.layoutCollapsibleDetails)
         val btnToggleCompact = sheetView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnToggleCompactSheet)
         val btnScrollBg = sheetView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnScrollBackgroundView)
-        var isCompactMode = false
 
         fun updateOverlayButtonsUI() {
             val selectedStroke = (2 * resources.displayMetrics.density).toInt()
@@ -1849,16 +2353,18 @@ class StoreProfileActivity : BaseActivity() {
 
         fun applyCurrentSelectionLive() {
             if (currentSelectedCategory == "PHOTO") {
-                val localBg = File(filesDir, "header_bg_live.jpg")
+                val localBgFile = File(filesDir, if (isDesc) "desc_bg_live.jpg" else "header_bg_live.jpg")
+                val currentType = if (isDesc) descBgType else headerBgType
+                val currentValue = if (isDesc) descBgValue else headerBgValue
                 val photoUrl = when {
-                    headerBgType == "IMAGE" && headerBgValue.isNotEmpty() -> headerBgValue
-                    localBg.exists() -> localBg.absolutePath
+                    currentType == "IMAGE" && currentValue.isNotEmpty() -> currentValue
+                    localBgFile.exists() -> localBgFile.absolutePath
                     initialType == "IMAGE" && initialValue.isNotEmpty() -> initialValue
                     else -> ""
                 }
 
                 if (photoUrl.isNotEmpty()) {
-                    applyHeaderBackgroundUI("IMAGE", photoUrl, activeOverlay, "LIGHT")
+                    applyLive("IMAGE", photoUrl, activeOverlay, "LIGHT")
                     tvName.text = "Foto de Fondo Personalizada 📷"
                     tvCounter.text = "Oscurecimiento actual: ${(activeOverlay * 100).toInt()}%"
                 } else {
@@ -1869,9 +2375,9 @@ class StoreProfileActivity : BaseActivity() {
             }
 
             if (currentSelectedCategory == "NONE") {
-                applyHeaderBackgroundUI("NONE", "", 0.45, "DARK")
+                applyLive("NONE", "", 0.45, "DARK")
                 tvName.text = "Fondo Transparente / Predeterminado 🔄"
-                tvCounter.text = "Vuelve al estilo limpio original de la tienda"
+                tvCounter.text = if (isDesc) "Descripción limpia sin fondo" else "Vuelve al estilo limpio original de la tienda"
                 return
             }
 
@@ -1884,7 +2390,7 @@ class StoreProfileActivity : BaseActivity() {
             } else {
                 tvName.text = option.name
                 tvCounter.text = "Opción ${activeIndex + 1} de ${activeOptionsList.size} • En vivo"
-                applyHeaderBackgroundUI(option.category, option.value, activeOverlay, option.theme)
+                applyLive(option.category, option.value, activeOverlay, option.theme)
             }
 
             for (i in 0 until layoutThumbnails.childCount) {
@@ -1943,8 +2449,11 @@ class StoreProfileActivity : BaseActivity() {
                     setOnClickListener {
                         activeIndex = index
                         if (option.value == "HEX_CUSTOM") {
-                            showCustomHexColorInputDialog { customHex, customTheme ->
-                                applyHeaderBackgroundUI("COLOR", customHex, activeOverlay, customTheme)
+                            showCustomHexColorInputDialog(
+                                target = target,
+                                initialHex = if (isDesc) descBgValue else headerBgValue
+                            ) { customHex, customTheme ->
+                                applyLive("COLOR", customHex, activeOverlay, customTheme)
                                 tvName.text = "Color Hex: $customHex"
                                 tvCounter.text = "Personalizado • En vivo"
                             }
@@ -2034,9 +2543,10 @@ class StoreProfileActivity : BaseActivity() {
                     if (!isInitialSetup) {
                         applyCurrentSelectionLive()
                     } else {
-                        val localBg = File(filesDir, "header_bg_live.jpg")
+                        val localBg = File(filesDir, if (isDesc) "desc_bg_live.jpg" else "header_bg_live.jpg")
+                        val currentVal = if (isDesc) descBgValue else headerBgValue
                         val photoUrl = when {
-                            headerBgType == "IMAGE" && headerBgValue.isNotEmpty() -> headerBgValue
+                            initialType == "IMAGE" && currentVal.isNotEmpty() -> currentVal
                             localBg.exists() -> localBg.absolutePath
                             else -> ""
                         }
@@ -2059,9 +2569,12 @@ class StoreProfileActivity : BaseActivity() {
                         applyCurrentSelectionLive()
                     } else {
                         tvName.text = "Fondo Transparente / Predeterminado 🔄"
-                        tvCounter.text = "Estilo limpio original de la tienda"
+                        tvCounter.text = if (isDesc) "Descripción limpia sin fondo" else "Estilo limpio original de la tienda"
                     }
                 }
+            }
+            if (!isInitialSetup) {
+                sheetView.postDelayed({ scrollToFocusCard() }, 80)
             }
         }
 
@@ -2084,21 +2597,22 @@ class StoreProfileActivity : BaseActivity() {
             if (isCompactMode) {
                 layoutCollapsible.visibility = View.GONE
                 btnToggleCompact.text = "🔼 Opciones"
-                storeProfileBinding.nsvStoreProfile.smoothScrollTo(0, 0)
             } else {
                 layoutCollapsible.visibility = View.VISIBLE
                 btnToggleCompact.text = "👁️ Ver fondo"
-                scrollToFocusCard()
             }
+            sheetView.postDelayed({
+                scrollToFocusCard()
+            }, 60)
         }
 
         btnScrollBg.setOnClickListener {
-            val targetY = (storeProfileBinding.cardStoreHeaderBox.top - (14 * resources.displayMetrics.density)).toInt()
+            val targetY = getCardScrollY()
             val currentScroll = storeProfileBinding.nsvStoreProfile.scrollY
-            if (currentScroll > targetY / 2) {
+            if (Math.abs(currentScroll - targetY) < 40) {
                 storeProfileBinding.nsvStoreProfile.smoothScrollTo(0, 0)
             } else {
-                storeProfileBinding.nsvStoreProfile.smoothScrollTo(0, Math.max(0, targetY))
+                storeProfileBinding.nsvStoreProfile.smoothScrollTo(0, targetY)
             }
         }
 
@@ -2109,7 +2623,7 @@ class StoreProfileActivity : BaseActivity() {
 
         btnUploadNewPhoto.setOnClickListener {
             dialog.dismiss()
-            showImagePickerOptions("HEADER_BG")
+            showImagePickerOptions(if (isDesc) "DESC_BG" else "HEADER_BG")
         }
 
         btnDiscard.setOnClickListener {
@@ -2118,55 +2632,92 @@ class StoreProfileActivity : BaseActivity() {
 
         btnSave.setOnClickListener {
             isSaved = true
+            var selectedType = "NONE"
+            var selectedValue = ""
+            var selectedTheme = "DARK"
+            var selectedOverlay = activeOverlay
+
             when (currentSelectedCategory) {
                 "GRADIENT" -> {
                     val opt = gradientOptions[activeIndex.coerceIn(0, gradientOptions.size - 1)]
-                    headerBgType = "GRADIENT"
-                    headerBgValue = opt.value
-                    headerTextTheme = opt.theme
+                    selectedType = "GRADIENT"
+                    selectedValue = opt.value
+                    selectedTheme = opt.theme
                 }
                 "COLOR" -> {
                     val opt = colorOptions[activeIndex.coerceIn(0, colorOptions.size - 1)]
                     if (opt.value != "HEX_CUSTOM") {
-                        headerBgType = "COLOR"
-                        headerBgValue = opt.value
-                        headerTextTheme = opt.theme
+                        selectedType = "COLOR"
+                        selectedValue = opt.value
+                        selectedTheme = opt.theme
+                    } else {
+                        selectedType = "COLOR"
+                        selectedValue = if (isDesc) descBgValue else headerBgValue
+                        selectedTheme = if (isDesc) descTextTheme else headerTextTheme
                     }
                 }
                 "PHOTO" -> {
-                    headerBgType = "IMAGE"
-                    val localBg = File(filesDir, "header_bg_live.jpg")
-                    if (headerBgValue.isEmpty() && localBg.exists()) {
-                        headerBgValue = localBg.absolutePath
-                    }
-                    headerBgOverlay = activeOverlay
-                    headerTextTheme = "LIGHT"
+                    selectedType = "IMAGE"
+                    val localBg = File(filesDir, if (isDesc) "desc_bg_live.jpg" else "header_bg_live.jpg")
+                    val currentVal = if (isDesc) descBgValue else headerBgValue
+                    selectedValue = if (currentVal.isNotEmpty()) currentVal else if (localBg.exists()) localBg.absolutePath else ""
+                    selectedOverlay = activeOverlay
+                    selectedTheme = "LIGHT"
                 }
                 "NONE" -> {
-                    headerBgType = "NONE"
-                    headerBgValue = ""
-                    headerTextTheme = "DARK"
+                    selectedType = "NONE"
+                    selectedValue = ""
+                    selectedTheme = "DARK"
                 }
             }
-            saveStoreFields(
-                mapOf(
-                    "header_bg_type" to headerBgType,
-                    "header_bg_value" to headerBgValue,
-                    "header_bg_overlay" to headerBgOverlay,
-                    "header_text_theme" to headerTextTheme
+
+            if (isDesc) {
+                descBgType = selectedType
+                descBgValue = selectedValue
+                descBgOverlay = selectedOverlay
+                descTextTheme = selectedTheme
+                saveStoreFields(
+                    mapOf(
+                        "desc_bg_type" to descBgType,
+                        "desc_bg_value" to descBgValue,
+                        "desc_bg_overlay" to descBgOverlay,
+                        "desc_text_theme" to descTextTheme
+                    )
                 )
-            )
-            Toast.makeText(this, "Fondo guardado con éxito ✨", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Fondo de descripción guardado ✨", Toast.LENGTH_SHORT).show()
+            } else {
+                headerBgType = selectedType
+                headerBgValue = selectedValue
+                headerBgOverlay = selectedOverlay
+                headerTextTheme = selectedTheme
+                saveStoreFields(
+                    mapOf(
+                        "header_bg_type" to headerBgType,
+                        "header_bg_value" to headerBgValue,
+                        "header_bg_overlay" to headerBgOverlay,
+                        "header_text_theme" to headerTextTheme
+                    )
+                )
+                Toast.makeText(this, "Fondo de cabecera guardado ✨", Toast.LENGTH_SHORT).show()
+            }
             dialog.dismiss()
         }
 
         dialog.setOnDismissListener {
             if (!isSaved) {
-                headerBgType = initialType
-                headerBgValue = initialValue
-                headerBgOverlay = initialOverlay
-                headerTextTheme = initialTheme
-                applyHeaderBackgroundUI(initialType, initialValue, initialOverlay, initialTheme)
+                if (isDesc) {
+                    descBgType = initialType
+                    descBgValue = initialValue
+                    descBgOverlay = initialOverlay
+                    descTextTheme = initialTheme
+                    applyDescBackgroundUI(initialType, initialValue, initialOverlay, initialTheme)
+                } else {
+                    headerBgType = initialType
+                    headerBgValue = initialValue
+                    headerBgOverlay = initialOverlay
+                    headerTextTheme = initialTheme
+                    applyHeaderBackgroundUI(initialType, initialValue, initialOverlay, initialTheme)
+                }
             }
         }
 
@@ -2190,13 +2741,26 @@ class StoreProfileActivity : BaseActivity() {
             }
         }
 
+        dialog.setOnShowListener {
+            sheetView.postDelayed({
+                scrollToFocusCard()
+            }, 100)
+            sheetView.postDelayed({
+                scrollToFocusCard()
+            }, 300)
+        }
+
         dialog.show()
     }
 
-    private fun showCustomHexColorInputDialog(onApplied: ((String, String) -> Unit)? = null) {
+    private fun showCustomHexColorInputDialog(
+        target: String = "HEADER",
+        initialHex: String = "#",
+        onApplied: ((String, String) -> Unit)? = null
+    ) {
         val et = EditText(this).apply {
             hint = "Ejemplo: #3B82F6 o #111827"
-            setText(if (headerBgValue.startsWith("#")) headerBgValue else "#")
+            setText(if (initialHex.startsWith("#")) initialHex else "#")
             setSelection(text.length)
         }
         AlertDialog.Builder(this)
@@ -2208,20 +2772,34 @@ class StoreProfileActivity : BaseActivity() {
                     val parsed = Color.parseColor(if (hex.startsWith("#")) hex else "#$hex")
                     val darkness = 1.0 - (0.299 * Color.red(parsed) + 0.587 * Color.green(parsed) + 0.114 * Color.blue(parsed)) / 255.0
                     val theme = if (darkness > 0.45) "LIGHT" else "DARK"
-                    headerBgType = "COLOR"
-                    headerBgValue = hex
-                    headerTextTheme = theme
                     if (onApplied != null) {
                         onApplied(hex, theme)
                     } else {
-                        applyHeaderBackgroundUI("COLOR", hex, headerBgOverlay, theme)
-                        saveStoreFields(
-                            mapOf(
-                                "header_bg_type" to "COLOR",
-                                "header_bg_value" to hex,
-                                "header_text_theme" to theme
+                        if (target == "DESC") {
+                            descBgType = "COLOR"
+                            descBgValue = hex
+                            descTextTheme = theme
+                            applyDescBackgroundUI("COLOR", hex, descBgOverlay, theme)
+                            saveStoreFields(
+                                mapOf(
+                                    "desc_bg_type" to "COLOR",
+                                    "desc_bg_value" to hex,
+                                    "desc_text_theme" to theme
+                                )
                             )
-                        )
+                        } else {
+                            headerBgType = "COLOR"
+                            headerBgValue = hex
+                            headerTextTheme = theme
+                            applyHeaderBackgroundUI("COLOR", hex, headerBgOverlay, theme)
+                            saveStoreFields(
+                                mapOf(
+                                    "header_bg_type" to "COLOR",
+                                    "header_bg_value" to hex,
+                                    "header_text_theme" to theme
+                                )
+                            )
+                        }
                         Toast.makeText(this, "Fondo aplicado ✨", Toast.LENGTH_SHORT).show()
                     }
                 } catch (_: Exception) {
@@ -2239,6 +2817,7 @@ class StoreProfileActivity : BaseActivity() {
             "LOGO" -> "Subir Logo del Negocio"
             "COVER" -> "Subir Imagen de Portada"
             "HEADER_BG" -> "Fondo para Cabecera del Negocio"
+            "DESC_BG" -> "Fondo para Descripción del Negocio"
             else -> "Agregar Fotos a la Sección"
         }
         AlertDialog.Builder(this)
@@ -2257,6 +2836,7 @@ class StoreProfileActivity : BaseActivity() {
             "COVER" -> pickCoverLauncher.launch("image/*")
             "SECTION" -> pickSectionImagesLauncher.launch("image/*")
             "HEADER_BG" -> pickHeaderBgLauncher.launch("image/*")
+            "DESC_BG" -> pickDescBgLauncher.launch("image/*")
         }
     }
 
@@ -2309,6 +2889,17 @@ class StoreProfileActivity : BaseActivity() {
             storeProfileBinding.viewHeaderBgOverlay.setBackgroundColor(Color.BLACK)
             loadHeaderBackgroundImage(uri.toString())
             applyHeaderBackgroundUI("IMAGE", uri.toString(), 0.45, "LIGHT")
+        } else if (type == "DESC_BG") {
+            Toast.makeText(this, "Aplicando foto de fondo... ✨", Toast.LENGTH_SHORT).show()
+            descBgType = "IMAGE"
+            descBgOverlay = 0.45
+            descTextTheme = "LIGHT"
+            storeProfileBinding.ivDescCustomBg.visibility = View.VISIBLE
+            storeProfileBinding.viewDescBgOverlay.visibility = View.VISIBLE
+            storeProfileBinding.viewDescBgOverlay.alpha = 0.45f
+            storeProfileBinding.viewDescBgOverlay.setBackgroundColor(Color.BLACK)
+            loadDescBackgroundImage(uri.toString())
+            applyDescBackgroundUI("IMAGE", uri.toString(), 0.45, "LIGHT")
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
@@ -2317,12 +2908,14 @@ class StoreProfileActivity : BaseActivity() {
                 "LOGO" -> "logos/$storeId/$docId.png"
                 "COVER" -> "covers/$storeId/$docId.png"
                 "HEADER_BG" -> "header_bg/$storeId/${docId}_${System.currentTimeMillis()}.jpg"
+                "DESC_BG" -> "desc_bg/$storeId/${docId}_${System.currentTimeMillis()}.jpg"
                 else -> "misc/$storeId/${System.currentTimeMillis()}.png"
             }
             val localFileName = when (type) {
                 "LOGO" -> "logo_live.png"
                 "COVER" -> "cover_live.png"
                 "HEADER_BG" -> "header_bg_live.jpg"
+                "DESC_BG" -> "desc_bg_live.jpg"
                 else -> "misc_live.png"
             }
             val localPath = saveImageLocally(uri, localFileName)
@@ -2346,6 +2939,21 @@ class StoreProfileActivity : BaseActivity() {
                             )
                         )
                         Toast.makeText(this@StoreProfileActivity, "Fondo de cabecera guardado ✨", Toast.LENGTH_SHORT).show()
+                    } else if (type == "DESC_BG") {
+                        descBgType = "IMAGE"
+                        descBgValue = uploadedUrl
+                        descBgOverlay = 0.45
+                        descTextTheme = "LIGHT"
+                        applyDescBackgroundUI("IMAGE", uploadedUrl, 0.45, "LIGHT")
+                        saveStoreFields(
+                            mapOf(
+                                "desc_bg_type" to "IMAGE",
+                                "desc_bg_value" to uploadedUrl,
+                                "desc_bg_overlay" to 0.45,
+                                "desc_text_theme" to "LIGHT"
+                            )
+                        )
+                        Toast.makeText(this@StoreProfileActivity, "Fondo de descripción guardado ✨", Toast.LENGTH_SHORT).show()
                     } else {
                         val field = if (type == "LOGO") "business_logo_url" else "business_cover_url"
                         saveStoreFields(mapOf(field to uploadedUrl))
@@ -2358,6 +2966,16 @@ class StoreProfileActivity : BaseActivity() {
                             headerBgValue = localBg.absolutePath
                             applyHeaderBackgroundUI("IMAGE", localBg.absolutePath, 0.45, "LIGHT")
                             Toast.makeText(this@StoreProfileActivity, "Fondo de cabecera aplicado localmente ✨", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this@StoreProfileActivity, "No se pudo subir la imagen", Toast.LENGTH_SHORT).show()
+                        }
+                    } else if (type == "DESC_BG") {
+                        val localBg = File(filesDir, "desc_bg_live.jpg")
+                        if (localBg.exists()) {
+                            descBgType = "IMAGE"
+                            descBgValue = localBg.absolutePath
+                            applyDescBackgroundUI("IMAGE", localBg.absolutePath, 0.45, "LIGHT")
+                            Toast.makeText(this@StoreProfileActivity, "Fondo de descripción aplicado localmente ✨", Toast.LENGTH_SHORT).show()
                         } else {
                             Toast.makeText(this@StoreProfileActivity, "No se pudo subir la imagen", Toast.LENGTH_SHORT).show()
                         }
@@ -2608,6 +3226,56 @@ class StoreProfileActivity : BaseActivity() {
         }
     }
 
+    private fun serializeSectionsToJson(sections: List<StoreSection>): String {
+        val arr = org.json.JSONArray()
+        for (s in sections) {
+            val obj = org.json.JSONObject()
+            obj.put("id", s.id)
+            obj.put("title", s.title)
+            obj.put("titleStyled", s.titleStyled)
+            obj.put("description", s.description)
+            obj.put("descriptionStyled", s.descriptionStyled)
+            obj.put("aspectRatio", s.aspectRatio)
+            val urlArr = org.json.JSONArray()
+            s.imageUrls.forEach { urlArr.put(it) }
+            obj.put("imageUrls", urlArr)
+            arr.put(obj)
+        }
+        return arr.toString()
+    }
+
+    private fun deserializeSectionsFromJson(jsonStr: String): List<Map<String, Any>> {
+        if (jsonStr.isBlank()) return emptyList()
+        return try {
+            val arr = org.json.JSONArray(jsonStr)
+            val list = mutableListOf<Map<String, Any>>()
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                val urls = mutableListOf<String>()
+                val urlArr = obj.optJSONArray("imageUrls")
+                if (urlArr != null) {
+                    for (j in 0 until urlArr.length()) {
+                        urls.add(urlArr.getString(j))
+                    }
+                }
+                list.add(
+                    mapOf(
+                        "id" to obj.optString("id", UUID.randomUUID().toString()),
+                        "title" to obj.optString("title", ""),
+                        "titleStyled" to obj.optString("titleStyled", ""),
+                        "description" to obj.optString("description", ""),
+                        "descriptionStyled" to obj.optString("descriptionStyled", ""),
+                        "aspectRatio" to obj.optString("aspectRatio", "16:9"),
+                        "imageUrls" to urls
+                    )
+                )
+            }
+            list
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
     private fun persistExtraSections() {
         val rawList = extraSections.map { s ->
             mapOf(
@@ -2620,6 +3288,12 @@ class StoreProfileActivity : BaseActivity() {
                 "aspectRatio" to s.aspectRatio
             )
         }
+        try {
+            val json = serializeSectionsToJson(extraSections)
+            getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit()
+                .putString("cached_store_extra_sections", json)
+                .apply()
+        } catch (_: Exception) {}
         saveStoreFields(mapOf("extraSections" to rawList))
     }
 
@@ -2763,17 +3437,62 @@ class StoreProfileActivity : BaseActivity() {
         val payload = fields.toMutableMap()
         payload["business_type"] = docId
 
-        db.collection("users").document(storeId)
-            .collection("settings").document(docId)
+        val userDoc = db.collection("users").document(storeId)
+        userDoc.collection("settings").document(docId)
             .set(payload, SetOptions.merge())
             .addOnSuccessListener {
+                if (docId != "business") {
+                    userDoc.collection("settings").document("business")
+                        .set(payload, SetOptions.merge())
+                }
+                if (businessType.isNotEmpty() && businessType != docId && businessType != "business") {
+                    userDoc.collection("settings").document(businessType)
+                        .set(payload, SetOptions.merge())
+                }
+
                 val prefs = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit()
                 prefs.putBoolean("${docId}_hide_create_page_intro", true)
-                (fields["business_name"] as? String)?.let { prefs.putString("${docId}_name", it) }
-                (fields["business_owner_name"] as? String)?.let { prefs.putString("${docId}_owner_name", it) }
-                (fields["business_phone"] as? String)?.let { prefs.putString("${docId}_phone", it) }
-                (fields["business_address"] as? String)?.let { prefs.putString("${docId}_address", it) }
-                (fields["business_logo_url"] as? String)?.let { prefs.putString("${docId}_logo_url", it) }
+                prefs.putBoolean("business_hide_create_page_intro", true)
+                (fields["business_name"] as? String)?.let {
+                    prefs.putString("${docId}_name", it)
+                    prefs.putString("business_name", it)
+                }
+                (fields["business_name_styled"] as? String)?.let {
+                    prefs.putString("${docId}_name_styled", it)
+                    prefs.putString("business_name_styled", it)
+                }
+                (fields["business_description"] as? String)?.let {
+                    prefs.putString("${docId}_description", it)
+                    prefs.putString("business_description", it)
+                }
+                (fields["business_description_styled"] as? String)?.let {
+                    prefs.putString("${docId}_description_styled", it)
+                    prefs.putString("business_description_styled", it)
+                }
+                (fields["business_owner_name"] as? String)?.let {
+                    prefs.putString("${docId}_owner_name", it)
+                    prefs.putString("business_owner_name", it)
+                }
+                (fields["business_phone"] as? String)?.let {
+                    prefs.putString("${docId}_phone", it)
+                    prefs.putString("business_phone", it)
+                }
+                (fields["business_address"] as? String)?.let {
+                    prefs.putString("${docId}_address", it)
+                    prefs.putString("business_address", it)
+                }
+                (fields["business_logo_url"] as? String)?.let {
+                    prefs.putString("${docId}_logo_url", it)
+                    prefs.putString("business_logo_url", it)
+                }
+                (fields["business_cover_url"] as? String)?.let {
+                    prefs.putString("${docId}_cover_url", it)
+                    prefs.putString("business_cover_url", it)
+                }
+                (fields["header_bg_type"] as? String)?.let { prefs.putString("header_bg_type", it) }
+                (fields["header_bg_value"] as? String)?.let { prefs.putString("header_bg_value", it) }
+                (fields["desc_bg_type"] as? String)?.let { prefs.putString("desc_bg_type", it) }
+                (fields["desc_bg_value"] as? String)?.let { prefs.putString("desc_bg_value", it) }
                 (fields["is_online"] as? Boolean)?.let {
                     prefs.putBoolean("is_online_store", it)
                     prefs.putBoolean("${docId}_is_online", it)
@@ -2788,11 +3507,24 @@ class StoreProfileActivity : BaseActivity() {
     }
 
     private fun renderExtraSections(sections: List<Map<String, Any>>) {
-        lastRawExtraSections = sections
+        var effectiveSections = sections
+        if (effectiveSections.isEmpty()) {
+            if (extraSections.isNotEmpty()) {
+                return
+            }
+            val cachedJson = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).getString("cached_store_extra_sections", "") ?: ""
+            if (cachedJson.isNotBlank()) {
+                val recovered = deserializeSectionsFromJson(cachedJson)
+                if (recovered.isNotEmpty()) {
+                    effectiveSections = recovered
+                }
+            }
+        }
+        lastRawExtraSections = effectiveSections
         clearCarouselHandlers()
         storeProfileBinding.layoutExtraSectionsProfile.removeAllViews()
         extraSections.clear()
-        sections.forEachIndexed { secIndex, m ->
+        effectiveSections.forEachIndexed { secIndex, m ->
             val id = m["id"] as? String ?: UUID.randomUUID().toString()
             val title = m["title"] as? String ?: ""
             val desc = m["description"] as? String ?: ""
@@ -3321,10 +4053,24 @@ class StoreProfileActivity : BaseActivity() {
             return ViewHolder(iv)
         }
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            Glide.with(holder.itemView)
-                .load(urls[position])
-                .apply(GlideHelper.getOptions(holder.itemView.context))
-                .override(800, 600)
+            val url = urls[position]
+            val context = holder.itemView.context
+            val raw = url.trim()
+            val filename = raw.substringAfterLast("/")
+            val candidateFile = if (raw.isNotEmpty() && !raw.startsWith("http")) File(raw) else null
+            val candidateInFiles = File(filesDir, filename)
+            val candidateSecInFiles = File(filesDir, "sec_$filename")
+            val localResolved = when {
+                candidateFile?.exists() == true -> candidateFile
+                candidateInFiles.exists() -> candidateInFiles
+                candidateSecInFiles.exists() -> candidateSecInFiles
+                else -> null
+            }
+
+            Glide.with(context)
+                .load(localResolved ?: raw)
+                .apply(GlideHelper.getOptions(context))
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .into(holder.iv)
 
             holder.iv.setOnClickListener {
@@ -3341,8 +4087,12 @@ class StoreProfileActivity : BaseActivity() {
     }
 
     private var lastStoreData: String = ""
+    private var isResolvingSettingsFallback: Boolean = false
+    private var isMergingSiblingSettings: Boolean = false
+
     private fun startStoreListener(sId: String, forcedRubro: String?) {
         if (sId.isEmpty()) return
+        storeRegistration?.remove()
         val docId = forcedRubro ?: "business"
         val intentName = intent.getStringExtra("STORE_NAME") ?: ""
 
@@ -3354,8 +4104,53 @@ class StoreProfileActivity : BaseActivity() {
                     return@addSnapshotListener
                 }
                 if (doc == null || !doc.exists()) {
-                    if (forcedRubro != null && docId != "business" && !isOwner) {
-                        startStoreListener(sId, null)
+                    if (doc?.metadata?.isFromCache == true) {
+                        return@addSnapshotListener
+                    }
+                    if (!isResolvingSettingsFallback) {
+                        isResolvingSettingsFallback = true
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            try {
+                                val allSettings = db.collection("users").document(sId).collection("settings").get().await()
+                                val candidateDoc = when {
+                                    forcedRubro != null && allSettings.documents.any { it.id == forcedRubro && (it.data?.isNotEmpty() == true) } -> {
+                                        allSettings.documents.first { it.id == forcedRubro }
+                                    }
+                                    allSettings.documents.any { it.id == "HOTEL" && (it.data?.isNotEmpty() == true) } -> {
+                                        allSettings.documents.first { it.id == "HOTEL" }
+                                    }
+                                    allSettings.documents.any { it.id == "PRODUCTS" && (it.data?.isNotEmpty() == true) } -> {
+                                        allSettings.documents.first { it.id == "PRODUCTS" }
+                                    }
+                                    allSettings.documents.any { it.id == "business" && (it.data?.isNotEmpty() == true) } -> {
+                                        allSettings.documents.first { it.id == "business" }
+                                    }
+                                    allSettings.documents.any { (it.data?.isNotEmpty() == true) } -> {
+                                        allSettings.documents.first { it.data?.isNotEmpty() == true }
+                                    }
+                                    else -> null
+                                }
+                                withContext(Dispatchers.Main) {
+                                    isResolvingSettingsFallback = false
+                                    if (candidateDoc != null && candidateDoc.id != docId) {
+                                        activeSettingsDocId = candidateDoc.id
+                                        businessType = candidateDoc.getString("business_type") ?: candidateDoc.id
+                                        startStoreListener(sId, candidateDoc.id)
+                                    } else {
+                                        activeSettingsDocId = forcedRubro ?: "PRODUCTS"
+                                        applyBlankOrDefaultOwnerState()
+                                        dismissLoadingOverlay()
+                                    }
+                                }
+                            } catch (_: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    isResolvingSettingsFallback = false
+                                    activeSettingsDocId = forcedRubro ?: "PRODUCTS"
+                                    applyBlankOrDefaultOwnerState()
+                                    dismissLoadingOverlay()
+                                }
+                            }
+                        }
                     } else {
                         activeSettingsDocId = forcedRubro ?: "PRODUCTS"
                         applyBlankOrDefaultOwnerState()
@@ -3363,11 +4158,12 @@ class StoreProfileActivity : BaseActivity() {
                     }
                     return@addSnapshotListener
                 }
-                
+                isResolvingSettingsFallback = false
+
                 val currentData = doc.data.toString()
                 if (currentData == lastStoreData) return@addSnapshotListener
                 lastStoreData = currentData
-                activeSettingsDocId = docId
+                activeSettingsDocId = doc.id
 
                 cachedAverageRating = doc.getDouble("average_rating") ?: 0.0
                 cachedReviewCount = (doc.getLong("review_count") ?: 0L).toInt()
@@ -3379,14 +4175,21 @@ class StoreProfileActivity : BaseActivity() {
                     updateFollowersSummaryPill(cachedFollowersCount)
                 }
 
-                val rawName = doc.getString("business_name") ?: doc.getString("${docId}_name") ?: intentName
-                val cleanName = if (rawName.equals("Mi Negocio", ignoreCase = true)) "" else rawName
+                val rawName = doc.getString("business_name")
+                    ?: doc.getString("${doc.id}_name")
+                    ?: doc.getString("name")
+                    ?: intentName
+                val cleanName = if (rawName.equals("Mi Negocio", ignoreCase = true)) {
+                    if (intentName.isNotBlank() && !intentName.equals("Mi Negocio", ignoreCase = true)) intentName else ""
+                } else {
+                    rawName
+                }
                 val desc = doc.getString("business_description") ?: ""
                 val addr = doc.getString("business_address") ?: ""
                 val logo = doc.getString("business_logo_url")
                 val cover = doc.getString("business_cover_url")
                 val owner = doc.getString("business_owner_name") ?: ""
-                val bType = doc.getString("business_type") ?: forcedRubro ?: "PRODUCTS"
+                val bType = doc.getString("business_type") ?: forcedRubro ?: doc.id.takeIf { it != "business" } ?: "PRODUCTS"
                 isStoreOnline = doc.getBoolean("is_online") ?: false
                 isStoreVerified = doc.getBoolean("is_verified") ?: false
                 updateVerifiedBadgeUI()
@@ -3421,6 +4224,12 @@ class StoreProfileActivity : BaseActivity() {
                 headerTextTheme = doc.getString("header_text_theme") ?: if (headerBgType == "IMAGE" || headerBgType == "GRADIENT") "LIGHT" else "DARK"
                 applyHeaderBackgroundUI(headerBgType, headerBgValue, headerBgOverlay, headerTextTheme)
 
+                descBgType = doc.getString("desc_bg_type") ?: "NONE"
+                descBgValue = doc.getString("desc_bg_value") ?: ""
+                descBgOverlay = doc.getDouble("desc_bg_overlay") ?: 0.45
+                descTextTheme = doc.getString("desc_text_theme") ?: if (descBgType == "IMAGE" || descBgType == "GRADIENT") "LIGHT" else "DARK"
+                applyDescBackgroundUI(descBgType, descBgValue, descBgOverlay, descTextTheme)
+
                 if (isOwner && (cleanName.isNotBlank() || desc.isNotBlank() || !logo.isNullOrEmpty() || !cover.isNullOrEmpty())) {
                     getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit()
                         .putBoolean("${bType}_hide_create_page_intro", true)
@@ -3447,64 +4256,22 @@ class StoreProfileActivity : BaseActivity() {
                 }
                 updateOwnerPublishButtonUI()
 
-                val glide = Glide.with(this@StoreProfileActivity)
-
-                if (!logo.isNullOrEmpty()) {
-                    storeProfileBinding.layoutLogoPlaceholder.visibility = View.GONE
-                    storeProfileBinding.pbLogoLoading.visibility = View.VISIBLE
-                    storeProfileBinding.ivProfileStoreLogo.alpha = 0f
-                    glide.load(logo)
-                        .apply(GlideHelper.getOptions(this@StoreProfileActivity))
-                        .listener(object : RequestListener<Drawable> {
-                            override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>, isFirstResource: Boolean): Boolean {
-                                storeProfileBinding.pbLogoLoading.visibility = View.GONE
-                                storeProfileBinding.ivProfileStoreLogo.alpha = 1f
-                                return false
-                            }
-                            override fun onResourceReady(resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean): Boolean {
-                                storeProfileBinding.pbLogoLoading.visibility = View.GONE
-                                storeProfileBinding.ivProfileStoreLogo.animate().alpha(1f).setDuration(400).start()
-                                return false
-                            }
-                        })
-                        .circleCrop()
-                        .into(storeProfileBinding.ivProfileStoreLogo)
-                } else {
-                    storeProfileBinding.ivProfileStoreLogo.setImageDrawable(null)
-                    storeProfileBinding.layoutLogoPlaceholder.visibility = if (isEditingStore) View.VISIBLE else View.GONE
-                }
+                val localLogo = File(filesDir, "logo_live.png")
+                val effectiveLogo = if (!logo.isNullOrEmpty()) logo else if (isOwner && localLogo.exists()) localLogo.absolutePath else null
+                applyLogoImageUI(effectiveLogo)
                 
-                if (!cover.isNullOrEmpty()) {
-                    storeProfileBinding.layoutCoverPlaceholder.visibility = View.GONE
-                    storeProfileBinding.pbCoverLoading.visibility = View.VISIBLE
-                    storeProfileBinding.ivStoreCover.alpha = 0f
-                    glide.load(cover)
-                        .apply(GlideHelper.getOptions(this@StoreProfileActivity))
-                        .listener(object : RequestListener<Drawable> {
-                            override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>, isFirstResource: Boolean): Boolean {
-                                storeProfileBinding.pbCoverLoading.visibility = View.GONE
-                                storeProfileBinding.ivStoreCover.alpha = 1f
-                                return false
-                            }
-                            override fun onResourceReady(resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean): Boolean {
-                                storeProfileBinding.pbCoverLoading.visibility = View.GONE
-                                storeProfileBinding.ivStoreCover.animate().alpha(1f).setDuration(400).start()
-                                return false
-                            }
-                        })
-                        .centerCrop()
-                        .into(storeProfileBinding.ivStoreCover)
-                } else {
-                    storeProfileBinding.ivStoreCover.setImageDrawable(null)
-                    storeProfileBinding.layoutCoverPlaceholder.visibility = if (isEditingStore) View.VISIBLE else View.GONE
-                }
+                val localCover = File(filesDir, "cover_live.png")
+                val effectiveCover = if (!cover.isNullOrEmpty()) cover else if (isOwner && localCover.exists()) localCover.absolutePath else null
+                applyCoverImageUI(effectiveCover)
 
                 val lat = doc.getDouble("latitude") ?: 0.0
                 val lng = doc.getDouble("longitude") ?: 0.0
                 updateMapLocation(lat, lng, cleanName.ifEmpty { "Mi Negocio" })
 
-                val extras = doc.get("extraSections") as? List<Map<String, Any>> ?: emptyList()
-                renderExtraSections(extras)
+                val rawExtras = doc.get("extraSections") as? List<Map<String, Any>> ?: emptyList()
+                if (rawExtras.isNotEmpty() || extraSections.isEmpty()) {
+                    renderExtraSections(rawExtras)
+                }
 
                 val payments = doc.get("paymentMethods") as? List<Map<String, Any>>
                 paymentMethods.clear()
@@ -3526,6 +4293,172 @@ class StoreProfileActivity : BaseActivity() {
                     loadRecommendations(bType)
                 }
 
+                // Sincronización y curación multi-documento:
+                // Si el documento actual carece de secciones, portada, logo, descripción completa o fondos,
+                // recuperarlos de los documentos hermanos de settings ("business", "HOTEL", "PRODUCTS")
+                val needsSiblingMerge = isOwner && (rawExtras.isEmpty() ||
+                        cover.isNullOrEmpty() ||
+                        logo.isNullOrEmpty() ||
+                        desc.length < 30 ||
+                        (headerBgType == "NONE" && headerBgValue.isEmpty()) ||
+                        (descBgType == "NONE" && descBgValue.isEmpty()) ||
+                        cleanName.endsWith("-") ||
+                        cleanName.length < 5)
+
+                if (needsSiblingMerge && !isMergingSiblingSettings) {
+                    isMergingSiblingSettings = true
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            val allSettings = db.collection("users").document(sId).collection("settings").get().await()
+                            val siblingDocs = allSettings.documents.filter { it.id != doc.id && (it.data?.isNotEmpty() == true) }
+
+                            val bestExtras = if (rawExtras.isEmpty()) {
+                                siblingDocs.mapNotNull { it.get("extraSections") as? List<Map<String, Any>> }
+                                    .firstOrNull { it.isNotEmpty() } ?: emptyList()
+                            } else rawExtras
+
+                            val bestCover = if (cover.isNullOrEmpty()) {
+                                siblingDocs.mapNotNull { it.getString("business_cover_url") }.firstOrNull { it.isNotEmpty() }
+                            } else cover
+
+                            val bestLogo = if (logo.isNullOrEmpty()) {
+                                siblingDocs.mapNotNull { it.getString("business_logo_url") }.firstOrNull { it.isNotEmpty() }
+                            } else logo
+
+                            val bestDescDoc = if (desc.length < 30) {
+                                siblingDocs.maxByOrNull { it.getString("business_description")?.length ?: 0 }
+                            } else null
+                            val bestDesc = bestDescDoc?.getString("business_description")?.takeIf { it.length > desc.length } ?: desc
+                            val bestDescStyled = bestDescDoc?.getString("business_description_styled")?.takeIf { (bestDescDoc.getString("business_description")?.length ?: 0) > desc.length } ?: doc.getString("business_description_styled") ?: ""
+
+                            val bestHeaderDoc = if (headerBgType == "NONE" && headerBgValue.isEmpty()) {
+                                siblingDocs.firstOrNull { (it.getString("header_bg_type") ?: "NONE") != "NONE" || !it.getString("header_bg_value").isNullOrEmpty() }
+                            } else null
+                            val bestHType = bestHeaderDoc?.getString("header_bg_type") ?: headerBgType
+                            val bestHVal = bestHeaderDoc?.getString("header_bg_value") ?: headerBgValue
+                            val bestHOverlay = bestHeaderDoc?.getDouble("header_bg_overlay") ?: doc.getDouble("header_bg_overlay") ?: 0.45
+                            val bestHTheme = bestHeaderDoc?.getString("header_text_theme") ?: doc.getString("header_text_theme")
+
+                            val bestDescBgDoc = if (descBgType == "NONE" && descBgValue.isEmpty()) {
+                                siblingDocs.firstOrNull { (it.getString("desc_bg_type") ?: "NONE") != "NONE" || !it.getString("desc_bg_value").isNullOrEmpty() }
+                            } else null
+                            val bestDType = bestDescBgDoc?.getString("desc_bg_type") ?: descBgType
+                            val bestDVal = bestDescBgDoc?.getString("desc_bg_value") ?: descBgValue
+                            val bestDOverlay = bestDescBgDoc?.getDouble("desc_bg_overlay") ?: doc.getDouble("desc_bg_overlay") ?: 0.45
+                            val bestDTheme = bestDescBgDoc?.getString("desc_text_theme") ?: doc.getString("desc_text_theme")
+
+                            val bestNameDoc = if (cleanName.endsWith("-") || cleanName.length < 5) {
+                                siblingDocs.firstOrNull {
+                                    val n = it.getString("business_name") ?: ""
+                                    n.isNotBlank() && !n.endsWith("-") && n.length > cleanName.length
+                                }
+                            } else null
+                            val bestName = bestNameDoc?.getString("business_name") ?: cleanName
+                            val bestNameStyled = bestNameDoc?.getString("business_name_styled") ?: doc.getString("business_name_styled") ?: ""
+
+                            val healPayload = mutableMapOf<String, Any>()
+                            if (bestExtras.isNotEmpty() && rawExtras.isEmpty()) healPayload["extraSections"] = bestExtras
+                            if (!bestCover.isNullOrEmpty() && cover.isNullOrEmpty()) healPayload["business_cover_url"] = bestCover
+                            if (!bestLogo.isNullOrEmpty() && logo.isNullOrEmpty()) healPayload["business_logo_url"] = bestLogo
+                            if (bestDesc.length > desc.length) {
+                                healPayload["business_description"] = bestDesc
+                                healPayload["business_description_styled"] = bestDescStyled
+                            }
+                            if (bestHType != "NONE" && headerBgType == "NONE") {
+                                healPayload["header_bg_type"] = bestHType
+                                healPayload["header_bg_value"] = bestHVal
+                                healPayload["header_bg_overlay"] = bestHOverlay
+                                bestHTheme?.let { healPayload["header_text_theme"] = it }
+                            }
+                            if (bestDType != "NONE" && descBgType == "NONE") {
+                                healPayload["desc_bg_type"] = bestDType
+                                healPayload["desc_bg_value"] = bestDVal
+                                healPayload["desc_bg_overlay"] = bestDOverlay
+                                bestDTheme?.let { healPayload["desc_text_theme"] = it }
+                            }
+                            if (bestName.length > cleanName.length) {
+                                healPayload["business_name"] = bestName
+                                healPayload["business_name_styled"] = bestNameStyled
+                            }
+
+                            withContext(Dispatchers.Main) {
+                                isMergingSiblingSettings = false
+                                if (healPayload.isNotEmpty()) {
+                                    if (bestExtras.isNotEmpty() && extraSections.isEmpty()) {
+                                        renderExtraSections(bestExtras)
+                                    }
+                                    if (!bestCover.isNullOrEmpty() && (storeCoverUrl.isNullOrEmpty() || storeProfileBinding.ivStoreCover.drawable == null)) {
+                                        storeCoverUrl = bestCover
+                                        applyCoverImageUI(bestCover)
+                                    }
+                                    if (!bestLogo.isNullOrEmpty() && (storeLogoUrl.isNullOrEmpty() || storeProfileBinding.ivProfileStoreLogo.drawable == null)) {
+                                        storeLogoUrl = bestLogo
+                                        applyLogoImageUI(bestLogo)
+                                    }
+                                    if (bestDesc.length > storeDescription.length) {
+                                        storeDescription = bestDesc
+                                        storeDescriptionStyled = bestDescStyled
+                                        refreshStoreTextAndPlaceholdersUI()
+                                    }
+                                    if (bestHType != "NONE" && headerBgType == "NONE") {
+                                        headerBgType = bestHType
+                                        headerBgValue = bestHVal
+                                        headerBgOverlay = bestHOverlay
+                                        headerTextTheme = bestHTheme ?: "DARK"
+                                        applyHeaderBackgroundUI(headerBgType, headerBgValue, headerBgOverlay, headerTextTheme)
+                                    }
+                                    if (bestDType != "NONE" && descBgType == "NONE") {
+                                        descBgType = bestDType
+                                        descBgValue = bestDVal
+                                        descBgOverlay = bestDOverlay
+                                        descTextTheme = bestDTheme ?: "DARK"
+                                        applyDescBackgroundUI(descBgType, descBgValue, descBgOverlay, descTextTheme)
+                                    }
+                                    if (bestName.length > storeDisplayName.length) {
+                                        storeDisplayName = bestName
+                                        storeDisplayNameStyled = bestNameStyled
+                                        refreshStoreTextAndPlaceholdersUI()
+                                    }
+
+                                    db.collection("users").document(sId).collection("settings").document(doc.id)
+                                        .set(healPayload, SetOptions.merge())
+                                    db.collection("users").document(sId).collection("settings").document("business")
+                                        .set(healPayload, SetOptions.merge())
+
+                                    val sp = getSharedPreferences("BusinessPrefs", MODE_PRIVATE).edit()
+                                    (healPayload["business_name"] as? String)?.let {
+                                        sp.putString("${doc.id}_name", it)
+                                        sp.putString("business_name", it)
+                                    }
+                                    (healPayload["business_name_styled"] as? String)?.let {
+                                        sp.putString("${doc.id}_name_styled", it)
+                                        sp.putString("business_name_styled", it)
+                                    }
+                                    (healPayload["business_description"] as? String)?.let {
+                                        sp.putString("${doc.id}_description", it)
+                                        sp.putString("business_description", it)
+                                    }
+                                    (healPayload["business_description_styled"] as? String)?.let {
+                                        sp.putString("${doc.id}_description_styled", it)
+                                        sp.putString("business_description_styled", it)
+                                    }
+                                    (healPayload["business_cover_url"] as? String)?.let {
+                                        sp.putString("${doc.id}_cover_url", it)
+                                        sp.putString("business_cover_url", it)
+                                    }
+                                    (healPayload["business_logo_url"] as? String)?.let {
+                                        sp.putString("${doc.id}_logo_url", it)
+                                        sp.putString("business_logo_url", it)
+                                    }
+                                    sp.apply()
+                                }
+                            }
+                        } catch (_: Exception) {
+                            withContext(Dispatchers.Main) { isMergingSiblingSettings = false }
+                        }
+                    }
+                }
+
                 dismissLoadingOverlay()
             }
     }
@@ -3539,7 +4472,8 @@ class StoreProfileActivity : BaseActivity() {
             else -> "TIENDA DE PRODUCTOS"
         }
         refreshStoreTextAndPlaceholdersUI()
-        applyHeaderBackgroundUI("NONE", "", 0.45, "DARK")
+        if (headerBgType == "NONE") applyHeaderBackgroundUI("NONE", "", 0.45, "DARK")
+        if (descBgType == "NONE") applyDescBackgroundUI("NONE", "", 0.45, "DARK")
         renderPublicPaymentMethods()
         updateOwnerPublishButtonUI()
         dismissLoadingOverlay()
@@ -3547,8 +4481,10 @@ class StoreProfileActivity : BaseActivity() {
 
     private var loadingLogoAnimator: ObjectAnimator? = null
     private var isFirstLoadDismissed = false
+    private var loadingOverlayStartTime: Long = 0L
 
     private fun showLoadingOverlay() {
+        loadingOverlayStartTime = System.currentTimeMillis()
         isFirstLoadDismissed = false
         storeProfileBinding.layoutFullPageLoadingOverlay.visibility = View.VISIBLE
         storeProfileBinding.layoutFullPageLoadingOverlay.alpha = 1f
@@ -3576,17 +4512,27 @@ class StoreProfileActivity : BaseActivity() {
     private fun dismissLoadingOverlay() {
         if (isFirstLoadDismissed) return
         isFirstLoadDismissed = true
-        loadingLogoAnimator?.cancel()
 
-        storeProfileBinding.layoutFullPageLoadingOverlay.animate()
-            .alpha(0f)
-            .setDuration(300)
-            .withEndAction {
-                if (!isDestroyed && !isFinishing) {
-                    storeProfileBinding.layoutFullPageLoadingOverlay.visibility = View.GONE
-                }
+        val elapsed = System.currentTimeMillis() - loadingOverlayStartTime
+        val remaining = (3000L - elapsed).coerceAtLeast(0L)
+
+        lifecycleScope.launch {
+            if (remaining > 0L) {
+                kotlinx.coroutines.delay(remaining)
             }
-            .start()
+            if (isFinishing || isDestroyed) return@launch
+
+            loadingLogoAnimator?.cancel()
+            storeProfileBinding.layoutFullPageLoadingOverlay.animate()
+                .alpha(0f)
+                .setDuration(350)
+                .withEndAction {
+                    if (!isDestroyed && !isFinishing) {
+                        storeProfileBinding.layoutFullPageLoadingOverlay.visibility = View.GONE
+                    }
+                }
+                .start()
+        }
     }
 
     private fun showLoadingError(message: String) {
@@ -3613,8 +4559,12 @@ class StoreProfileActivity : BaseActivity() {
             val bgColor = Color.parseColor(bg)
 
             storeProfileBinding.nsvStoreProfile.setBackgroundColor(bgColor)
-            storeProfileBinding.tvProfileStoreName.setTextColor(textColor)
-            storeProfileBinding.tvProfileStoreDesc.setTextColor(textColor)
+            if (headerBgType == "NONE") {
+                storeProfileBinding.tvProfileStoreName.setTextColor(textColor)
+            }
+            if (descBgType == "NONE") {
+                storeProfileBinding.tvProfileStoreDesc.setTextColor(textColor)
+            }
             
             val typeface = when(font) {
                 "CLASSIC" -> Typeface.SERIF
@@ -3978,31 +4928,9 @@ class StoreProfileActivity : BaseActivity() {
                     .show()
             }
         }
-        storeProfileBinding.rvStoreUpdates.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        storeProfileBinding.rvStoreUpdates.adapter = storeUpdatesAdapter
     }
 
     private fun startUpdatesListener(sId: String) {
-        if (sId.isEmpty()) return
-        updatesRegistration?.remove()
-        updatesRegistration = db.collection("users").document(sId).collection("updates")
-            .orderBy("createdAt", Query.Direction.DESCENDING)
-            .limit(10)
-            .addSnapshotListener { snapshot, _ ->
-                if (snapshot == null) return@addSnapshotListener
-                val list = snapshot.documents.mapNotNull { doc ->
-                    doc.toObject(StoreUpdate::class.java)?.let { u ->
-                        if (u.id.isBlank()) u.copy(id = doc.id) else u
-                    }
-                }
-                currentStoreUpdates = list
-                storeUpdatesAdapter.updateData(list)
-
-                val showSection = isOwner || list.isNotEmpty()
-                storeProfileBinding.layoutStoreUpdatesSection.visibility = if (showSection) View.VISIBLE else View.GONE
-                storeProfileBinding.rvStoreUpdates.visibility = if (list.isEmpty()) View.GONE else View.VISIBLE
-                storeProfileBinding.tvNoStoreUpdates.visibility = if (isOwner && list.isEmpty()) View.VISIBLE else View.GONE
-            }
     }
 
     private fun showPublishStoreUpdateDialog() {
@@ -4054,9 +4982,13 @@ class StoreProfileActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         storeMapView?.onResume()
+        if (isPaymentMarqueeActive && paymentMarqueeSingleWidth > 0) {
+            startPaymentMarquee()
+        }
     }
 
     override fun onPause() {
+        stopPaymentMarquee()
         hotelStatusPulseAnimator?.cancel()
         loadingLogoAnimator?.cancel()
         clearCarouselHandlers()
@@ -4066,6 +4998,7 @@ class StoreProfileActivity : BaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopPaymentMarquee()
         hotelStatusPulseAnimator?.cancel()
         clearCarouselHandlers()
         mapInitJob?.cancel()

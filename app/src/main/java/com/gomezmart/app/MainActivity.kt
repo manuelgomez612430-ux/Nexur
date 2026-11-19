@@ -84,6 +84,7 @@ class MainActivity : BaseActivity() {
         // Quitamos applyTop = true porque los fragmentos manejarán su propia cabecera (Edge-to-Edge)
         applyWindowInsets(binding.mainContentRoot, applyTop = false, applyBottom = false)
         applyWindowInsetsMargins(binding.cardBottomNavContainer, applyTop = false, applyBottom = true)
+        applyWindowInsetsMargins(binding.cardInterfaceMenuOverlay, applyTop = false, applyBottom = true)
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.navigationViewMain) { v, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
@@ -509,9 +510,32 @@ class MainActivity : BaseActivity() {
         binding.cardInterfaceMenuOverlay.animate().setListener(null).withEndAction(null).cancel()
         binding.viewInterfaceBackdrop.visibility = View.VISIBLE
         binding.cardInterfaceMenuOverlay.visibility = View.VISIBLE
+
+        val parentW = binding.mainContentRoot.width
+        val parentH = binding.mainContentRoot.height
+        if (parentW > 0 && parentH > 0) {
+            binding.viewInterfaceBackdrop.measure(
+                View.MeasureSpec.makeMeasureSpec(parentW, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(parentH, View.MeasureSpec.EXACTLY)
+            )
+            binding.viewInterfaceBackdrop.layout(0, 0, parentW, parentH)
+
+            val margins = binding.cardInterfaceMenuOverlay.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+            val hMargins = (margins?.leftMargin ?: 0) + (margins?.rightMargin ?: 0)
+            val bMargin = margins?.bottomMargin ?: 0
+            val cardW = parentW - hMargins
+            binding.cardInterfaceMenuOverlay.measure(
+                View.MeasureSpec.makeMeasureSpec(cardW, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(parentH, View.MeasureSpec.AT_MOST)
+            )
+            val cardH = binding.cardInterfaceMenuOverlay.measuredHeight
+            val left = margins?.leftMargin ?: 0
+            val top = parentH - bMargin - cardH
+            binding.cardInterfaceMenuOverlay.layout(left, top, left + cardW, top + cardH)
+        }
+
         binding.cardInterfaceMenuOverlay.translationY = 60f
         binding.cardInterfaceMenuOverlay.alpha = 0f
-
         binding.cardInterfaceMenuOverlay.animate()
             .translationY(0f)
             .alpha(1f)
@@ -683,13 +707,15 @@ class MainActivity : BaseActivity() {
     private fun switchToBusinessSystem(type: String) {
         hideFloatingInterfaceMenu()
         ensureModuleInstalled(type) {
-            getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE).edit()
-                .putString("business_type", type)
-                .apply()
-            startActivity(Intent(this, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-            })
-            finish()
+            com.gomezmart.app.util.SystemLoadingDialog.show(this, type) {
+                getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE).edit()
+                    .putString("business_type", type)
+                    .apply()
+                startActivity(Intent(this, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                })
+                finish()
+            }
         }
     }
 
@@ -797,44 +823,49 @@ class MainActivity : BaseActivity() {
     }
 
     private fun replaceFragment(fragment: Fragment) {
+        val currentFragment = supportFragmentManager.findFragmentById(R.id.mainFragmentContainer)
+        if (currentFragment != null && 
+            currentFragment::class.java == fragment::class.java && 
+            currentFragment.isAdded && 
+            currentFragment.view != null
+        ) {
+            return
+        }
+
         if (binding.mainFragmentContainer.visibility != View.VISIBLE) {
             binding.mainFragmentContainer.visibility = View.VISIBLE
         }
         if (binding.cardBottomNavContainer.visibility != View.VISIBLE) {
             binding.cardBottomNavContainer.visibility = View.VISIBLE
         }
-        val currentFragment = supportFragmentManager.findFragmentById(R.id.mainFragmentContainer)
-        if (currentFragment != null && currentFragment::class.java == fragment::class.java && currentFragment.isAdded) {
-            currentFragment.view?.let { v ->
-                if (v.width == 0 || v.height == 0) {
-                    binding.mainFragmentContainer.post {
-                        if (this::binding.isInitialized && !isDestroyed && !isFinishing) {
-                            v.requestLayout()
-                            binding.mainFragmentContainer.requestLayout()
-                        }
+
+        try {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.mainFragmentContainer, fragment)
+                .commitNowAllowingStateLoss()
+        } catch (e: Exception) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.mainFragmentContainer, fragment)
+                .commitAllowingStateLoss()
+        }
+
+        binding.mainFragmentContainer.forceLayout()
+        binding.mainFragmentContainer.requestLayout()
+        binding.mainFragmentContainer.post {
+            if (!this::binding.isInitialized || isDestroyed || isFinishing) return@post
+            val count = binding.mainFragmentContainer.childCount
+            val w = binding.mainFragmentContainer.width
+            val h = binding.mainFragmentContainer.height
+            if (w > 0 && h > 0) {
+                for (i in 0 until count) {
+                    val child = binding.mainFragmentContainer.getChildAt(i) ?: continue
+                    if (child.visibility != View.GONE) {
+                        binding.mainFragmentContainer.measureChildSafely(child, w, h)
+                        binding.mainFragmentContainer.layoutChildSafely(child, w, h)
+                        child.invalidate()
                     }
                 }
             }
-            return
-        }
-
-        val transaction = supportFragmentManager.beginTransaction()
-        transaction.replace(R.id.mainFragmentContainer, fragment)
-        if (supportFragmentManager.isStateSaved) {
-            transaction.commitAllowingStateLoss()
-        } else {
-            transaction.commit()
-        }
-        
-        // Ejecutar las transacciones pendientes al instante para evitar vacíos
-        supportFragmentManager.executePendingTransactions()
-        
-        binding.mainContentRoot.post {
-            if (!this::binding.isInitialized || isDestroyed || isFinishing) return@post
-            binding.mainFragmentContainer.visibility = View.GONE
-            binding.mainFragmentContainer.visibility = View.VISIBLE
-            binding.mainFragmentContainer.requestLayout()
-            binding.mainContentRoot.requestLayout()
         }
     }
 
@@ -906,7 +937,8 @@ class MainActivity : BaseActivity() {
         }
         hideFloatingInterfaceMenu(immediate = true)
         updateMenuForBusinessType()
-        if (supportFragmentManager.findFragmentById(R.id.mainFragmentContainer) == null) {
+        val activeFrag = supportFragmentManager.findFragmentById(R.id.mainFragmentContainer)
+        if (activeFrag == null) {
             navigateToInicio()
         }
         binding.mainContentRoot.post {

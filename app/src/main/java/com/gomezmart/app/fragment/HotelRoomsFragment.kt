@@ -478,10 +478,6 @@ class HotelRoomsFragment : Fragment() {
             ) { rooms, maintenance, bookings ->
                 Triple(rooms, maintenance, bookings)
             }.collectLatest { (rooms, maintenance, bookings) ->
-                val startOfToday = Calendar.getInstance().apply {
-                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                }.timeInMillis
 
                 // Procesamiento de datos para UI
                 val processedData = withContext(Dispatchers.Default) {
@@ -510,7 +506,23 @@ class HotelRoomsFragment : Fragment() {
 
                 _binding?.let { b ->
                     allRooms = rooms
-                    adapter.submitList(processedData.first)
+                    adapter.submitList(processedData.first) {
+                        if (_binding != null) {
+                            b.rvRooms.post {
+                                if (_binding != null && b.rvRooms.childCount == 0 && adapter.itemCount > 0) {
+                                    b.rvRooms.scrollBy(0, 1)
+                                    b.rvRooms.scrollBy(0, -1)
+                                }
+                            }
+                        }
+                    }
+
+                    b.rvRooms.post {
+                        if (_binding != null && b.rvRooms.childCount == 0 && adapter.itemCount > 0) {
+                            b.rvRooms.scrollBy(0, 1)
+                            b.rvRooms.scrollBy(0, -1)
+                        }
+                    }
 
                     val isEmpty = processedData.first.isEmpty()
                     val isListView = b.toggleViewMode.checkedButtonId != R.id.btnGraphView
@@ -529,14 +541,17 @@ class HotelRoomsFragment : Fragment() {
                     b.mapView.invalidate()
                 }
 
-                // Ejecutar actualización en lote de habitaciones libres pendientes de aseo
+                // No se marcan habitaciones libres como "DIRTY" automáticamente cada día.
+                // Si alguna habitación libre quedó con status DIRTY sin huésped activo por la lógica anterior,
+                // la restauramos a FREE para que figure como disponible de inmediato.
                 withContext(Dispatchers.IO) {
-                    val roomsToUpdate = rooms.filter { it.status == "FREE" && it.lastCleaned < startOfToday }
-                    if (roomsToUpdate.isNotEmpty()) {
-                        val updatedList = roomsToUpdate.map { it.copy(status = "DIRTY") }
-                        database.hotelDao().updateRooms(updatedList)
+                    val occupiedIds = bookings.filter { it.status == "CONFIRMED" }.map { it.roomId }.toSet()
+                    val autoMarkedDirty = rooms.filter { it.status == "DIRTY" && !occupiedIds.contains(it.id) && it.lastCleaned > 0L }
+                    if (autoMarkedDirty.isNotEmpty()) {
+                        val restoredList = autoMarkedDirty.map { it.copy(status = "FREE") }
+                        database.hotelDao().updateRooms(restoredList)
                         val sm = SyncManager(appContext)
-                        updatedList.forEach { sm.syncHotelRoomToCloud(it) }
+                        restoredList.forEach { sm.syncHotelRoomToCloud(it) }
                     }
                 }
             }

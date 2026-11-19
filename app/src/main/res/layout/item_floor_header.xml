@@ -1,28 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="?attr/colorSurface">
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingTop="14dp"
+    android:paddingBottom="6dp">
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="@color/purple_600"
-        android:layout_marginTop="8dp">
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="10dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="@color/purple_50"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/purple_100">
 
-        <TextView
-            android:id="@+id/tvFloorHeader"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="PISO 1"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@color/white"
-            android:letterSpacing="0.2"
-            android:textAllCaps="true" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="5dp">
 
-    </FrameLayout>
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:src="@android:drawable/ic_menu_sort_by_size"
+                app:tint="@color/purple_700"
+                android:layout_marginEnd="6dp" />
+
+            <TextView
+                android:id="@+id/tvFloorHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PISO 1"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/purple_700"
+                android:letterSpacing="0.08"
+                android:textAllCaps="true" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:background="@color/slate_200" />
 
 </LinearLayout>

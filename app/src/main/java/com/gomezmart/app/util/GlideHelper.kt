@@ -33,7 +33,7 @@ object GlideHelper {
             .diskCacheStrategy(DiskCacheStrategy.ALL) // Guardar tanto la versión comprimida como la original en disco
             .skipMemoryCache(false) // Mantener en memoria RAM para navegación e imágenes instantáneas a 0ms
             .centerCrop()
-            .timeout(4000)
+            .timeout(25000)
         
         return if (showPlaceholder) {
             options.placeholder(getLoadingPlaceholder(context))

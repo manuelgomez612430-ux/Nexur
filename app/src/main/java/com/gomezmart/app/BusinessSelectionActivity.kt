@@ -225,23 +225,25 @@ class BusinessSelectionActivity : BaseActivity() {
     }
 
     private fun proceedToMain() {
-        com.gomezmart.app.util.SessionManager.setLoginInProgress(this, false)
-        if (!isGuestUser()) {
-            val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-            appPrefs.edit()
-                .putString("user_role", "SELLER")
-                .putBoolean("is_profile_verified", true)
-                .apply()
-        }
+        com.gomezmart.app.util.SystemLoadingDialog.show(this, selectedType) {
+            com.gomezmart.app.util.SessionManager.setLoginInProgress(this, false)
+            if (!isGuestUser()) {
+                val appPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+                appPrefs.edit()
+                    .putString("user_role", "SELLER")
+                    .putBoolean("is_profile_verified", true)
+                    .apply()
+            }
 
-        val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
-        prefs.edit().putString("business_type", selectedType).apply()
-        
-        if (!isGuestUser()) {
-            SyncManager(this).syncBusinessSettingsToCloud()
+            val prefs = getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE)
+            prefs.edit().putString("business_type", selectedType).apply()
+            
+            if (!isGuestUser()) {
+                SyncManager(this).syncBusinessSettingsToCloud()
+            }
+            
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
         }
-        
-        startActivity(Intent(this, MainActivity::class.java))
-        finish()
     }
 }

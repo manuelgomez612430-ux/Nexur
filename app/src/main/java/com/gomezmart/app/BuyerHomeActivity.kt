@@ -573,13 +573,15 @@ class BuyerHomeActivity : BaseActivity() {
     private fun switchToBusinessSystem(type: String) {
         hideFloatingInterfaceMenu()
         ensureModuleInstalled(type) {
-            getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE).edit()
-                .putString("business_type", type)
-                .apply()
-            startActivity(Intent(this, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-            })
-            finish()
+            com.gomezmart.app.util.SystemLoadingDialog.show(this, type) {
+                getSharedPreferences("BusinessPrefs", Context.MODE_PRIVATE).edit()
+                    .putString("business_type", type)
+                    .apply()
+                startActivity(Intent(this, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                })
+                finish()
+            }
         }
     }
 

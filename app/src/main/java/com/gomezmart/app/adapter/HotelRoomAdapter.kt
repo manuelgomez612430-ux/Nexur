@@ -139,10 +139,22 @@ class HotelRoomAdapter(
                 cardRoomThumb.setOnClickListener(handlePhotoTap)
                 tvRoomPhotoBadge.setOnClickListener(handlePhotoTap)
 
+                // Barra lateral indicadora de estado
+                val indicatorColor = when {
+                    roomData.hasPendingFailure -> root.context.getColor(R.color.red_600)
+                    room.status == "OCCUPIED" -> root.context.getColor(R.color.red_500)
+                    room.status == "DIRTY" || room.status == "MAINTENANCE" || needsCleaning -> root.context.getColor(R.color.orange_500)
+                    roomData.hasReservation || room.status == "RESERVED" -> root.context.getColor(R.color.sky_600)
+                    else -> root.context.getColor(R.color.emerald_500)
+                }
+                viewStatusIndicator.setBackgroundColor(indicatorColor)
+
                 // Botón Reparado (🛠️)
                 if (roomData.hasPendingFailure) {
                     btnThirdAction.text = "Reparado"
                     btnThirdAction.visibility = View.VISIBLE
+                    btnThirdAction.setBackgroundColor(root.context.getColor(R.color.sky_50))
+                    btnThirdAction.setTextColor(root.context.getColor(R.color.sky_600))
                     btnThirdAction.setOnClickListener { onThirdAction?.invoke(room) }
                 } else {
                     btnThirdAction.visibility = View.GONE
@@ -177,8 +189,8 @@ class HotelRoomAdapter(
                         if (needsCleaning) {
                             btnSecondAction.text = "Aseado"
                             btnSecondAction.visibility = View.VISIBLE
-                            btnSecondAction.setBackgroundColor(root.context.getColor(R.color.orange_600))
-                            btnSecondAction.setTextColor(root.context.getColor(R.color.white))
+                            btnSecondAction.setBackgroundColor(root.context.getColor(R.color.orange_50))
+                            btnSecondAction.setTextColor(root.context.getColor(R.color.orange_600))
                             btnSecondAction.setOnClickListener { onSecondAction?.invoke(room) }
                         } else {
                             btnSecondAction.visibility = View.GONE
@@ -200,8 +212,8 @@ class HotelRoomAdapter(
                         if (needsCleaning) {
                             btnSecondAction.text = "Aseado"
                             btnSecondAction.visibility = View.VISIBLE
-                            btnSecondAction.setBackgroundColor(root.context.getColor(R.color.orange_600))
-                            btnSecondAction.setTextColor(root.context.getColor(R.color.white))
+                            btnSecondAction.setBackgroundColor(root.context.getColor(R.color.orange_50))
+                            btnSecondAction.setTextColor(root.context.getColor(R.color.orange_600))
                             btnSecondAction.setOnClickListener { onSecondAction?.invoke(room) }
                         } else {
                             btnSecondAction.visibility = View.GONE
@@ -225,8 +237,8 @@ class HotelRoomAdapter(
 
                         btnSecondAction.text = "Aseado"
                         btnSecondAction.visibility = View.VISIBLE
-                        btnSecondAction.setBackgroundColor(root.context.getColor(R.color.orange_600))
-                        btnSecondAction.setTextColor(root.context.getColor(R.color.white))
+                        btnSecondAction.setBackgroundColor(root.context.getColor(R.color.orange_50))
+                        btnSecondAction.setTextColor(root.context.getColor(R.color.orange_600))
                         btnSecondAction.setOnClickListener { onSecondAction?.invoke(room) }
                     }
                     "RESERVED" -> {

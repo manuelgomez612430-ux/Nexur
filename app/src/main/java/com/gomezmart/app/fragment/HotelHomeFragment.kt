@@ -430,7 +430,7 @@ class HotelHomeFragment : Fragment() {
                     _binding?.let { b ->
                         val total = rooms.size
                         val occupied = rooms.count { it.status == "OCCUPIED" }
-                        val free = rooms.count { it.status == "FREE" }
+                        val free = rooms.count { it.status != "OCCUPIED" && it.status != "MAINTENANCE" }
                         val reserved = bookings.count { it.status == "CONFIRMED" }
                         b.tvStatOccupied.text = occupied.toString()
                         b.tvStatFree.text = free.toString()

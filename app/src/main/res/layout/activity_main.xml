@@ -6,72 +6,37 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <com.gomezmart.app.util.SafeFragmentContainer
         android:id="@+id/mainContentRoot"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="?attr/colorSurface">
 
-        <FrameLayout
-            android:id="@+id/mainFragmentContainer"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:fitsSystemWindows="false"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@id/cardBottomNavContainer"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-
-        <!-- BACKDROP PARA CERRAR EL MENÚ FLOTANTE AL TOCAR FUERA -->
-        <View
-            android:id="@+id/viewInterfaceBackdrop"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:visibility="gone"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="#1A000000"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@id/cardBottomNavContainer" />
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
-        <!-- MENÚ FLOTANTE DE OPCIONES DE INTERFAZ -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardInterfaceMenuOverlay"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="8dp"
-            android:visibility="gone"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="16dp"
-            app:cardBackgroundColor="?attr/colorSurfaceContainer"
-            app:strokeWidth="1dp"
-            app:strokeColor="?attr/colorOutlineVariant"
-            app:layout_constraintBottom_toTopOf="@id/cardBottomNavContainer"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent">
+            <com.gomezmart.app.util.SafeFragmentContainer
+                android:id="@+id/mainFragmentContainer"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:fitsSystemWindows="false" />
 
-            <include
-                android:id="@+id/includeInterfaceOptions"
-                layout="@layout/dialog_interface_options" />
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardBottomNavContainer"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_marginStart="0dp"
-            android:layout_marginEnd="0dp"
-            android:layout_marginBottom="0dp"
-            app:cardCornerRadius="0dp"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBottomNavContainer"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginStart="0dp"
+                android:layout_marginEnd="0dp"
+                android:layout_marginBottom="0dp"
+                app:cardCornerRadius="0dp"
             app:cardElevation="0dp"
             app:strokeWidth="0dp"
             app:cardBackgroundColor="@color/white"
             app:cardUseCompatPadding="false"
-            app:cardPreventCornerOverlap="false"
-            app:layout_constraintBottom_toBottomOf="parent">
+            app:cardPreventCornerOverlap="false">
 
             <FrameLayout
                 android:layout_width="match_parent"
@@ -242,6 +207,40 @@
             </FrameLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        </LinearLayout>
+
+        <!-- BACKDROP PARA CERRAR EL MENÚ FLOTANTE AL TOCAR FUERA -->
+        <View
+            android:id="@+id/viewInterfaceBackdrop"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="#1A000000" />
+
+        <!-- MENÚ FLOTANTE DE OPCIONES DE INTERFAZ -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardInterfaceMenuOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="68dp"
+            android:visibility="gone"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="16dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant">
+
+            <include
+                android:id="@+id/includeInterfaceOptions"
+                layout="@layout/dialog_interface_options" />
+
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- CAPA DE TUTORIAL CONTEXTUAL -->
         <FrameLayout
             android:id="@+id/layoutTutorialOverlay"
@@ -314,7 +313,7 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </FrameLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.gomezmart.app.util.SafeFragmentContainer>
 
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigationViewMain"
