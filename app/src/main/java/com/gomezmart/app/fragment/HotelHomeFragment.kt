@@ -24,13 +24,17 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.gomezmart.app.*
 import com.gomezmart.app.data.AppDatabase
+import com.gomezmart.app.data.HotelRoomEntity
 import com.gomezmart.app.data.HotelTool
+import com.gomezmart.app.databinding.BottomSheetRoomSelectionBinding
 import com.gomezmart.app.databinding.FragmentHotelHomeBinding
 import com.gomezmart.app.databinding.ItemHotelToolCardBinding
+import com.gomezmart.app.databinding.ItemSheetRoomChoiceBinding
 import com.gomezmart.app.util.BillingManager
 import com.gomezmart.app.util.NotificationHelper
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -84,6 +88,11 @@ class HotelHomeFragment : Fragment() {
 
     private fun setupBentoActions() {
         val b = _binding ?: return
+
+        // Acciones Rápidas del Día
+        b.cardQuickHospedar.setOnClickListener { handleQuickHospedar() }
+        b.cardQuickSalida.setOnClickListener { handleQuickSalida() }
+        b.cardQuickLimpieza.setOnClickListener { handleQuickLimpieza() }
 
         // Hero: Subir negocio al mercado / Mi página web
         b.cardMarketHero.setOnClickListener { handleMarketClick() }
@@ -432,13 +441,184 @@ class HotelHomeFragment : Fragment() {
                         val occupied = rooms.count { it.status == "OCCUPIED" }
                         val free = rooms.count { it.status != "OCCUPIED" && it.status != "MAINTENANCE" }
                         val reserved = bookings.count { it.status == "CONFIRMED" }
+
+                        val startOfToday = Calendar.getInstance().apply {
+                            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                        }.timeInMillis
+                        val dirtyCount = rooms.count { it.status == "DIRTY" || it.status == "MAINTENANCE" || it.lastCleaned < startOfToday }
+
                         b.tvStatOccupied.text = occupied.toString()
                         b.tvStatFree.text = free.toString()
                         b.tvStatReserved.text = reserved.toString()
+                        b.tvStatDirty.text = dirtyCount.toString()
+
+                        val occupancyPercent = if (total > 0) ((occupied.toDouble() / total) * 100).toInt() else 0
+                        b.tvOccupancyBadge.text = "$occupancyPercent% Ocupado"
+                        b.progressOccupancy.progress = occupancyPercent
+
+                        b.tvQuickLimpiezaLabel.text = if (dirtyCount > 0) "Aseo ($dirtyCount)" else "Aseo al día"
                         b.tvRoomsSummary.text = "$free de $total habitaciones disponibles"
                     }
                 }
         }
+    }
+
+    private fun handleQuickHospedar() {
+        val safeCtx = context ?: return
+        val dbInstance = database ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val rooms = dbInstance.hotelDao().getAllRooms().first()
+            val freeRooms = rooms.filter { it.status == "FREE" }
+            if (freeRooms.isEmpty()) {
+                Toast.makeText(safeCtx, "No hay habitaciones libres en este momento", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            if (freeRooms.size == 1) {
+                val selected = freeRooms[0]
+                val i = Intent().setClassName(safeCtx.packageName, "com.gomezmart.feature_hotel.HotelCheckInActivity")
+                i.putExtra("ROOM_ID", selected.id)
+                i.putExtra("ROOM_NUMBER", selected.number)
+                i.putExtra("BASE_RATE", selected.baseRate)
+                startActivity(i)
+            } else {
+                showRoomSelectionBottomSheet(
+                    title = "Hospedar en Habitación",
+                    subtitle = "Elige una habitación para registrar al cliente",
+                    countText = "${freeRooms.size} Libres",
+                    rooms = freeRooms,
+                    badgeFormatter = { String.format(Locale.US, "S/ %.2f", it.baseRate) },
+                    badgeColorRes = R.color.emerald_700
+                ) { selected, dialog ->
+                    dialog.dismiss()
+                    val i = Intent().setClassName(safeCtx.packageName, "com.gomezmart.feature_hotel.HotelCheckInActivity")
+                    i.putExtra("ROOM_ID", selected.id)
+                    i.putExtra("ROOM_NUMBER", selected.number)
+                    i.putExtra("BASE_RATE", selected.baseRate)
+                    startActivity(i)
+                }
+            }
+        }
+    }
+
+    private fun handleQuickSalida() {
+        val safeCtx = context ?: return
+        val dbInstance = database ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val rooms = dbInstance.hotelDao().getAllRooms().first()
+            val occupiedRooms = rooms.filter { it.status == "OCCUPIED" }
+            if (occupiedRooms.isEmpty()) {
+                Toast.makeText(safeCtx, "No hay habitaciones ocupadas en este momento", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            showRoomSelectionBottomSheet(
+                title = "Dar Salida / Cobro",
+                subtitle = "Selecciona la habitación ocupada para gestionar",
+                countText = "${occupiedRooms.size} Ocupadas",
+                rooms = occupiedRooms,
+                badgeFormatter = { "Gestionar ➔" },
+                badgeColorRes = R.color.red_700
+            ) { selected, dialog ->
+                dialog.dismiss()
+                val intent = Intent().setClassName(safeCtx.packageName, "com.gomezmart.feature_hotel.HotelManageRoomActivity")
+                intent.putExtra("ROOM_ID", selected.id)
+                intent.putExtra("ROOM_NUMBER", selected.number)
+                startActivity(intent)
+            }
+        }
+    }
+
+    private fun handleQuickLimpieza() {
+        val safeCtx = context ?: return
+        val dbInstance = database ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val rooms = dbInstance.hotelDao().getAllRooms().first()
+            val startOfToday = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            val dirtyRooms = rooms.filter { it.status == "DIRTY" || it.status == "MAINTENANCE" || it.lastCleaned < startOfToday }
+            if (dirtyRooms.isEmpty()) {
+                Toast.makeText(safeCtx, "¡Todas las habitaciones están aseadas! ✨", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            showRoomSelectionBottomSheet(
+                title = "Habitaciones por Asear",
+                subtitle = "Toca para marcar como limpia y disponible",
+                countText = "${dirtyRooms.size} Por Asear",
+                rooms = dirtyRooms,
+                badgeFormatter = { "Marcar limpia ✨" },
+                badgeColorRes = R.color.orange_700
+            ) { selected, dialog ->
+                dialog.dismiss()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val newStatus = if (selected.status == "OCCUPIED") "OCCUPIED" else "FREE"
+                    val updated = selected.copy(status = newStatus, lastCleaned = System.currentTimeMillis())
+                    dbInstance.hotelDao().updateRoom(updated)
+                    SyncManager(safeCtx.applicationContext).syncHotelRoomToCloud(updated)
+                    Toast.makeText(safeCtx, "Habitación ${selected.number} marcada como limpia ✨", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun showRoomSelectionBottomSheet(
+        title: String,
+        subtitle: String,
+        countText: String,
+        rooms: List<HotelRoomEntity>,
+        badgeFormatter: (HotelRoomEntity) -> String,
+        badgeColorRes: Int,
+        onRoomSelected: (HotelRoomEntity, BottomSheetDialog) -> Unit
+    ) {
+        val safeCtx = context ?: return
+        val dialog = BottomSheetDialog(safeCtx)
+        val sheetBinding = BottomSheetRoomSelectionBinding.inflate(layoutInflater)
+        dialog.setContentView(sheetBinding.root)
+
+        sheetBinding.tvSheetTitle.text = title
+        sheetBinding.tvSheetSubtitle.text = subtitle
+        sheetBinding.tvSheetCountBadge.text = countText
+
+        if (rooms.isEmpty()) {
+            sheetBinding.rvSheetRooms.visibility = View.GONE
+            sheetBinding.tvSheetEmpty.visibility = View.VISIBLE
+        } else {
+            sheetBinding.rvSheetRooms.visibility = View.VISIBLE
+            sheetBinding.tvSheetEmpty.visibility = View.GONE
+            sheetBinding.rvSheetRooms.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(safeCtx)
+            sheetBinding.rvSheetRooms.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+                override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+                    val itemBinding = ItemSheetRoomChoiceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                    return object : RecyclerView.ViewHolder(itemBinding.root) {}
+                }
+
+                override fun getItemCount() = rooms.size
+
+                override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+                    val room = rooms[position]
+                    val itemBinding = ItemSheetRoomChoiceBinding.bind(holder.itemView)
+
+                    val emoji = when (room.type.uppercase()) {
+                        "SIMPLE" -> "🛏️"
+                        "DOBLE" -> "👥"
+                        "MATRIMONIAL" -> "❤️"
+                        "SUITE" -> "🌟"
+                        else -> "🏢"
+                    }
+                    itemBinding.tvSheetRoomEmoji.text = emoji
+                    itemBinding.tvSheetRoomName.text = "Habitación ${room.number}"
+                    val floorText = if (room.floor > 0) " • Piso ${room.floor}" else ""
+                    itemBinding.tvSheetRoomDetail.text = "${room.type}$floorText"
+
+                    itemBinding.tvSheetRoomBadge.text = badgeFormatter(room)
+                    itemBinding.tvSheetRoomBadge.setTextColor(ContextCompat.getColor(safeCtx, badgeColorRes))
+
+                    itemBinding.root.setOnClickListener {
+                        onRoomSelected(room, dialog)
+                    }
+                }
+            }
+        }
+        dialog.show()
     }
 
     fun refreshQuickActions() { renderTools() }

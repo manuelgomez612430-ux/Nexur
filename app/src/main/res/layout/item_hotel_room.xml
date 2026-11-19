@@ -240,7 +240,7 @@
                         android:layout_height="36dp"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
-                        android:text="Check-in"
+                        android:text="Hospedar"
                         android:textSize="12sp"
                         android:textStyle="bold"
                         app:cornerRadius="12dp"

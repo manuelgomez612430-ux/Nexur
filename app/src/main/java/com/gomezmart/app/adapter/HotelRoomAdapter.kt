@@ -18,7 +18,8 @@ data class RoomListItem(
     val entity: HotelRoomEntity,
     val hasPendingFailure: Boolean = false,
     val hasReservation: Boolean = false,
-    val failureDescription: String? = null
+    val failureDescription: String? = null,
+    val pendingDebt: Double = 0.0
 )
 
 sealed class RoomListType {
@@ -178,7 +179,7 @@ class HotelRoomAdapter(
                             chipRoomStatus.setChipBackgroundColorResource(R.color.emerald_50)
                             chipRoomStatus.setTextColor(root.context.getColor(R.color.emerald_600))
 
-                            btnRoomAction.text = "Check-in"
+                            btnRoomAction.text = "Hospedar"
                             btnRoomAction.setIconResource(android.R.drawable.ic_input_add)
                             btnRoomAction.setBackgroundColor(root.context.getColor(R.color.emerald_50))
                             btnRoomAction.setTextColor(root.context.getColor(R.color.emerald_600))
@@ -198,9 +199,15 @@ class HotelRoomAdapter(
                         }
                     }
                     "OCCUPIED" -> {
-                        chipRoomStatus.text = "OCUPADA"
-                        chipRoomStatus.setChipBackgroundColorResource(R.color.red_600)
-                        chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
+                        if (roomData.pendingDebt > 0.01) {
+                            chipRoomStatus.text = "DEBE S/ ${String.format(Locale.US, "%.0f", roomData.pendingDebt)}"
+                            chipRoomStatus.setChipBackgroundColorResource(R.color.red_600)
+                            chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
+                        } else {
+                            chipRoomStatus.text = "OCUPADA"
+                            chipRoomStatus.setChipBackgroundColorResource(R.color.emerald_600)
+                            chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
+                        }
 
                         btnRoomAction.text = "Gestionar"
                         btnRoomAction.setIconResource(android.R.drawable.ic_menu_manage)
@@ -228,7 +235,7 @@ class HotelRoomAdapter(
                         chipRoomStatus.setChipBackgroundColorResource(statusColor)
                         chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
 
-                        btnRoomAction.text = "Check-in"
+                        btnRoomAction.text = "Hospedar"
                         btnRoomAction.setIconResource(android.R.drawable.ic_input_add)
                         btnRoomAction.setBackgroundColor(root.context.getColor(R.color.emerald_50))
                         btnRoomAction.setTextColor(root.context.getColor(R.color.emerald_600))
@@ -246,7 +253,7 @@ class HotelRoomAdapter(
                         chipRoomStatus.setChipBackgroundColorResource(R.color.sky_600)
                         chipRoomStatus.setTextColor(root.context.getColor(R.color.white))
 
-                        btnRoomAction.text = "Check-in"
+                        btnRoomAction.text = "Hospedar"
                         btnRoomAction.setIconResource(android.R.drawable.ic_input_add)
                         btnRoomAction.setBackgroundColor(root.context.getColor(R.color.emerald_50))
                         btnRoomAction.setTextColor(root.context.getColor(R.color.emerald_600))

@@ -42,6 +42,9 @@ interface HotelDao {
 
     @Query("SELECT * FROM hotel_bookings WHERE roomId = :roomId AND status = 'CHECKED_IN' AND isDeleted = 0 LIMIT 1")
     suspend fun getActiveBookingForRoom(roomId: String): HotelBookingEntity?
+
+    @Query("SELECT * FROM hotel_bookings WHERE guestDoc = :doc AND isDeleted = 0 ORDER BY checkInDate DESC LIMIT 1")
+    suspend fun getLastBookingByGuestDoc(doc: String): HotelBookingEntity?
     
     @Query("SELECT * FROM hotel_bookings WHERE checkInDate >= :startOfDay AND checkInDate <= :endOfDay AND isDeleted = 0")
     fun getArrivalsForDay(startOfDay: Long, endOfDay: Long): Flow<List<HotelBookingEntity>>

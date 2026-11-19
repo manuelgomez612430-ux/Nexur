@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/slate_50">
@@ -14,8 +15,8 @@
             android:id="@+id/toolbarCheckIn"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="Registro de Check-in"
-            app:navigationIcon="@android:drawable/ic_menu_revert" />
+            app:title="Registro de Huésped"
+            app:navigationIcon="@drawable/ic_arrow_back" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -31,14 +32,14 @@
             android:orientation="vertical"
             android:padding="20dp">
 
-            <!-- Cabecera Compacta -->
+            <!-- Cabecera de Habitación -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="0dp"
                 app:cardBackgroundColor="@color/purple_600"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="18dp">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -54,67 +55,68 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="REGISTRANDO LLEGADA"
-                            android:textSize="10sp"
+                            android:textSize="11sp"
                             android:textStyle="bold"
-                            android:textColor="#B0FFFFFF"
-                            android:letterSpacing="0.1" />
+                            android:textColor="#D0FFFFFF"
+                            android:letterSpacing="0.08" />
                         <TextView
                             android:id="@+id/tvRoomInfo"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Habitación: 101"
-                            android:textSize="20sp"
+                            android:text="Habitación: 1"
+                            android:textSize="22sp"
                             android:textStyle="bold"
-                            android:textColor="@color/white" />
+                            android:textColor="@color/white"
+                            android:layout_marginTop="2dp" />
                     </LinearLayout>
-                    <ImageView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@android:drawable/ic_menu_my_calendar"
-                        app:tint="#40FFFFFF" />
+                    <TextView
+                        android:id="@+id/tvRoomRateBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="S/ 50.00 / noche"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:background="@drawable/bg_nav_indicator_pill"
+                        android:backgroundTint="#40FFFFFF"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Sección de Datos del Huésped -->
+            <!-- SECCIÓN 1: DATOS DEL HUÉSPED (Express & Híbrido) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="2dp"
                 app:strokeWidth="0dp"
-                android:layout_marginBottom="20dp">
+                android:layout_marginBottom="18dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="DATOS DEL HUÉSPED"
-                        android:textSize="10sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/slate_400"
-                        android:layout_marginBottom="12dp" />
+                    android:padding="18dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
                         android:layout_marginBottom="12dp">
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="NACIONALIDAD"
-                            android:textSize="10sp"
+                            android:layout_weight="1"
+                            android:text="DATOS DEL HUÉSPED"
+                            android:textSize="11sp"
                             android:textStyle="bold"
                             android:textColor="@color/slate_400"
-                            android:layout_marginBottom="4dp" />
+                            android:letterSpacing="0.08" />
                         <com.google.android.material.button.MaterialButtonToggleGroup
                             android:id="@+id/toggleNationality"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             app:singleSelection="true"
                             app:selectionRequired="true"
@@ -122,67 +124,142 @@
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnNational"
                                 style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
                                 android:text="Nacional"
-                                android:textSize="12sp" />
+                                android:textSize="11sp"
+                                android:paddingHorizontal="10dp" />
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnForeigner"
                                 style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
                                 android:text="Extranjero"
-                                android:textSize="12sp" />
+                                android:textSize="11sp"
+                                android:paddingHorizontal="10dp" />
                         </com.google.android.material.button.MaterialButtonToggleGroup>
                     </LinearLayout>
 
+                    <!-- CAMPO 1: Documento con Botón de Escanear Cámara -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="6dp">
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/layoutGuestDoc"
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="DNI o RUC del Huésped"
+                            app:startIconDrawable="@drawable/ic_id_card_24"
+                            app:endIconMode="custom"
+                            app:endIconDrawable="@drawable/ic_search_24"
+                            app:endIconContentDescription="Buscar documento">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etGuestDoc"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="number"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:imeOptions="actionNext" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnScanDni"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="54dp"
+                            android:layout_height="54dp"
+                            android:layout_marginStart="8dp"
+                            app:icon="@drawable/ic_camera_scan_24"
+                            app:iconTint="@color/purple_600"
+                            app:iconGravity="textStart"
+                            app:iconPadding="0dp"
+                            app:cornerRadius="14dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:padding="0dp" />
+                    </LinearLayout>
+
+                    <!-- Estado de Búsqueda de Documento -->
+                    <LinearLayout
+                        android:id="@+id/layoutDocStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:visibility="gone"
+                        android:paddingHorizontal="6dp"
+                        android:layout_marginBottom="10dp">
+                        <ProgressBar
+                            android:id="@+id/progressDocSearch"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:indeterminate="true"
+                            android:visibility="gone"
+                            android:layout_marginEnd="8dp" />
+                        <TextView
+                            android:id="@+id/tvDocStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/purple_600"
+                            tools:text="✓ Huésped encontrado" />
+                    </LinearLayout>
+
+                    <!-- CAMPO 2: Nombre Completo (Único obligatorio) -->
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutGuestName"
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Nombre Completo"
-                        app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
-                        android:layout_marginBottom="12dp">
+                        android:hint="Nombre Completo / Razón Social *"
+                        app:startIconDrawable="@drawable/ic_person_24"
+                        android:layout_marginBottom="10dp">
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etGuestName"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:inputType="textCapWords"
                             android:textSize="14sp"
-                            android:imeOptions="actionNext" />
+                            android:imeOptions="actionDone" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                        android:layout_width="match_parent"
+                    <!-- Botón para Plegar/Desplegar Datos Opcionales -->
+                    <TextView
+                        android:id="@+id/btnToggleOptionalData"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:hint="DNI / Pasaporte"
-                        app:startIconDrawable="@android:drawable/ic_menu_agenda"
-                        android:layout_marginBottom="12dp">
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etGuestDoc"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="number"
-                            android:textSize="14sp"
-                            android:imeOptions="actionNext" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                        android:text="+ Añadir Celular y Procedencia (Opcional)"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/purple_600"
+                        android:paddingVertical="4dp"
+                        android:clickable="true"
+                        android:focusable="true" />
 
+                    <!-- Contenedor Plegable: Celular y Procedencia -->
                     <LinearLayout
+                        android:id="@+id/layoutOptionalFields"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:visibility="gone"
+                        android:layout_marginTop="10dp">
 
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:hint="Celular"
-                            android:layout_marginEnd="4dp"
-                            app:startIconDrawable="@android:drawable/stat_sys_phone_call">
+                            android:hint="Celular (Opcional)"
+                            android:layout_marginEnd="6dp"
+                            app:startIconDrawable="@drawable/ic_phone_24">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etGuestPhone"
                                 android:layout_width="match_parent"
@@ -197,104 +274,397 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:layout_marginStart="4dp"
-                            android:hint="Procedencia"
-                            app:startIconDrawable="@android:drawable/ic_menu_directions">
+                            android:layout_marginStart="6dp"
+                            android:hint="Procedencia (Opcional)"
+                            app:startIconDrawable="@drawable/ic_location_pin_24">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etGuestOrigin"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:inputType="textCapSentences"
                                 android:textSize="14sp"
-                                android:imeOptions="actionNext" />
+                                android:imeOptions="actionDone" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Sección de Detalles de Estancia -->
+            <!-- SECCIÓN 2: FIRMA DIGITAL DEL HUÉSPED (Opcional & Ultra-ligera) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="2dp"
                 app:strokeWidth="0dp"
-                android:layout_marginBottom="32dp">
+                android:layout_marginBottom="18dp">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="DETALLES DE ESTANCIA"
-                        android:textSize="10sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/slate_400"
-                        android:layout_marginBottom="12dp" />
+                    android:padding="18dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="10dp">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="FIRMA DEL HUÉSPED (OPCIONAL)"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_400"
+                            android:letterSpacing="0.08" />
+                        <TextView
+                            android:id="@+id/btnClearSignature"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🗑️ Limpiar"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/slate_500"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="4dp"
+                            android:clickable="true"
+                            android:focusable="true" />
+                    </LinearLayout>
+
+                    <!-- Lienzo de Firma -->
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp"
+                        android:background="@drawable/bg_nav_indicator_pill"
+                        android:backgroundTint="#F8FAFC">
+
+                        <com.gomezmart.app.ui.SignaturePadView
+                            android:id="@+id/signaturePad"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent" />
+
+                        <TextView
+                            android:id="@+id/tvSignatureHint"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:text="✍️ Firme aquí con su dedo"
+                            android:textSize="12sp"
+                            android:textColor="@color/slate_400" />
+                    </FrameLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SECCIÓN 3: DURACIÓN DE ESTANCIA Y ESTADOS DE COBRO -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="DURACIÓN DE LA ESTANCIA"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_400"
+                        android:letterSpacing="0.08"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Stepper de Noches -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="14dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnMinusStay"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:text="−"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="14dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:padding="0dp" />
 
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:layout_marginEnd="4dp"
+                            android:layout_marginHorizontal="10dp"
                             android:hint="Noches"
-                            app:startIconDrawable="@android:drawable/ic_menu_today">
+                            app:startIconDrawable="@drawable/ic_calendar_nights_24">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etStayDays"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:inputType="number"
-                                android:textSize="14sp"
-                                android:imeOptions="actionNext"
-                                android:hint="1" />
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:gravity="center"
+                                android:text="1" />
                         </com.google.android.material.textfield.TextInputLayout>
 
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnPlusStay"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:text="+"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="14dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:padding="0dp" />
+                    </LinearLayout>
+
+                    <!-- Resumen en Vivo -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="@color/slate_100"
+                        android:layout_marginBottom="16dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="🕒 Salida prevista:"
+                                    android:textSize="12sp"
+                                    android:textColor="@color/slate_600" />
+                                <TextView
+                                    android:id="@+id/tvStayCheckoutEstimate"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:gravity="end"
+                                    android:text="Mañana, 12:00 PM"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/slate_800" />
+                            </LinearLayout>
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:layout_marginTop="6dp">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="💵 Total de la estancia:"
+                                    android:textSize="13sp"
+                                    android:textColor="@color/slate_600" />
+                                <TextView
+                                    android:id="@+id/tvStayTotalAmount"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:gravity="end"
+                                    android:text="S/ 50.00"
+                                    android:textSize="15sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/purple_600" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- CONDICIÓN DE COBRO: 3 ESTADOS CLAROS -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="CONDICIÓN DE PAGO"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/slate_400"
+                        android:letterSpacing="0.08"
+                        android:layout_marginBottom="10dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp">
+
+                        <!-- Opción 1: Total Cancelado -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardPayFull"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="4dp"
+                            app:cardCornerRadius="14dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="2dp"
+                            app:strokeColor="@color/purple_600"
+                            app:cardBackgroundColor="#F5F3FF"
+                            android:clickable="true"
+                            android:focusable="true">
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:padding="10dp"
+                                android:gravity="center">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="🟢 Cancelado"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/purple_600" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Paga todo hoy"
+                                    android:textSize="10sp"
+                                    android:textColor="@color/slate_500"
+                                    android:layout_marginTop="2dp" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Opción 2: Abono Parcial -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardPayPartial"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginHorizontal="2dp"
+                            app:cardCornerRadius="14dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="1dp"
+                            app:strokeColor="@color/slate_200"
+                            app:cardBackgroundColor="@color/white"
+                            android:clickable="true"
+                            android:focusable="true">
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:padding="10dp"
+                                android:gravity="center">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="🟡 Abono"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/slate_700" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Adelanto / Parte"
+                                    android:textSize="10sp"
+                                    android:textColor="@color/slate_500"
+                                    android:layout_marginTop="2dp" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Opción 3: Pago Pendiente -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/cardPayPending"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:layout_marginStart="4dp"
-                            android:hint="Anticipo"
-                            app:startIconDrawable="@android:drawable/ic_menu_send"
-                            app:prefixText="S/ ">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etDeposit"
+                            app:cardCornerRadius="14dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="1dp"
+                            app:strokeColor="@color/slate_200"
+                            app:cardBackgroundColor="@color/white"
+                            android:clickable="true"
+                            android:focusable="true">
+                            <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="numberDecimal"
-                                android:textSize="14sp"
-                                android:imeOptions="actionNext"
-                                android:hint="0.00" />
-                        </com.google.android.material.textfield.TextInputLayout>
+                                android:orientation="vertical"
+                                android:padding="10dp"
+                                android:gravity="center">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="🔴 Pendiente"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/slate_700" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Cobrar luego"
+                                    android:textSize="10sp"
+                                    android:textColor="@color/slate_500"
+                                    android:layout_marginTop="2dp" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
                     </LinearLayout>
 
-                    <com.google.android.material.checkbox.MaterialCheckBox
-                        android:id="@+id/cbPayInitialNights"
+                    <!-- Monto Pagado Ahora -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutDeposit"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="¿Cubre el pago la estancia total?"
+                        android:hint="Monto Pagado Ahora"
+                        app:prefixText="S/ "
+                        android:layout_marginBottom="6dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etDeposit"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:text="50.00" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Aviso de Deuda / Saldo Restante -->
+                    <TextView
+                        android:id="@+id/tvPaymentStatusNotice"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="✓ Estancia cancelada en su totalidad"
                         android:textSize="12sp"
-                        android:textColor="@color/slate_600"
-                        android:layout_marginTop="4dp" />
+                        android:textStyle="bold"
+                        android:textColor="@color/purple_600"
+                        android:paddingHorizontal="4dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Botón Principal -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnConfirmCheckIn"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
+                android:layout_height="58dp"
                 android:text="CONFIRMAR REGISTRO"
-                android:textSize="14sp"
+                android:textSize="15sp"
                 android:textStyle="bold"
                 app:cornerRadius="16dp"
                 app:backgroundTint="@color/purple_600" />

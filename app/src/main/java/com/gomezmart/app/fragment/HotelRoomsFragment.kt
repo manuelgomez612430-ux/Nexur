@@ -483,6 +483,7 @@ class HotelRoomsFragment : Fragment() {
                 val processedData = withContext(Dispatchers.Default) {
                     val pendingMaintMap = maintenance.filter { it.status == "PENDING" }.groupBy { it.roomId }
                     val reservationsMap = bookings.filter { it.status == "CONFIRMED" }.groupBy { it.roomId }
+                    val activeBookingsMap = bookings.filter { it.status == "CHECKED_IN" }.associateBy { it.roomId }
 
                     val groupedList = mutableListOf<RoomListType>()
                     rooms.groupBy { it.floor }.toSortedMap().forEach { (floor, roomsInFloor) ->
@@ -490,9 +491,11 @@ class HotelRoomsFragment : Fragment() {
                         roomsInFloor.forEach { room ->
                             val hasFailure = pendingMaintMap.containsKey(room.id)
                             val hasRes = reservationsMap.containsKey(room.id)
+                            val activeBooking = activeBookingsMap[room.id]
+                            val pendingDebt = if (activeBooking != null) (activeBooking.totalAmount - activeBooking.deposit).coerceAtLeast(0.0) else 0.0
                             groupedList.add(
                                 RoomListType.Room(
-                                    RoomListItem(room, hasFailure, hasRes)
+                                    RoomListItem(room, hasFailure, hasRes, pendingDebt = pendingDebt)
                                 )
                             )
                         }
@@ -1515,7 +1518,7 @@ class HotelRoomsFragment : Fragment() {
         val options = mutableListOf<String>()
 
         if (room.status == "FREE" && !hasReservation) {
-            options.add("Check-in Rápido")
+            options.add("Hospedar Huésped")
         }
 
         val cal = Calendar.getInstance()
@@ -1554,7 +1557,7 @@ class HotelRoomsFragment : Fragment() {
                 val safeCtx = context ?: return@setItems
                 viewLifecycleOwner.lifecycleScope.launch {
                     when (options[w]) {
-                        "Check-in Rápido" -> {
+                        "Hospedar Huésped" -> {
                             val i = Intent().setClassName(safeCtx.packageName, "com.gomezmart.feature_hotel.HotelCheckInActivity")
                             i.putExtra("ROOM_ID", room.id); i.putExtra("ROOM_NUMBER", room.number); i.putExtra("BASE_RATE", room.baseRate)
                             startActivity(i)
